@@ -4,4 +4,9 @@
     // ...other config
   }
 
-  module.exports = nextConfig
+export default {  
+  experimental: {
+    optimizePackageImports: ["@radix-ui/react-toast"],
+  },
+  ...nextConfig,
+}

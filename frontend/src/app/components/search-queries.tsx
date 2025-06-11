@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import { Plus, Trash2, Clock } from "lucide-react"
 import { useToast } from "./ui/use-toast"
 import { format } from "date-fns"
+import { Heading } from "@chakra-ui/react"
 
 type SearchQuery = {
     id: number
@@ -97,56 +98,60 @@ export const SearchQueries: React.FC = () => {
     }
 
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                    <span>Saved Searches</span>
-                    <Button variant="outline" size="sm">
-                        <Plus className="w-4 h-4 mr-2" />
-                        New Search
-                    </Button>
-                </CardTitle>
-            </CardHeader>
-            <CardContent>
-                <div className="space-y-4">
-                    {queries?.map((query) => (
-                        <div
-                            key={query.id}
-                            className="flex items-center justify-between p-4 border rounded-lg"
-                        >
-                            <div>
-                                <h3 className="font-medium">{query.title}</h3>
-                                <p className="text-sm text-muted-foreground">
-                                    {query.location}
-                                </p>
-                                {query.lastRun && (
-                                    <p className="text-xs text-muted-foreground mt-1">
-                                        Last run: {format(new Date(query.lastRun), "MMM d, yyyy")}
+        <div>
+            <Heading as="h2" size="6xl" mb={8} textAlign="center">Saved Searches</Heading>
+            <Card className='justify-center items-center'>
+                <CardHeader>
+                    <CardTitle className="flex items-center justify-between">
+                        <span>Saved Searches</span>
+                        <Button variant="outline" size="sm">
+                            <Plus className="w-4 h-4 mr-2" />
+                            New Search
+                        </Button>
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-4">
+                        {queries?.map((query) => (
+                            <div
+                                key={query.id}
+                                className="flex items-center justify-between p-4 border rounded-lg"
+                            >
+                                <div>
+                                    <h3 className="font-medium">{query.title}</h3>
+                                    <p className="text-sm text-muted-foreground">
+                                        {query.location}
                                     </p>
-                                )}
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                {query.schedule && (
+                                    {query.lastRun && (
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                            Last run: {format(new Date(query.lastRun), "MMM d, yyyy")}
+                                        </p>
+                                    )}
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    {query.schedule && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => executeMutation.mutate(query.id)}
+                                        >
+                                            <Clock className="w-4 h-4" />
+                                        </Button>
+                                    )}
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        onClick={() => executeMutation.mutate(query.id)}
+                                        onClick={() => deleteMutation.mutate(query.id)}
                                     >
-                                        <Clock className="w-4 h-4" />
+                                        <Trash2 className="w-4 h-4" />
                                     </Button>
-                                )}
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => deleteMutation.mutate(query.id)}
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                </Button>
+                                </div>
                             </div>
-                        </div>
-                    ))}
-                </div>
-            </CardContent>
-        </Card>
+                        ))}
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+
     )
 } 
