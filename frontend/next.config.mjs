@@ -1,12 +1,10 @@
    /** @type {import('next').NextConfig} */
    const nextConfig = {
     reactStrictMode: true,
-    // ...other config
-  }
-
-export default {  
   experimental: {
-    optimizePackageImports: ["@radix-ui/react-toast"],
+    optimizePackageImports: ['@radix-ui/react-toast'],
   },
-  ...nextConfig,
+  transpilePackages: ['@radix-ui/react-toast', '@radix-ui/react-dialog'],
 }
+
+export default nextConfig

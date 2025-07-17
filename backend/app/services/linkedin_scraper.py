@@ -300,6 +300,8 @@ class LinkedInScraper:
                 "source_url": source_url,
                 "is_active": True,
                 "posted_date": posted_date if posted_date else None,
+                "extracted_date": datetime.utcnow(),  # Add extraction timestamp
+                "applied": False,  # Default to not applied
             }
         except Exception as e:
             logger.error(f"Error extracting job data from card: {str(e)}", exc_info=True)

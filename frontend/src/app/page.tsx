@@ -1,32 +1,22 @@
-import { JobSearchForm } from "./components/JobSearchForm";
-import { JobList } from "./components/job-list";
-import { SearchQueries } from "./components/search-queries";
+"use client"
+
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
 
 export default function Home() {
+  const router = useRouter()
+
+  useEffect(() => {
+    // Redirect to dashboard immediately
+    router.push("/dashboard")
+  }, [router])
+
   return (
-    <main className="min-h-screen">
-      {/* Section 1: Job Search Form */}
-      <section className="bg-[#11212d] py-8">
-        <div className="container mx-auto px-4 max-w-4xl">
-          <JobSearchForm />
-        </div>
-      </section>
-
-      {/* Section 2: Saved Searches */}
-      <section className="bg-[#11212d] py-8">
-        <div className="container mx-auto px-4 max-w-6xl">
-          <div className="flex justify-center">
-            <div className="w-full max-w-md">
-              <SearchQueries />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Section 3: Job Listings - Full Width */}
-      <section className="w-full">
-        <JobList />
-      </section>
+    <main className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+        <p className="mt-4 text-gray-600">Redirecting to dashboard...</p>
+      </div>
     </main>
   );
 }

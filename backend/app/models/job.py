@@ -21,6 +21,8 @@ class JobListing(Base):
     source = Column(String(50), default="linkedin")  # linkedin, indeed, etc.
     is_active = Column(Boolean, default=True)
     job_metadata = Column(JSON)  # Additional metadata as JSON
+    applied = Column(Boolean, default=False)  # Track if job has been applied to
+    extracted_date = Column(DateTime, default=datetime.utcnow)  # When the job was scraped
     
     # Relationships
     search_results = relationship("SearchResult", back_populates="job_listing")
