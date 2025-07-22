@@ -43,10 +43,23 @@ class Settings(BaseSettings):
     MAX_RETRIES: int = 3
     REQUEST_TIMEOUT: int = 30
     
-    # LinkedIn Credentials
-    LINKEDIN_EMAIL: str
-    LINKEDIN_PASSWORD: str
-    LINKEDIN_COOKIE: str
+    # Job Aggregation APIs
+    RSS_APP_API_KEY: str = ""
+    INDEED_API_KEY: str = ""
+    
+    # Job Search Configuration
+    MAX_JOBS_PER_SEARCH: int = 500  # Increased to allow all deduplicated jobs
+    JOB_CACHE_TIMEOUT: int = 3600  # 1 hour
+    
+    # AI Configuration
+    OPENAPI_KEY: str = ""  # OpenAI API key
+    OPENAI_MODEL: str = "gpt-4o-mini"  # Cost-efficient model
+    OPENAI_MAX_TOKENS: int = 1000  # Token limit for responses
+    
+    # Legacy LinkedIn fields (now optional)
+    LINKEDIN_EMAIL: str = ""
+    LINKEDIN_PASSWORD: str = ""
+    LINKEDIN_COOKIE: str = ""
     
     # Security
     SECRET_KEY: str = "your-secret-key-here"  # Change in production

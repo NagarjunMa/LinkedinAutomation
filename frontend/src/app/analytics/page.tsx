@@ -17,7 +17,6 @@ import {
     BarChart3Icon,
     MapPinIcon,
     BrainIcon,
-    SearchIcon,
     TargetIcon,
     GraduationCapIcon,
     DollarSignIcon,
@@ -33,7 +32,9 @@ const safeRender = (value: any): string => {
     if (typeof value === 'object') {
         // Handle salary range objects
         if (value.min !== undefined && value.max !== undefined) {
-            return `$${value.min}k - $${value.max}k`
+            const minK = Math.round(value.min / 1000)
+            const maxK = Math.round(value.max / 1000)
+            return `$${minK}k - $${maxK}k`
         }
         // Handle other objects by stringifying
         return JSON.stringify(value)
@@ -47,7 +48,6 @@ interface AnalyticsData {
     skills: any
     recommendations: any
     job_matches: any
-    search_queries: any
     last_updated: string
 }
 
@@ -115,7 +115,6 @@ export default function AnalyticsPage() {
     const skills = analyticsData?.skills
     const recommendations = analyticsData?.recommendations
     const jobMatches = analyticsData?.job_matches
-    const searchQueries = analyticsData?.search_queries
 
     return (
         <div className="container mx-auto px-4 py-8">
@@ -183,9 +182,9 @@ export default function AnalyticsPage() {
                                 <BarChart3Icon className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">{executive.total_jobs}</div>
+                                <div className="text-2xl font-bold">{executive.total_jobs_found}</div>
                                 <p className="text-xs text-muted-foreground">
-                                    {executive.new_jobs_7d} new in last 7 days
+                                    {executive.period_summary?.jobs_found || 0} new in last 30 days
                                 </p>
                             </CardContent>
                         </Card>
@@ -198,7 +197,7 @@ export default function AnalyticsPage() {
                             <CardContent>
                                 <div className="text-2xl font-bold">{executive.total_applications}</div>
                                 <p className="text-xs text-muted-foreground">
-                                    {typeof executive.conversion_rate === 'number' ? executive.conversion_rate : 0}% conversion rate
+                                    {typeof executive.response_rate === 'number' ? executive.response_rate : 0}% response rate
                                 </p>
                             </CardContent>
                         </Card>
@@ -224,9 +223,11 @@ export default function AnalyticsPage() {
                                 <MapPinIcon className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-lg font-bold">{executive.top_location}</div>
+                                <div className="text-lg font-bold">
+                                    {market?.location_analysis?.[0]?.city || "N/A"}
+                                </div>
                                 <p className="text-xs text-muted-foreground">
-                                    {executive.location_job_count} jobs available
+                                    {market?.location_analysis?.[0]?.job_count || 0} jobs available
                                 </p>
                             </CardContent>
                         </Card>
@@ -235,11 +236,10 @@ export default function AnalyticsPage() {
 
                 {/* Analytics Tabs */}
                 <Tabs defaultValue="overview" className="space-y-4">
-                    <TabsList className="grid w-full grid-cols-6">
+                    <TabsList className="grid w-full grid-cols-5">
                         <TabsTrigger value="overview">Overview</TabsTrigger>
                         <TabsTrigger value="market">Market</TabsTrigger>
                         <TabsTrigger value="skills">Skills</TabsTrigger>
-                        <TabsTrigger value="search">Search</TabsTrigger>
                         <TabsTrigger value="predictions">Predictions</TabsTrigger>
                         <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
                     </TabsList>
@@ -320,9 +320,9 @@ export default function AnalyticsPage() {
                                         <div className="space-y-3">
                                             {market.tech_stack_trends?.slice(0, 5).map((tech: any, index: number) => (
                                                 <div key={index} className="flex items-center justify-between">
-                                                    <span className="font-medium">{tech.technology}</span>
+                                                    <span className="font-medium">{tech.skill}</span>
                                                     <div className="flex items-center gap-2">
-                                                        <Badge variant="outline">{tech.job_count} jobs</Badge>
+                                                        <Badge variant="outline">{tech.demand} jobs</Badge>
                                                         <Badge variant={tech.growth > 0 ? "default" : "secondary"}>
                                                             {tech.growth > 0 ? '+' : ''}{tech.growth}%
                                                         </Badge>
@@ -344,11 +344,11 @@ export default function AnalyticsPage() {
                                         <div className="space-y-3">
                                             {market.location_analysis?.slice(0, 5).map((location: any, index: number) => (
                                                 <div key={index} className="flex items-center justify-between">
-                                                    <span className="font-medium">{location.location}</span>
+                                                    <span className="font-medium">{location.city}</span>
                                                     <div className="flex items-center gap-2">
                                                         <Badge variant="outline">{location.job_count} jobs</Badge>
                                                         <Badge variant="secondary">
-                                                            {safeRender(location.avg_salary)}
+                                                            {location.trend}
                                                         </Badge>
                                                     </div>
                                                 </div>
@@ -371,7 +371,7 @@ export default function AnalyticsPage() {
                                                     <span className="font-medium">{company.company}</span>
                                                     <div className="flex items-center gap-2">
                                                         <Badge variant="outline">{company.job_count} jobs</Badge>
-                                                        <Badge variant="secondary">{company.hiring_rate}% active</Badge>
+                                                        <Badge variant="secondary">{company.hiring_velocity}</Badge>
                                                     </div>
                                                 </div>
                                             ))}
@@ -387,24 +387,15 @@ export default function AnalyticsPage() {
                                         <div className="space-y-2 text-sm">
                                             <div>
                                                 <span className="font-medium">Hottest Skills: </span>
-                                                {Array.isArray(market.market_summary?.hottest_skills)
-                                                    ? market.market_summary.hottest_skills.join(", ")
-                                                    : market.market_summary?.hottest_skills || "N/A"
-                                                }
+                                                {market.tech_stack_trends?.slice(0, 3).map((t: any) => t.skill).join(", ") || "N/A"}
                                             </div>
                                             <div>
                                                 <span className="font-medium">Growing Locations: </span>
-                                                {Array.isArray(market.market_summary?.growing_locations)
-                                                    ? market.market_summary.growing_locations.join(", ")
-                                                    : market.market_summary?.growing_locations || "N/A"
-                                                }
+                                                {market.location_analysis?.slice(0, 3).map((l: any) => l.city).join(", ") || "N/A"}
                                             </div>
                                             <div>
                                                 <span className="font-medium">Best Timing: </span>
-                                                {typeof market.timing_insights?.best_time === 'object'
-                                                    ? JSON.stringify(market.timing_insights.best_time)
-                                                    : market.timing_insights?.best_time || "N/A"
-                                                }
+                                                {market.timing_insights?.best_time || "Tuesday 0:00"}
                                             </div>
                                         </div>
                                     </CardContent>
@@ -426,13 +417,13 @@ export default function AnalyticsPage() {
                                     </CardHeader>
                                     <CardContent>
                                         <div className="space-y-3">
-                                            {skills.skills_demand?.slice(0, 8).map((skill: any, index: number) => (
+                                            {skills.in_demand_skills?.slice(0, 8).map((skill: any, index: number) => (
                                                 <div key={index} className="flex items-center justify-between">
                                                     <span className="font-medium">{skill.skill}</span>
                                                     <div className="flex items-center gap-2">
-                                                        <Badge variant="outline">{skill.job_count} jobs</Badge>
-                                                        <Badge variant={skill.market_score > 70 ? "default" : "secondary"}>
-                                                            {skill.market_score} score
+                                                        <Badge variant="outline">{skill.demand} jobs</Badge>
+                                                        <Badge variant={skill.demand > 30 ? "default" : "secondary"}>
+                                                            {skill.growth_rate > 0 ? `+${(skill.growth_rate * 100).toFixed(1)}%` : 'stable'}
                                                         </Badge>
                                                     </div>
                                                 </div>
@@ -478,64 +469,7 @@ export default function AnalyticsPage() {
                         )}
                     </TabsContent>
 
-                    {/* Search Performance Tab */}
-                    <TabsContent value="search" className="space-y-4">
-                        {searchQueries && (
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle className="flex items-center gap-2">
-                                            <SearchIcon className="h-5 w-5" />
-                                            Search Performance
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="space-y-4">
-                                            <div>
-                                                <div className="flex justify-between text-sm">
-                                                    <span>Avg Conversion Rate</span>
-                                                    <span>{searchQueries.summary?.avg_conversion_rate || 0}%</span>
-                                                </div>
-                                                <Progress value={searchQueries.summary?.avg_conversion_rate || 0} className="mt-1" />
-                                            </div>
-                                            <div className="space-y-2 text-sm">
-                                                <div className="flex justify-between">
-                                                    <span>Total Queries</span>
-                                                    <span className="font-medium">{searchQueries.summary?.total_queries || 0}</span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span>Active Queries</span>
-                                                    <span className="font-medium">{searchQueries.summary?.active_queries || 0}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
 
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>Top Performing Queries</CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="space-y-3">
-                                            {searchQueries.top_queries?.slice(0, 5).map((query: any, index: number) => (
-                                                <div key={index} className="flex items-center justify-between">
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="font-medium truncate">{query.keywords}</p>
-                                                        <p className="text-xs text-muted-foreground">{query.location}</p>
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <Badge variant="outline">{query.results_count} results</Badge>
-                                                        <Badge variant="secondary">{query.conversion_rate}%</Badge>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            </div>
-                        )}
-                    </TabsContent>
 
                     {/* Job Predictions Tab */}
                     <TabsContent value="predictions" className="space-y-4">

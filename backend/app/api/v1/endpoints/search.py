@@ -3,8 +3,8 @@ from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.job import SearchQuery, SearchResult
-from app.schemas.search import SearchQueryCreate, SearchQueryResponse, SearchResultResponse
-from app.services.linkedin_scraper import LinkedInScraper
+from app.schemas.search import SearchQueryCreate, SearchQueryUpdate, SearchQueryResponse, SearchResultResponse
+# LinkedIn scraper removed - using job aggregator in tasks instead
 from app.core.celery_app import celery_app
 from app.utils.logger import logger
 
@@ -48,6 +48,49 @@ async def get_search_query(
     if not query:
         raise HTTPException(status_code=404, detail="Search query not found")
     return query
+
+@router.put("/{query_id}", response_model=SearchQueryResponse)
+async def update_search_query(
+    query_id: int,
+    query_update: SearchQueryUpdate,
+    db: Session = Depends(get_db)
+):
+    """
+    Update a search query
+    """
+    query = db.query(SearchQuery).filter(SearchQuery.id == query_id).first()
+    if not query:
+        raise HTTPException(status_code=404, detail="Search query not found")
+    
+    # Update fields that were provided
+    update_data = query_update.dict(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(query, field, value)
+    
+    db.commit()
+    db.refresh(query)
+    return query
+
+@router.delete("/{query_id}")
+async def delete_search_query(
+    query_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Delete a search query
+    """
+    query = db.query(SearchQuery).filter(SearchQuery.id == query_id).first()
+    if not query:
+        raise HTTPException(status_code=404, detail="Search query not found")
+    
+    # Delete associated results first
+    db.query(SearchResult).filter(SearchResult.search_query_id == query_id).delete()
+    
+    # Delete the query
+    db.delete(query)
+    db.commit()
+    
+    return {"message": "Search query deleted successfully"}
 
 @router.post("/{query_id}/execute", response_model=List[SearchResultResponse])
 async def execute_search(
@@ -114,42 +157,10 @@ async def schedule_search(
 
 async def execute_search_task(query_id: int):
     """
-    Background task to execute a search query
+    Background task to execute a search query using job aggregator
+    Note: This function is deprecated - use app.tasks.search_tasks.execute_search_task instead
     """
-    from app.db.session import SessionLocal
-    
-    db = SessionLocal()
-    try:
-        query = db.query(SearchQuery).filter(SearchQuery.id == query_id).first()
-        if not query:
-            return
-            
-        # Create scraper instance
-        scraper = LinkedInScraper()
-        await scraper.initialize()
-        
-        try:
-            # Execute search
-            jobs = await scraper.search_jobs(query.__dict__)
-            
-            # Save results
-            for job in jobs:
-                result = SearchResult(
-                    search_query_id=query_id,
-                    job_listing=job,
-                    match_score=100  # TODO: Implement proper matching
-                )
-                db.add(result)
-                
-            db.commit()
-            
-        finally:
-            # Don't close the browser here, let it persist
-            pass
-            
-    except Exception as e:
-        logger.error(f"Error executing search query {query_id}: {str(e)}")
-        db.rollback()
-        
-    finally:
-        db.close() 
+    # This function is now handled by the celery task in app.tasks.search_tasks
+    # Redirect to the proper task
+    from app.tasks.search_tasks import execute_search_task as celery_execute_search_task
+    celery_execute_search_task(query_id) 

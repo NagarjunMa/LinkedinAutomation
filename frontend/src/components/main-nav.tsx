@@ -29,12 +29,7 @@ export function MainNav({
             >
                 Analytics
             </Link>
-            <Link
-                href="/dashboard/searches"
-                className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
-            >
-                Searches
-            </Link>
+
             <Link
                 href="/dashboard/settings"
                 className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"

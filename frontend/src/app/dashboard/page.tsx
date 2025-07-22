@@ -20,11 +20,10 @@ import { CalendarDateRangePicker } from "@/components/date-range-picker"
 import { MainNav } from "@/components/main-nav"
 import { Overview } from "@/components/overview"
 import { RecentSales } from "@/components/recent-sales"
-import { Search } from "@/components/search"
 import TeamSwitcher from "@/components/team-switcher"
 import { UserNav } from "@/components/user-nav"
 import { JobsTab } from "@/components/jobs-tab"
-import { SearchAnalytics } from "@/components/search-analytics"
+import { ProfileTab } from "@/components/profile-tab"
 
 export default function DashboardPage() {
     const { stats, loading, error, refreshData } = useDashboard()
@@ -64,7 +63,6 @@ export default function DashboardPage() {
                         <TeamSwitcher />
                         <MainNav className="mx-6" />
                         <div className="ml-auto flex items-center space-x-4">
-                            <Search />
                             <UserNav />
                         </div>
                     </div>
@@ -81,9 +79,7 @@ export default function DashboardPage() {
                         <TabsList>
                             <TabsTrigger value="overview">Overview</TabsTrigger>
                             <TabsTrigger value="jobs">Jobs</TabsTrigger>
-                            <TabsTrigger value="search">
-                                Search Queries
-                            </TabsTrigger>
+                            <TabsTrigger value="profile">AI Profile</TabsTrigger>
                         </TabsList>
                         <TabsContent value="overview" className="space-y-4">
                             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -210,8 +206,8 @@ export default function DashboardPage() {
                         <TabsContent value="jobs">
                             <JobsTab />
                         </TabsContent>
-                        <TabsContent value="search">
-                            <SearchAnalytics />
+                        <TabsContent value="profile">
+                            <ProfileTab userId="demo_user" />
                         </TabsContent>
                     </Tabs>
                 </div>

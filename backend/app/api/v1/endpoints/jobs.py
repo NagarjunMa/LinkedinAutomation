@@ -1,5 +1,5 @@
 from typing import List, Optional, Dict
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Form
 from sqlalchemy.orm import Session
 from sqlalchemy import func, cast, Date, Integer, extract, desc
 from app.db.session import get_db
@@ -12,8 +12,12 @@ from app.schemas.job import (
     TimeRange,
     RecentApplication
 )
-from app.services.linkedin_scraper import LinkedInScraper
+# LinkedIn scraper removed - using job aggregator instead
 from datetime import datetime, timedelta
+from app.models.job import JobApplication
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -247,15 +251,17 @@ async def scrape_jobs(
     """
     Scrape jobs from LinkedIn based on search parameters
     """
-    async with LinkedInScraper() as scraper:
-        jobs = await scraper.search_jobs(query)
+    # from app.scrapers.linkedin_scraper import LinkedInScraper # This import is removed as per the new_code
+    # async with LinkedInScraper() as scraper:
+    #     jobs = await scraper.search_jobs(query)
         
-        # Save jobs to database
-        for job in jobs:
-            db.add(job)
-        db.commit()
+    #     # Save jobs to database
+    #     for job in jobs:
+    #         db.add(job)
+    #     db.commit()
         
-        return jobs 
+    #     return jobs 
+    raise HTTPException(status_code=501, detail="Scraping functionality is not yet implemented")
 
 @router.put("/{job_id}/status", response_model=JobListingResponse)
 async def update_job_status(
@@ -276,3 +282,146 @@ async def update_job_status(
     db.commit()
     db.refresh(db_job)
     return db_job 
+
+@router.post("/applications/{job_id}/apply")
+async def apply_to_job(
+    job_id: int,
+    user_id: str = Form(...),
+    application_source: str = Form("direct"),
+    notes: str = Form(""),
+    db: Session = Depends(get_db)
+):
+    """Track when user applies to a job"""
+    try:
+        # Check if already applied
+        existing = db.query(JobApplication).filter(
+            JobApplication.user_id == user_id,
+            JobApplication.job_id == job_id
+        ).first()
+        
+        if existing:
+            if existing.application_status == "applied":
+                return {"message": "Already applied to this job", "application_id": existing.id}
+            else:
+                # Update to applied status
+                existing.application_status = "applied"
+                existing.application_date = datetime.utcnow()
+                existing.application_source = application_source
+                existing.user_notes = notes
+                existing.updated_at = datetime.utcnow()
+        else:
+            # Create new application record
+            application = JobApplication(
+                user_id=user_id,
+                job_id=job_id,
+                application_status="applied",
+                application_source=application_source,
+                user_notes=notes
+            )
+            db.add(application)
+            existing = application
+        
+        db.commit()
+        db.refresh(existing)
+        
+        return {
+            "message": "Application tracked successfully",
+            "application_id": existing.id,
+            "status": "applied"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error tracking job application: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Error tracking application")
+
+@router.get("/applications/{user_id}")
+async def get_user_applications(
+    user_id: str,
+    status: str = None,
+    limit: int = 50,
+    db: Session = Depends(get_db)
+):
+    """Get user's job applications"""
+    try:
+        query = db.query(JobApplication, JobListing).join(
+            JobListing, JobApplication.job_id == JobListing.id
+        ).filter(JobApplication.user_id == user_id)
+        
+        if status:
+            query = query.filter(JobApplication.application_status == status)
+        
+        applications = query.order_by(JobApplication.application_date.desc()).limit(limit).all()
+        
+        results = []
+        for app, job in applications:
+            results.append({
+                "application_id": app.id,
+                "job_id": app.job_id,
+                "job_title": job.title,
+                "company": job.company,
+                "application_status": app.application_status,
+                "application_date": app.application_date,
+                "application_source": app.application_source,
+                "user_notes": app.user_notes,
+                "follow_up_date": app.follow_up_date,
+                "company_response": app.company_response,
+                "response_date": app.response_date
+            })
+        
+        return {
+            "applications": results,
+            "total": len(results)
+        }
+        
+    except Exception as e:
+        logger.error(f"Error fetching applications: {e}")
+        raise HTTPException(status_code=500, detail="Error fetching applications")
+
+@router.put("/applications/{application_id}/status")
+async def update_application_status(
+    application_id: int,
+    status: str = Form(...),  # interested, applied, interviewed, rejected, hired
+    notes: str = Form(""),
+    follow_up_date: str = Form(""),  # YYYY-MM-DD format
+    db: Session = Depends(get_db)
+):
+    """Update application status"""
+    try:
+        application = db.query(JobApplication).filter(JobApplication.id == application_id).first()
+        
+        if not application:
+            raise HTTPException(status_code=404, detail="Application not found")
+        
+        # Update status
+        application.application_status = status
+        application.updated_at = datetime.utcnow()
+        
+        if notes:
+            application.user_notes = notes
+            
+        if follow_up_date:
+            from datetime import datetime as dt
+            application.follow_up_date = dt.strptime(follow_up_date, "%Y-%m-%d").date()
+        
+        # Set response tracking based on status
+        if status in ["interviewed", "rejected", "hired"]:
+            application.company_response = True
+            if not application.response_date:
+                application.response_date = datetime.utcnow()
+        
+        db.commit()
+        db.refresh(application)
+        
+        return {
+            "message": "Application status updated",
+            "application_id": application.id,
+            "new_status": status
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating application status: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Error updating application") 

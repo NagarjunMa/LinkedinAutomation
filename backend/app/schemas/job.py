@@ -75,6 +75,6 @@ class RecentApplication(BaseModel):
     location: str
     extracted_date: datetime
     source_url: Optional[str] = None
-    
+
     class Config:
         from_attributes = True
