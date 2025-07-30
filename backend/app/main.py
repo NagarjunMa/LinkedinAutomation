@@ -8,6 +8,7 @@ from app.core.config import settings
 from app.api.v1.api import api_router
 from app.core.logging import setup_logging
 from app.models.job import Base
+from app.models.email_models import UserGmailConnection, EmailEvent, EmailSyncLog  # Import email models
 from app.db.session import engine
 
 # Setup logging

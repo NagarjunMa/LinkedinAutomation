@@ -5,6 +5,89 @@ import type { JobFilters } from '../types/job';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
+// Email Agent API endpoints
+export const emailAgentApi = {
+    // Get configuration status
+    getConfigStatus: async () => {
+        const response = await fetch(`${API_BASE_URL}/api/v1/email-agent/config/status`);
+        if (!response.ok) throw new Error('Failed to get config status');
+        return response.json();
+    },
+
+    // Connect Gmail
+    connectGmail: async (userId: string, userEmail?: string) => {
+        console.log('Connecting Gmail...', userId, userEmail)
+        const response = await fetch(`${API_BASE_URL}/api/v1/email-agent/connect`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: userId, user_email: userEmail })
+        });
+        console.log('Response:', response)
+        if (!response.ok) throw new Error('Failed to connect Gmail');
+        return response.json();
+    },
+
+    // Get Gmail status
+    getGmailStatus: async (userId: string) => {
+        const response = await fetch(`${API_BASE_URL}/api/v1/email-agent/status/${userId}`);
+        if (!response.ok) throw new Error('Failed to get Gmail status');
+        return response.json();
+    },
+
+    // Process emails
+    processEmails: async (userId: string, userEmail?: string) => {
+        const body: any = {}
+        if (userEmail) {
+            body.user_email = userEmail
+        }
+
+        const response = await fetch(`${API_BASE_URL}/api/v1/email-agent/process/${userId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        if (!response.ok) throw new Error('Failed to process emails');
+        return response.json();
+    },
+
+    // Disconnect Gmail
+    disconnectGmail: async (userId: string) => {
+        const response = await fetch(`${API_BASE_URL}/api/v1/email-agent/disconnect/${userId}`, {
+            method: 'DELETE'
+        });
+        if (!response.ok) throw new Error('Failed to disconnect Gmail');
+        return response.json();
+    },
+
+    // Get email summary
+    getEmailSummary: async (userId: string) => {
+        const response = await fetch(`${API_BASE_URL}/api/v1/email-agent/summary/${userId}`);
+        if (!response.ok) throw new Error('Failed to get email summary');
+        return response.json();
+    },
+
+    // Get email events
+    getEmailEvents: async (userId: string, limit = 50, offset = 0, emailType?: string) => {
+        const params = new URLSearchParams();
+        if (limit) params.append('limit', limit.toString());
+        if (offset) params.append('offset', offset.toString());
+        if (emailType) params.append('email_type', emailType);
+
+        const response = await fetch(`${API_BASE_URL}/api/v1/email-agent/events/${userId}?${params}`);
+        if (!response.ok) throw new Error('Failed to get email events');
+        return response.json();
+    },
+
+    // Mark event as reviewed
+    markEventReviewed: async (eventId: number) => {
+        const response = await fetch(`${API_BASE_URL}/api/v1/email-agent/events/${eventId}/review`, {
+            method: 'POST'
+        });
+        if (!response.ok) throw new Error('Failed to mark event as reviewed');
+        return response.json();
+    }
+};
+
 export async function fetchJobs(filters?: JobFilters) {
     // Build query parameters
     const queryParams = new URLSearchParams();

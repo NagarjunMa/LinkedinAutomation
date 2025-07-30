@@ -65,8 +65,25 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "your-secret-key-here"  # Change in production
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8  # 8 days
     
+    # Email Agent Configuration - Google OAuth
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+    GOOGLE_REDIRECT_URI: str = "http://localhost:8000/api/v1/email-agent/oauth/callback"
+    GOOGLE_SCOPES: List[str] = [
+        "openid",
+        "https://www.googleapis.com/auth/gmail.readonly",
+        "https://www.googleapis.com/auth/userinfo.email"
+    ]
+    EMAIL_CLASSIFICATION_MODEL: str = "gpt-4o-mini"
+    EMAIL_SYNC_FREQUENCY_MINUTES: int = 15
+    EMAIL_CONFIDENCE_THRESHOLD: float = 0.8
+    AUTO_UPDATE_THRESHOLD: float = 0.85
+    DEBUG_EMAIL_PROCESSING: bool = True
+    LOG_LEVEL: str = "DEBUG"
+    
     class Config:
         case_sensitive = True
         env_file = ".env"
+        extra = "ignore"  # Allow extra fields during migration
 
 settings = Settings() 

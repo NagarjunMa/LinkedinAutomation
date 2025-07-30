@@ -78,10 +78,11 @@ export function PreferencesForm({ userId, initialData, onSave }: PreferencesForm
     const { toast } = useToast()
 
     const addToArray = (field: keyof UserPreferences, value: string, inputField: string) => {
-        if (value.trim() && !preferences[field].includes(value.trim())) {
+        const fieldValue = preferences[field] as string[]
+        if (value.trim() && fieldValue && !fieldValue.includes(value.trim())) {
             setPreferences(prev => ({
                 ...prev,
-                [field]: [...(prev[field] as string[]), value.trim()]
+                [field]: [...fieldValue, value.trim()]
             }))
             setInputValues(prev => ({ ...prev, [inputField]: "" }))
         }

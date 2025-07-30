@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import Image from "next/image"
 import { useDashboard } from "../contexts/dashboard-context"
 import { Button } from "@/components/ui/button"
@@ -24,9 +25,24 @@ import TeamSwitcher from "@/components/team-switcher"
 import { UserNav } from "@/components/user-nav"
 import { JobsTab } from "@/components/jobs-tab"
 import { ProfileTab } from "@/components/profile-tab"
+import JobURLExtractor from "@/components/job-url-extractor"
+import { PageTransitionLoading } from "@/components/ui/loading-fill-text"
 
 export default function DashboardPage() {
     const { stats, loading, error, refreshData } = useDashboard()
+    const [activeTab, setActiveTab] = useState("overview")
+    const [tabLoading, setTabLoading] = useState(false)
+
+    const handleTabChange = (value: string) => {
+        if (value !== activeTab) {
+            setTabLoading(true)
+            // Simulate loading delay for smooth transition
+            setTimeout(() => {
+                setActiveTab(value)
+                setTabLoading(false)
+            }, 1500) // Increased to 1.5 seconds to better show the loading effect
+        }
+    }
 
     if (error) {
         return (
@@ -41,6 +57,7 @@ export default function DashboardPage() {
 
     return (
         <>
+            {tabLoading && <PageTransitionLoading />}
             <div className="md:hidden">
                 <Image
                     src="/examples/dashboard-light.png"
@@ -75,10 +92,11 @@ export default function DashboardPage() {
                             <Button onClick={refreshData}>Refresh</Button>
                         </div>
                     </div>
-                    <Tabs defaultValue="overview" className="space-y-4">
+                    <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
                         <TabsList>
                             <TabsTrigger value="overview">Overview</TabsTrigger>
                             <TabsTrigger value="jobs">Jobs</TabsTrigger>
+                            <TabsTrigger value="extract">Extract Job URL</TabsTrigger>
                             <TabsTrigger value="profile">AI Profile</TabsTrigger>
                         </TabsList>
                         <TabsContent value="overview" className="space-y-4">
@@ -205,6 +223,23 @@ export default function DashboardPage() {
                         </TabsContent>
                         <TabsContent value="jobs">
                             <JobsTab />
+                        </TabsContent>
+                        <TabsContent value="extract">
+                            <div className="space-y-6">
+                                <div>
+                                    <h3 className="text-lg font-medium">Extract Job from URL</h3>
+                                    <p className="text-sm text-muted-foreground">
+                                        Paste any job URL to automatically extract job details and track your application.
+                                    </p>
+                                </div>
+                                <JobURLExtractor
+                                    userId="demo_user"
+                                    onJobExtracted={() => {
+                                        // Optionally refresh data or show success message
+                                        refreshData()
+                                    }}
+                                />
+                            </div>
                         </TabsContent>
                         <TabsContent value="profile">
                             <ProfileTab userId="demo_user" />

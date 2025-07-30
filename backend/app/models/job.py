@@ -139,7 +139,7 @@ class SearchResult(Base):
     
     # Relationships
     search_query = relationship("SearchQuery", back_populates="search_results")
-    job_listing = relationship("JobListing", back_populates="search_results") 
+    job_listing = relationship("JobListing", back_populates="search_results")
 
 # =====================================================
 # AI-POWERED JOB MATCHING SYSTEM MODELS
@@ -318,6 +318,10 @@ class JobApplication(Base):
     # External Application Tracking
     external_application_id = Column(String(255))  # ID from external job board
     application_url = Column(String(1000))  # Direct application link
+    source_url = Column(String(1000))  # Original URL if extracted from web
+    
+    # URL Extraction Metadata (for AI-extracted jobs)
+    extraction_metadata = Column(JSON)  # Store extraction confidence, method, etc.
     
     # User Notes and Follow-up
     user_notes = Column(Text)

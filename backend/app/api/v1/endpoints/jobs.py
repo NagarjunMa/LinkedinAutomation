@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Form
 from sqlalchemy.orm import Session
 from sqlalchemy import func, cast, Date, Integer, extract, desc
 from app.db.session import get_db
-from app.models.job import JobListing
+from app.models.job import JobListing, JobApplication
 from app.schemas.job import (
     JobListingCreate, 
     JobListingResponse, 
@@ -164,7 +164,7 @@ async def get_job_stats(
         "time_range": time_range.value if not custom_days else f"last_{custom_days}_days"
     } 
 
-@router.get("/recent-applications", response_model=List[RecentApplication])
+@router.get("/recent-applications")
 async def get_recent_applications(
     limit: int = Query(default=5, ge=1, le=50),
     db: Session = Depends(get_db)
@@ -172,13 +172,29 @@ async def get_recent_applications(
     """
     Get recent job applications, ordered by application date
     """
-    recent_apps = db.query(JobListing).filter(
-        JobListing.applied == True
+    # Query JobApplication table to get actual applications with job details
+    recent_apps = db.query(JobApplication, JobListing).join(
+        JobListing, JobApplication.job_id == JobListing.id
     ).order_by(
-        desc(JobListing.extracted_date)
+        desc(JobApplication.application_date)
     ).limit(limit).all()
     
-    return recent_apps
+    # Format response to match frontend expectations
+    result = []
+    for app, job in recent_apps:
+        result.append({
+            "id": job.id,
+            "title": job.title,
+            "company": job.company,
+            "location": job.location or "Remote",
+            "applied_date": app.application_date.isoformat() if app.application_date else None,
+            "extracted_date": job.extracted_date.isoformat() if job.extracted_date else None,
+            "status": app.application_status.title() if app.application_status else "Applied",
+            "source_url": job.source_url,
+            "application_source": app.application_source
+        })
+    
+    return result
 
 @router.post("/", response_model=JobListingResponse)
 async def create_job(
@@ -339,39 +355,66 @@ async def apply_to_job(
 async def get_user_applications(
     user_id: str,
     status: str = None,
-    limit: int = 50,
+    page: int = 1,
+    limit: int = 10,
     db: Session = Depends(get_db)
 ):
-    """Get user's job applications"""
+    """Get user's applied jobs (jobs with applied = True) with pagination"""
     try:
-        query = db.query(JobApplication, JobListing).join(
-            JobListing, JobApplication.job_id == JobListing.id
-        ).filter(JobApplication.user_id == user_id)
+        # Query jobs where applied = True (real applied jobs from the system)
+        query = db.query(JobListing).filter(JobListing.applied == True)
         
-        if status:
-            query = query.filter(JobApplication.application_status == status)
+        # Get total count for pagination
+        total_count = query.count()
         
-        applications = query.order_by(JobApplication.application_date.desc()).limit(limit).all()
+        # Apply pagination
+        offset = (page - 1) * limit
+        applied_jobs = query.order_by(JobListing.extracted_date.desc()).offset(offset).limit(limit).all()
         
+        # Prepare response to match frontend expectations
         results = []
-        for app, job in applications:
+        for job in applied_jobs:
             results.append({
-                "application_id": app.id,
-                "job_id": app.job_id,
-                "job_title": job.title,
-                "company": job.company,
-                "application_status": app.application_status,
-                "application_date": app.application_date,
-                "application_source": app.application_source,
-                "user_notes": app.user_notes,
-                "follow_up_date": app.follow_up_date,
-                "company_response": app.company_response,
-                "response_date": app.response_date
+                "id": job.id,  # Using job ID as application ID
+                "user_id": user_id,
+                "job_id": job.id,
+                "application_status": "applied",  # Since applied = True
+                "application_source": job.source or "dashboard",
+                "application_date": job.applied_date.isoformat() if job.applied_date else job.extracted_date.isoformat(),
+                "source_url": job.source_url,
+                "user_notes": f"Applied to {job.company} position",
+                "extraction_metadata": {
+                    "extraction_confidence": 0.9,  # High confidence for real applied jobs
+                    "extraction_method": job.source or "dashboard"
+                },
+                "follow_up_date": None,
+                "company_response": False,
+                "response_date": None,
+                "job_listing": {
+                    "id": job.id,
+                    "title": job.title,
+                    "company": job.company,
+                    "location": job.location,
+                    "description": job.description,
+                    "requirements": job.requirements,
+                    "job_type": job.job_type,
+                    "experience_level": job.experience_level,
+                    "salary_range": job.salary_range,
+                    "skills": job.skills,
+                    "application_url": job.application_url,
+                    "source": job.source,
+                    "source_url": job.source_url,
+                    "posted_date": job.posted_date.isoformat() if job.posted_date else None,
+                    "extracted_date": job.extracted_date.isoformat() if job.extracted_date else None,
+                }
             })
         
         return {
             "applications": results,
-            "total": len(results)
+            "total": total_count,
+            "page": page,
+            "limit": limit,
+            "total_pages": (total_count + limit - 1) // limit
         }
         
     except Exception as e:

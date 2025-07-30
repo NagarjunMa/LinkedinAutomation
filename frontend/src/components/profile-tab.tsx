@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ResumeUpload } from "./resume-upload"
 import { AIJobMatches } from "./ai-job-matches"
 import { PreferencesForm } from "./preferences-form"
+
 import { UserIcon, BrainIcon, TargetIcon, SettingsIcon } from "lucide-react"
 
 interface ParsedProfile {
@@ -67,11 +68,11 @@ export function ProfileTab({ userId }: ProfileTabProps) {
     const [currentProfile, setCurrentProfile] = useState<ParsedProfile | null>(null)
     const [activeTab, setActiveTab] = useState("upload")
 
-      const handleProfileUpdate = (profile: ParsedProfile) => {
-    setCurrentProfile(profile)
-    // Automatically switch to preferences tab after successful profile creation
-    setActiveTab("preferences")
-  }
+    const handleProfileUpdate = (profile: ParsedProfile) => {
+        setCurrentProfile(profile)
+        // Automatically switch to preferences tab after successful profile creation
+        setActiveTab("preferences")
+    }
 
     return (
         <div className="space-y-6">
