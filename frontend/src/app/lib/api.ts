@@ -88,7 +88,11 @@ export const emailAgentApi = {
     }
 };
 
-export async function fetchJobs(filters?: JobFilters) {
+export async function fetchJobs(filters?: JobFilters & { 
+    page?: number; 
+    limit?: number; 
+    applied?: boolean;
+}) {
     // Build query parameters
     const queryParams = new URLSearchParams();
     if (filters) {
@@ -100,6 +104,12 @@ export async function fetchJobs(filters?: JobFilters) {
             queryParams.append('to_date', filters.dateRange.to.toISOString());
         }
         if (filters.sortBy) queryParams.append('sort_by', filters.sortBy);
+        if (filters.page !== undefined) {
+            const skip = (filters.page - 1) * (filters.limit || 25);
+            queryParams.append('skip', skip.toString());
+        }
+        if (filters.limit) queryParams.append('limit', filters.limit.toString());
+        if (filters.applied !== undefined) queryParams.append('applied', filters.applied.toString());
     }
 
     const url = `${API_BASE_URL}/api/v1/jobs/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
@@ -123,7 +133,29 @@ export async function fetchJobs(filters?: JobFilters) {
         skills: job.skills || [],
         applied: job.applied || false,
         appliedAt: job.applied_date,
+        extracted_date: job.extracted_date,
     }));
+}
+
+export async function fetchJobCounts(filters?: JobFilters) {
+    // Build query parameters for counts
+    const queryParams = new URLSearchParams();
+    if (filters) {
+        if (filters.title) queryParams.append('title', filters.title);
+        if (filters.location) queryParams.append('location', filters.location);
+        if (filters.company) queryParams.append('company', filters.company);
+        if (filters.dateRange) {
+            queryParams.append('from_date', filters.dateRange.from.toISOString());
+            queryParams.append('to_date', filters.dateRange.to.toISOString());
+        }
+    }
+
+    const url = `${API_BASE_URL}/api/v1/jobs/counts${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+        throw new Error("Failed to fetch job counts");
+    }
+    return await response.json();
 }
 
 export async function fetchJobStats(timeRange: TimeRange = 'last_30_days'): Promise<JobStats> {

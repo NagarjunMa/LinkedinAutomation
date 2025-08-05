@@ -3,7 +3,7 @@ from app.core.celery_app import celery_app
 from app.services.job_aggregator import JobAggregator
 from app.services.job_scorer import job_scorer
 from app.db.session import SessionLocal
-from app.models.job import SearchQuery, SearchResult, JobListing, RSSFeedConfiguration, UserProfile
+from app.models.job import JobListing, RSSFeedConfiguration, UserProfile
 import logging
 import asyncio
 from datetime import datetime, timedelta
@@ -266,32 +266,7 @@ def generate_daily_digests():
 @shared_task
 def cleanup_old_job_scores():
     """
-    Clean up old job scores to keep database efficient
-    Removes scores older than 30 days for jobs that are no longer active
+    Clean up old job scores to keep database efficient - JobScore functionality disabled
     """
-    db = SessionLocal()
-    try:
-        from app.models.job import JobScore
-        
-        # Find old scores for inactive jobs
-        cutoff_date = datetime.utcnow() - timedelta(days=30)
-        
-        old_scores = db.query(JobScore).join(JobListing).filter(
-            JobScore.scored_at < cutoff_date,
-            JobListing.is_active == False
-        ).all()
-        
-        for score in old_scores:
-            db.delete(score)
-        
-        db.commit()
-        logger.info(f"Cleaned up {len(old_scores)} old job scores")
-        
-        return {"scores_cleaned": len(old_scores)}
-        
-    except Exception as e:
-        logger.error(f"Error cleaning up old job scores: {str(e)}")
-        db.rollback()
-        return {"error": str(e), "scores_cleaned": 0}
-    finally:
-        db.close() 
+    logger.info("Job score cleanup disabled - JobScore model removed")
+    return {"scores_cleaned": 0, "note": "JobScore functionality disabled"} 

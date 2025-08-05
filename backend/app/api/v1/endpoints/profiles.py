@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.models.job import UserProfile, JobScore
+from app.models.job import UserProfile
 from app.services.resume_parser import resume_parser
 from app.services.job_scorer import job_scorer
 from app.services.smart_job_scorer import smart_job_scorer

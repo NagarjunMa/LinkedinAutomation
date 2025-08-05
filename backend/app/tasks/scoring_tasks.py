@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.celery_app import celery_app
 from app.db.session import SessionLocal
-from app.models.job import JobListing, UserProfile, JobScore
+from app.models.job import JobListing, UserProfile
 from app.services.job_scorer import job_scorer
 from app.core.ai_service import ai_service
 
@@ -85,28 +85,10 @@ def update_user_job_scores(self, user_id: str, days_back: int = 7):
 @celery_app.task(name="cleanup_old_job_scores")
 def cleanup_old_job_scores():
     """
-    Clean up old job scores to maintain database performance
-    Runs daily via beat schedule
+    Clean up old job scores to maintain database performance - JobScore functionality disabled
     """
-    try:
-        db = SessionLocal()
-        
-        # Delete scores older than 90 days
-        cutoff_date = datetime.utcnow() - timedelta(days=90)
-        
-        deleted_count = db.query(JobScore).filter(
-            JobScore.scored_at < cutoff_date
-        ).delete()
-        
-        db.commit()
-        db.close()
-        
-        logger.info(f"Cleaned up {deleted_count} old job scores")
-        return {"deleted_scores": deleted_count}
-        
-    except Exception as e:
-        logger.error(f"Error cleaning up old scores: {e}")
-        raise
+    logger.info("Job score cleanup disabled - JobScore model removed")
+    return {"deleted_scores": 0, "note": "JobScore functionality disabled"}
 
 # =====================================================
 # ASYNC HELPER FUNCTIONS
@@ -302,57 +284,6 @@ async def _update_recent_scores_async(user_id: str, days_back: int, task=None):
         db.close()
 
 async def _score_single_job_async(profile_dict: Dict[str, Any], job: JobListing, user_id: str, db: Session):
-    """Score a single job against a user profile"""
-    try:
-        # Check if score already exists
-        existing_score = db.query(JobScore).filter(
-            JobScore.user_id == user_id,
-            JobScore.job_id == job.id
-        ).first()
-        
-        # Skip if recently scored (within 24 hours)
-        if existing_score and existing_score.scored_at > datetime.utcnow() - timedelta(hours=24):
-            return existing_score
-        
-        # Score the job
-        result = await ai_service.score_job_compatibility(
-            profile_dict,
-            job.description or "",
-            job.title,
-            job.requirements or ""
-        )
-        
-        if existing_score:
-            # Update existing score
-            existing_score.compatibility_score = result['compatibility_score']
-            existing_score.confidence_score = result.get('confidence_score', 0.0)
-            existing_score.ai_reasoning = result.get('reasoning', '')
-            existing_score.match_factors = result.get('match_factors', [])
-            existing_score.skills_match_score = result.get('skills_match_score', 0.0)
-            existing_score.experience_match_score = result.get('experience_match_score', 0.0)
-            existing_score.location_match_score = result.get('location_match_score', 0.0)
-            existing_score.scored_at = datetime.utcnow()
-        else:
-            # Create new score
-            job_score = JobScore(
-                user_id=user_id,
-                job_id=job.id,
-                compatibility_score=result['compatibility_score'],
-                confidence_score=result.get('confidence_score', 0.0),
-                ai_reasoning=result.get('reasoning', ''),
-                match_factors=result.get('match_factors', []),
-                skills_match_score=result.get('skills_match_score', 0.0),
-                experience_match_score=result.get('experience_match_score', 0.0),
-                location_match_score=result.get('location_match_score', 0.0),
-                salary_match_score=result.get('salary_match_score', 0.0),
-                culture_match_score=result.get('culture_match_score', 0.0)
-            )
-            db.add(job_score)
-        
-        db.commit()
-        return result
-        
-    except Exception as e:
-        logger.error(f"Error scoring job {job.id} for user {user_id}: {e}")
-        db.rollback()
-        raise 
+    """Score a single job against a user profile - JobScore functionality disabled"""
+    logger.info(f"Job scoring disabled for job {job.id} - JobScore model removed")
+    return None 

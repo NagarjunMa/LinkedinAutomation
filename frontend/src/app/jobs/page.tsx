@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { fetchJobs, updateJobStatus } from "@/app/lib/api"
+import { fetchJobs, fetchJobCounts, updateJobStatus } from "@/app/lib/api"
 import type { Job, JobFilters } from "../types/job"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -25,7 +25,9 @@ import {
     CardTitle,
 } from "@/components/ui/card"
 import { format, isValid, parseISO } from "date-fns"
-import { CalendarIcon, FilterIcon, RefreshCwIcon } from "lucide-react"
+import { CalendarIcon, FilterIcon, RefreshCwIcon, ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
+import { JobCleanupManager } from "@/components/job-cleanup-manager"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 // Job interface imported from types/job.ts
 
@@ -44,27 +46,38 @@ const formatDate = (dateString: string) => {
 export default function JobsPage() {
     const [jobs, setJobs] = useState<Job[]>([])
     const [loading, setLoading] = useState(true)
+    const [counts, setCounts] = useState({ total: 0, applied: 0, pending: 0 })
+    const [currentPage, setCurrentPage] = useState(1)
+    const [pageSize, setPageSize] = useState(25)
     const [filters, setFilters] = useState<JobFilters & { applicationStatus: string }>({
         sortBy: 'newest',
         applicationStatus: 'all'
     })
+    const [activeTab, setActiveTab] = useState("jobs")
     const { toast } = useToast()
 
     useEffect(() => {
         const loadJobs = async () => {
             try {
                 setLoading(true)
-                const data = await fetchJobs(filters)
 
-                // Filter by application status on frontend
-                let filteredData = data
-                if (filters.applicationStatus === 'applied') {
-                    filteredData = data.filter((job: Job) => job.applied)
-                } else if (filters.applicationStatus === 'not-applied') {
-                    filteredData = data.filter((job: Job) => !job.applied)
+                // Prepare filters for API
+                const apiFilters = {
+                    ...filters,
+                    page: currentPage,
+                    limit: pageSize,
+                    applied: filters.applicationStatus === 'applied' ? true :
+                        filters.applicationStatus === 'not-applied' ? false : undefined
                 }
 
-                setJobs(filteredData)
+                // Fetch jobs and counts in parallel
+                const [jobsData, countsData] = await Promise.all([
+                    fetchJobs(apiFilters),
+                    fetchJobCounts(filters)
+                ])
+
+                setJobs(jobsData)
+                setCounts(countsData)
             } catch (error) {
                 console.error('Failed to fetch jobs:', error)
                 toast({
@@ -77,10 +90,11 @@ export default function JobsPage() {
             }
         }
         loadJobs()
-    }, [filters, toast])
+    }, [filters, currentPage, pageSize, toast])
 
     const handleFilterChange = (key: keyof (JobFilters & { applicationStatus: string }), value: string) => {
         setFilters(prev => ({ ...prev, [key]: value }))
+        setCurrentPage(1) // Reset to first page when filters change
     }
 
     const handleStatusChange = async (jobId: string, applied: boolean) => {
@@ -106,17 +120,10 @@ export default function JobsPage() {
 
     const refreshJobs = () => {
         setFilters(prev => ({ ...prev }))
+        setCurrentPage(1)
     }
 
-    const getStatsDisplay = () => {
-        const total = jobs.length
-        const applied = jobs.filter(job => job.applied).length
-        const pending = total - applied
-
-        return { total, applied, pending }
-    }
-
-    const stats = getStatsDisplay()
+    const totalPages = Math.ceil(counts.total / pageSize)
 
     return (
         <div className="container mx-auto px-4 py-8">
@@ -142,7 +149,7 @@ export default function JobsPage() {
                             <CardTitle className="text-sm font-medium">Total Jobs</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{stats.total}</div>
+                            <div className="text-2xl font-bold">{counts.total}</div>
                         </CardContent>
                     </Card>
                     <Card>
@@ -150,7 +157,7 @@ export default function JobsPage() {
                             <CardTitle className="text-sm font-medium">Applied</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold text-green-600">{stats.applied}</div>
+                            <div className="text-2xl font-bold text-green-600">{counts.applied}</div>
                         </CardContent>
                     </Card>
                     <Card>
@@ -158,12 +165,20 @@ export default function JobsPage() {
                             <CardTitle className="text-sm font-medium">Pending</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold text-orange-600">{stats.pending}</div>
+                            <div className="text-2xl font-bold text-orange-600">{counts.pending}</div>
                         </CardContent>
                     </Card>
                 </div>
 
-                {/* Filters */}
+                {/* Tabs */}
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="jobs">Job Listings</TabsTrigger>
+                        <TabsTrigger value="cleanup">Cleanup Manager</TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="jobs" className="space-y-4">
+                        {/* Filters */}
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
@@ -223,8 +238,30 @@ export default function JobsPage() {
                                         <SelectValue placeholder="Sort by" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="newest">Newest First</SelectItem>
-                                        <SelectItem value="oldest">Oldest First</SelectItem>
+                                        <SelectItem value="newest">Extracted Date (Newest)</SelectItem>
+                                        <SelectItem value="oldest">Extracted Date (Oldest)</SelectItem>
+                                        <SelectItem value="posted_newest">Posted Date (Newest)</SelectItem>
+                                        <SelectItem value="posted_oldest">Posted Date (Oldest)</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Page Size</label>
+                                <Select
+                                    value={pageSize.toString()}
+                                    onValueChange={(value) => {
+                                        setPageSize(parseInt(value))
+                                        setCurrentPage(1)
+                                    }}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Page size" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="25">25 jobs</SelectItem>
+                                        <SelectItem value="50">50 jobs</SelectItem>
+                                        <SelectItem value="75">75 jobs</SelectItem>
+                                        <SelectItem value="100">100 jobs</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -249,6 +286,7 @@ export default function JobsPage() {
                                         <TableHead>Company</TableHead>
                                         <TableHead>Location</TableHead>
                                         <TableHead>Posted Date</TableHead>
+                                        <TableHead>Extracted Date</TableHead>
                                         <TableHead>Type</TableHead>
                                         <TableHead>Status</TableHead>
                                         <TableHead>Applied</TableHead>
@@ -258,7 +296,7 @@ export default function JobsPage() {
                                 <TableBody>
                                     {loading ? (
                                         <TableRow>
-                                            <TableCell colSpan={8} className="text-center py-8">
+                                            <TableCell colSpan={9} className="text-center py-8">
                                                 <div className="flex items-center justify-center">
                                                     <RefreshCwIcon className="h-4 w-4 animate-spin mr-2" />
                                                     Loading jobs...
@@ -267,7 +305,7 @@ export default function JobsPage() {
                                         </TableRow>
                                     ) : jobs.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={8} className="text-center py-8">
+                                            <TableCell colSpan={9} className="text-center py-8">
                                                 <div className="text-muted-foreground">
                                                     No jobs found matching your filters
                                                 </div>
@@ -283,6 +321,12 @@ export default function JobsPage() {
                                                     <div className="flex items-center gap-1">
                                                         <CalendarIcon className="h-3 w-3 text-muted-foreground" />
                                                         {formatDate(job.postedAt)}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="flex items-center gap-1">
+                                                        <CalendarIcon className="h-3 w-3 text-muted-foreground" />
+                                                        {formatDate(job.extracted_date || '')}
                                                     </div>
                                                 </TableCell>
                                                 <TableCell>{job.type}</TableCell>
@@ -315,6 +359,86 @@ export default function JobsPage() {
                         </div>
                     </CardContent>
                 </Card>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                    <Card>
+                        <CardContent className="pt-6">
+                            <div className="flex items-center justify-between">
+                                <div className="text-sm text-muted-foreground">
+                                    Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, counts.total)} of {counts.total} jobs
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                                        disabled={currentPage === 1}
+                                    >
+                                        <ChevronLeftIcon className="h-4 w-4" />
+                                        Previous
+                                    </Button>
+                                    <div className="flex items-center space-x-1">
+                                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                                            const pageNum = i + 1;
+                                            return (
+                                                <Button
+                                                    key={pageNum}
+                                                    variant={currentPage === pageNum ? "default" : "outline"}
+                                                    size="sm"
+                                                    onClick={() => setCurrentPage(pageNum)}
+                                                    className="w-8 h-8"
+                                                >
+                                                    {pageNum}
+                                                </Button>
+                                            );
+                                        })}
+                                        {totalPages > 5 && (
+                                            <>
+                                                {currentPage > 3 && <span className="px-2">...</span>}
+                                                {currentPage > 3 && currentPage < totalPages - 2 && (
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="w-8 h-8"
+                                                    >
+                                                        {currentPage}
+                                                    </Button>
+                                                )}
+                                                {currentPage < totalPages - 2 && <span className="px-2">...</span>}
+                                                {currentPage < totalPages - 2 && (
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => setCurrentPage(totalPages)}
+                                                        className="w-8 h-8"
+                                                    >
+                                                        {totalPages}
+                                                    </Button>
+                                                )}
+                                            </>
+                                        )}
+                                    </div>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                                        disabled={currentPage === totalPages}
+                                    >
+                                        Next
+                                        <ChevronRightIcon className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+                    </TabsContent>
+
+                    <TabsContent value="cleanup" className="space-y-4">
+                        <JobCleanupManager />
+                    </TabsContent>
+                </Tabs>
             </div>
         </div>
     )

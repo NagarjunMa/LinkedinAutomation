@@ -45,7 +45,7 @@ export function JobsTab() {
         sortBy: 'newest'
     })
     const { toast } = useToast()
-    const { updateJobApplication } = useDashboard()
+    const { updateJobApplication, refreshAppliedJobs } = useDashboard()
 
     useEffect(() => {
         const loadJobs = async () => {
@@ -85,6 +85,11 @@ export function JobsTab() {
 
             // Update dashboard context
             updateJobApplication(jobId, applied)
+
+            // If job was marked as applied, refresh the applied jobs list
+            if (applied) {
+                refreshAppliedJobs()
+            }
 
             toast({
                 title: "Success",

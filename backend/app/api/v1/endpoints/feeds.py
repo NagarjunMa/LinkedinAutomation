@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 from app.db.session import get_db
-from app.models.job import RSSFeedConfiguration, UserJobPreferences
+from app.models.job import RSSFeedConfiguration
 from pydantic import BaseModel
 from datetime import datetime
 

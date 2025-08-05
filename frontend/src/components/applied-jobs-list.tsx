@@ -4,8 +4,9 @@ import { useEffect, useState, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ExternalLink, Building, Calendar, Zap, Brain } from "lucide-react"
+import { ExternalLink, Building, Calendar, Zap, Brain, RefreshCw } from "lucide-react"
 import { format, isValid, parseISO } from "date-fns"
+import { useDashboard } from "@/app/contexts/dashboard-context"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -219,10 +220,31 @@ export function AppliedJobsList({ userId, limit = 10 }: AppliedJobsListProps) {
     const [page, setPage] = useState(1)
     const [totalPages, setTotalPages] = useState(1)
     const [error, setError] = useState('')
+    const { refreshAppliedJobsKey, refreshAppliedJobs } = useDashboard()
 
     useEffect(() => {
         fetchApplications()
-    }, [userId, page])
+    }, [userId, page, refreshAppliedJobsKey])
+
+    // Refresh function to be called when tab is opened
+    const refreshApplications = () => {
+        refreshAppliedJobs()
+        setPage(1) // Reset to first page when refreshing
+    }
+
+    // Listen for tab visibility changes to refresh data
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (!document.hidden) {
+                refreshApplications()
+            }
+        }
+
+        document.addEventListener('visibilitychange', handleVisibilityChange)
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange)
+        }
+    }, [])
 
     const fetchApplications = async () => {
         try {
@@ -263,13 +285,27 @@ export function AppliedJobsList({ userId, limit = 10 }: AppliedJobsListProps) {
         <div className="space-y-6">
             <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Building className="h-5 w-5" />
-                        Recently Applied Jobs
-                    </CardTitle>
-                    <CardDescription>
-                        Track and manage your job applications. Total applications: {applications.length}
-                    </CardDescription>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <CardTitle className="flex items-center gap-2">
+                                <Building className="h-5 w-5" />
+                                Recently Applied Jobs
+                            </CardTitle>
+                            <CardDescription>
+                                Track and manage your job applications. Total applications: {applications.length}
+                            </CardDescription>
+                        </div>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={refreshApplications}
+                            disabled={loading}
+                            className="flex items-center gap-2"
+                        >
+                            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                            Refresh
+                        </Button>
+                    </div>
                 </CardHeader>
                 <CardContent>
                     {applications.length === 0 && !loading ? (

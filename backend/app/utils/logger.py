@@ -17,4 +17,8 @@ logging.basicConfig(
 )
 
 # Create logger
-logger = logging.getLogger("linkedin_scraper") 
+logger = logging.getLogger("linkedin_scraper")
+
+def get_logger(name: str):
+    """Get a logger instance for the given name"""
+    return logging.getLogger(name) 

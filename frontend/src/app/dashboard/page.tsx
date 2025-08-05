@@ -22,7 +22,7 @@ import { MainNav } from "@/components/main-nav"
 import { Overview } from "@/components/overview"
 import { RecentSales } from "@/components/recent-sales"
 import TeamSwitcher from "@/components/team-switcher"
-import { UserNav } from "@/components/user-nav"
+import { ThemeSwitcher } from "@/components/theme-switcher"
 import { JobsTab } from "@/components/jobs-tab"
 import { ProfileTab } from "@/components/profile-tab"
 import JobURLExtractor from "@/components/job-url-extractor"
@@ -80,7 +80,7 @@ export default function DashboardPage() {
                         <TeamSwitcher />
                         <MainNav className="mx-6" />
                         <div className="ml-auto flex items-center space-x-4">
-                            <UserNav />
+                            <ThemeSwitcher />
                         </div>
                     </div>
                 </div>

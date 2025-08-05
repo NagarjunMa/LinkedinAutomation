@@ -2,7 +2,7 @@ from typing import List, Optional, Dict
 from fastapi import APIRouter, Depends, HTTPException, Query, Form
 from sqlalchemy.orm import Session
 from sqlalchemy import func, cast, Date, Integer, extract, desc
-from app.db.session import get_db
+from app.db.rls_session import get_db, set_current_user
 from app.models.job import JobListing, JobApplication
 from app.schemas.job import (
     JobListingCreate, 
@@ -12,6 +12,7 @@ from app.schemas.job import (
     TimeRange,
     RecentApplication
 )
+from app.services.job_cleanup_service import JobCleanupService
 # LinkedIn scraper removed - using job aggregator instead
 from datetime import datetime, timedelta
 from app.models.job import JobApplication
@@ -31,12 +32,18 @@ async def get_jobs(
     location: Optional[str] = None,
     job_type: Optional[str] = None,
     experience_level: Optional[str] = None,
+    sort_by: Optional[str] = "newest",
+    applied: Optional[bool] = None,
+    user_id: str = "demo_user",  # Default to demo user for now
 ):
+    # Set the current user context for RLS
+    set_current_user(user_id)
     """
-    Retrieve job listings with optional filtering
+    Retrieve job listings with optional filtering, sorting, and pagination
     """
     query = db.query(JobListing)
     
+    # Apply filters
     if title:
         query = query.filter(JobListing.title.ilike(f"%{title}%"))
     if company:
@@ -47,9 +54,65 @@ async def get_jobs(
         query = query.filter(JobListing.job_type == job_type)
     if experience_level:
         query = query.filter(JobListing.experience_level == experience_level)
+    if applied is not None:
+        query = query.filter(JobListing.applied == applied)
+    
+    # Apply sorting
+    if sort_by == "newest":
+        query = query.order_by(JobListing.extracted_date.desc())
+    elif sort_by == "oldest":
+        query = query.order_by(JobListing.extracted_date.asc())
+    elif sort_by == "posted_newest":
+        query = query.order_by(JobListing.posted_date.desc().nullslast())
+    elif sort_by == "posted_oldest":
+        query = query.order_by(JobListing.posted_date.asc().nullslast())
+    else:
+        # Default to newest first
+        query = query.order_by(JobListing.extracted_date.desc())
         
     jobs = query.offset(skip).limit(limit).all()
     return jobs
+
+@router.get("/counts")
+async def get_job_counts(
+    db: Session = Depends(get_db),
+    title: Optional[str] = None,
+    company: Optional[str] = None,
+    location: Optional[str] = None,
+    job_type: Optional[str] = None,
+    experience_level: Optional[str] = None,
+):
+    """
+    Get job counts for pagination and stats
+    """
+    query = db.query(JobListing)
+    
+    # Apply same filters as get_jobs
+    if title:
+        query = query.filter(JobListing.title.ilike(f"%{title}%"))
+    if company:
+        query = query.filter(JobListing.company.ilike(f"%{company}%"))
+    if location:
+        query = query.filter(JobListing.location.ilike(f"%{location}%"))
+    if job_type:
+        query = query.filter(JobListing.job_type == job_type)
+    if experience_level:
+        query = query.filter(JobListing.experience_level == experience_level)
+    
+    # Get total count
+    total_count = query.count()
+    
+    # Get applied count
+    applied_count = query.filter(JobListing.applied == True).count()
+    
+    # Get pending count
+    pending_count = total_count - applied_count
+    
+    return {
+        "total": total_count,
+        "applied": applied_count,
+        "pending": pending_count
+    }
 
 @router.get("/stats", response_model=JobStats)
 async def get_job_stats(
@@ -295,6 +358,10 @@ async def update_job_status(
     if "applied" in status_update:
         db_job.applied = status_update["applied"]
         
+        # Set applied_date timestamp when marking as applied
+        if status_update["applied"]:
+            db_job.applied_date = datetime.utcnow()
+        
     db.commit()
     db.refresh(db_job)
     return db_job 
@@ -359,37 +426,42 @@ async def get_user_applications(
     limit: int = 10,
     db: Session = Depends(get_db)
 ):
-    """Get user's applied jobs (jobs with applied = True) with pagination"""
+    """Get user's applied jobs from JobApplication table with pagination"""
     try:
-        # Query jobs where applied = True (real applied jobs from the system)
-        query = db.query(JobListing).filter(JobListing.applied == True)
+        # Query JobApplication table for user's applications
+        query = db.query(JobApplication).filter(JobApplication.user_id == user_id)
+        
+        # Filter by status if provided
+        if status:
+            query = query.filter(JobApplication.application_status == status)
         
         # Get total count for pagination
         total_count = query.count()
         
-        # Apply pagination
+        # Apply pagination and order by application_date (latest first)
         offset = (page - 1) * limit
-        applied_jobs = query.order_by(JobListing.extracted_date.desc()).offset(offset).limit(limit).all()
+        applications = query.order_by(JobApplication.application_date.desc()).offset(offset).limit(limit).all()
         
         # Prepare response to match frontend expectations
         results = []
-        for job in applied_jobs:
+        for application in applications:
+            job = application.job_listing
             results.append({
-                "id": job.id,  # Using job ID as application ID
-                "user_id": user_id,
-                "job_id": job.id,
-                "application_status": "applied",  # Since applied = True
-                "application_source": job.source or "dashboard",
-                "application_date": job.applied_date.isoformat() if job.applied_date else job.extracted_date.isoformat(),
-                "source_url": job.source_url,
-                "user_notes": f"Applied to {job.company} position",
-                "extraction_metadata": {
-                    "extraction_confidence": 0.9,  # High confidence for real applied jobs
+                "id": application.id,
+                "user_id": application.user_id,
+                "job_id": application.job_id,
+                "application_status": application.application_status,
+                "application_source": application.application_source,
+                "application_date": application.application_date.isoformat(),
+                "source_url": application.source_url,
+                "user_notes": application.user_notes,
+                "extraction_metadata": application.extraction_metadata or {
+                    "extraction_confidence": 0.9,
                     "extraction_method": job.source or "dashboard"
                 },
-                "follow_up_date": None,
-                "company_response": False,
-                "response_date": None,
+                "follow_up_date": application.follow_up_date.isoformat() if application.follow_up_date else None,
+                "company_response": application.company_response,
+                "response_date": application.response_date.isoformat() if application.response_date else None,
                 "job_listing": {
                     "id": job.id,
                     "title": job.title,
@@ -467,4 +539,63 @@ async def update_application_status(
     except Exception as e:
         logger.error(f"Error updating application status: {e}")
         db.rollback()
-        raise HTTPException(status_code=500, detail="Error updating application") 
+        raise HTTPException(status_code=500, detail="Error updating application")
+
+# =====================================================
+# JOB CLEANUP ENDPOINTS
+# =====================================================
+
+@router.get("/cleanup/stats")
+async def get_cleanup_stats(
+    days_old: int = Query(default=20, ge=1, le=365, description="Number of days to check for old jobs"),
+    user_id: str = Query(default="demo_user", description="User ID for RLS context"),
+    db: Session = Depends(get_db)
+):
+    """Get statistics about jobs that would be cleaned up"""
+    try:
+        set_current_user(user_id)
+        cleanup_service = JobCleanupService(db)
+        return cleanup_service.get_cleanup_stats(days_old)
+    except Exception as e:
+        logger.error(f"Error getting cleanup stats: {e}")
+        raise HTTPException(status_code=500, detail="Error getting cleanup statistics")
+
+@router.post("/cleanup/execute")
+async def execute_cleanup(
+    days_old: int = Query(default=20, ge=1, le=365, description="Number of days after which to delete old jobs"),
+    user_id: str = Query(default="demo_user", description="User ID for RLS context"),
+    db: Session = Depends(get_db)
+):
+    """Execute cleanup of old jobs that haven't been applied to"""
+    try:
+        set_current_user(user_id)
+        cleanup_service = JobCleanupService(db)
+        result = cleanup_service.cleanup_by_user(user_id, days_old)
+        
+        if result["status"] == "error":
+            raise HTTPException(status_code=500, detail=result["message"])
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error executing cleanup: {e}")
+        raise HTTPException(status_code=500, detail="Error executing cleanup")
+
+@router.post("/cleanup/execute-all")
+async def execute_cleanup_all(
+    days_old: int = Query(default=20, ge=1, le=365, description="Number of days after which to delete old jobs"),
+    db: Session = Depends(get_db)
+):
+    """Execute cleanup for all users (admin function)"""
+    try:
+        cleanup_service = JobCleanupService(db)
+        result = cleanup_service.cleanup_old_jobs(days_old)
+        
+        if result["status"] == "error":
+            raise HTTPException(status_code=500, detail=result["message"])
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error executing cleanup for all users: {e}")
+        raise HTTPException(status_code=500, detail="Error executing cleanup") 

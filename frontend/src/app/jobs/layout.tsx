@@ -1,4 +1,5 @@
 import { Toaster } from "@/components/ui/toaster"
+import { ThemeSwitcher } from "@/components/theme-switcher"
 
 export default function JobsLayout({
     children,
@@ -25,6 +26,9 @@ export default function JobsLayout({
                                 Jobs
                             </a>
                         </nav>
+                    </div>
+                    <div className="ml-auto flex items-center space-x-4">
+                        <ThemeSwitcher />
                     </div>
                 </div>
             </div>

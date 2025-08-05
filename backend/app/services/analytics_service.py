@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 import json
 
-from app.models.job import JobListing, SearchQuery, SearchResult
+from app.models.job import JobListing
 from app.db.session import get_db
 
 @dataclass
@@ -126,64 +126,17 @@ class AnalyticsService:
         )
     
     def _compute_search_query_analytics(self) -> Dict:
-        """Optimized search query analytics computation"""
-        # Get all data in fewer queries
-        queries = self.db.query(SearchQuery).all()
-        
-        # Get all search results in one query
-        all_results = self.db.query(SearchResult).all()
-        results_by_query = defaultdict(list)
-        for result in all_results:
-            results_by_query[result.search_query_id].append(result)
-        
-        # Get all job data needed
-        all_job_ids = list(set(r.job_listing_id for r in all_results))
-        jobs_dict = {}
-        if all_job_ids:
-            jobs = self.db.query(JobListing).filter(JobListing.id.in_(all_job_ids)).all()
-            jobs_dict = {job.id: job for job in jobs}
-        
-        query_analytics = []
-        for query in queries:
-            results = results_by_query.get(query.id, [])
-            jobs = [jobs_dict.get(r.job_listing_id) for r in results if r.job_listing_id in jobs_dict]
-            jobs = [j for j in jobs if j is not None]
-            
-            # Calculate metrics
-            total_runs = len(set(r.created_at.date() for r in results)) if results else 0
-            total_jobs_found = len(jobs)
-            applications = len([j for j in jobs if j.applied])
-            
-            conversion_rate = (applications / total_jobs_found * 100) if total_jobs_found > 0 else 0
-            quality_score = min(100, conversion_rate * 2)
-            competition_level = self._analyze_competition(query.keywords or "")
-            
-            query_analytics.append({
-                "id": query.id,
-                "title": query.title,
-                "keywords": (query.keywords or "").split(",") if query.keywords else [],
-                "location": query.location,
-                "performance": {
-                    "total_runs": total_runs,
-                    "avg_jobs_per_run": round(total_jobs_found / max(total_runs, 1), 1),
-                    "conversion_rate": round(conversion_rate, 2),
-                    "quality_score": round(quality_score, 1),
-                    "total_results": total_jobs_found,
-                    "total_applications": applications
-                },
-                "trends": {
-                    "competition_level": competition_level,
-                    "recommendation": self._get_query_recommendation(conversion_rate, total_jobs_found)
-                }
-            })
-        
+        """Search query analytics - now using RSS feeds instead of deprecated SearchQuery"""
+        # Since SearchQuery and SearchResult are deprecated, return empty analytics
+        # This functionality has been replaced by RSS feed analytics
         return {
-            "queries": query_analytics,
+            "queries": [],
             "summary": {
-                "total_queries": len(queries),
-                "active_queries": len([q for q in queries if q.is_active]),
-                "avg_conversion_rate": round(sum(q["performance"]["conversion_rate"] for q in query_analytics) / len(query_analytics) if query_analytics else 0, 2)
-            }
+                "total_queries": 0,
+                "active_queries": 0,
+                "avg_conversion_rate": 0.0
+            },
+            "note": "Search query analytics deprecated. Use RSS feed analytics instead."
         }
 
     # ==================== MARKET INTELLIGENCE ====================

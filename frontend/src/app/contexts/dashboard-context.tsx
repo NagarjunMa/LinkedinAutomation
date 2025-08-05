@@ -13,6 +13,8 @@ interface DashboardContextType {
     refreshData: () => Promise<void>
     updateJobApplication: (jobId: string, applied: boolean) => void
     setTimeRange: (range: TimeRange) => void
+    refreshAppliedJobs: () => void
+    refreshAppliedJobsKey: number
 }
 
 const DashboardContext = createContext<DashboardContextType | undefined>(undefined)
@@ -23,6 +25,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [timeRange, setTimeRange] = useState<TimeRange>('last_30_days')
+    const [refreshAppliedJobsKey, setRefreshAppliedJobsKey] = useState(0)
 
     const refreshData = useCallback(async () => {
         try {
@@ -75,6 +78,10 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         setTimeRange(range)
     }, [])
 
+    const refreshAppliedJobs = useCallback(() => {
+        setRefreshAppliedJobsKey(prev => prev + 1)
+    }, [])
+
     useEffect(() => {
         refreshData()
 
@@ -93,7 +100,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
             timeRange,
             refreshData,
             updateJobApplication,
-            setTimeRange: handleTimeRangeChange
+            setTimeRange: handleTimeRangeChange,
+            refreshAppliedJobs,
+            refreshAppliedJobsKey
         }}>
             {children}
         </DashboardContext.Provider>

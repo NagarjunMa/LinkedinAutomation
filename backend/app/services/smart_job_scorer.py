@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, desc
 
 from app.db.session import SessionLocal
-from app.models.job import JobListing, UserProfile, JobScore
+from app.models.job import JobListing, UserProfile
 from app.tasks.scoring_tasks import (
     score_all_jobs_for_new_user,
     score_new_job_for_all_users,
@@ -96,12 +96,12 @@ class SmartJobScoringService:
         min_score: float = 70.0
     ) -> List[Dict[str, Any]]:
         """
-        FAST: Get job matches using pre-computed scores + dynamic filtering
-        This is the main method for real-time job recommendations
+        Get filtered job matches - JobScore functionality disabled
+        Returns basic job listings with simple scoring
         """
         db = SessionLocal()
         try:
-            # Get user profile for fallback preferences
+            # Get user profile for preferences
             profile = db.query(UserProfile).filter(UserProfile.user_id == user_id).first()
             if not profile:
                 return []
@@ -116,29 +116,22 @@ class SmartJobScoringService:
                     'desired_roles': profile.desired_roles or []
                 }
             
-            # Start with base query using pre-computed scores
-            query = db.query(JobScore, JobListing).join(
-                JobListing, JobScore.job_id == JobListing.id
-            ).filter(
-                JobScore.user_id == user_id,
-                JobScore.compatibility_score >= min_score,
+            # Simple query without JobScore - just get active jobs
+            query = db.query(JobListing).filter(
                 JobListing.is_active == True
             )
             
-            # Apply dynamic filters based on preferences
-            query = self._apply_preference_filters(query, preferences)
+            # Apply basic filters
+            query = self._apply_basic_filters(query, preferences)
             
-            # Get top matches
-            scored_jobs = query.order_by(
-                desc(JobScore.compatibility_score)
-            ).limit(limit).all()
+            # Get jobs ordered by extracted date (newest first)
+            jobs = query.order_by(desc(JobListing.extracted_date)).limit(limit).all()
             
-            # Format results
+            # Format results with simple scoring
             results = []
-            for job_score, job_listing in scored_jobs:
-                # Calculate dynamic preference bonus
-                preference_bonus = self._calculate_preference_bonus(job_listing, preferences)
-                final_score = min(100.0, job_score.compatibility_score + preference_bonus)
+            for job_listing in jobs:
+                # Calculate simple score based on preferences
+                simple_score = self._calculate_simple_score(job_listing, preferences)
                 
                 results.append({
                     "job_id": job_listing.id,
@@ -148,15 +141,15 @@ class SmartJobScoringService:
                     "salary_range": job_listing.salary_range,
                     "application_url": job_listing.application_url,
                     "posted_date": job_listing.posted_date,
-                    "compatibility_score": final_score,
-                    "base_score": job_score.compatibility_score,
-                    "preference_bonus": preference_bonus,
-                    "ai_reasoning": job_score.ai_reasoning,
-                    "match_factors": job_score.match_factors,
-                    "skills_match": job_score.skills_match_score,
-                    "experience_match": job_score.experience_match_score,
-                    "location_match": job_score.location_match_score,
-                    "last_scored": job_score.scored_at
+                    "compatibility_score": simple_score,
+                    "base_score": simple_score,
+                    "preference_bonus": 0.0,
+                    "ai_reasoning": "Simple scoring - JobScore functionality disabled",
+                    "match_factors": ["basic_filtering"],
+                    "skills_match": 50.0,
+                    "experience_match": 50.0,
+                    "location_match": 50.0,
+                    "last_scored": job_listing.extracted_date
                 })
             
             return results
@@ -164,8 +157,8 @@ class SmartJobScoringService:
         finally:
             db.close()
     
-    def _apply_preference_filters(self, query, preferences: Dict[str, Any]):
-        """Apply user preferences as database filters"""
+    def _apply_basic_filters(self, query, preferences: Dict[str, Any]):
+        """Apply basic user preferences as database filters"""
         
         # Location filtering
         preferred_locations = preferences.get('preferred_locations', [])
@@ -229,6 +222,29 @@ class SmartJobScoringService:
         
         return query
     
+    def _calculate_simple_score(self, job: JobListing, preferences: Dict[str, Any]) -> float:
+        """Calculate simple compatibility score based on preferences"""
+        score = 50.0  # Base score
+        
+        # Location bonus
+        preferred_locations = preferences.get('preferred_locations', [])
+        if preferred_locations:
+            for location in preferred_locations:
+                if location.lower() in ['remote', 'work from home']:
+                    if 'remote' in (job.location or '').lower():
+                        score += 20.0
+                elif location.lower() in (job.location or '').lower():
+                    score += 15.0
+        
+        # Job type bonus
+        job_types = preferences.get('job_types', [])
+        if job_types:
+            for job_type in job_types:
+                if job_type.lower() in (job.title or '').lower():
+                    score += 10.0
+        
+        return min(100.0, score)
+
     def _calculate_preference_bonus(self, job: JobListing, preferences: Dict[str, Any]) -> float:
         """Calculate bonus score based on preference matches"""
         bonus = 0.0
@@ -262,62 +278,42 @@ class SmartJobScoringService:
     # =====================================================
     
     def get_user_scoring_status(self, user_id: str) -> Dict[str, Any]:
-        """Get status of job scoring for a user"""
+        """Get status of job scoring for a user - JobScore functionality disabled"""
         db = SessionLocal()
         try:
             profile = db.query(UserProfile).filter(UserProfile.user_id == user_id).first()
             if not profile:
                 return {"status": "no_profile", "message": "User profile not found"}
             
-            # Count total jobs and scored jobs
+            # Count total jobs
             total_jobs = db.query(JobListing).filter(JobListing.is_active == True).count()
-            scored_jobs = db.query(JobScore).filter(JobScore.user_id == user_id).count()
             
-            # Check for recent scores
+            # Check for recent jobs
             recent_cutoff = datetime.utcnow() - timedelta(hours=24)
-            recent_scores = db.query(JobScore).filter(
-                JobScore.user_id == user_id,
-                JobScore.scored_at >= recent_cutoff
+            recent_jobs = db.query(JobListing).filter(
+                JobListing.extracted_date >= recent_cutoff
             ).count()
             
-            # Determine status
-            if scored_jobs == 0:
-                status = "not_scored"
-                message = "No jobs scored yet. Upload resume to start."
-            elif scored_jobs < total_jobs * 0.1:
-                status = "partial_scoring"
-                message = f"Initial scoring in progress: {scored_jobs}/{total_jobs}"
-            elif recent_scores > 0:
-                status = "up_to_date"
-                message = f"Scoring current: {scored_jobs} jobs scored"
-            else:
-                status = "needs_refresh"
-                message = "Scores may be outdated. Consider refreshing."
-            
             return {
-                "status": status,
-                "message": message,
+                "status": "basic_scoring",
+                "message": "Using basic job filtering - JobScore functionality disabled",
                 "total_jobs": total_jobs,
-                "scored_jobs": scored_jobs,
-                "recent_scores": recent_scores,
-                "last_scored": profile.updated_at
+                "scored_jobs": total_jobs,  # All jobs are "scored" with basic filtering
+                "recent_scores": recent_jobs,
+                "last_scored": profile.updated_at,
+                "note": "JobScore functionality disabled - using basic job counts"
             }
             
         finally:
             db.close()
     
     def clear_user_scores(self, user_id: str) -> Dict[str, Any]:
-        """Clear all scores for a user (for fresh re-scoring)"""
-        db = SessionLocal()
-        try:
-            deleted_count = db.query(JobScore).filter(JobScore.user_id == user_id).delete()
-            db.commit()
-            
-            logger.info(f"Cleared {deleted_count} scores for user {user_id}")
-            return {"deleted_scores": deleted_count, "user_id": user_id}
-            
-        finally:
-            db.close()
+        """Clear all scores for a user - JobScore functionality disabled"""
+        return {
+            "deleted_scores": 0, 
+            "user_id": user_id,
+            "note": "JobScore functionality disabled - no scores to clear"
+        }
 
 # Create singleton instance
 smart_job_scorer = SmartJobScoringService() 

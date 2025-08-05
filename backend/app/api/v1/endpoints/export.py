@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 # import pandas as pd  # Temporarily disabled due to numpy compatibility issue
 from io import BytesIO
 from app.db.session import get_db
-from app.models.job import JobListing, SearchResult
+from app.models.job import JobListing
 from app.schemas.export import ExportFormat
 
 router = APIRouter()

@@ -5,20 +5,21 @@ from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 
 from app.core.ai_service import ai_service
-from app.models.job import UserProfile, JobListing, JobScore
+from app.models.job import UserProfile, JobListing
 from app.db.session import SessionLocal
 
 logger = logging.getLogger(__name__)
 
 class JobScoringService:
     """
-    AI-powered job scoring service that matches users with relevant jobs
+    AI-powered job scoring service that matches users with relevant jobs - JobScore functionality disabled
     """
     
     def __init__(self):
         self.ai_service = ai_service
         self.min_score_threshold = 60.0  # Only store scores >= 60%
         self.max_concurrent_scoring = 5  # Limit concurrent AI calls
+        logger.info("JobScoringService initialized - JobScore functionality disabled")
     
     async def score_jobs_for_user(
         self, 
@@ -27,7 +28,7 @@ class JobScoringService:
         days_back: int = 1
     ) -> List[Dict[str, Any]]:
         """
-        Score recent jobs for a specific user
+        Score recent jobs for a specific user - JobScore functionality disabled
         
         Args:
             user_id: User identifier
@@ -35,64 +36,10 @@ class JobScoringService:
             days_back: How many days back to look for new jobs
             
         Returns:
-            List of scored jobs with compatibility scores
+            Empty list - JobScore functionality disabled
         """
-        db = SessionLocal()
-        try:
-            # Get user profile
-            user_profile = db.query(UserProfile).filter(
-                UserProfile.user_id == user_id
-            ).first()
-            
-            if not user_profile:
-                logger.warning(f"No profile found for user {user_id}")
-                return []
-            
-            # Get recent jobs that haven't been scored for this user
-            cutoff_date = datetime.utcnow() - timedelta(days=days_back)
-            
-            # Find jobs not yet scored for this user
-            scored_job_ids = db.query(JobScore.job_id).filter(
-                JobScore.user_id == user_id
-            )
-            
-            recent_jobs = db.query(JobListing).filter(
-                JobListing.extracted_date >= cutoff_date,
-                JobListing.is_active == True,
-                ~JobListing.id.in_(scored_job_ids)
-            ).limit(job_limit).all()
-            
-            if not recent_jobs:
-                logger.info(f"No new jobs to score for user {user_id}")
-                return []
-            
-            logger.info(f"Scoring {len(recent_jobs)} jobs for user {user_id}")
-            
-            # Convert user profile to dict for AI
-            user_profile_dict = self._user_profile_to_dict(user_profile)
-            
-            # Score jobs in batches to avoid rate limits
-            scored_jobs = []
-            for i in range(0, len(recent_jobs), self.max_concurrent_scoring):
-                batch = recent_jobs[i:i + self.max_concurrent_scoring]
-                batch_scores = await self._score_job_batch(user_profile_dict, batch, user_id, db)
-                scored_jobs.extend(batch_scores)
-                
-                # Small delay between batches
-                if i + self.max_concurrent_scoring < len(recent_jobs):
-                    await asyncio.sleep(1)
-            
-            # Sort by compatibility score
-            scored_jobs.sort(key=lambda x: x['compatibility_score'], reverse=True)
-            
-            logger.info(f"Successfully scored {len(scored_jobs)} jobs for user {user_id}")
-            return scored_jobs
-            
-        except Exception as e:
-            logger.error(f"Error scoring jobs for user {user_id}: {e}")
-            return []
-        finally:
-            db.close()
+        logger.info(f"Job scoring disabled for user {user_id} - JobScore model removed")
+        return []
     
     async def score_all_users_daily(self) -> Dict[str, int]:
         """
@@ -138,46 +85,10 @@ class JobScoringService:
         min_score: float = 70.0
     ) -> List[Dict[str, Any]]:
         """
-        Get top job matches for a user based on stored scores
+        Get top job matches for a user - JobScore functionality disabled
         """
-        db = SessionLocal()
-        try:
-            # Get top scored jobs for user
-            top_scores = db.query(JobScore, JobListing).join(
-                JobListing, JobScore.job_id == JobListing.id
-            ).filter(
-                JobScore.user_id == user_id,
-                JobScore.compatibility_score >= min_score,
-                JobListing.is_active == True
-            ).order_by(
-                JobScore.compatibility_score.desc()
-            ).limit(limit).all()
-            
-            results = []
-            for job_score, job_listing in top_scores:
-                results.append({
-                    "job_id": job_listing.id,
-                    "title": job_listing.title,
-                    "company": job_listing.company,
-                    "location": job_listing.location,
-                    "salary_range": job_listing.salary_range,
-                    "application_url": job_listing.application_url,
-                    "posted_date": job_listing.posted_date,
-                    "compatibility_score": job_score.compatibility_score,
-                    "ai_reasoning": job_score.ai_reasoning,
-                    "match_factors": job_score.match_factors,
-                    "skills_match": job_score.skills_match_score,
-                    "experience_match": job_score.experience_match_score,
-                    "location_match": job_score.location_match_score
-                })
-            
-            return results
-            
-        except Exception as e:
-            logger.error(f"Error getting top matches for user {user_id}: {e}")
-            return []
-        finally:
-            db.close()
+        logger.info(f"Top matches disabled for user {user_id} - JobScore model removed")
+        return []
     
     async def _score_job_batch(
         self, 
@@ -187,63 +98,10 @@ class JobScoringService:
         db: Session
     ) -> List[Dict[str, Any]]:
         """
-        Score a batch of jobs concurrently
+        Score a batch of jobs concurrently - JobScore functionality disabled
         """
-        # Create scoring tasks
-        tasks = []
-        for job in jobs:
-            task = self._score_single_job(user_profile_dict, job)
-            tasks.append(task)
-        
-        # Execute tasks concurrently
-        scoring_results = await asyncio.gather(*tasks, return_exceptions=True)
-        
-        # Process results and save to database
-        scored_jobs = []
-        for i, result in enumerate(scoring_results):
-            if isinstance(result, Exception):
-                logger.error(f"Error scoring job {jobs[i].id}: {result}")
-                continue
-            
-            if not result or result.get('compatibility_score', 0) < self.min_score_threshold:
-                continue  # Skip low scores
-            
-            # Save to database
-            job_score = JobScore(
-                user_id=user_id,
-                job_id=jobs[i].id,
-                compatibility_score=result['compatibility_score'],
-                confidence_score=result.get('confidence_score', 0.0),
-                ai_reasoning=result.get('reasoning', ''),
-                match_factors=result.get('match_factors', []),
-                mismatch_factors=result.get('mismatch_factors', []),
-                skills_match_score=result.get('skills_match_score', 0.0),
-                location_match_score=result.get('location_match_score', 0.0),
-                experience_match_score=result.get('experience_match_score', 0.0),
-                salary_match_score=result.get('salary_match_score', 0.0),
-                culture_match_score=result.get('culture_match_score', 0.0)
-            )
-            
-            db.add(job_score)
-            
-            # Add job info to result
-            result.update({
-                "job_id": jobs[i].id,
-                "title": jobs[i].title,
-                "company": jobs[i].company,
-                "location": jobs[i].location
-            })
-            
-            scored_jobs.append(result)
-        
-        # Commit all scores for this batch
-        try:
-            db.commit()
-        except Exception as e:
-            logger.error(f"Error saving job scores to database: {e}")
-            db.rollback()
-        
-        return scored_jobs
+        logger.info(f"Job batch scoring disabled - JobScore model removed")
+        return []
     
     async def _score_single_job(
         self, 

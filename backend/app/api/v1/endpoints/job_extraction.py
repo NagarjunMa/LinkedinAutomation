@@ -170,10 +170,14 @@ async def extract_job_from_url(
                 logger.error("Cannot create application - job_listing.id is None")
                 raise ValueError("Cannot create application - job listing has no ID")
                 
+            # Mark job as applied and set applied_date
+            job_listing.applied = True
+            job_listing.applied_date = datetime.utcnow()
+                
             job_application = JobApplication(
                 user_id=request.user_id,
                 job_id=job_listing.id,
-                application_status="interested",
+                application_status="applied",  # Mark as applied since extracted from URL
                 application_source="url_extraction",
                 source_url=str(request.url),
                 user_notes=request.application_notes or f"Extracted from {job_data.get('company', 'Unknown')} via AI",
