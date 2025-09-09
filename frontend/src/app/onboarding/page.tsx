@@ -1,0 +1,303 @@
+"use client"
+
+import { useState, useEffect } from 'react'
+import { useAuth } from '@/contexts/auth-context'
+import { useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { CheckCircle, Mail, Shield, User, Briefcase } from 'lucide-react'
+import { createClient } from '@/lib/supabase'
+
+export default function OnboardingPage() {
+    const { user, refreshUser } = useAuth()
+    const router = useRouter()
+    const [loading, setLoading] = useState(false)
+    const [formData, setFormData] = useState({
+        fullName: '',
+        company: '',
+        jobTitle: '',
+        acceptTerms: false,
+        acceptGmailAccess: false,
+        acceptJobTracking: false
+    })
+    const [step, setStep] = useState(1)
+    const [error, setError] = useState<string | null>(null)
+
+    useEffect(() => {
+        if (!user) {
+            router.push('/')
+            return
+        }
+
+        // Pre-fill form with user data if available
+        if (user.user_metadata) {
+            setFormData(prev => ({
+                ...prev,
+                fullName: user.user_metadata.full_name || '',
+                company: user.user_metadata.company || '',
+                jobTitle: user.user_metadata.job_title || ''
+            }))
+        }
+    }, [user, router])
+
+    const handleInputChange = (field: string, value: string | boolean) => {
+        setFormData(prev => ({
+            ...prev,
+            [field]: value
+        }))
+    }
+
+    const handleNext = () => {
+        if (step === 1 && !formData.fullName.trim()) {
+            setError('Please enter your full name')
+            return
+        }
+
+        if (step === 2 && !formData.acceptTerms) {
+            setError('Please accept the terms and conditions')
+            return
+        }
+
+        setError(null)
+        if (step < 3) {
+            setStep(step + 1)
+        } else {
+            handleComplete()
+        }
+    }
+
+    const handleBack = () => {
+        if (step > 1) {
+            setStep(step - 1)
+            setError(null)
+        }
+    }
+
+    const handleComplete = async () => {
+        try {
+            setLoading(true)
+            setError(null)
+
+            const supabase = createClient()
+
+            // Update user metadata with onboarding completion and OAuth provider
+            const { error: updateError } = await supabase.auth.updateUser({
+                data: {
+                    onboarding_completed: true,
+                    oauth_provider: 'google', // Mark that user has completed OAuth
+                    full_name: formData.fullName,
+                    company: formData.company,
+                    job_title: formData.jobTitle,
+                    permissions: {
+                        gmail_access: formData.acceptGmailAccess,
+                        job_tracking: formData.acceptJobTracking
+                    }
+                }
+            })
+
+            if (updateError) {
+                throw updateError
+            }
+
+            // Refresh user data
+            await refreshUser()
+
+            // Redirect to dashboard
+            router.push('/dashboard')
+
+        } catch (error) {
+            console.error('Error completing onboarding:', error)
+            setError('Failed to complete onboarding. Please try again.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    if (!user) {
+        return null
+    }
+
+    return (
+        <div className="min-h-screen bg-background flex items-center justify-center p-4">
+            <div className="w-full max-w-2xl">
+                <Card>
+                    <CardHeader className="text-center">
+                        <div className="mx-auto mb-4 w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+                            <User className="w-8 h-8 text-primary" />
+                        </div>
+                        <CardTitle className="text-2xl">Welcome to JobFlow Pro!</CardTitle>
+                        <CardDescription>
+                            Let's set up your account and get you started
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        {/* Progress indicator */}
+                        <div className="flex items-center justify-between mb-6">
+                            {[1, 2, 3].map((stepNumber) => (
+                                <div
+                                    key={stepNumber}
+                                    className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${stepNumber <= step
+                                        ? 'border-primary bg-primary text-primary-foreground'
+                                        : 'border-muted-foreground/20'
+                                        }`}
+                                >
+                                    {stepNumber < step ? (
+                                        <CheckCircle className="w-5 h-5" />
+                                    ) : (
+                                        stepNumber
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+
+                        {error && (
+                            <Alert variant="destructive">
+                                <AlertDescription>{error}</AlertDescription>
+                            </Alert>
+                        )}
+
+                        {/* Step 1: Basic Information */}
+                        {step === 1 && (
+                            <div className="space-y-4">
+                                <div>
+                                    <Label htmlFor="fullName">Full Name</Label>
+                                    <Input
+                                        id="fullName"
+                                        value={formData.fullName}
+                                        onChange={(e) => handleInputChange('fullName', e.target.value)}
+                                        placeholder="Enter your full name"
+                                        className="mt-1"
+                                    />
+                                </div>
+                                <div>
+                                    <Label htmlFor="company">Company (Optional)</Label>
+                                    <Input
+                                        id="company"
+                                        value={formData.company}
+                                        onChange={(e) => handleInputChange('company', e.target.value)}
+                                        placeholder="Where do you work?"
+                                        className="mt-1"
+                                    />
+                                </div>
+                                <div>
+                                    <Label htmlFor="jobTitle">Job Title (Optional)</Label>
+                                    <Input
+                                        id="jobTitle"
+                                        value={formData.jobTitle}
+                                        onChange={(e) => handleInputChange('jobTitle', e.target.value)}
+                                        placeholder="What's your role?"
+                                        className="mt-1"
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Step 2: Permissions */}
+                        {step === 2 && (
+                            <div className="space-y-4">
+                                <div className="space-y-3">
+                                    <div className="flex items-start space-x-3">
+                                        <Checkbox
+                                            id="gmailAccess"
+                                            checked={formData.acceptGmailAccess}
+                                            onCheckedChange={(checked) =>
+                                                handleInputChange('acceptGmailAccess', checked as boolean)
+                                            }
+                                        />
+                                        <div className="space-y-1">
+                                            <Label htmlFor="gmailAccess" className="flex items-center space-x-2">
+                                                <Mail className="w-4 h-4" />
+                                                <span>Gmail Access</span>
+                                            </Label>
+                                            <p className="text-sm text-muted-foreground">
+                                                Allow JobFlow Pro to access your Gmail to automatically track job application emails
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-start space-x-3">
+                                        <Checkbox
+                                            id="jobTracking"
+                                            checked={formData.acceptJobTracking}
+                                            onCheckedChange={(checked) =>
+                                                handleInputChange('acceptJobTracking', checked as boolean)
+                                            }
+                                        />
+                                        <div className="space-y-1">
+                                            <Label htmlFor="jobTracking" className="flex items-center space-x-2">
+                                                <Briefcase className="w-4 h-4" />
+                                                <span>Job Application Tracking</span>
+                                            </Label>
+                                            <p className="text-sm text-muted-foreground">
+                                                Track your job applications and get insights on your application performance
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Step 3: Terms and Final Review */}
+                        {step === 3 && (
+                            <div className="space-y-4">
+                                <div className="space-y-3">
+                                    <div className="flex items-start space-x-3">
+                                        <Checkbox
+                                            id="acceptTerms"
+                                            checked={formData.acceptTerms}
+                                            onCheckedChange={(checked) =>
+                                                handleInputChange('acceptTerms', checked as boolean)
+                                            }
+                                        />
+                                        <div className="space-y-1">
+                                            <Label htmlFor="acceptTerms" className="flex items-center space-x-2">
+                                                <Shield className="w-4 h-4" />
+                                                <span>Terms and Conditions</span>
+                                            </Label>
+                                            <p className="text-sm text-muted-foreground">
+                                                I agree to the Terms of Service and Privacy Policy
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="p-4 bg-muted/50 rounded-lg">
+                                    <h4 className="font-medium mb-2">Review Your Setup</h4>
+                                    <div className="space-y-2 text-sm">
+                                        <p><strong>Name:</strong> {formData.fullName}</p>
+                                        {formData.company && <p><strong>Company:</strong> {formData.company}</p>}
+                                        {formData.jobTitle && <p><strong>Job Title:</strong> {formData.jobTitle}</p>}
+                                        <p><strong>Gmail Access:</strong> {formData.acceptGmailAccess ? 'Enabled' : 'Disabled'}</p>
+                                        <p><strong>Job Tracking:</strong> {formData.acceptJobTracking ? 'Enabled' : 'Disabled'}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Navigation buttons */}
+                        <div className="flex justify-between pt-4">
+                            <Button
+                                variant="outline"
+                                onClick={handleBack}
+                                disabled={step === 1}
+                            >
+                                Back
+                            </Button>
+                            <Button
+                                onClick={handleNext}
+                                disabled={loading}
+                                className="ml-auto"
+                            >
+                                {step === 3 ? (loading ? 'Setting up...' : 'Complete Setup') : 'Next'}
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+        </div>
+    )
+}

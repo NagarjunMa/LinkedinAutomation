@@ -7,6 +7,8 @@ export interface JobStats {
         date: string;
         jobs_extracted: number;
         jobs_applied: number;
+        jobs_from_url?: number;
+        jobs_from_extension?: number;
     }[];
 }
 

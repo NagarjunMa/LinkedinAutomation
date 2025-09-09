@@ -6,20 +6,15 @@ from sqlalchemy import and_, or_, desc
 
 from app.db.session import SessionLocal
 from app.models.job import JobListing, UserProfile
-from app.tasks.scoring_tasks import (
-    score_all_jobs_for_new_user,
-    score_new_job_for_all_users,
-    update_user_job_scores
-)
 
 logger = logging.getLogger(__name__)
 
 class SmartJobScoringService:
     """
-    Scalable job scoring service implementing the efficient architecture:
-    1. Resume-based pre-scoring (expensive, one-time)
+    Simplified job scoring service without background tasks:
+    1. Resume-based pre-scoring (disabled - no background tasks)
     2. Dynamic preference filtering (fast, real-time)  
-    3. Incremental scoring for new jobs (background queue)
+    3. Incremental scoring for new jobs (disabled - no background tasks)
     """
     
     def __init__(self):
@@ -27,61 +22,49 @@ class SmartJobScoringService:
         self.cache_duration_hours = 24
     
     # =====================================================
-    # MAIN SCORING WORKFLOWS
+    # MAIN SCORING WORKFLOWS (DISABLED - NO BACKGROUND TASKS)
     # =====================================================
     
     def trigger_full_scoring_for_new_user(self, user_id: str) -> dict:
         """
-        EXPENSIVE: Score all existing jobs against new user's resume
-        Runs in background via Celery
+        DISABLED: Background task functionality removed
+        Returns immediate response instead of queuing
         """
-        logger.info(f"Triggering full job scoring for new user: {user_id}")
-        
-        # Queue the expensive operation
-        task = score_all_jobs_for_new_user.delay(user_id)
+        logger.info(f"Full job scoring disabled - no background tasks available for user: {user_id}")
         
         return {
-            "message": "Full job scoring initiated",
-            "task_id": task.id,
+            "message": "Full job scoring disabled - background tasks not available",
             "user_id": user_id,
-            "status": "queued",
-            "estimated_time_minutes": "5-15"
+            "status": "disabled",
+            "reason": "Background task system removed during cleanup"
         }
     
     def trigger_scoring_for_new_job(self, job_id: int) -> dict:
         """
-        Score a new job against all existing users
-        Runs in background via Celery
+        DISABLED: Background task functionality removed
+        Returns immediate response instead of queuing
         """
-        logger.info(f"Triggering scoring for new job: {job_id}")
-        
-        # Queue the scoring operation  
-        task = score_new_job_for_all_users.delay(job_id)
+        logger.info(f"New job scoring disabled - no background tasks available for job: {job_id}")
         
         return {
-            "message": "New job scoring initiated",
-            "task_id": task.id, 
+            "message": "New job scoring disabled - background tasks not available",
             "job_id": job_id,
-            "status": "queued",
-            "estimated_time_minutes": "2-5"
+            "status": "disabled",
+            "reason": "Background task system removed during cleanup"
         }
     
     def trigger_profile_update_scoring(self, user_id: str, days_back: int = 7) -> dict:
         """
-        Update scores for recent jobs when user profile changes
-        Less expensive than full re-scoring
+        DISABLED: Background task functionality removed
+        Returns immediate response instead of queuing
         """
-        logger.info(f"Triggering profile update scoring for user: {user_id}")
-        
-        # Queue the update operation
-        task = update_user_job_scores.delay(user_id, days_back)
+        logger.info(f"Profile update scoring disabled - no background tasks available for user: {user_id}")
         
         return {
-            "message": "Profile update scoring initiated",
-            "task_id": task.id,
+            "message": "Profile update scoring disabled - background tasks not available",
             "user_id": user_id,
-            "status": "queued",
-            "estimated_time_minutes": "1-3"
+            "status": "disabled",
+            "reason": "Background task system removed during cleanup"
         }
     
     # =====================================================
@@ -314,6 +297,38 @@ class SmartJobScoringService:
             "user_id": user_id,
             "note": "JobScore functionality disabled - no scores to clear"
         }
+    
+    def calculate_job_relevance(self, job: JobListing) -> float:
+        """
+        Calculate basic job relevance score for contact discovery
+        Simplified scoring without user-specific preferences
+        """
+        try:
+            # Basic relevance scoring based on job attributes
+            score = 50.0  # Base score
+            
+            # Boost for software engineering roles
+            if any(keyword in job.title.lower() for keyword in ['software', 'engineer', 'developer', 'programmer']):
+                score += 20
+            
+            # Boost for senior positions
+            if any(keyword in job.title.lower() for keyword in ['senior', 'staff', 'principal', 'lead']):
+                score += 15
+            
+            # Boost for full-time positions
+            if job.job_type and 'full' in job.job_type.lower():
+                score += 10
+            
+            # Boost for remote positions
+            if job.location and 'remote' in job.location.lower():
+                score += 5
+            
+            # Cap at 100
+            return min(score, 100.0)
+            
+        except Exception as e:
+            logger.error(f"Error calculating job relevance for job {job.id}: {e}")
+            return 50.0  # Default score
 
 # Create singleton instance
 smart_job_scorer = SmartJobScoringService() 

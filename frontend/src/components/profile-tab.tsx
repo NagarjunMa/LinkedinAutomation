@@ -104,10 +104,7 @@ export function ProfileTab({ userId }: ProfileTabProps) {
                 </TabsList>
 
                 <TabsContent value="upload" className="space-y-4">
-                    <ResumeUpload
-                        userId={userId}
-                        onProfileUpdate={handleProfileUpdate}
-                    />
+                    <ResumeUpload />
                 </TabsContent>
 
                 <TabsContent value="preferences" className="space-y-4">

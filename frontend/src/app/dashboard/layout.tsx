@@ -1,5 +1,6 @@
 import { Metadata } from "next"
 import { DashboardProvider } from "../contexts/dashboard-context"
+import { ProtectedRoute } from "@/components/protected-route"
 
 export const metadata: Metadata = {
     title: "Dashboard",
@@ -12,8 +13,10 @@ export default function DashboardLayout({
     children: React.ReactNode
 }) {
     return (
-        <DashboardProvider>
-            {children}
-        </DashboardProvider>
+        <ProtectedRoute>
+            <DashboardProvider>
+                {children}
+            </DashboardProvider>
+        </ProtectedRoute>
     )
 } 

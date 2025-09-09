@@ -31,6 +31,13 @@ export function MainNav({
             </Link>
 
             <Link
+                href="/resume-evaluation"
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+            >
+                Resume Evaluation
+            </Link>
+
+            <Link
                 href="/dashboard/settings"
                 className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
             >

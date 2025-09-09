@@ -68,23 +68,6 @@ services:
       - backend
       - redis
 
-  celery_beat:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    command: celery -A app.core.celery_app beat --loglevel=info
-    volumes:
-      - ./backend:/app
-    environment:
-      - POSTGRES_SERVER=db
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=linkedin_jobs
-      - REDIS_HOST=redis
-    depends_on:
-      - backend
-      - redis
-
 volumes:
   postgres_data:
   redis_data: 

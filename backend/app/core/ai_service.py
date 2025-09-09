@@ -14,7 +14,29 @@ class AIService:
     def __init__(self):
         self.client = AsyncOpenAI(api_key=settings.OPENAPI_KEY)
         self.model = settings.OPENAI_MODEL
+        self.model_name = settings.OPENAI_MODEL  # Add for compatibility
         self.max_tokens = settings.OPENAI_MAX_TOKENS
+    
+    async def get_completion(self, prompt: str, max_tokens: int = None, temperature: float = 0.3) -> str:
+        """
+        Generic method to get completion from OpenAI API
+        Used by resume evaluator and other services
+        """
+        try:
+            response = await self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=max_tokens or self.max_tokens,
+                temperature=temperature
+            )
+            
+            return response.choices[0].message.content.strip()
+            
+        except Exception as e:
+            logger.error(f"Error getting AI completion: {e}")
+            raise
         
     async def parse_resume(self, resume_text: str) -> Dict[str, Any]:
         """
@@ -328,4 +350,11 @@ Score 0-100 based on skill match, experience fit, and requirements. Return only 
         }
 
 # Global AI service instance
-ai_service = AIService() 
+ai_service = AIService()
+
+def get_ai_service() -> AIService:
+    """
+    Dependency injection function for FastAPI
+    Returns the global AI service instance
+    """
+    return ai_service 

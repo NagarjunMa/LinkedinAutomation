@@ -3,7 +3,7 @@ from pydantic_settings import BaseSettings
 from pydantic import AnyHttpUrl, validator
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "LinkedIn Job Scraper"
+    PROJECT_NAME: str = "JobFlow Pro - Job Extraction & Management"
     API_V1_STR: str = "/api/v1"
     
     # CORS Configuration
@@ -38,28 +38,10 @@ class Settings(BaseSettings):
     CELERY_BROKER_URL: str = f"redis://{REDIS_HOST}:{REDIS_PORT}/0"
     CELERY_RESULT_BACKEND: str = f"redis://{REDIS_HOST}:{REDIS_PORT}/0"
     
-    # LinkedIn Scraping Configuration
-    LINKEDIN_SCRAPE_INTERVAL: int = 3600  # 1 hour in seconds
-    MAX_RETRIES: int = 3
-    REQUEST_TIMEOUT: int = 30
-    
-    # Job Aggregation APIs
-    RSS_APP_API_KEY: str = ""
-    INDEED_API_KEY: str = ""
-    
-    # Job Search Configuration
-    MAX_JOBS_PER_SEARCH: int = 500  # Increased to allow all deduplicated jobs
-    JOB_CACHE_TIMEOUT: int = 3600  # 1 hour
-    
     # AI Configuration
     OPENAPI_KEY: str = ""  # OpenAI API key
     OPENAI_MODEL: str = "gpt-4o-mini"  # Cost-efficient model
     OPENAI_MAX_TOKENS: int = 1000  # Token limit for responses
-    
-    # Legacy LinkedIn fields (now optional)
-    LINKEDIN_EMAIL: str = ""
-    LINKEDIN_PASSWORD: str = ""
-    LINKEDIN_COOKIE: str = ""
     
     # Security
     SECRET_KEY: str = "your-secret-key-here"  # Change in production
@@ -81,9 +63,12 @@ class Settings(BaseSettings):
     DEBUG_EMAIL_PROCESSING: bool = True
     LOG_LEVEL: str = "DEBUG"
     
+    # File Upload Configuration
+    UPLOAD_DIR: str = "uploads"  # Base upload directory
+    
     class Config:
         case_sensitive = True
         env_file = ".env"
-        extra = "ignore"  # Allow extra fields during migration
+        extra = "ignore"
 
 settings = Settings() 

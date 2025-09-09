@@ -1,5 +1,6 @@
 import { Toaster } from "@/components/ui/toaster"
 import { ThemeSwitcher } from "@/components/theme-switcher"
+import { Logo } from "@/components/logo"
 
 export default function JobsLayout({
     children,
@@ -10,8 +11,8 @@ export default function JobsLayout({
         <div className="min-h-screen bg-background">
             <div className="border-b">
                 <div className="flex h-16 items-center px-4">
-                    <div className="flex items-center space-x-4">
-                        <h2 className="text-lg font-semibold">LinkedIn Job Automation</h2>
+                    <Logo size={32} showText={false} />
+                    <div className="flex items-center space-x-4 ml-6">
                         <nav className="flex items-center space-x-4">
                             <a
                                 href="/dashboard"

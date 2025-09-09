@@ -1,445 +1,254 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { fetchJobs, fetchJobCounts, updateJobStatus } from "@/app/lib/api"
-import type { Job, JobFilters } from "../types/job"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
-import { useToast } from "@/components/ui/use-toast"
-import { Badge } from "@/components/ui/badge"
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table"
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card"
-import { format, isValid, parseISO } from "date-fns"
-import { CalendarIcon, FilterIcon, RefreshCwIcon, ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
-import { JobCleanupManager } from "@/components/job-cleanup-manager"
+import { useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ATSJobSearch } from "@/components/ats-job-search"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { ExternalLink, Rocket, Briefcase } from "lucide-react"
 
-// Job interface imported from types/job.ts
-
-const formatDate = (dateString: string) => {
-    try {
-        const date = parseISO(dateString)
-        if (isValid(date)) {
-            return format(date, 'MMM dd, yyyy')
-        }
-    } catch (error) {
-        console.warn('Error formatting date:', dateString)
+// Startup Job Boards
+const STARTUP_JOB_BOARDS = [
+    {
+        name: "Otta",
+        description: "Find your people - Only relevant roles. Choose the right job, at the right company for you. Discover your top recommendations now.",
+        url: "https://otta.com/",
+        category: "startup",
+        requiresAuth: false
+    },
+    {
+        name: "Career Vault",
+        description: "Land a remote job. Live anywhere. Join 50,000+ job seekers discovering the latest remote jobs with trusted companies worldwide.",
+        url: "https://www.careervault.io/",
+        category: "startup",
+        requiresAuth: false
+    },
+    {
+        name: "Startup Gallery",
+        description: "Discover today's top startups - A handpicked gallery of 1,028+ outstanding early-stage companies, jobs and funding news. Curated daily.",
+        url: "https://startups.gallery/",
+        category: "startup",
+        requiresAuth: false
+    },
+    {
+        name: "Airtable Tech Jobs",
+        description: "Tech industry portfolio job boards and talent networks - Comprehensive database of tech job opportunities across various platforms.",
+        url: "https://www.airtable.com/universe/expFiABVAU83u1wKh/tech-industry-portfolio-job-boards-and-talent-networks",
+        category: "startup",
+        requiresAuth: false
+    },
+    {
+        name: "Simplify Jobs",
+        description: "Streamlined job application process - Apply to multiple jobs with one click. Simplify your job search and application process.",
+        url: "https://simplify.jobs/",
+        category: "startup",
+        requiresAuth: false
+    },
+    {
+        name: "Wellfound",
+        description: "Startup jobs and opportunities - Connect with innovative startups and find your next role in the startup ecosystem.",
+        url: "https://wellfound.com/jobs",
+        category: "startup",
+        requiresAuth: false
+    },
+    {
+        name: "Built In",
+        description: "Better Matches. Better Jobs. Happier You. Explore 106,859+ tech companies with personalized job recommendations and company insights.",
+        url: "https://builtin.com/",
+        category: "startup",
+        requiresAuth: false
+    },
+    {
+        name: "Tech Jobs for Good",
+        description: "Tech jobs that make a difference - Find meaningful tech roles at companies focused on social impact, sustainability, and positive change.",
+        url: "https://techjobsforgood.com/",
+        category: "startup",
+        requiresAuth: false
+    },
+    {
+        name: "Startup Jobs",
+        description: "Startup job board - Discover opportunities at innovative startups and early-stage companies across various industries.",
+        url: "https://startup.jobs/",
+        category: "startup",
+        requiresAuth: false
+    },
+    {
+        name: "Join Rise",
+        description: "Rise in your career - Find opportunities at companies that value growth, learning, and career development for tech professionals.",
+        url: "https://joinrise.co/",
+        category: "startup",
+        requiresAuth: false
+    },
+    {
+        name: "Remotive",
+        description: "Remote jobs and companies - The #1 remote work community. Find remote jobs, learn about remote work, and connect with remote companies.",
+        url: "https://remotive.com/",
+        category: "startup",
+        requiresAuth: false
+    },
+    {
+        name: "Stamplist",
+        description: "List of Visa specific jobs - Find opportunities that sponsor visas and support international candidates in their job search.",
+        url: "https://stamplist.com",
+        category: "startup",
+        requiresAuth: false
+    },
+    {
+        name: "Welcome to the Jungle",
+        description: "Startup job board - Discover opportunities at innovative startups and early-stage companies with a focus on company culture.",
+        url: "https://welcometothejungle.com",
+        category: "startup",
+        requiresAuth: false
+    },
+    {
+        name: "Hub",
+        description: "Discover startup jobs - Find opportunities at innovative startups and early-stage companies across various sectors.",
+        url: "https://hub.com",
+        category: "startup",
+        requiresAuth: false
+    },
+    {
+        name: "Venture Loop",
+        description: "Startup job opportunities - Connect with venture-backed startups and find roles at companies with strong growth potential.",
+        url: "https://ventureloop.com",
+        category: "startup",
+        requiresAuth: false
+    },
+    {
+        name: "Crunchboard",
+        description: "Startup job board - Discover opportunities at innovative startups and early-stage companies in the tech ecosystem.",
+        url: "https://crunchboard.com",
+        category: "startup",
+        requiresAuth: false
     }
-    return 'Invalid date'
-}
+]
+
+// Tech Stack Job Boards
+const TECH_STACK_JOB_BOARDS = [
+    {
+        name: "TechStackLeads",
+        description: "Super fast job search engine. No sign in required.",
+        url: "https://techstackleads.com",
+        category: "techstack",
+        requiresAuth: false
+    },
+    {
+        name: "Theirstack",
+        description: "Create an account and search jobs based on your skills.",
+        url: "https://app.theirstack.com/home",
+        category: "techstack",
+        requiresAuth: true
+    },
+    {
+        name: "Stackjobs",
+        description: "Sign in and apply for jobs based on your tech stack.",
+        url: "https://stackjobs.dev",
+        category: "techstack",
+        requiresAuth: true
+    }
+]
 
 export default function JobsPage() {
-    const [jobs, setJobs] = useState<Job[]>([])
-    const [loading, setLoading] = useState(true)
-    const [counts, setCounts] = useState({ total: 0, applied: 0, pending: 0 })
-    const [currentPage, setCurrentPage] = useState(1)
-    const [pageSize, setPageSize] = useState(25)
-    const [filters, setFilters] = useState<JobFilters & { applicationStatus: string }>({
-        sortBy: 'newest',
-        applicationStatus: 'all'
-    })
-    const [activeTab, setActiveTab] = useState("jobs")
-    const { toast } = useToast()
-
-    useEffect(() => {
-        const loadJobs = async () => {
-            try {
-                setLoading(true)
-
-                // Prepare filters for API
-                const apiFilters = {
-                    ...filters,
-                    page: currentPage,
-                    limit: pageSize,
-                    applied: filters.applicationStatus === 'applied' ? true :
-                        filters.applicationStatus === 'not-applied' ? false : undefined
-                }
-
-                // Fetch jobs and counts in parallel
-                const [jobsData, countsData] = await Promise.all([
-                    fetchJobs(apiFilters),
-                    fetchJobCounts(filters)
-                ])
-
-                setJobs(jobsData)
-                setCounts(countsData)
-            } catch (error) {
-                console.error('Failed to fetch jobs:', error)
-                toast({
-                    title: "Error",
-                    description: "Failed to fetch jobs",
-                    variant: "destructive",
-                })
-            } finally {
-                setLoading(false)
-            }
-        }
-        loadJobs()
-    }, [filters, currentPage, pageSize, toast])
-
-    const handleFilterChange = (key: keyof (JobFilters & { applicationStatus: string }), value: string) => {
-        setFilters(prev => ({ ...prev, [key]: value }))
-        setCurrentPage(1) // Reset to first page when filters change
-    }
-
-    const handleStatusChange = async (jobId: string, applied: boolean) => {
-        try {
-            await updateJobStatus(jobId, applied)
-            setJobs(jobs.map(job =>
-                job.id === jobId ? { ...job, applied } : job
-            ))
-
-            toast({
-                title: "Success",
-                description: `Job marked as ${applied ? 'applied' : 'not applied'}`,
-            })
-        } catch (error) {
-            console.error('Failed to update job status:', error)
-            toast({
-                title: "Error",
-                description: "Failed to update job status",
-                variant: "destructive",
-            })
-        }
-    }
-
-    const refreshJobs = () => {
-        setFilters(prev => ({ ...prev }))
-        setCurrentPage(1)
-    }
-
-    const totalPages = Math.ceil(counts.total / pageSize)
+    const [activeTab, setActiveTab] = useState("job-search")
 
     return (
-        <div className="container mx-auto px-4 py-8">
-            <div className="space-y-6">
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-3xl font-bold tracking-tight">Jobs</h1>
-                        <p className="text-muted-foreground">
-                            Manage all your job applications and opportunities
-                        </p>
-                    </div>
-                    <Button onClick={refreshJobs} variant="outline" size="sm">
-                        <RefreshCwIcon className="h-4 w-4 mr-2" />
-                        Refresh
-                    </Button>
-                </div>
-
-                {/* Stats Cards */}
-                <div className="grid gap-4 md:grid-cols-3">
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total Jobs</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{counts.total}</div>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Applied</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-green-600">{counts.applied}</div>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Pending</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-orange-600">{counts.pending}</div>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                {/* Tabs */}
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-                    <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="jobs">Job Listings</TabsTrigger>
-                        <TabsTrigger value="cleanup">Cleanup Manager</TabsTrigger>
-                    </TabsList>
-
-                    <TabsContent value="jobs" className="space-y-4">
-                        {/* Filters */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <FilterIcon className="h-5 w-5" />
-                            Filters
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Job Title</label>
-                                <Input
-                                    placeholder="Filter by title..."
-                                    value={filters.title || ''}
-                                    onChange={(e) => handleFilterChange('title', e.target.value)}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Company</label>
-                                <Input
-                                    placeholder="Filter by company..."
-                                    value={filters.company || ''}
-                                    onChange={(e) => handleFilterChange('company', e.target.value)}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Location</label>
-                                <Input
-                                    placeholder="Filter by location..."
-                                    value={filters.location || ''}
-                                    onChange={(e) => handleFilterChange('location', e.target.value)}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Application Status</label>
-                                <Select
-                                    value={filters.applicationStatus}
-                                    onValueChange={(value) => handleFilterChange('applicationStatus', value)}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="All jobs" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">All Jobs</SelectItem>
-                                        <SelectItem value="applied">Applied</SelectItem>
-                                        <SelectItem value="not-applied">Not Applied</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Sort By</label>
-                                <Select
-                                    value={filters.sortBy}
-                                    onValueChange={(value) => handleFilterChange('sortBy', value)}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Sort by" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="newest">Extracted Date (Newest)</SelectItem>
-                                        <SelectItem value="oldest">Extracted Date (Oldest)</SelectItem>
-                                        <SelectItem value="posted_newest">Posted Date (Newest)</SelectItem>
-                                        <SelectItem value="posted_oldest">Posted Date (Oldest)</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Page Size</label>
-                                <Select
-                                    value={pageSize.toString()}
-                                    onValueChange={(value) => {
-                                        setPageSize(parseInt(value))
-                                        setCurrentPage(1)
-                                    }}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Page size" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="25">25 jobs</SelectItem>
-                                        <SelectItem value="50">50 jobs</SelectItem>
-                                        <SelectItem value="75">75 jobs</SelectItem>
-                                        <SelectItem value="100">100 jobs</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Jobs Table */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Job Listings</CardTitle>
-                        <CardDescription>
-                            {loading ? "Loading jobs..." : `Showing ${jobs.length} jobs`}
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="rounded-md border">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Title</TableHead>
-                                        <TableHead>Company</TableHead>
-                                        <TableHead>Location</TableHead>
-                                        <TableHead>Posted Date</TableHead>
-                                        <TableHead>Extracted Date</TableHead>
-                                        <TableHead>Type</TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead>Applied</TableHead>
-                                        <TableHead>Actions</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {loading ? (
-                                        <TableRow>
-                                            <TableCell colSpan={9} className="text-center py-8">
-                                                <div className="flex items-center justify-center">
-                                                    <RefreshCwIcon className="h-4 w-4 animate-spin mr-2" />
-                                                    Loading jobs...
-                                                </div>
-                                            </TableCell>
-                                        </TableRow>
-                                    ) : jobs.length === 0 ? (
-                                        <TableRow>
-                                            <TableCell colSpan={9} className="text-center py-8">
-                                                <div className="text-muted-foreground">
-                                                    No jobs found matching your filters
-                                                </div>
-                                            </TableCell>
-                                        </TableRow>
-                                    ) : (
-                                        jobs.map((job) => (
-                                            <TableRow key={job.id}>
-                                                <TableCell className="font-medium">{job.title}</TableCell>
-                                                <TableCell>{job.company}</TableCell>
-                                                <TableCell>{job.location}</TableCell>
-                                                <TableCell>
-                                                    <div className="flex items-center gap-1">
-                                                        <CalendarIcon className="h-3 w-3 text-muted-foreground" />
-                                                        {formatDate(job.postedAt)}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="flex items-center gap-1">
-                                                        <CalendarIcon className="h-3 w-3 text-muted-foreground" />
-                                                        {formatDate(job.extracted_date || '')}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>{job.type}</TableCell>
-                                                <TableCell>
-                                                    <Badge variant={job.applied ? "default" : "secondary"}>
-                                                        {job.applied ? "Applied" : "Pending"}
-                                                    </Badge>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Checkbox
-                                                        checked={job.applied}
-                                                        onCheckedChange={(checked) => handleStatusChange(job.id, checked as boolean)}
-                                                    />
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => job.url && window.open(job.url, '_blank')}
-                                                        disabled={!job.url}
-                                                    >
-                                                        View Job
-                                                    </Button>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Pagination */}
-                {totalPages > 1 && (
-                    <Card>
-                        <CardContent className="pt-6">
-                            <div className="flex items-center justify-between">
-                                <div className="text-sm text-muted-foreground">
-                                    Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, counts.total)} of {counts.total} jobs
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                                        disabled={currentPage === 1}
-                                    >
-                                        <ChevronLeftIcon className="h-4 w-4" />
-                                        Previous
-                                    </Button>
-                                    <div className="flex items-center space-x-1">
-                                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                                            const pageNum = i + 1;
-                                            return (
-                                                <Button
-                                                    key={pageNum}
-                                                    variant={currentPage === pageNum ? "default" : "outline"}
-                                                    size="sm"
-                                                    onClick={() => setCurrentPage(pageNum)}
-                                                    className="w-8 h-8"
-                                                >
-                                                    {pageNum}
-                                                </Button>
-                                            );
-                                        })}
-                                        {totalPages > 5 && (
-                                            <>
-                                                {currentPage > 3 && <span className="px-2">...</span>}
-                                                {currentPage > 3 && currentPage < totalPages - 2 && (
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        className="w-8 h-8"
-                                                    >
-                                                        {currentPage}
-                                                    </Button>
-                                                )}
-                                                {currentPage < totalPages - 2 && <span className="px-2">...</span>}
-                                                {currentPage < totalPages - 2 && (
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => setCurrentPage(totalPages)}
-                                                        className="w-8 h-8"
-                                                    >
-                                                        {totalPages}
-                                                    </Button>
-                                                )}
-                                            </>
-                                        )}
-                                    </div>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                                        disabled={currentPage === totalPages}
-                                    >
-                                        Next
-                                        <ChevronRightIcon className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                )}
-                    </TabsContent>
-
-                    <TabsContent value="cleanup" className="space-y-4">
-                        <JobCleanupManager />
-                    </TabsContent>
-                </Tabs>
+        <div className="container mx-auto p-6 space-y-6">
+            <div className="text-center space-y-2">
+                <h1 className="text-3xl font-bold">Job Search Interface</h1>
+                <p className="text-muted-foreground">
+                    Find your next opportunity across multiple job platforms
+                </p>
             </div>
+
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="job-search">Job Search</TabsTrigger>
+                    <TabsTrigger value="startup">Startup & Tech</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="job-search" className="space-y-6">
+                    <ATSJobSearch />
+                </TabsContent>
+
+                <TabsContent value="startup" className="space-y-6">
+                    {/* Tech Stack Job Boards Section */}
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-semibold flex items-center gap-2">
+                            <Briefcase className="h-5 w-5 text-blue-500" />
+                            Tech Stack Job Boards
+                        </h3>
+                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                            {TECH_STACK_JOB_BOARDS.map((board) => (
+                                <Card key={board.name} className="hover:shadow-md transition-shadow cursor-pointer">
+                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                        <CardTitle className="text-sm font-medium flex items-center gap-2">
+                                            <Briefcase className="h-4 w-4 text-blue-500" />
+                                            {board.name}
+                                        </CardTitle>
+                                        <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={() => window.open(board.url, '_blank')}
+                                            className="h-6 w-6 p-0"
+                                        >
+                                            <ExternalLink className="h-3 w-3" />
+                                        </Button>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="text-xs text-muted-foreground mb-2">
+                                            {board.description}
+                                        </div>
+                                        {board.requiresAuth && (
+                                            <Badge variant="outline" className="text-xs">
+                                                Requires Account
+                                            </Badge>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Startup Job Boards Section */}
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-semibold flex items-center gap-2">
+                            <Rocket className="h-5 w-5 text-orange-500" />
+                            Startup Job Boards
+                        </h3>
+                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                            {STARTUP_JOB_BOARDS.map((board) => (
+                                <Card key={board.name} className="hover:shadow-md transition-shadow cursor-pointer">
+                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                        <CardTitle className="text-sm font-medium flex items-center gap-2">
+                                            <Rocket className="h-4 w-4 text-orange-500" />
+                                            {board.name}
+                                        </CardTitle>
+                                        <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={() => window.open(board.url, '_blank')}
+                                            className="h-6 w-6 p-0"
+                                        >
+                                            <ExternalLink className="h-3 w-3" />
+                                        </Button>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="text-xs text-muted-foreground mb-2">
+                                            {board.description}
+                                        </div>
+                                        {board.requiresAuth && (
+                                            <Badge variant="outline" className="text-xs">
+                                                Requires Account
+                                            </Badge>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    </div>
+                </TabsContent>
+            </Tabs>
         </div>
     )
 } 

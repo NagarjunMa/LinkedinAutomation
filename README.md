@@ -1,16 +1,15 @@
-# LinkedIn Job Scraper & Automation Tool
+# JobFlow Pro - AI-Powered Job Search Automation
 
-A full-stack application for automated job searching, scraping, and management from LinkedIn and other job boards, with integrated Gmail email tracking using Google OAuth.
+A full-stack application for **on-demand job extraction** from URLs, with integrated Gmail email tracking using Google OAuth.
 
 ## Features
 
-- 🔍 Advanced job search with customizable parameters
-- 📊 Interactive dashboard for viewing and filtering results
-- ⏰ Automated recurring searches
-- 📤 Export functionality (CSV, Excel, Google Sheets)
-- 🤖 AI-powered job matching and skill extraction
-- 📧 Gmail integration for automatic job application email tracking
-- 📱 Responsive, modern UI
+- 🔍 **Smart Job Extraction** - Extract job details from LinkedIn URLs with one click
+- 📊 **Interactive Dashboard** - View and filter extracted jobs with modern UI
+- 📤 **Export Functionality** - CSV, Excel, and Google Sheets export
+- 🤖 **AI-Powered Job Matching** - Smart job scoring and skill extraction
+- 📧 **Gmail Integration** - Automatic job application email tracking
+- 📱 **Responsive, Modern UI** - Built with Next.js and Tailwind CSS
 
 ## Tech Stack
 
@@ -24,11 +23,12 @@ A full-stack application for automated job searching, scraping, and management f
 
 ### Backend
 - Python FastAPI
-- Playwright (Web Scraping)
+- BeautifulSoup4 (Web Scraping)
 - PostgreSQL
-- Redis (Caching & Job Queue)
-- Celery (Task Queue)
+- Redis (Caching & Email Queue)
+- Celery (Email Processing Only)
 - Google OAuth 2.0 (Gmail Integration)
+- OpenAI GPT-4o-mini (AI Job Matching)
 
 ## Prerequisites
 
@@ -38,6 +38,7 @@ A full-stack application for automated job searching, scraping, and management f
 - Redis
 - Docker & Docker Compose
 - Google Cloud Account (for Gmail OAuth)
+- OpenAI API Key (for AI features)
 
 ## Quick Start
 
@@ -57,12 +58,16 @@ cp .env.example .env
    - Follow the [Google OAuth Setup Guide](docs/GOOGLE_OAUTH_SETUP.md)
    - Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in your `.env` file
 
-4. Start the development environment:
+4. Configure OpenAI API (for AI features):
+   - Get your API key from [OpenAI](https://platform.openai.com/)
+   - Set `OPENAPI_KEY` in your `.env` file
+
+5. Start the development environment:
 ```bash
 docker-compose up -d
 ```
 
-5. Access the application:
+6. Access the application:
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:8000
 - API Documentation: http://localhost:8000/docs
@@ -86,14 +91,72 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-## Email Agent Setup
+## Core Features
 
-The Email Agent feature automatically tracks and classifies job application emails from Gmail:
+### 1. URL Job Extraction
+Extract job details from any job posting URL:
+- **LinkedIn Jobs**: Full job details extraction
+- **Indeed Jobs**: Company, title, location, description
+- **Generic Job Boards**: Smart parsing for various formats
+- **Batch Processing**: Extract multiple URLs at once
+- **On-Demand Processing**: No background fetching, jobs extracted when requested
 
-1. **Google OAuth Configuration**: Follow the [Google OAuth Setup Guide](docs/GOOGLE_OAUTH_SETUP.md)
-2. **Test the Setup**: Run `python scripts/test_google_oauth.py` to verify configuration
-3. **Connect Gmail**: Use the Email Agent page to connect your Gmail account
-4. **Process Emails**: Automatically classify and track job application emails
+### 2. AI Job Matching
+Intelligent job scoring using OpenAI:
+- **Resume Parsing**: Extract skills and experience from resumes
+- **Smart Scoring**: Multi-factor compatibility scoring
+- **Personalized Recommendations**: Based on user profiles and preferences
+
+### 3. Email Automation
+Gmail integration for application tracking:
+- **OAuth 2.0**: Secure Gmail access
+- **Email Classification**: AI-powered job-related email detection
+- **Status Updates**: Automatic application status tracking
+- **Follow-up Reminders**: Never miss important emails
+
+### 4. Job Management
+Comprehensive job tracking system:
+- **Application Status**: Track from interested to hired
+- **Notes & Follow-ups**: Keep track of communications
+- **Export Options**: CSV, Excel, Google Sheets
+- **Analytics**: Application success rates and insights
+
+## API Endpoints
+
+### Job Extraction
+- `POST /api/v1/jobs/extract-from-url` - Extract job from single URL
+- `POST /api/v1/jobs/extract-multiple-urls` - Batch URL extraction
+- `GET /api/v1/jobs/extraction-stats/{user_id}` - User extraction statistics
+
+### Job Management
+- `GET /api/v1/jobs/` - List all jobs
+- `GET /api/v1/jobs/{job_id}` - Get specific job
+- `PUT /api/v1/jobs/{job_id}` - Update job details
+- `DELETE /api/v1/jobs/{job_id}` - Delete job
+
+### User Profiles
+- `POST /api/v1/profiles/upload-resume/{user_id}` - Upload and parse resume
+- `GET /api/v1/profiles/profile/{user_id}` - Get user profile
+- `PUT /api/v1/profiles/profile/{user_id}` - Update profile
+
+### Email Agent
+- `POST /api/v1/email-agent/process/{user_id}` - Process user emails
+- `GET /api/v1/email-agent/analytics/{user_id}` - Email analytics
+
+## System Architecture
+
+### Simplified Design
+- **No Automated Job Fetching**: Jobs are extracted on-demand from URLs
+- **No RSS Feeds**: Removed dependency on external RSS services
+- **No Background Schedulers**: Celery only handles email processing
+- **Direct URL Processing**: Users submit URLs for immediate extraction
+
+### Database Models
+- **JobListing**: Core job information
+- **UserProfile**: AI-extracted user profiles
+- **JobApplication**: Application tracking
+- **UserGmailConnection**: Gmail OAuth integration
+- **EmailEvent**: Email classification and tracking
 
 ## Project Structure
 
@@ -108,20 +171,14 @@ linkedin-automation/
 ├── backend/                 # FastAPI backend application
 │   ├── app/                # Main application code
 │   │   ├── api/           # API routes
-│   │   │   └── v1/endpoints/email_agent.py  # Gmail OAuth endpoints
 │   │   ├── core/          # Core functionality
 │   │   ├── models/        # Database models
-│   │   │   └── email_models.py  # Gmail connection models
 │   │   ├── services/      # Business logic
-│   │   │   ├── gmail_service.py  # Google OAuth Gmail service
-│   │   │   └── email_processor.py  # Email processing logic
 │   │   └── utils/         # Utility functions
 │   ├── tests/             # Test files
 │   ├── scripts/           # Utility scripts
-│   │   └── test_google_oauth.py  # OAuth setup verification
 │   └── migrations/        # Database migrations
 └── docs/                  # Comprehensive documentation
-    └── GOOGLE_OAUTH_SETUP.md  # Google OAuth setup guide
 ```
 
 ## 📚 Documentation

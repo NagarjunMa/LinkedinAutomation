@@ -8,8 +8,6 @@ from app.core.config import settings
 from app.api.v1.api import api_router
 from app.core.logging import setup_logging
 from app.models.job import Base
-from app.models.user import User
-from app.models.email_models import UserGmailConnection, EmailEvent, EmailSyncLog  # Import email models
 from app.db.session import engine
 
 # Setup logging
@@ -28,7 +26,7 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    description="LinkedIn Job Scraper & Automation API",
+    description="AI-Powered Job Extraction & Management API",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -57,7 +55,7 @@ async def health_check():
 async def root():
     """Root endpoint"""
     return {
-        "message": "Welcome to LinkedIn Job Scraper & Automation API",
+        "message": "Welcome to JobFlow Pro - AI-Powered Job Extraction & Management API",
         "docs_url": "/docs",
         "redoc_url": "/redoc"
     } 

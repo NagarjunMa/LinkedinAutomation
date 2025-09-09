@@ -28,9 +28,6 @@ import { Button } from "@/components/ui/button"
 import { format, parseISO, isValid } from "date-fns"
 
 const chartConfig = {
-    jobs: {
-        label: "Jobs",
-    },
     jobs_extracted: {
         label: "Jobs Extracted",
         color: "hsl(var(--primary))",
@@ -38,6 +35,14 @@ const chartConfig = {
     jobs_applied: {
         label: "Jobs Applied",
         color: "hsl(var(--secondary))",
+    },
+    jobs_from_url: {
+        label: "From URL Extraction",
+        color: "hsl(var(--chart-1))",
+    },
+    jobs_from_extension: {
+        label: "From Extension",
+        color: "hsl(var(--chart-2))",
     },
 } satisfies ChartConfig
 
@@ -82,7 +87,9 @@ export function Overview() {
             return {
                 date: item.date,
                 jobs_extracted: item.jobs_extracted || 0,
-                jobs_applied: item.jobs_applied || 0
+                jobs_applied: item.jobs_applied || 0,
+                jobs_from_url: item.jobs_from_url || 0,
+                jobs_from_extension: item.jobs_from_extension || 0
             }
         } catch (err) {
             console.warn('Error processing date:', item.date, err)
@@ -166,10 +173,10 @@ export function Overview() {
     return (
         <Card className="@container/card">
             <CardHeader>
-                <CardTitle>Job Activity</CardTitle>
+                <CardTitle>Job Extraction & Applications</CardTitle>
                 <CardDescription>
                     <span className="hidden @[540px]/card:block">
-                        {getTimeRangeDescription(timeRange)}
+                        Jobs extracted from URLs, extensions, and applications over time
                     </span>
                     <span className="@[540px]/card:hidden">{getTimeRangeLabel(timeRange)}</span>
                 </CardDescription>
@@ -249,6 +256,30 @@ export function Overview() {
                                     stopOpacity={0.1}
                                 />
                             </linearGradient>
+                            <linearGradient id="fillFromUrl" x1="0" y1="0" x2="0" y2="1">
+                                <stop
+                                    offset="5%"
+                                    stopColor="var(--color-jobs_from_url)"
+                                    stopOpacity={0.8}
+                                />
+                                <stop
+                                    offset="95%"
+                                    stopColor="var(--color-jobs_from_url)"
+                                    stopOpacity={0.1}
+                                />
+                            </linearGradient>
+                            <linearGradient id="fillFromExtension" x1="0" y1="0" x2="0" y2="1">
+                                <stop
+                                    offset="5%"
+                                    stopColor="var(--color-jobs_from_extension)"
+                                    stopOpacity={0.8}
+                                />
+                                <stop
+                                    offset="95%"
+                                    stopColor="var(--color-jobs_from_extension)"
+                                    stopOpacity={0.1}
+                                />
+                            </linearGradient>
                         </defs>
                         <CartesianGrid vertical={false} />
                         <XAxis
@@ -275,17 +306,24 @@ export function Overview() {
                             }}
                         />
                         <Area
+                            dataKey="jobs_from_extension"
+                            type="natural"
+                            fill="url(#fillFromExtension)"
+                            stroke="var(--color-jobs_from_extension)"
+                            stackId="extraction"
+                        />
+                        <Area
+                            dataKey="jobs_from_url"
+                            type="natural"
+                            fill="url(#fillFromUrl)"
+                            stroke="var(--color-jobs_from_url)"
+                            stackId="extraction"
+                        />
+                        <Area
                             dataKey="jobs_applied"
                             type="natural"
                             fill="url(#fillApplied)"
                             stroke="var(--color-jobs_applied)"
-                            stackId="a"
-                        />
-                        <Area
-                            dataKey="jobs_extracted"
-                            type="natural"
-                            fill="url(#fillExtracted)"
-                            stroke="var(--color-jobs_extracted)"
                             stackId="a"
                         />
                     </AreaChart>

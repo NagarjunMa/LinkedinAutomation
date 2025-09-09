@@ -366,6 +366,102 @@ async def update_job_status(
     db.refresh(db_job)
     return db_job 
 
+@router.put("/{job_id}/application-status")
+async def update_job_application_status(
+    job_id: int,
+    status_update: dict,
+    db: Session = Depends(get_db)
+):
+    """
+    Update comprehensive job application status with the new status system
+    """
+    try:
+        # Find the job
+        db_job = db.query(JobListing).filter(JobListing.id == job_id).first()
+        if not db_job:
+            raise HTTPException(status_code=404, detail="Job not found")
+        
+        # Find or create job application record
+        application = db.query(JobApplication).filter(
+            JobApplication.job_id == job_id,
+            JobApplication.user_id == status_update.get("user_id", "demo_user")
+        ).first()
+        
+        if not application:
+            # Create new application record
+            application = JobApplication(
+                user_id=status_update.get("user_id", "demo_user"),
+                job_id=job_id,
+                application_status=status_update.get("status", "pending"),
+                application_source="url_extraction",
+                source_url=db_job.source_url,
+                user_notes=status_update.get("notes"),
+                extraction_metadata={
+                    "status_update_method": "modal",
+                    "updated_at": datetime.utcnow().isoformat()
+                }
+            )
+            db.add(application)
+        else:
+            # Update existing application
+            application.application_status = status_update.get("status", "pending")
+            application.user_notes = status_update.get("notes")
+            application.updated_at = datetime.utcnow()
+            
+            # Update extraction metadata
+            if not application.extraction_metadata:
+                application.extraction_metadata = {}
+            application.extraction_metadata.update({
+                "status_update_method": "modal",
+                "updated_at": datetime.utcnow().isoformat()
+            })
+        
+        # Update job listing with new status
+        db_job.applied = status_update.get("status") == "applied"
+        
+        # Set applied date if status is "applied"
+        if status_update.get("status") == "applied":
+            if status_update.get("date"):
+                try:
+                    # Parse the date string if provided
+                    if isinstance(status_update["date"], str):
+                        applied_date = datetime.fromisoformat(status_update["date"].replace('Z', '+00:00'))
+                    else:
+                        applied_date = status_update["date"]
+                    db_job.applied_date = applied_date
+                except:
+                    db_job.applied_date = datetime.utcnow()
+            else:
+                db_job.applied_date = datetime.utcnow()
+        
+        # Update job with new status fields
+        if hasattr(db_job, 'application_status'):
+            db_job.application_status = status_update.get("status")
+        if hasattr(db_job, 'application_notes'):
+            db_job.application_notes = status_update.get("notes")
+        if hasattr(db_job, 'application_context'):
+            db_job.application_context = status_update.get("context")
+        
+        db.commit()
+        db.refresh(application)
+        db.refresh(db_job)
+        
+        logger.info(f"Successfully updated job {job_id} application status to {status_update.get('status')}")
+        
+        return {
+            "success": True,
+            "message": f"Job application status updated to {status_update.get('status')}",
+            "job_id": job_id,
+            "application_id": application.id,
+            "status": status_update.get("status"),
+            "updated_at": application.updated_at.isoformat() if application.updated_at else None
+        }
+        
+    except Exception as e:
+        logger.error(f"Error updating job application status: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error updating application status: {str(e)}")
+
 @router.post("/applications/{job_id}/apply")
 async def apply_to_job(
     job_id: int,

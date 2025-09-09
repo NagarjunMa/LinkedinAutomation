@@ -100,6 +100,13 @@ def process_user_emails_async(user_id: str):
         db.close()
 
 @celery_app.task
+def start_email_monitoring():
+    """
+    Start email monitoring - alias for monitor_and_process_emails
+    """
+    return monitor_and_process_emails.delay()
+
+@celery_app.task
 def check_gmail_connections():
     """
     Check Gmail connection health and refresh tokens if needed

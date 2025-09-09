@@ -5,6 +5,7 @@ import re
 from typing import Dict, Any, Optional
 from urllib.parse import urlparse
 from datetime import datetime
+from bs4 import BeautifulSoup
 
 from app.core.ai_service import ai_service
 
@@ -39,11 +40,21 @@ class URLJobExtractor:
             # Step 1: Validate URL
             validated_url = self._validate_url(url)
             
-            # Step 2: Fetch content using free Jina AI Reader
-            markdown_content = await self._fetch_with_jina(validated_url)
+            # Step 2: Fetch content using free Jina AI Reader with fallback
+            try:
+                markdown_content = await self._fetch_with_jina(validated_url)
+            except Exception as fetch_error:
+                logger.error(f"Content fetching failed: {fetch_error}")
+                # Return fallback data with specific error
+                return self._create_fallback_job_data(validated_url, f"Content fetching failed: {str(fetch_error)}")
             
             # Step 3: Extract structured data with OpenAI
-            job_details = await self._extract_with_openai(markdown_content, validated_url, user_context)
+            try:
+                job_details = await self._extract_with_openai(markdown_content, validated_url, user_context)
+            except Exception as ai_error:
+                logger.error(f"AI extraction failed: {ai_error}")
+                # Return fallback data with AI error
+                return self._create_fallback_job_data(validated_url, f"AI extraction failed: {str(ai_error)}")
             
             # Step 4: Add extraction metadata
             job_details.update({
@@ -86,7 +97,9 @@ class URLJobExtractor:
             'linkedin.com', 'indeed.com', 'glassdoor.com', 'monster.com',
             'ziprecruiter.com', 'careerbuilder.com', 'simplyhired.com',
             'dice.com', 'stackoverflow.com', 'angel.co', 'wellfound.com',
-            'remote.co', 'weworkremotely.com', 'flexjobs.com', 'upwork.com'
+            'remote.co', 'weworkremotely.com', 'flexjobs.com', 'upwork.com',
+            'stripe.com', 'google.com', 'microsoft.com', 'amazon.com',
+            'apple.com', 'meta.com', 'netflix.com', 'uber.com', 'airbnb.com'
         ]
         
         # Allow any domain but log if it's not a known job site
@@ -99,6 +112,7 @@ class URLJobExtractor:
     async def _fetch_with_jina(self, url: str) -> str:
         """
         Fetch and convert URL to clean markdown using free Jina AI Reader
+        Falls back to direct HTML parsing if Jina AI Reader fails
         """
         jina_url = f"{self.jina_base_url}{url}"
         
@@ -119,6 +133,11 @@ class URLJobExtractor:
             if not content or len(content) < 100:
                 raise Exception("Content too short or empty")
             
+            # Check if response is HTML (Jina AI Reader might return HTML instead of markdown)
+            if content.strip().startswith('<!DOCTYPE') or content.strip().startswith('<html'):
+                logger.warning("Jina AI Reader returned HTML instead of markdown, falling back to direct HTML parsing")
+                return await self._fetch_direct_html(url)
+            
             # Limit content length for OpenAI processing
             if len(content) > self.max_content_length:
                 content = content[:self.max_content_length] + "\n... (content truncated)"
@@ -127,15 +146,211 @@ class URLJobExtractor:
             return content
             
         except requests.exceptions.Timeout:
-            raise Exception("Request timed out while fetching job content")
+            logger.warning("Jina AI Reader timed out, falling back to direct HTML parsing")
+            return await self._fetch_direct_html(url)
         except requests.exceptions.RequestException as e:
-            raise Exception(f"Failed to fetch job content: {str(e)}")
+            logger.warning(f"Jina AI Reader failed: {str(e)}, falling back to direct HTML parsing")
+            return await self._fetch_direct_html(url)
+    
+    async def _fetch_direct_html(self, url: str) -> str:
+        """
+        Fallback method: Fetch HTML directly and convert to clean text
+        """
+        logger.info(f"Fetching content directly from URL: {url}")
+        
+        try:
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'DNT': '1',
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1'
+            }
+            
+            response = requests.get(url, headers=headers, timeout=self.timeout)
+            response.raise_for_status()
+            
+            # Parse HTML with BeautifulSoup
+            soup = BeautifulSoup(response.content, 'html.parser')
+            
+            # Special handling for Stripe job pages
+            if 'stripe.com/jobs' in url:
+                logger.info("Detected Stripe job page, using specialized extraction")
+                return self._extract_stripe_job_content(soup)
+            
+            # Remove script and style elements
+            for script in soup(["script", "style", "nav", "header", "footer", "aside"]):
+                script.decompose()
+            
+            # Extract text content
+            text_content = soup.get_text()
+            
+            # Clean up whitespace
+            lines = (line.strip() for line in text_content.splitlines())
+            chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
+            text_content = ' '.join(chunk for chunk in chunks if chunk)
+            
+            if not text_content or len(text_content) < 100:
+                raise Exception("Extracted content too short or empty")
+            
+            # Limit content length for OpenAI processing
+            if len(text_content) > self.max_content_length:
+                text_content = text_content[:self.max_content_length] + "\n... (content truncated)"
+            
+            logger.info(f"Successfully fetched {len(text_content)} characters via direct HTML parsing")
+            return text_content
+            
+        except Exception as e:
+            logger.error(f"Direct HTML parsing also failed: {str(e)}")
+            raise Exception(f"Failed to fetch content from URL: {str(e)}")
+    
+    def _extract_stripe_job_content(self, soup: BeautifulSoup) -> str:
+        """
+        Specialized extraction for Stripe job pages
+        """
+        try:
+            # Extract main content sections
+            content_parts = []
+            
+            # Job title (usually in h1)
+            title_elem = soup.find('h1')
+            if title_elem:
+                content_parts.append(f"Job Title: {title_elem.get_text(strip=True)}")
+            
+            # About Stripe section
+            about_section = soup.find('h2', string=lambda text: text and 'About Stripe' in text)
+            if about_section:
+                about_content = about_section.find_next_sibling()
+                if about_content:
+                    content_parts.append(f"About Stripe: {about_content.get_text(strip=True)}")
+            
+            # About the team section
+            team_section = soup.find('h2', string=lambda text: text and 'About the team' in text)
+            if team_section:
+                team_content = team_section.find_next_sibling()
+                if team_content:
+                    content_parts.append(f"About the team: {team_content.get_text(strip=True)}")
+            
+            # What you'll do section
+            do_section = soup.find('h2', string=lambda text: text and "What you'll do" in text)
+            if do_section:
+                do_content = do_section.find_next_sibling()
+                if do_content:
+                    content_parts.append(f"What you'll do: {do_content.get_text(strip=True)}")
+            
+            # Responsibilities
+            resp_section = soup.find('h2', string=lambda text: text and 'Responsibilities' in text)
+            if resp_section:
+                resp_content = resp_section.find_next_sibling()
+                if resp_content:
+                    content_parts.append(f"Responsibilities: {resp_content.get_text(strip=True)}")
+            
+            # Who you are section
+            who_section = soup.find('h2', string=lambda text: text and 'Who you are' in text)
+            if who_section:
+                who_content = who_section.find_next_sibling()
+                if who_content:
+                    content_parts.append(f"Who you are: {who_content.get_text(strip=True)}")
+            
+            # Minimum requirements
+            min_req_section = soup.find('h2', string=lambda text: text and 'Minimum requirements' in text)
+            if min_req_section:
+                min_req_content = min_req_section.find_next_sibling()
+                if min_req_content:
+                    content_parts.append(f"Minimum requirements: {min_req_content.get_text(strip=True)}")
+            
+            # Preferred qualifications
+            pref_qual_section = soup.find('h2', string=lambda text: text and 'Preferred qualifications' in text)
+            if pref_qual_section:
+                pref_qual_content = pref_qual_section.find_next_sibling()
+                if pref_qual_content:
+                    content_parts.append(f"Preferred qualifications: {pref_qual_content.get_text(strip=True)}")
+            
+            # Pay and benefits
+            pay_section = soup.find('h2', string=lambda text: text and 'Pay and benefits' in text)
+            if pay_section:
+                pay_content = pay_section.find_next_sibling()
+                if pay_content:
+                    content_parts.append(f"Pay and benefits: {pay_content.get_text(strip=True)}")
+            
+            # Office locations
+            office_section = soup.find('h2', string=lambda text: text and 'Office locations' in text)
+            if office_section:
+                office_content = office_section.find_next_sibling()
+                if office_content:
+                    content_parts.append(f"Office locations: {office_content.get_text(strip=True)}")
+            
+            # Team information
+            team_info = soup.find('h2', string=lambda text: text and 'Team' in text)
+            if team_info:
+                team_info_content = team_info.find_next_sibling()
+                if team_info_content:
+                    content_parts.append(f"Team: {team_info_content.get_text(strip=True)}")
+            
+            # Job type
+            job_type = soup.find('h2', string=lambda text: text and 'Job type' in text)
+            if job_type:
+                job_type_content = job_type.find_next_sibling()
+                if job_type_content:
+                    content_parts.append(f"Job type: {job_type_content.get_text(strip=True)}")
+            
+            # Combine all content
+            if content_parts:
+                combined_content = '\n\n'.join(content_parts)
+                
+                # Limit content length for OpenAI processing
+                if len(combined_content) > self.max_content_length:
+                    combined_content = combined_content[:self.max_content_length] + "\n... (content truncated)"
+                
+                logger.info(f"Successfully extracted {len(combined_content)} characters from Stripe job page")
+                return combined_content
+            else:
+                # Fallback to general text extraction
+                logger.warning("Stripe-specific extraction failed, falling back to general extraction")
+                return self._extract_general_content(soup)
+                
+        except Exception as e:
+            logger.error(f"Stripe-specific extraction failed: {e}, falling back to general extraction")
+            return self._extract_general_content(soup)
+    
+    def _extract_general_content(self, soup: BeautifulSoup) -> str:
+        """
+        General content extraction fallback
+        """
+        # Remove script and style elements
+        for script in soup(["script", "style", "nav", "header", "footer", "aside"]):
+            script.decompose()
+        
+        # Extract text content
+        text_content = soup.get_text()
+        
+        # Clean up whitespace
+        lines = (line.strip() for line in text_content.splitlines())
+        chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
+        text_content = ' '.join(chunk for chunk in chunks if chunk)
+        
+        # Limit content length for OpenAI processing
+        if len(text_content) > self.max_content_length:
+            text_content = text_content[:self.max_content_length] + "\n... (content truncated)"
+        
+        return text_content
     
     async def _extract_with_openai(self, markdown_content: str, original_url: str, user_context: Optional[Dict] = None) -> Dict[str, Any]:
         """
         Extract structured job data using OpenAI GPT-4o-mini
         """
         try:
+            logger.info(f"Starting OpenAI extraction for URL: {original_url}")
+            logger.info(f"Content length: {len(markdown_content)} characters")
+            logger.info(f"Content preview: {markdown_content[:200]}...")
+            
+            # Check if AI service is properly configured
+            if not hasattr(ai_service, 'client') or not ai_service.client:
+                logger.error("AI service client not properly initialized")
+                raise Exception("AI service not available")
+            
             # Build context-aware prompt
             context_info = ""
             if user_context:
@@ -178,6 +393,7 @@ Job posting content:
 
 Return ONLY the JSON object (no explanation):"""
             
+            logger.info("Sending prompt to OpenAI...")
             response = await ai_service.client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[{"role": "user", "content": prompt}],
@@ -186,6 +402,8 @@ Return ONLY the JSON object (no explanation):"""
             )
             
             content = response.choices[0].message.content.strip()
+            logger.info(f"OpenAI response received, length: {len(content)} characters")
+            logger.info(f"Response preview: {content[:200]}...")
             
             # Clean up response (remove code blocks if present)
             if content.startswith('```json'):

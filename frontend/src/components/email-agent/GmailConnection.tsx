@@ -8,8 +8,9 @@ import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Loader2, Mail, CheckCircle, XCircle, ExternalLink } from 'lucide-react'
+import { Loader2, Mail, CheckCircle, XCircle } from 'lucide-react'
 import { emailAgentApi } from '@/app/lib/api'
+import { useAuth } from '@/contexts/auth-context'
 
 interface GmailConnectionProps {
     userId: string
@@ -32,16 +33,18 @@ interface ConnectionStatus {
 
 export function GmailConnection({ userId }: GmailConnectionProps) {
     const router = useRouter()
+    const { user } = useAuth()
     const [status, setStatus] = useState<ConnectionStatus | null>(null)
     const [isConnecting, setIsConnecting] = useState(false)
     const [isProcessing, setIsProcessing] = useState(false)
-    const [authUrl, setAuthUrl] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
     const [userEmail, setUserEmail] = useState<string>('')
     const [showSuccess, setShowSuccess] = useState(false)
 
     useEffect(() => {
-        fetchStatus()
+        if (userId) {
+            fetchStatus()
+        }
     }, [userId])
 
     // Check for OAuth callback success or error
@@ -72,6 +75,8 @@ export function GmailConnection({ userId }: GmailConnectionProps) {
     }, [router])
 
     const fetchStatus = async () => {
+        if (!userId) return
+        
         try {
             const response = await emailAgentApi.getGmailStatus(userId)
             setStatus(response)
@@ -88,18 +93,21 @@ export function GmailConnection({ userId }: GmailConnectionProps) {
             return
         }
 
+        if (!userId) {
+            setError('User not authenticated')
+            return
+        }
+
         setIsConnecting(true)
         setError(null)
 
         try {
-            console.log('Connecting Gmail...', userEmail)
             const response = await emailAgentApi.connectGmail(userId, userEmail)
-            console.log('Response:', response)
 
             if (response.status === 'auth_required') {
-                setAuthUrl(response.auth_url)
-                // Open the authorization URL in a new popup window
-                window.open(response.auth_url, '_blank', 'width=600,height=700')
+                // For unified OAuth, we should already have Gmail access
+                // If we reach here, it means we need to request additional Gmail scopes
+                setError('Gmail access is already available through your Google OAuth. Please try processing emails directly.')
             } else if (response.status === 'connected') {
                 await fetchStatus()
                 setShowSuccess(true)
@@ -117,6 +125,11 @@ export function GmailConnection({ userId }: GmailConnectionProps) {
     }
 
     const processEmails = async () => {
+        if (!userId) {
+            setError('User not authenticated')
+            return
+        }
+
         setIsProcessing(true)
         setError(null)
 
@@ -125,6 +138,7 @@ export function GmailConnection({ userId }: GmailConnectionProps) {
 
             if (response.success) {
                 await fetchStatus()
+                setShowSuccess(true)
                 // You could show a success message here
             }
         } catch (err: any) {
@@ -136,6 +150,8 @@ export function GmailConnection({ userId }: GmailConnectionProps) {
     }
 
     const disconnectGmail = async () => {
+        if (!userId) return
+
         try {
             await emailAgentApi.disconnectGmail(userId)
             await fetchStatus()
@@ -146,6 +162,28 @@ export function GmailConnection({ userId }: GmailConnectionProps) {
         }
     }
 
+    // If no user ID, show loading or error
+    if (!userId) {
+        return (
+            <Card className="w-full">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Mail className="h-5 w-5" />
+                        Gmail Connection
+                    </CardTitle>
+                    <CardDescription>
+                        Loading user information...
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex items-center justify-center p-4">
+                        <Loader2 className="h-6 w-6 animate-spin" />
+                    </div>
+                </CardContent>
+            </Card>
+        )
+    }
+
     return (
         <Card className="w-full">
             <CardHeader>
@@ -154,7 +192,7 @@ export function GmailConnection({ userId }: GmailConnectionProps) {
                     Gmail Connection
                 </CardTitle>
                 <CardDescription>
-                    Connect your Gmail account to automatically track job application emails using Google OAuth
+                    Your Gmail account is connected through Google OAuth. You can now process emails and track job applications.
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -170,24 +208,6 @@ export function GmailConnection({ userId }: GmailConnectionProps) {
                         <CheckCircle className="h-4 w-4" />
                         <AlertDescription>
                             Gmail connected successfully! Redirecting to dashboard...
-                        </AlertDescription>
-                    </Alert>
-                )}
-
-                {authUrl && (
-                    <Alert>
-                        <ExternalLink className="h-4 w-4" />
-                        <AlertDescription>
-                            Please complete Google authorization in the popup window.
-                            <br />
-                            <a
-                                href={authUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 hover:underline"
-                            >
-                                Click here if the popup didn't open
-                            </a>
                         </AlertDescription>
                     </Alert>
                 )}
