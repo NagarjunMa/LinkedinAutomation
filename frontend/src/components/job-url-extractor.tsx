@@ -211,7 +211,7 @@ export default function JobURLExtractor({ userId, onJobExtracted }: JobURLExtrac
 
           {/* Sample URLs */}
           <div className="space-y-2">
-            <Label className="text-sm text-gray-600">Try these sample URLs:</Label>
+            <Label className="text-sm text-cream-300">Try these sample URLs:</Label>
             <div className="flex flex-wrap gap-2">
               {[
                 'https://linkedin.com/jobs/view/senior-software-engineer',
@@ -264,10 +264,10 @@ export default function JobURLExtractor({ userId, onJobExtracted }: JobURLExtrac
             <div className="space-y-4">
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
-                  <h3 className="text-xl font-semibold text-gray-900">
+                  <h3 className="text-xl font-semibold text-cream-50">
                     {extractedJob.title}
                   </h3>
-                  <p className="text-lg text-gray-600">
+                  <p className="text-lg text-cream-200">
                     {extractedJob.company} • {extractedJob.location}
                   </p>
                 </div>
@@ -288,19 +288,19 @@ export default function JobURLExtractor({ userId, onJobExtracted }: JobURLExtrac
               {extractedJob.compatibilityScore && (
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm text-cream-300">
                     AI Compatibility Score: <strong>{extractedJob.compatibilityScore}%</strong>
                   </span>
                 </div>
               )}
 
               {extractedJob.aiInsights && (
-                <div className="text-sm text-gray-600 bg-white p-3 rounded-lg border">
+                <div className="text-sm text-cream-300 bg-primary-800 p-3 rounded-lg border border-primary-600">
                   <strong>AI Insights:</strong> {extractedJob.aiInsights}
                 </div>
               )}
 
-              <div className="text-sm text-gray-500">
+              <div className="text-sm text-cream-400">
                 <strong>Extracted:</strong> {new Date(extractedJob.extractedDate).toLocaleDateString()}
               </div>
 

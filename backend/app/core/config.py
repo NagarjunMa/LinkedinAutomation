@@ -41,7 +41,7 @@ class Settings(BaseSettings):
     # AI Configuration
     OPENAPI_KEY: str = ""  # OpenAI API key
     OPENAI_MODEL: str = "gpt-4o-mini"  # Cost-efficient model
-    OPENAI_MAX_TOKENS: int = 1000  # Token limit for responses
+    OPENAI_MAX_TOKENS: int = 4000  # Token limit for responses
     
     # Security
     SECRET_KEY: str = "your-secret-key-here"  # Change in production

@@ -18,7 +18,7 @@ export function LoadingPreview() {
         <div className="p-8 space-y-6">
             <div className="text-center space-y-4">
                 <h2 className="text-2xl font-bold">Loading Screen Preview</h2>
-                <p className="text-gray-600">Click the button below to see the new loading screen with color #4a5c6a</p>
+                <p className="text-cream-200">Click the button below to see the new loading screen with color #4a5c6a</p>
 
                 <Button onClick={triggerLoading} className="bg-blue-600 hover:bg-blue-700">
                     Trigger Loading Screen
@@ -26,7 +26,7 @@ export function LoadingPreview() {
             </div>
 
             {/* Standalone loading text demo */}
-            <div className="bg-gray-900 p-8 rounded-lg text-center">
+            <div className="bg-primary-900 p-8 rounded-lg text-center">
                 <h3 className="text-white mb-4">Loading Text Effect (Standalone)</h3>
                 <LoadingFillText text="LOADING" />
             </div>
@@ -41,8 +41,8 @@ export function LoadingPreview() {
                     ></div>
                     <div>
                         <p className="font-mono text-sm">Hex: #4a5c6a</p>
-                        <p className="text-sm text-gray-600">RGB: 74, 92, 106</p>
-                        <p className="text-sm text-gray-600">Muted blue-gray tone</p>
+                        <p className="text-sm text-cream-300">RGB: 74, 92, 106</p>
+                        <p className="text-sm text-cream-300">Muted blue-gray tone</p>
                     </div>
                 </div>
             </div>

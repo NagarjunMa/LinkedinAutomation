@@ -1,36 +1,49 @@
 "use client"
 
-import { useState } from "react"
-import Image from "next/image"
+import { useState, useEffect } from "react"
 import { useDashboard } from "../contexts/dashboard-context"
+import { SophisticatedLayout } from "@/components/sophisticated-layout"
+import {
+    OverviewCard,
+    QuickActionCard,
+    RecentJobsCard
+} from "@/components/sophisticated-cards"
+import { EmailStatsCard } from "@/components/email-stats-card"
+import { JobExtractionChart } from "@/components/job-extraction-chart"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card"
-import {
-    Tabs,
-    TabsContent,
-    TabsList,
-    TabsTrigger,
-} from "@/components/ui/tabs"
-import { CalendarDateRangePicker } from "@/components/date-range-picker"
-import { MainNav } from "@/components/main-nav"
+    BarChart3,
+    Briefcase,
+    FileText,
+    Mail,
+    Search,
+    Target,
+    TrendingUp,
+    Users,
+    Zap,
+    Clock,
+    CheckCircle,
+    AlertCircle,
+    Star,
+    ArrowRight,
+    Plus,
+    Filter,
+    Download,
+    Send,
+    ArrowUpRight,
+    ChevronDown
+} from "lucide-react"
 import { Overview } from "@/components/overview"
 import { RecentSales } from "@/components/recent-sales"
-import { ThemeSwitcher } from "@/components/theme-switcher"
-import { UserNav } from "@/components/user-nav"
-import { JobsTab } from "@/components/jobs-tab"
-import { ProfileTab } from "@/components/profile-tab"
 import JobURLExtractor from "@/components/job-url-extractor"
-import { PageTransitionLoading } from "@/components/ui/loading-fill-text"
-import { Logo } from "@/components/logo"
-import Link from "next/link"
-import { ExternalLink, Rocket, Briefcase } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
+import {
+    FadeInUp,
+    FadeIn,
+    StaggerContainer,
+    StaggerItem
+} from "@/components/animated-wrapper"
 
 // Startup Job Boards
 const STARTUP_JOB_BOARDS = [
@@ -117,429 +130,259 @@ const TECH_STACK_JOB_BOARDS = [
     }
 ]
 
+// Sample data for sophisticated dashboard
+const overviewData = {
+    total: 40,
+    applied: 24,
+    interviews: 16
+}
+
+const recentJobs = [
+    {
+        id: "1",
+        company: "TechCorp Inc.",
+        position: "Senior Frontend Developer",
+        amount: "$120,000 - $150,000",
+        status: "waiting" as const,
+        method: "LinkedIn Application",
+        date: "Applied Aug 24, 2024"
+    },
+    {
+        id: "2",
+        company: "StartupXYZ",
+        position: "Full Stack Engineer",
+        amount: "$100,000 - $130,000",
+        status: "success" as const,
+        method: "Company Website",
+        date: "Applied Aug 18, 2024"
+    },
+    {
+        id: "3",
+        company: "BigTech Co.",
+        position: "Software Engineer",
+        amount: "$110,000 - $140,000",
+        status: "due" as const,
+        method: "Indeed Application",
+        date: "Applied Aug 8, 2024"
+    },
+    {
+        id: "4",
+        company: "Innovation Labs",
+        position: "DevOps Engineer",
+        amount: "$95,000 - $125,000",
+        status: "disabled" as const,
+        method: "AngelList",
+        date: "Applied Aug 2, 2024"
+    }
+]
+
+// Sample data for application extraction chart - random values for demo
+const applicationExtractionData = [
+    { date: "2024-10-01", jobs: 12 },
+    { date: "2024-10-02", jobs: 8 },
+    { date: "2024-10-03", jobs: 15 },
+    { date: "2024-10-04", jobs: 6 },
+    { date: "2024-10-05", jobs: 18 },
+    { date: "2024-10-06", jobs: 10 },
+    { date: "2024-10-07", jobs: 14 }
+]
+
+const quickActions = [
+    {
+        label: "Extract Job URL",
+        shortcut: "E",
+        icon: Target,
+        onClick: () => window.location.href = "/dashboard"
+    },
+    {
+        label: "Upload Resume",
+        shortcut: "R",
+        icon: FileText,
+        onClick: () => window.location.href = "/dashboard/resume-evaluation"
+    }
+]
+
 export default function DashboardPage() {
     const { stats, loading, error, refreshData } = useDashboard()
-    const [activeTab, setActiveTab] = useState("overview")
-    const [tabLoading, setTabLoading] = useState(false)
+    const [applicationStats, setApplicationStats] = useState(applicationExtractionData)
+    const [dashboardSummary, setDashboardSummary] = useState(null)
+    const [loadingStats, setLoadingStats] = useState(false)
 
-    const handleTabChange = (value: string) => {
-        if (value !== activeTab) {
-            setTabLoading(true)
-            // Simulate loading delay for smooth transition
-            setTimeout(() => {
-                setActiveTab(value)
-                setTabLoading(false)
-            }, 1500) // Increased to 1.5 seconds to better show the loading effect
+    // Fetch application extraction stats from backend
+    useEffect(() => {
+        const fetchApplicationStats = async () => {
+            setLoadingStats(true)
+            try {
+                const response = await fetch('/api/v1/stats/application-extraction-stats', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                    }
+                })
+
+                if (response.ok) {
+                    const result = await response.json()
+                    if (result.status === 'success') {
+                        setApplicationStats(result.data)
+                    }
+                } else {
+                    console.log('Using fallback data for application stats')
+                }
+            } catch (error) {
+                console.log('Error fetching application stats, using fallback data:', error)
+            } finally {
+                setLoadingStats(false)
+            }
         }
-    }
+
+        fetchApplicationStats()
+    }, [])
 
     if (error) {
         return (
-            <div className="flex items-center justify-center min-h-screen">
+            <div className="flex items-center justify-center min-h-screen bg-primary-950">
                 <div className="text-center">
-                    <p className="text-red-500 mb-4">Error: {error}</p>
-                    <Button onClick={refreshData}>Retry</Button>
+                    <p className="text-red-400 mb-4">Error: {error}</p>
+                    <Button onClick={refreshData} className="bg-orange-500 hover:bg-orange-600">
+                        Retry
+                    </Button>
                 </div>
             </div>
         )
     }
 
     return (
-        <>
-            {tabLoading && <PageTransitionLoading />}
-            <div className="md:hidden">
-                <Image
-                    src="/examples/dashboard-light.png"
-                    width={1280}
-                    height={866}
-                    alt="Dashboard"
-                    className="block dark:hidden"
-                />
-                <Image
-                    src="/examples/dashboard-dark.png"
-                    width={1280}
-                    height={866}
-                    alt="Dashboard"
-                    className="hidden dark:block"
-                />
-            </div>
-            <div className="hidden flex-col md:flex">
-                <div className="border-b">
-                    <div className="flex h-16 items-center px-4">
-                        <Link href="/" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
-                            <Logo size={32} showText={false} />
-                            <span className="text-xl font-bold text-foreground">JobFlow Pro</span>
-                        </Link>
-                        <MainNav className="mx-6" />
-                        <div className="ml-auto flex items-center space-x-4">
-                            <ThemeSwitcher />
-                            <UserNav />
+        <SophisticatedLayout
+            notificationCount={2}
+        >
+            <StaggerContainer>
+                {/* Main Dashboard Grid */}
+                <StaggerItem>
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                        {/* Overview Card */}
+                        <div className="h-80">
+                            <OverviewCard
+                                title="Overview"
+                                period="This Week"
+                                stats={overviewData}
+                            />
+                        </div>
+
+                        {/* Email Stats Card */}
+                        <div className="h-80">
+                            <EmailStatsCard
+                                title="Email Processing"
+                                emailsSent={24}
+                                emailsProcessed={18}
+                                change="+15%"
+                                changeType="increase"
+                            />
+                        </div>
+
+                        {/* Quick Action Card */}
+                        <div className="h-80">
+                            <QuickActionCard
+                                title="Quick Action"
+                                actions={quickActions}
+                            />
                         </div>
                     </div>
-                </div>
-                <div className="flex-1 space-y-4 p-8 pt-6">
-                    <div className="flex items-center justify-between space-y-2">
-                        <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-                        <div className="flex items-center space-x-2">
-                            <CalendarDateRangePicker />
-                            <Button onClick={refreshData}>Refresh</Button>
+                </StaggerItem>
+
+                {/* Application Extraction Chart and Recent Applications */}
+                <StaggerItem>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                        {/* Application Extraction Chart */}
+                        <div className="h-80">
+                            <JobExtractionChart data={applicationStats} />
+                        </div>
+
+                        {/* Recent Applications Card */}
+                        <div className="h-80">
+                            <RecentJobsCard
+                                title="Recent Applications"
+                                jobs={recentJobs}
+                            />
                         </div>
                     </div>
-                    <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
-                        <TabsList>
-                            <TabsTrigger value="overview">Overview</TabsTrigger>
-                            <TabsTrigger value="jobs">Jobs</TabsTrigger>
-                            <TabsTrigger value="extract">Extract Job URL</TabsTrigger>
-                            <TabsTrigger value="profile">AI Profile</TabsTrigger>
-                        </TabsList>
-                        <TabsContent value="overview" className="space-y-4">
-                            {/* Startup Job Boards Section */}
-                            <div className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <h3 className="text-lg font-semibold flex items-center gap-2">
-                                        <Rocket className="h-5 w-5 text-orange-500" />
-                                        Startup Job Boards
-                                    </h3>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => window.open('/jobs', '_blank')}
-                                    >
-                                        View All
-                                    </Button>
-                                </div>
-                                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                                    {STARTUP_JOB_BOARDS.slice(0, 4).map((board) => (
-                                        <Card key={board.name} className="hover:shadow-md transition-shadow cursor-pointer">
-                                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                                                    <Rocket className="h-4 w-4 text-orange-500" />
-                                                    {board.name}
-                                                </CardTitle>
-                                                <Button
-                                                    size="sm"
-                                                    variant="ghost"
-                                                    onClick={() => window.open(board.url, '_blank')}
-                                                    className="h-6 w-6 p-0"
-                                                >
-                                                    <ExternalLink className="h-3 w-3" />
-                                                </Button>
-                                            </CardHeader>
-                                            <CardContent>
-                                                <div className="text-xs text-muted-foreground mb-2">
-                                                    {board.description}
-                                                </div>
-                                                {board.requiresAuth && (
-                                                    <Badge variant="outline" className="text-xs">
-                                                        Requires Account
-                                                    </Badge>
-                                                )}
-                                            </CardContent>
-                                        </Card>
-                                    ))}
-                                </div>
-                            </div>
+                </StaggerItem>
 
-                            {/* Job Extraction Statistics */}
-                            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                                <Card>
-                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                        <CardTitle className="text-sm font-medium">
-                                            Total Jobs Extracted
+                {/* Additional Dashboard Content */}
+                <StaggerItem>
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                        {/* Job Search Progress */}
+                        <div className="h-60">
+                            <Card className="premium-card hover:scale-105 transition-all duration-300 group h-full flex flex-col">
+                                <CardHeader className="pb-3 flex-shrink-0">
+                                    <div className="flex items-center space-x-2">
+                                        <Target className="h-5 w-5 text-accent-500" />
+                                        <CardTitle className="text-cream-50 text-lg group-hover:text-accent-400 transition-colors">
+                                            Search Progress
                                         </CardTitle>
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth="2"
-                                            className="h-4 w-4 text-muted-foreground"
-                                        >
-                                            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-                                        </svg>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="text-2xl font-bold">
-                                            {loading ? "..." : stats?.totalJobs || 0}
-                                        </div>
-                                        <p className="text-xs text-muted-foreground">
-                                            From URLs & Extensions
-                                        </p>
-                                    </CardContent>
-                                </Card>
-                                <Card>
-                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                        <CardTitle className="text-sm font-medium">
-                                            From URL Extraction
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="flex-1 flex flex-col space-y-4">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-cream-300">Weekly Goal</span>
+                                        <span className="text-accent-400 font-semibold">15/20 applications</span>
+                                    </div>
+                                    <div className="w-full bg-primary-700 rounded-full h-2">
+                                        <div className="bg-gradient-warm h-2 rounded-full" style={{ width: '75%' }}></div>
+                                    </div>
+                                    <div className="text-xs text-cream-400">75% of weekly goal completed</div>
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        {/* Success Rate */}
+                        <div className="h-60">
+                            <Card className="premium-card hover:scale-105 transition-all duration-300 group h-full flex flex-col">
+                                <CardHeader className="pb-3 flex-shrink-0">
+                                    <div className="flex items-center space-x-2">
+                                        <CheckCircle className="h-5 w-5 text-green-400" />
+                                        <CardTitle className="text-cream-50 text-lg group-hover:text-accent-400 transition-colors">
+                                            Success Rate
                                         </CardTitle>
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth="2"
-                                            className="h-4 w-4 text-muted-foreground"
-                                        >
-                                            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                                            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-                                        </svg>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="text-2xl font-bold text-blue-600">
-                                            {loading ? "..." : Math.floor((stats?.totalJobs || 0) * 0.6)}
-                                        </div>
-                                        <p className="text-xs text-muted-foreground">
-                                            Manual URL imports
-                                        </p>
-                                    </CardContent>
-                                </Card>
-                                <Card>
-                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                        <CardTitle className="text-sm font-medium">
-                                            From Extension
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="flex-1 flex flex-col justify-center items-center">
+                                    <div className="text-4xl font-bold text-green-400 mb-2">67%</div>
+                                    <div className="text-sm text-cream-300 text-center">Response rate this month</div>
+                                    <div className="text-xs text-cream-400 mt-2">↑ 12% from last month</div>
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        {/* Activity Summary */}
+                        <div className="h-60">
+                            <Card className="premium-card hover:scale-105 transition-all duration-300 group h-full flex flex-col">
+                                <CardHeader className="pb-3 flex-shrink-0">
+                                    <div className="flex items-center space-x-2">
+                                        <Clock className="h-5 w-5 text-blue-400" />
+                                        <CardTitle className="text-cream-50 text-lg group-hover:text-accent-400 transition-colors">
+                                            Today's Activity
                                         </CardTitle>
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth="2"
-                                            className="h-4 w-4 text-muted-foreground"
-                                        >
-                                            <rect width="20" height="14" x="2" y="5" rx="2" />
-                                            <path d="M2 10h20" />
-                                        </svg>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="text-2xl font-bold text-green-600">
-                                            {loading ? "..." : Math.floor((stats?.totalJobs || 0) * 0.4)}
-                                        </div>
-                                        <p className="text-xs text-muted-foreground">
-                                            Browser extension
-                                        </p>
-                                    </CardContent>
-                                </Card>
-                                <Card>
-                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                        <CardTitle className="text-sm font-medium">
-                                            Applications
-                                        </CardTitle>
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth="2"
-                                            className="h-4 w-4 text-muted-foreground"
-                                        >
-                                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                                            <circle cx="9" cy="7" r="4" />
-                                            <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-                                        </svg>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="text-2xl font-bold text-purple-600">
-                                            {loading ? "..." : stats?.appliedJobs || 0}
-                                        </div>
-                                        <p className="text-xs text-muted-foreground">
-                                            Jobs applied to
-                                        </p>
-                                    </CardContent>
-                                </Card>
-                            </div>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="flex-1 flex flex-col space-y-3">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-sm text-cream-300">Applications sent</span>
+                                        <span className="text-cream-50 font-semibold">3</span>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-sm text-cream-300">Profiles viewed</span>
+                                        <span className="text-cream-50 font-semibold">12</span>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-sm text-cream-300">Messages sent</span>
+                                        <span className="text-cream-50 font-semibold">5</span>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </div>
+                </StaggerItem>
 
-                            {/* Tech Stack Job Boards Section */}
-                            <div className="space-y-4">
-                                <h3 className="text-lg font-semibold flex items-center gap-2">
-                                    <Briefcase className="h-5 w-5 text-blue-500" />
-                                    Tech Stack Job Boards
-                                </h3>
-                                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                                    {TECH_STACK_JOB_BOARDS.map((board) => (
-                                        <Card key={board.name} className="hover:shadow-md transition-shadow cursor-pointer">
-                                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                                                    <Briefcase className="h-4 w-4 text-blue-500" />
-                                                    {board.name}
-                                                </CardTitle>
-                                                <Button
-                                                    size="sm"
-                                                    variant="ghost"
-                                                    onClick={() => window.open(board.url, '_blank')}
-                                                    className="h-6 w-6 p-0"
-                                                >
-                                                    <ExternalLink className="h-3 w-3" />
-                                                </Button>
-                                            </CardHeader>
-                                            <CardContent>
-                                                <div className="text-xs text-muted-foreground mb-2">
-                                                    {board.description}
-                                                </div>
-                                                {board.requiresAuth && (
-                                                    <Badge variant="outline" className="text-xs">
-                                                        Requires Account
-                                                    </Badge>
-                                                )}
-                                            </CardContent>
-                                        </Card>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Quick Actions */}
-                            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                                <Card className="hover:shadow-md transition-shadow cursor-pointer">
-                                    <Link href="/resume-evaluation">
-                                        <CardHeader className="pb-3">
-                                            <CardTitle className="text-lg flex items-center gap-2">
-                                                <svg
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    viewBox="0 0 24 24"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    strokeWidth="2"
-                                                    className="h-5 w-5 text-blue-600"
-                                                >
-                                                    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
-                                                    <polyline points="14,2 14,8 20,8" />
-                                                    <line x1="16" y1="13" x2="8" y2="13" />
-                                                    <line x1="16" y1="17" x2="8" y2="17" />
-                                                    <polyline points="10,9 9,9 8,9" />
-                                                </svg>
-                                                Resume Evaluation
-                                            </CardTitle>
-                                            <CardDescription>
-                                                Review AI-powered resume analysis and get improvement recommendations
-                                            </CardDescription>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <div className="text-sm text-muted-foreground">
-                                                Get detailed ATS scoring, keyword analysis, and actionable feedback to improve your resume.
-                                            </div>
-                                        </CardContent>
-                                    </Link>
-                                </Card>
-
-                                <Card className="hover:shadow-md transition-shadow cursor-pointer">
-                                    <Link href="/jobs">
-                                        <CardHeader className="pb-3">
-                                            <CardTitle className="text-lg flex items-center gap-2">
-                                                <svg
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    viewBox="0 0 24 24"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    strokeWidth="2"
-                                                    className="h-5 w-5 text-green-600"
-                                                >
-                                                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                                                    <circle cx="9" cy="7" r="4" />
-                                                    <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-                                                </svg>
-                                                Job Management
-                                            </CardTitle>
-                                            <CardDescription>
-                                                Track your job applications and manage your career progress
-                                            </CardDescription>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <div className="text-sm text-muted-foreground">
-                                                Organize job applications, track status updates, and monitor your job search progress.
-                                            </div>
-                                        </CardContent>
-                                    </Link>
-                                </Card>
-
-                                <Card className="hover:shadow-md transition-shadow cursor-pointer">
-                                    <Link href="/analytics">
-                                        <CardHeader className="pb-3">
-                                            <CardTitle className="text-lg flex items-center gap-2">
-                                                <svg
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    viewBox="0 0 24 24"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    strokeWidth="2"
-                                                    className="h-5 w-5 text-purple-600"
-                                                >
-                                                    <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-                                                </svg>
-                                                Analytics & Insights
-                                            </CardTitle>
-                                            <CardDescription>
-                                                View detailed analytics and insights about your job search
-                                            </CardDescription>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <div className="text-sm text-muted-foreground">
-                                                Analyze your job search performance, track trends, and optimize your strategy.
-                                            </div>
-                                        </CardContent>
-                                    </Link>
-                                </Card>
-                            </div>
-                            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-                                <Card className="col-span-4">
-                                    <CardHeader>
-                                        <CardTitle>Overview</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="pl-2">
-                                        <Overview />
-                                    </CardContent>
-                                </Card>
-                                <Card className="col-span-3">
-                                    <CardHeader>
-                                        <CardTitle>Recent Applications</CardTitle>
-                                        <CardDescription>
-                                            You applied to {stats?.appliedJobs || 0} jobs total.
-                                        </CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <RecentSales />
-                                    </CardContent>
-                                </Card>
-                            </div>
-                        </TabsContent>
-                        <TabsContent value="jobs">
-                            <JobsTab />
-                        </TabsContent>
-                        <TabsContent value="extract">
-                            <div className="space-y-6">
-                                <div>
-                                    <h3 className="text-lg font-medium">Extract Job from URL</h3>
-                                    <p className="text-sm text-muted-foreground">
-                                        Paste any job URL to automatically extract job details and track your application.
-                                    </p>
-                                </div>
-                                <JobURLExtractor
-                                    userId="demo_user"
-                                    onJobExtracted={() => {
-                                        // Optionally refresh data or show success message
-                                        refreshData()
-                                    }}
-                                />
-                            </div>
-                        </TabsContent>
-                        <TabsContent value="profile">
-                            <ProfileTab userId="demo_user" />
-                        </TabsContent>
-                    </Tabs>
-                </div>
-            </div>
-        </>
+            </StaggerContainer>
+        </SophisticatedLayout>
     )
 } 

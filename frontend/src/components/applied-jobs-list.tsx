@@ -58,12 +58,12 @@ function formatDate(dateString: string): string {
 
 function getStatusColor(status: string): string {
     switch (status.toLowerCase()) {
-        case 'interested': return 'bg-blue-100 text-blue-800 border-blue-200'
+        case 'interested': return 'bg-blue-100 text-blue-900 border-blue-200'
         case 'applied': return 'bg-green-100 text-green-800 border-green-200'
         case 'interviewing': return 'bg-yellow-100 text-yellow-800 border-yellow-200'
         case 'rejected': return 'bg-red-100 text-red-800 border-red-200'
         case 'offer': return 'bg-purple-100 text-purple-800 border-purple-200'
-        default: return 'bg-gray-100 text-gray-800 border-gray-200'
+        default: return 'bg-primary-700 text-cream-50 border-primary-600'
     }
 }
 
@@ -116,15 +116,15 @@ function JobApplicationCard({ application }: { application: JobApplication }) {
             className="transition-transform duration-300 ease-out"
             style={{ transformStyle: 'preserve-3d' }}
         >
-            <Card className="h-full border border-gray-200 shadow-sm hover:shadow-xl transition-all duration-300 bg-white">
+            <Card className="h-full premium-card hover:scale-105 transition-all duration-300">
                 <CardContent className="p-6">
                     <div className="space-y-4">
                         {/* Header with Role and Company */}
                         <div className="space-y-2">
-                            <h3 className="font-bold text-xl leading-tight text-gray-800 hover:text-blue-700 transition-colors">
+                            <h3 className="font-bold text-xl leading-tight text-cream-50 hover:text-accent-400 transition-colors">
                                 {application.job_listing.title}
                             </h3>
-                            <div className="flex items-center gap-2 text-gray-600">
+                            <div className="flex items-center gap-2 text-cream-300">
                                 <Building className="h-4 w-4" />
                                 <span className="font-medium">{application.job_listing.company}</span>
                             </div>
@@ -134,12 +134,12 @@ function JobApplicationCard({ application }: { application: JobApplication }) {
                         <div className="flex items-center justify-between">
                             <div className="space-y-1">
                                 {application.job_listing.salary_range && (
-                                    <div className="text-sm font-medium text-green-700">
+                                    <div className="text-sm font-medium text-green-600">
                                         {application.job_listing.salary_range}
                                     </div>
                                 )}
                                 {application.job_listing.location && (
-                                    <div className="text-sm text-gray-500">
+                                    <div className="text-sm text-cream-400">
                                         📍 {application.job_listing.location}
                                     </div>
                                 )}
@@ -152,8 +152,8 @@ function JobApplicationCard({ application }: { application: JobApplication }) {
                         </div>
 
                         {/* Applied Date and AI Score */}
-                        <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                            <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <div className="flex items-center justify-between pt-2 border-t border-primary-600">
+                            <div className="flex items-center gap-2 text-sm text-cream-400">
                                 <Calendar className="h-4 w-4" />
                                 <span>Applied {formatDate(application.application_date)}</span>
                             </div>
@@ -189,25 +189,25 @@ function JobApplicationCard({ application }: { application: JobApplication }) {
 // Loading skeleton for cards
 function JobCardSkeleton() {
     return (
-        <Card className="h-full border border-gray-200 bg-white">
+        <Card className="h-full premium-card">
             <CardContent className="p-6">
                 <div className="space-y-4">
                     <div className="space-y-2">
-                        <div className="h-6 bg-gray-200 rounded animate-pulse"></div>
-                        <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+                        <div className="h-6 bg-primary-700 rounded animate-pulse"></div>
+                        <div className="h-4 bg-primary-700 rounded w-3/4 animate-pulse"></div>
                     </div>
                     <div className="flex justify-between">
                         <div className="space-y-2">
-                            <div className="h-4 bg-gray-200 rounded w-24 animate-pulse"></div>
-                            <div className="h-3 bg-gray-200 rounded w-32 animate-pulse"></div>
+                            <div className="h-4 bg-primary-700 rounded w-24 animate-pulse"></div>
+                            <div className="h-3 bg-primary-700 rounded w-32 animate-pulse"></div>
                         </div>
-                        <div className="h-6 bg-gray-200 rounded w-16 animate-pulse"></div>
+                        <div className="h-6 bg-primary-700 rounded w-16 animate-pulse"></div>
                     </div>
-                    <div className="flex justify-between pt-2 border-t border-gray-100">
-                        <div className="h-4 bg-gray-200 rounded w-28 animate-pulse"></div>
-                        <div className="h-4 bg-gray-200 rounded w-16 animate-pulse"></div>
+                    <div className="flex justify-between pt-2 border-t border-primary-600">
+                        <div className="h-4 bg-primary-700 rounded w-28 animate-pulse"></div>
+                        <div className="h-4 bg-primary-700 rounded w-16 animate-pulse"></div>
                     </div>
-                    <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
+                    <div className="h-8 bg-primary-700 rounded animate-pulse"></div>
                 </div>
             </CardContent>
         </Card>
@@ -310,9 +310,9 @@ export function AppliedJobsList({ userId, limit = 10 }: AppliedJobsListProps) {
                 <CardContent>
                     {applications.length === 0 && !loading ? (
                         <div className="text-center py-12">
-                            <Building className="h-16 w-16 mx-auto text-gray-300 mb-4" />
-                            <h3 className="text-lg font-medium text-gray-900 mb-2">No applications yet</h3>
-                            <p className="text-gray-500 mb-6">
+                            <Building className="h-16 w-16 mx-auto text-cream-400 mb-4" />
+                            <h3 className="text-lg font-medium text-cream-50 mb-2">No applications yet</h3>
+                            <p className="text-cream-300 mb-6">
                                 Start applying to jobs to see them here. You can extract jobs from URLs or browse our job listings.
                             </p>
                             <Button variant="outline" onClick={() => setPage(1)}>
@@ -346,7 +346,7 @@ export function AppliedJobsList({ userId, limit = 10 }: AppliedJobsListProps) {
                             {/* Pagination */}
                             {totalPages > 1 && (
                                 <div className="flex items-center justify-between mt-6 pt-4 border-t">
-                                    <p className="text-sm text-gray-600">
+                                    <p className="text-sm text-cream-300">
                                         Page {page} of {totalPages}
                                     </p>
                                     <div className="flex gap-2">

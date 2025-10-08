@@ -347,7 +347,7 @@ export function ATSJobSearch() {
         <div className="container mx-auto p-6 space-y-6">
             <div className="text-center space-y-2">
                 <h2 className="text-2xl font-bold">Advanced Job Search</h2>
-                <p className="text-muted-foreground">
+                <p className="text-cream-300">
                     Search across multiple job platforms with optimized queries
                 </p>
             </div>
@@ -439,7 +439,7 @@ export function ATSJobSearch() {
                                     </label>
                                 ))}
                             </div>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-xs text-cream-300">
                                 Selected: {form.atsPlatforms.length} platforms
                             </p>
                         </div>
@@ -490,16 +490,16 @@ export function ATSJobSearch() {
                                                     onClick={() => copyUrl(index)}
                                                 >
                                                     {query.copied ? (
-                                                        <Check className="h-4 w-4 text-green-600" />
+                                                        <Check className="h-4 w-4 text-green-700" />
                                                     ) : (
                                                         <Copy className="h-4 w-4" />
                                                     )}
                                                 </Button>
                                             </div>
-                                            <div className="text-xs text-muted-foreground break-all">
+                                            <div className="text-xs text-cream-300 break-all">
                                                 {query.url}
                                             </div>
-                                            <div className="text-xs text-blue-600 font-mono bg-blue-50 p-2 rounded mt-1">
+                                            <div className="text-xs text-blue-700 font-mono bg-blue-50 p-2 rounded mt-1">
                                                 Query: {decodeURIComponent(query.url.split('q=')[1]?.split('&')[0] || '')}
                                             </div>
                                             <Button
@@ -518,7 +518,7 @@ export function ATSJobSearch() {
                         )}
 
                         {generatedQueries.length === 0 && (
-                            <div className="text-center py-8 text-muted-foreground">
+                            <div className="text-center py-8 text-cream-300">
                                 <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
                                 <p>No search queries generated yet</p>
                                 <p className="text-sm">Configure your search and click "Generate Search Queries"</p>
@@ -563,7 +563,7 @@ export function ATSJobSearch() {
                                 </Button>
                             </div>
                             {urlImportText.trim() && (
-                                <div className="text-sm text-muted-foreground">
+                                <div className="text-sm text-cream-300">
                                     {urlImportText.split('\n').filter(url => url.trim()).length} URLs ready to import
                                 </div>
                             )}

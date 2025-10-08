@@ -19,7 +19,7 @@ export default function TestLoadingPage() {
             <div className="max-w-4xl mx-auto space-y-12">
                 <div className="text-center space-y-4">
                     <h1 className="text-4xl font-bold">Loading Animation Test</h1>
-                    <p className="text-lg text-gray-600">
+                    <p className="text-lg text-cream-200">
                         Test the loading animations with your custom color #4a5c6a
                     </p>
                 </div>
@@ -27,7 +27,7 @@ export default function TestLoadingPage() {
                 {/* Standalone Loading Text */}
                 <div className="space-y-4">
                     <h2 className="text-2xl font-semibold">Standalone Loading Text</h2>
-                    <div className="bg-gray-900 p-12 rounded-lg flex justify-center">
+                    <div className="bg-primary-900 p-12 rounded-lg flex justify-center">
                         <LoadingFillText text="LOADING" />
                     </div>
                 </div>
@@ -36,10 +36,10 @@ export default function TestLoadingPage() {
                 <div className="space-y-4">
                     <h2 className="text-2xl font-semibold">Different Text Examples</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="bg-gray-900 p-8 rounded-lg flex justify-center">
+                        <div className="bg-primary-900 p-8 rounded-lg flex justify-center">
                             <LoadingFillText text="PLEASE WAIT" />
                         </div>
-                        <div className="bg-gray-900 p-8 rounded-lg flex justify-center">
+                        <div className="bg-primary-900 p-8 rounded-lg flex justify-center">
                             <LoadingFillText text="PROCESSING" />
                         </div>
                     </div>
@@ -62,16 +62,16 @@ export default function TestLoadingPage() {
                 {/* Color Reference */}
                 <div className="space-y-4">
                     <h2 className="text-2xl font-semibold">Color Reference</h2>
-                    <div className="bg-gray-100 p-6 rounded-lg">
+                    <div className="bg-primary-800 p-6 rounded-lg">
                         <div className="flex items-center gap-4">
                             <div
-                                className="w-20 h-20 rounded-lg border-2 border-gray-300"
+                                className="w-20 h-20 rounded-lg border-2 border-primary-600"
                                 style={{ backgroundColor: '#4a5c6a' }}
                             ></div>
                             <div>
                                 <p className="font-mono text-lg font-bold">#4a5c6a</p>
-                                <p className="text-gray-600">RGB(74, 92, 106)</p>
-                                <p className="text-gray-600">Muted blue-gray</p>
+                                <p className="text-cream-300">RGB(74, 92, 106)</p>
+                                <p className="text-cream-300">Muted blue-gray</p>
                             </div>
                         </div>
                     </div>

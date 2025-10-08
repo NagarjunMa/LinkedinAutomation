@@ -1,11 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import {
     CheckCircle,
     AlertCircle,
@@ -16,9 +17,14 @@ import {
     FileText,
     Download,
     Calendar,
-    User
+    User,
+    Trash2,
+    Clock,
+    RefreshCw,
+    X
 } from "lucide-react"
-import { ResumeFile } from "@/app/lib/api"
+import { ResumeFile, resumeApi } from "@/app/lib/api"
+import { useToast } from "@/components/ui/use-toast"
 
 interface ResumeListDropdownProps {
     resumes: ResumeFile[]
@@ -26,6 +32,7 @@ interface ResumeListDropdownProps {
     onDownloadResume: (resumeId: string) => void
     onEvaluateResume: (resumeId: string) => void
     evaluatingResume: string | null
+    onResumeDeleted?: () => void
 }
 
 export function ResumeListDropdown({
@@ -33,9 +40,43 @@ export function ResumeListDropdown({
     onViewDetailedAnalysis,
     onDownloadResume,
     onEvaluateResume,
-    evaluatingResume
+    evaluatingResume,
+    onResumeDeleted
 }: ResumeListDropdownProps) {
     const [expandedResume, setExpandedResume] = useState<string | null>(null)
+    const [deleteConfirmResume, setDeleteConfirmResume] = useState<ResumeFile | null>(null)
+    const [isDeleting, setIsDeleting] = useState(false)
+    const { toast } = useToast()
+
+    // Reset stuck evaluations on mount and every 30 seconds
+    useEffect(() => {
+        const resetStuckEvaluations = () => {
+            const now = new Date()
+            const stuckResumes = resumes.filter(resume => {
+                if (resume.evaluation_status !== 'evaluating') return false
+                if (!resume.evaluated_at) return true
+                const evaluatedTime = new Date(resume.evaluated_at)
+                const timeDiff = now.getTime() - evaluatedTime.getTime()
+                return timeDiff > 5 * 60 * 1000 // 5 minutes
+            })
+
+            if (stuckResumes.length > 0) {
+                console.log(`Found ${stuckResumes.length} stuck evaluations, resetting...`)
+                // The parent component should handle refreshing the data
+                if (onResumeDeleted) {
+                    onResumeDeleted()
+                }
+            }
+        }
+
+        // Run immediately
+        resetStuckEvaluations()
+
+        // Run every 30 seconds
+        const interval = setInterval(resetStuckEvaluations, 30000)
+
+        return () => clearInterval(interval)
+    }, [resumes, onResumeDeleted])
 
     const getScoreColor = (score: number) => {
         if (score >= 80) return "text-green-600"
@@ -61,6 +102,34 @@ export function ResumeListDropdown({
 
     const toggleResume = (resumeId: string) => {
         setExpandedResume(expandedResume === resumeId ? null : resumeId)
+    }
+
+    const handleDeleteResume = async (resume: ResumeFile) => {
+        setIsDeleting(true)
+        try {
+            await resumeApi.deleteResume(resume.id)
+            toast({
+                title: "Resume Deleted",
+                description: `${resume.original_filename} has been deleted successfully.`,
+            })
+            if (onResumeDeleted) {
+                onResumeDeleted()
+            }
+        } catch (error) {
+            console.error('Failed to delete resume:', error)
+            toast({
+                title: "Delete Failed",
+                description: "Failed to delete resume. Please try again.",
+                variant: "destructive",
+            })
+        } finally {
+            setIsDeleting(false)
+            setDeleteConfirmResume(null)
+        }
+    }
+
+    const confirmDeleteResume = (resume: ResumeFile) => {
+        setDeleteConfirmResume(resume)
     }
 
     if (resumes.length === 0) {
@@ -94,7 +163,7 @@ export function ResumeListDropdown({
                             onOpenChange={() => toggleResume(resume.id)}
                         >
                             <CollapsibleTrigger asChild>
-                                <CardHeader className="cursor-pointer hover:bg-gray-50 transition-colors">
+                                <CardHeader className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-3">
                                             {resume.is_primary && (
@@ -131,11 +200,45 @@ export function ResumeListDropdown({
                                                 {resume.evaluation_status === 'failed' && <AlertCircle className="w-3 h-3 mr-1" />}
                                                 {resume.evaluation_status.charAt(0).toUpperCase() + resume.evaluation_status.slice(1)}
                                             </Badge>
-                                            {expandedResume === resume.id ? (
-                                                <ChevronDown className="w-4 h-4 text-gray-500" />
-                                            ) : (
-                                                <ChevronRight className="w-4 h-4 text-gray-500" />
-                                            )}
+
+                                            {/* Action Buttons */}
+                                            <div className="flex items-center gap-2">
+                                                {/* Delete Button */}
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        confirmDeleteResume(resume)
+                                                    }}
+                                                    className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </Button>
+
+                                                {/* Reset Stuck Evaluation Button */}
+                                                {resume.evaluation_status === 'evaluating' && (
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation()
+                                                            onEvaluateResume(resume.id)
+                                                        }}
+                                                        className="h-8 w-8 p-0 text-orange-600 hover:text-orange-700 hover:bg-orange-50 border-orange-200"
+                                                        title="Reset stuck evaluation"
+                                                    >
+                                                        <RefreshCw className="w-4 h-4" />
+                                                    </Button>
+                                                )}
+
+                                                {/* Expand/Collapse Button */}
+                                                {expandedResume === resume.id ? (
+                                                    <ChevronDown className="w-4 h-4 text-gray-500" />
+                                                ) : (
+                                                    <ChevronRight className="w-4 h-4 text-gray-500" />
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </CardHeader>
@@ -265,6 +368,47 @@ export function ResumeListDropdown({
                     </Card>
                 ))}
             </div>
+
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={!!deleteConfirmResume} onOpenChange={() => setDeleteConfirmResume(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <AlertCircle className="w-5 h-5 text-red-600" />
+                            Delete Resume
+                        </DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to delete "{deleteConfirmResume?.original_filename}"? This action cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => setDeleteConfirmResume(null)}
+                            disabled={isDeleting}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={() => deleteConfirmResume && handleDeleteResume(deleteConfirmResume)}
+                            disabled={isDeleting}
+                        >
+                            {isDeleting ? (
+                                <>
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
+                                    Deleting...
+                                </>
+                            ) : (
+                                <>
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    Delete Resume
+                                </>
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

@@ -155,8 +155,8 @@ export default function JobsPage() {
     return (
         <div className="container mx-auto p-6 space-y-6">
             <div className="text-center space-y-2">
-                <h1 className="text-3xl font-bold">Job Search Interface</h1>
-                <p className="text-muted-foreground">
+                <h1 className="text-3xl font-bold text-cream-50">Job Search Interface</h1>
+                <p className="text-cream-300">
                     Find your next opportunity across multiple job platforms
                 </p>
             </div>
@@ -174,16 +174,16 @@ export default function JobsPage() {
                 <TabsContent value="startup" className="space-y-6">
                     {/* Tech Stack Job Boards Section */}
                     <div className="space-y-4">
-                        <h3 className="text-lg font-semibold flex items-center gap-2">
-                            <Briefcase className="h-5 w-5 text-blue-500" />
+                        <h3 className="text-lg font-semibold flex items-center gap-2 text-cream-50">
+                            <Briefcase className="h-5 w-5 text-accent-500" />
                             Tech Stack Job Boards
                         </h3>
                         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                             {TECH_STACK_JOB_BOARDS.map((board) => (
-                                <Card key={board.name} className="hover:shadow-md transition-shadow cursor-pointer">
+                                <Card key={board.name} className="premium-card hover:scale-105 transition-all duration-300 cursor-pointer">
                                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                        <CardTitle className="text-sm font-medium flex items-center gap-2">
-                                            <Briefcase className="h-4 w-4 text-blue-500" />
+                                        <CardTitle className="text-sm font-medium text-cream-50 flex items-center gap-2">
+                                            <Briefcase className="h-4 w-4 text-accent-500" />
                                             {board.name}
                                         </CardTitle>
                                         <Button
@@ -196,7 +196,7 @@ export default function JobsPage() {
                                         </Button>
                                     </CardHeader>
                                     <CardContent>
-                                        <div className="text-xs text-muted-foreground mb-2">
+                                        <div className="text-xs text-cream-300 mb-2">
                                             {board.description}
                                         </div>
                                         {board.requiresAuth && (
@@ -212,16 +212,16 @@ export default function JobsPage() {
 
                     {/* Startup Job Boards Section */}
                     <div className="space-y-4">
-                        <h3 className="text-lg font-semibold flex items-center gap-2">
-                            <Rocket className="h-5 w-5 text-orange-500" />
+                        <h3 className="text-lg font-semibold flex items-center gap-2 text-cream-50">
+                            <Rocket className="h-5 w-5 text-accent-500" />
                             Startup Job Boards
                         </h3>
                         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                             {STARTUP_JOB_BOARDS.map((board) => (
-                                <Card key={board.name} className="hover:shadow-md transition-shadow cursor-pointer">
+                                <Card key={board.name} className="premium-card hover:scale-105 transition-all duration-300 cursor-pointer">
                                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                        <CardTitle className="text-sm font-medium flex items-center gap-2">
-                                            <Rocket className="h-4 w-4 text-orange-500" />
+                                        <CardTitle className="text-sm font-medium text-cream-50 flex items-center gap-2">
+                                            <Rocket className="h-4 w-4 text-accent-500" />
                                             {board.name}
                                         </CardTitle>
                                         <Button
@@ -234,7 +234,7 @@ export default function JobsPage() {
                                         </Button>
                                     </CardHeader>
                                     <CardContent>
-                                        <div className="text-xs text-muted-foreground mb-2">
+                                        <div className="text-xs text-cream-300 mb-2">
                                             {board.description}
                                         </div>
                                         {board.requiresAuth && (

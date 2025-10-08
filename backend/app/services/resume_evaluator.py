@@ -3,7 +3,7 @@ import uuid
 import json
 import logging
 from typing import Dict, Any, Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 import fitz  # PyMuPDF for PDF processing
 from docx import Document
 import re
@@ -271,7 +271,7 @@ class ResumeEvaluatorService:
                             target_industry: Optional[str] = None) -> ResumeEvaluationResult:
         """Main method to evaluate resume using AI"""
         try:
-            start_time = datetime.now()
+            start_time = datetime.now(timezone.utc)
             
             # Preprocess text
             cleaned_text = self._preprocess_resume_text(resume_text)
@@ -292,7 +292,7 @@ class ResumeEvaluatorService:
             evaluation_data = self._parse_ai_response(ai_response)
             
             # Calculate processing time
-            processing_time = int((datetime.now() - start_time).total_seconds())
+            processing_time = int((datetime.now(timezone.utc) - start_time).total_seconds())
             
             # Create evaluation result
             result = ResumeEvaluationResult(
@@ -309,7 +309,7 @@ class ResumeEvaluatorService:
                 keyword_analysis=evaluation_data.get('keyword_analysis', {}),
                 critical_issues=evaluation_data.get('critical_issues'),
                 market_positioning=evaluation_data.get('market_positioning'),
-                evaluated_at=datetime.now(),
+                evaluated_at=datetime.now(timezone.utc),
                 ai_model_version=self.ai_service.model_name,
                 processing_time=processing_time
             )

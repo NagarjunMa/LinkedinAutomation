@@ -114,70 +114,99 @@ export function ResumeImprovementModal({ resume, open, onOpenChange }: ResumeImp
   const generatePersonalizedRecommendations = () => {
     const recommendations = []
 
-    // ATS Compliance recommendations
-    if (evaluation.ats_compliance_score < 80) {
-      recommendations.push({
-        category: "ATS Optimization",
-        before: `Your resume has ATS compatibility issues (${evaluation.ats_compliance_score}/100)`,
-        after: `Fix formatting: Use standard section headers (Experience, Education, Skills), consistent bullet points, and ATS-friendly fonts. Remove graphics and complex layouts.`,
-        impact: "High",
-        reasoning: `Low ATS score means your resume may not pass through applicant tracking systems`
+    // Use actual critical issues if available from agentic evaluation
+    if (evaluation.critical_issues?.immediate_fixes) {
+      evaluation.critical_issues.immediate_fixes.forEach(fix => {
+        recommendations.push({
+          category: "Critical Fix",
+          before: "Current issue identified",
+          after: fix,
+          impact: "High",
+          reasoning: "Immediate improvement needed"
+        })
       })
     }
 
-    // Content Quality recommendations
-    if (evaluation.content_quality_score < 85) {
-      recommendations.push({
-        category: "Content Enhancement",
-        before: `Your content lacks impact (${evaluation.content_quality_score}/100)`,
-        after: `Add specific numbers: "Increased sales by 25%" instead of "Improved sales". Use action verbs like "Led", "Developed", "Implemented".`,
-        impact: "High",
-        reasoning: `Weak content makes your achievements less compelling to recruiters`
+    // Use strategic improvements if available
+    if (evaluation.critical_issues?.strategic_improvements) {
+      evaluation.critical_issues.strategic_improvements.forEach(improvement => {
+        recommendations.push({
+          category: "Strategic Enhancement",
+          before: "Area for improvement",
+          after: improvement,
+          impact: "Medium",
+          reasoning: "Long-term career positioning"
+        })
       })
     }
 
-    // Missing Keywords recommendations
-    if (evaluation.keyword_analysis.missing && evaluation.keyword_analysis.missing.length > 0) {
-      recommendations.push({
-        category: "Keyword Integration",
-        before: `Missing important keywords: ${evaluation.keyword_analysis.missing.slice(0, 3).join(', ')}`,
-        after: `Add these keywords naturally: ${evaluation.keyword_analysis.missing.slice(0, 5).join(', ')}. Include them in your job descriptions and skills section.`,
-        impact: "Medium",
-        reasoning: `Keywords help your resume match job postings and get noticed`
-      })
-    }
+    // Fallback to generic recommendations if no detailed analysis
+    if (recommendations.length === 0) {
+      // ATS Compliance recommendations
+      if (evaluation.ats_compliance_score < 80) {
+        recommendations.push({
+          category: "ATS Optimization",
+          before: `Your resume has ATS compatibility issues (${evaluation.ats_compliance_score}/100)`,
+          after: `Fix formatting: Use standard section headers (Experience, Education, Skills), consistent bullet points, and ATS-friendly fonts. Remove graphics and complex layouts.`,
+          impact: "High",
+          reasoning: `Low ATS score means your resume may not pass through applicant tracking systems`
+        })
+      }
 
-    // Job Relevance recommendations
-    if (evaluation.job_relevance_score < 80) {
-      recommendations.push({
-        category: "Role Alignment",
-        before: `Your experience doesn't match target roles (${evaluation.job_relevance_score}/100)`,
-        after: `Tailor your resume: Highlight relevant projects, use job posting keywords, and emphasize transferable skills for your target position.`,
-        impact: "High",
-        reasoning: `Poor role alignment means recruiters won't see you as a good fit`
-      })
-    }
+      // Content Quality recommendations
+      if (evaluation.content_quality_score < 85) {
+        recommendations.push({
+          category: "Content Enhancement",
+          before: `Your content lacks impact (${evaluation.content_quality_score}/100)`,
+          after: `Add specific numbers: "Increased sales by 25%" instead of "Improved sales". Use action verbs like "Led", "Developed", "Implemented".`,
+          impact: "High",
+          reasoning: `Weak content makes your achievements less compelling to recruiters`
+        })
+      }
 
-    // Experience Points recommendations
-    if (evaluation.experience_points_score < 80) {
-      recommendations.push({
-        category: "Experience Quantification",
-        before: `Experience descriptions lack detail (${evaluation.experience_points_score}/100)`,
-        after: `Add specifics: Project size, team members, budget, timeline, and your specific role. Show progression and growth in each position.`,
-        impact: "Medium",
-        reasoning: `Detailed experience shows depth and progression in your career`
-      })
-    }
+      // Missing Keywords recommendations
+      if (evaluation.keyword_analysis.missing && evaluation.keyword_analysis.missing.length > 0) {
+        recommendations.push({
+          category: "Keyword Integration",
+          before: `Missing important keywords: ${evaluation.keyword_analysis.missing.slice(0, 3).join(', ')}`,
+          after: `Add these keywords naturally: ${evaluation.keyword_analysis.missing.slice(0, 5).join(', ')}. Include them in your job descriptions and skills section.`,
+          impact: "Medium",
+          reasoning: `Keywords help your resume match job postings and get noticed`
+        })
+      }
 
-    // Quality Checks recommendations
-    if (evaluation.quality_checks_score < 90) {
-      recommendations.push({
-        category: "Quality & Consistency",
-        before: `Formatting and consistency issues (${evaluation.quality_checks_score}/100)`,
-        after: `Fix: Consistent spacing, proper grammar, uniform bullet points, aligned dates, and professional email format.`,
-        impact: "Medium",
-        reasoning: `Poor formatting creates a negative first impression`
-      })
+      // Job Relevance recommendations
+      if (evaluation.job_relevance_score < 80) {
+        recommendations.push({
+          category: "Role Alignment",
+          before: `Your experience doesn't match target roles (${evaluation.job_relevance_score}/100)`,
+          after: `Tailor your resume: Highlight relevant projects, use job posting keywords, and emphasize transferable skills for your target position.`,
+          impact: "High",
+          reasoning: `Poor role alignment means recruiters won't see you as a good fit`
+        })
+      }
+
+      // Experience Points recommendations
+      if (evaluation.experience_points_score < 80) {
+        recommendations.push({
+          category: "Experience Quantification",
+          before: `Experience descriptions lack detail (${evaluation.experience_points_score}/100)`,
+          after: `Add specifics: Project size, team members, budget, timeline, and your specific role. Show progression and growth in each position.`,
+          impact: "Medium",
+          reasoning: `Detailed experience shows depth and progression in your career`
+        })
+      }
+
+      // Quality Checks recommendations
+      if (evaluation.quality_checks_score < 90) {
+        recommendations.push({
+          category: "Quality & Consistency",
+          before: `Formatting and consistency issues (${evaluation.quality_checks_score}/100)`,
+          after: `Fix: Consistent spacing, proper grammar, uniform bullet points, aligned dates, and professional email format.`,
+          impact: "Medium",
+          reasoning: `Poor formatting creates a negative first impression`
+        })
+      }
     }
 
     return recommendations
@@ -385,8 +414,8 @@ export function ResumeImprovementModal({ resume, open, onOpenChange }: ResumeImp
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-3">
-                      <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                        <span className="font-medium text-gray-900">Overall Score</span>
+                      <div className="flex justify-between items-center p-3 bg-primary-800 rounded-lg">
+                        <span className="font-medium text-cream-50">Overall Score</span>
                         <div className="flex items-center gap-2">
                           <span className={`font-bold ${getScoreColor(evaluation.overall_score)}`}>
                             {evaluation.overall_score}/100
@@ -394,8 +423,8 @@ export function ResumeImprovementModal({ resume, open, onOpenChange }: ResumeImp
                           <Progress value={evaluation.overall_score} className="w-16" />
                         </div>
                       </div>
-                      <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                        <span className="font-medium text-gray-900">ATS Compliance</span>
+                      <div className="flex justify-between items-center p-3 bg-primary-800 rounded-lg">
+                        <span className="font-medium text-cream-50">ATS Compliance</span>
                         <div className="flex items-center gap-2">
                           <span className={`font-bold ${getScoreColor(evaluation.ats_compliance_score)}`}>
                             {evaluation.ats_compliance_score}/100
@@ -403,8 +432,8 @@ export function ResumeImprovementModal({ resume, open, onOpenChange }: ResumeImp
                           <Progress value={evaluation.ats_compliance_score} className="w-16" />
                         </div>
                       </div>
-                      <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                        <span className="font-medium text-gray-900">Content Quality</span>
+                      <div className="flex justify-between items-center p-3 bg-primary-800 rounded-lg">
+                        <span className="font-medium text-cream-50">Content Quality</span>
                         <div className="flex items-center gap-2">
                           <span className={`font-bold ${getScoreColor(evaluation.content_quality_score)}`}>
                             {evaluation.content_quality_score}/100
@@ -414,8 +443,8 @@ export function ResumeImprovementModal({ resume, open, onOpenChange }: ResumeImp
                       </div>
                     </div>
                     <div className="space-y-3">
-                      <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                        <span className="font-medium text-gray-900">Job Relevance</span>
+                      <div className="flex justify-between items-center p-3 bg-primary-800 rounded-lg">
+                        <span className="font-medium text-cream-50">Job Relevance</span>
                         <div className="flex items-center gap-2">
                           <span className={`font-bold ${getScoreColor(evaluation.job_relevance_score)}`}>
                             {evaluation.job_relevance_score}/100
@@ -423,8 +452,8 @@ export function ResumeImprovementModal({ resume, open, onOpenChange }: ResumeImp
                           <Progress value={evaluation.job_relevance_score} className="w-16" />
                         </div>
                       </div>
-                      <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                        <span className="font-medium text-gray-900">Experience Depth</span>
+                      <div className="flex justify-between items-center p-3 bg-primary-800 rounded-lg">
+                        <span className="font-medium text-cream-50">Experience Depth</span>
                         <div className="flex items-center gap-2">
                           <span className={`font-bold ${getScoreColor(evaluation.experience_points_score)}`}>
                             {evaluation.experience_points_score}/100
@@ -432,8 +461,8 @@ export function ResumeImprovementModal({ resume, open, onOpenChange }: ResumeImp
                           <Progress value={evaluation.experience_points_score} className="w-16" />
                         </div>
                       </div>
-                      <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                        <span className="font-medium text-gray-900">Quality & Consistency</span>
+                      <div className="flex justify-between items-center p-3 bg-primary-800 rounded-lg">
+                        <span className="font-medium text-cream-50">Quality & Consistency</span>
                         <div className="flex items-center gap-2">
                           <span className={`font-bold ${getScoreColor(evaluation.quality_checks_score)}`}>
                             {evaluation.quality_checks_score}/100
@@ -713,85 +742,6 @@ export function ResumeImprovementModal({ resume, open, onOpenChange }: ResumeImp
                 </CardContent>
               </Card>
 
-              {/* Next Steps */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-blue-700">
-                    <TrendingUp className="w-5 h-5" />
-                    Next Steps (Week 2-3)
-                  </CardTitle>
-                  <CardDescription>
-                    Continue with these improvements for sustained score growth
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {evaluation.improvements.slice(3, 6).map((improvement, index) => (
-                      <div key={index} className="flex items-start gap-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                        <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                          <span className="text-sm font-bold text-blue-600">{index + 4}</span>
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm text-blue-800 mb-2">{improvement}</p>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="secondary" className="text-xs">Medium Priority</Badge>
-                            <span className="text-xs text-blue-600">Due: Next 2 weeks</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Study Timeline */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-purple-700">
-                    <Calendar className="w-5 h-5" />
-                    Personalized Study Timeline
-                  </CardTitle>
-                  <CardDescription>
-                    Your customized learning path for continuous improvement
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
-                      <h4 className="font-semibold text-purple-900 mb-2">Week 1-2: Foundation Building</h4>
-                      <p className="text-sm text-purple-700 mb-3">
-                        Focus on addressing the high-priority improvements identified above.
-                      </p>
-                      <div className="flex items-center gap-2 text-sm text-purple-600">
-                        <Target className="w-4 h-4" />
-                        <span>Goal: Improve ATS score by 10-15 points</span>
-                      </div>
-                    </div>
-
-                    <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                      <h4 className="font-semibold text-green-900 mb-2">Week 3-4: Skill Enhancement</h4>
-                      <p className="text-sm text-green-700 mb-3">
-                        Work on medium-priority improvements and skill development.
-                      </p>
-                      <div className="flex items-center gap-2 text-sm text-green-600">
-                        <TrendingUp className="w-4 h-4" />
-                        <span>Goal: Achieve target score and ATS compatibility</span>
-                      </div>
-                    </div>
-
-                    <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                      <h4 className="font-semibold text-blue-900 mb-2">Week 5-6: Application & Practice</h4>
-                      <p className="text-sm text-blue-700 mb-3">
-                        Apply improvements and practice with real job applications.
-                      </p>
-                      <div className="flex items-center gap-2 text-sm text-blue-600">
-                        <Award className="w-4 h-4" />
-                        <span>Goal: Land interviews and job offers</span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
             </TabsContent>
           </Tabs>
         </div>

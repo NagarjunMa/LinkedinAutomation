@@ -32,7 +32,27 @@ class AIService:
                 temperature=temperature
             )
             
-            return response.choices[0].message.content.strip()
+            content = response.choices[0].message.content
+            if content is None:
+                logger.warning("OpenAI returned None content")
+                return ""
+            
+            # Extract JSON from markdown code blocks if present
+            content = content.strip()
+            if "```json" in content:
+                # Extract JSON from markdown code block
+                start = content.find("```json") + 7
+                end = content.find("```", start)
+                if end != -1:
+                    content = content[start:end].strip()
+            elif "```" in content:
+                # Extract content from generic code block
+                start = content.find("```") + 3
+                end = content.find("```", start)
+                if end != -1:
+                    content = content[start:end].strip()
+            
+            return content
             
         except Exception as e:
             logger.error(f"Error getting AI completion: {e}")

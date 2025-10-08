@@ -16,6 +16,7 @@ class User(Base):
     
     # Relationships
     resumes = relationship("Resume", back_populates="user", foreign_keys="Resume.user_id")
+    evaluation_sessions = relationship("ResumeEvaluationSession", back_populates="user")
     
     def __repr__(self):
         return f"<User {self.user_id}>" 

@@ -13,6 +13,7 @@ export interface ResumeFile {
     uploaded_at: string;
     evaluation_status: 'pending' | 'evaluating' | 'completed' | 'failed';
     evaluation_result?: ResumeEvaluation;
+    is_primary?: boolean;
 }
 
 export interface ResumeEvaluation {
@@ -30,6 +31,346 @@ export interface ResumeEvaluation {
         relevant: string[];
         missing: string[];
         score: number;
+    };
+    // New agentic evaluation fields
+    critical_issues?: {
+        immediate_fixes: string[];
+        strategic_improvements: string[];
+        nice_to_have: string[];
+    };
+    market_positioning?: {
+        current_level: string;
+        salary_range: string;
+        target_roles: string[];
+        company_fit: {
+            maang_companies: number;
+            startups: number;
+            enterprise: number;
+        };
+    };
+    // Agent-specific results
+    agent_results?: {
+        ats?: ATSAnalysisResult;
+        experience?: ExperienceAnalysisResult;
+        skills?: SkillsAnalysisResult;
+        format?: FormatAnalysisResult;
+        red_flags?: RedFlagAnalysisResult;
+        company_fit?: CompanyFitAnalysisResult;
+    };
+    // Evaluation metadata
+    evaluation_metadata?: {
+        processing_time_seconds: number;
+        successful_agents: number;
+        total_agents: number;
+        confidence_percentage: number;
+        evaluation_type: 'agentic' | 'legacy';
+    };
+}
+
+// Agent-specific result types
+export interface ATSAnalysisResult {
+    ats_score: number;
+    parsing_issues: string[];
+    keyword_optimization: {
+        missing_keywords: string[];
+        overused_keywords: string[];
+        placement_suggestions: string[];
+    };
+    format_recommendations: string[];
+    section_analysis: {
+        contact_info: string;
+        summary: string;
+        experience: string;
+        skills: string;
+        education: string;
+    };
+    critical_fixes: string[];
+    optimization_priority: 'high' | 'medium' | 'low';
+}
+
+export interface ExperienceAnalysisResult {
+    experience_score: number;
+    impact_analysis: {
+        quantified_achievements: Array<{
+            achievement: string;
+            impact: string;
+            score: number;
+        }>;
+        missing_metrics: string[];
+        impact_strength: 'high' | 'medium' | 'low';
+    };
+    progression_analysis: {
+        career_trajectory: 'upward' | 'lateral' | 'mixed';
+        responsibility_growth: 'clear' | 'unclear' | 'missing';
+        leadership_development: 'strong' | 'moderate' | 'weak';
+        progression_concerns: string[];
+    };
+    technical_leadership: {
+        architecture_experience: 'extensive' | 'moderate' | 'limited';
+        team_leadership: 'strong' | 'moderate' | 'weak';
+        innovation_examples: string[];
+        leadership_gaps: string[];
+    };
+    credibility_indicators: {
+        company_reputation: 'high' | 'medium' | 'low';
+        project_scale: 'enterprise' | 'mid' | 'small';
+        industry_recognition: 'strong' | 'moderate' | 'none';
+        cross_functional_work: 'extensive' | 'moderate' | 'limited';
+    };
+    strengths: string[];
+    improvement_areas: string[];
+    rewrite_suggestions: Array<{
+        current: string;
+        improved: string;
+    }>;
+    experience_gaps: string[];
+}
+
+export interface SkillsAnalysisResult {
+    skills_score: number;
+    skill_analysis: {
+        hot_skills_present: string[];
+        hot_skills_missing: string[];
+        emerging_skills: string[];
+        outdated_skills: string[];
+        skill_depth_indicators: {
+            expert: string[];
+            proficient: string[];
+            familiar: string[];
+        };
+    };
+    market_alignment: {
+        demand_score: number;
+        future_relevance: number;
+        competitive_advantage: 'high' | 'medium' | 'low';
+        skill_gaps: string[];
+    };
+    organization_quality: {
+        categorization: 'excellent' | 'good' | 'fair' | 'poor';
+        proficiency_indicators: 'clear' | 'unclear' | 'missing';
+        scanning_ease: 'high' | 'medium' | 'low';
+        improvement_suggestions: string[];
+    };
+    role_specific_analysis: {
+        core_skills_coverage: number;
+        missing_core_skills: string[];
+        nice_to_have_skills: string[];
+        overqualified_areas: string[];
+    };
+    recommendations: {
+        add_skills: Array<{
+            skill: string;
+            reason: string;
+            priority: 'high' | 'medium' | 'low';
+        }>;
+        remove_skills: Array<{
+            skill: string;
+            reason: string;
+        }>;
+        reorganize_suggestions: string[];
+        proficiency_improvements: string[];
+    };
+    strengths: string[];
+    critical_gaps: string[];
+}
+
+export interface FormatAnalysisResult {
+    format_score: number;
+    visual_hierarchy: {
+        score: number;
+        header_consistency: 'excellent' | 'good' | 'fair' | 'poor';
+        font_usage: 'excellent' | 'good' | 'fair' | 'poor';
+        spacing_quality: 'excellent' | 'good' | 'fair' | 'poor';
+        visual_flow: 'excellent' | 'good' | 'fair' | 'poor';
+        improvements: string[];
+    };
+    section_organization: {
+        score: number;
+        section_order: 'optimal' | 'good' | 'needs_improvement' | 'poor';
+        section_lengths: 'balanced' | 'some_issues' | 'unbalanced';
+        section_headers: 'clear' | 'unclear' | 'missing';
+        section_boundaries: 'clear' | 'unclear' | 'confusing';
+        recommendations: string[];
+    };
+    bullet_point_analysis: {
+        score: number;
+        consistency: 'excellent' | 'good' | 'fair' | 'poor';
+        indentation: 'proper' | 'inconsistent' | 'poor';
+        length_balance: 'optimal' | 'too_long' | 'too_short';
+        action_verbs: 'strong' | 'moderate' | 'weak';
+        improvements: string[];
+    };
+    contact_information: {
+        score: number;
+        completeness: 'complete' | 'mostly_complete' | 'incomplete';
+        presentation: 'professional' | 'adequate' | 'unprofessional';
+        placement: 'optimal' | 'good' | 'poor';
+        readability: 'excellent' | 'good' | 'fair' | 'poor';
+        issues: string[];
+    };
+    length_density: {
+        score: number;
+        overall_length: 'optimal' | 'too_long' | 'too_short';
+        information_density: 'balanced' | 'too_dense' | 'too_sparse';
+        white_space: 'appropriate' | 'too_much' | 'too_little';
+        readability: 'excellent' | 'good' | 'fair' | 'poor';
+        adjustments: string[];
+    };
+    professional_presentation: {
+        score: number;
+        overall_appeal: 'excellent' | 'good' | 'fair' | 'poor';
+        consistency: 'excellent' | 'good' | 'fair' | 'poor';
+        error_free: boolean;
+        professional_look: 'excellent' | 'good' | 'fair' | 'poor';
+        overall_impression: 'strong' | 'moderate' | 'weak';
+    };
+    critical_format_issues: Array<{
+        issue: string;
+        severity: 'critical' | 'high' | 'medium' | 'low';
+        impact: string;
+        fix: string;
+    }>;
+    format_recommendations: Array<{
+        category: string;
+        priority: 'high' | 'medium' | 'low';
+        recommendation: string;
+        impact: 'High' | 'Medium' | 'Low';
+    }>;
+    template_suggestions: {
+        current_style: 'modern' | 'traditional' | 'creative' | 'basic';
+        recommended_style: 'modern' | 'traditional' | 'creative' | 'basic';
+        reasoning: string;
+        template_examples: string[];
+    };
+}
+
+export interface RedFlagAnalysisResult {
+    red_flag_score: number;
+    critical_red_flags: Array<{
+        issue: string;
+        severity: 'critical' | 'high' | 'medium';
+        impact: string;
+        evidence: string;
+        fix_suggestion: string;
+    }>;
+    minor_concerns: Array<{
+        issue: string;
+        severity: 'low' | 'minor';
+        impact: string;
+        evidence: string;
+        fix_suggestion: string;
+    }>;
+    pattern_analysis: {
+        job_hopping: {
+            detected: boolean;
+            pattern: string;
+            severity: 'high' | 'medium' | 'low';
+            explanation_suggestions: string[];
+        };
+        employment_gaps: {
+            detected: boolean;
+            gaps: string[];
+            severity: 'high' | 'medium' | 'low';
+            explanation_suggestions: string[];
+        };
+        scale_inconsistencies: {
+            detected: boolean;
+            inconsistencies: string[];
+            severity: 'high' | 'medium' | 'low';
+            verification_suggestions: string[];
+        };
+    };
+    quality_issues: {
+        grammar_errors: string[];
+        formatting_issues: string[];
+        generic_language: string[];
+        professionalism_concerns: string[];
+    };
+    credibility_concerns: {
+        unverifiable_claims: string[];
+        inconsistent_info: string[];
+        missing_information: string[];
+        suspicious_elements: string[];
+    };
+    technical_red_flags: {
+        skill_mismatches: string[];
+        impossible_achievements: string[];
+        timeline_inconsistencies: string[];
+        depth_inconsistencies: string[];
+    };
+    overall_assessment: {
+        interview_risk: 'high' | 'medium' | 'low';
+        competitiveness_impact: 'severe' | 'moderate' | 'minor';
+        priority_fixes: string[];
+        general_recommendations: string[];
+    };
+}
+
+export interface CompanyFitAnalysisResult {
+    company_fit_scores: {
+        maang: {
+            score: number;
+            strengths: string[];
+            gaps: string[];
+            positioning_advice: string;
+        };
+        startups: {
+            score: number;
+            strengths: string[];
+            gaps: string[];
+            positioning_advice: string;
+        };
+        enterprise: {
+            score: number;
+            strengths: string[];
+            gaps: string[];
+            positioning_advice: string;
+        };
+    };
+    overall_fit_analysis: {
+        best_fit: 'maang' | 'startups' | 'enterprise' | 'mixed';
+        fit_explanation: string;
+        versatility_score: number;
+        adaptability_indicators: string[];
+    };
+    positioning_strategies: {
+        maang_positioning: {
+            key_messages: string[];
+            resume_highlights: string[];
+            interview_prep: string[];
+        };
+        startup_positioning: {
+            key_messages: string[];
+            resume_highlights: string[];
+            interview_prep: string[];
+        };
+        enterprise_positioning: {
+            key_messages: string[];
+            resume_highlights: string[];
+            interview_prep: string[];
+        };
+    };
+    culture_alignment: {
+        work_style: 'collaborative' | 'independent' | 'mixed';
+        innovation_focus: 'high' | 'medium' | 'low';
+        risk_tolerance: 'high' | 'medium' | 'low';
+        growth_mindset: 'strong' | 'moderate' | 'weak';
+    };
+    recommendations: {
+        resume_tailoring: Array<{
+            company_type: string;
+            changes: string[];
+        }>;
+        skill_development: Array<{
+            skill: string;
+            priority: 'high' | 'medium' | 'low';
+            reason: string;
+        }>;
+        experience_gaps: Array<{
+            experience: string;
+            company_types: string[];
+            priority: 'high' | 'medium' | 'low';
+        }>;
     };
 }
 
@@ -337,7 +678,7 @@ export const resumeApi = {
     },
 
     // Evaluate resume
-    evaluateResume: async (resumeId: string, targetRole?: string, targetIndustry?: string): Promise<void> => {
+    evaluateResume: async (resumeId: string, targetRole?: string, targetIndustry?: string): Promise<{message: string, process_id: string, status: string}> => {
         const response = await fetch(`${API_BASE_URL}/api/v1/resumes/${resumeId}/evaluate`, {
             method: 'POST',
             headers: {
@@ -352,8 +693,19 @@ export const resumeApi = {
 
         if (!response.ok) {
             const error = await response.json();
+            // Handle specific lock error
+            if (response.status === 409) {
+                throw new Error(error.detail || 'Resume is currently being evaluated by another process');
+            }
             throw new Error(error.detail || 'Failed to start resume evaluation');
         }
+
+        const data = await response.json();
+        return {
+            message: data.message,
+            process_id: data.process_id,
+            status: data.status
+        };
     },
 
     // List resumes

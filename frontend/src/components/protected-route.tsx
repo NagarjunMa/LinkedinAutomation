@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/auth-context'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -15,17 +15,26 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children, fallback }: ProtectedRouteProps) {
   const { user, loading } = useAuth()
   const router = useRouter()
+  const [showAuthRequired, setShowAuthRequired] = useState(false)
 
   useEffect(() => {
     if (!loading && !user) {
       console.log('ProtectedRoute: No user, redirecting to landing page')
-      // Try router first, fallback to window.location
-      try {
-        router.push('/')
-      } catch (error) {
-        console.error('Router error:', error)
-        window.location.href = '/'
-      }
+      // Add a small delay to prevent showing auth required screen during logout
+      const timer = setTimeout(() => {
+        setShowAuthRequired(true)
+        // Try router first, fallback to window.location
+        try {
+          router.push('/')
+        } catch (error) {
+          console.error('Router error:', error)
+          window.location.href = '/'
+        }
+      }, 100) // Small delay to allow logout redirect to complete
+
+      return () => clearTimeout(timer)
+    } else if (user) {
+      setShowAuthRequired(false)
     }
   }, [user, loading, router])
 
@@ -58,7 +67,7 @@ export function ProtectedRoute({ children, fallback }: ProtectedRouteProps) {
     )
   }
 
-  if (!user) {
+  if (!user && showAuthRequired) {
     if (fallback) {
       return <>{fallback}</>
     }
@@ -76,12 +85,29 @@ export function ProtectedRoute({ children, fallback }: ProtectedRouteProps) {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Button 
-              onClick={handleGoToLanding} 
+            <Button
+              onClick={handleGoToLanding}
               className="w-full"
             >
               Go to Landing Page
             </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // If no user but not showing auth required yet, show loading
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle>Loading...</CardTitle>
+            <CardDescription>Please wait while we verify your authentication</CardDescription>
+          </CardHeader>
+          <CardContent className="flex justify-center">
+            <Loader2 className="h-8 w-8 animate-spin" />
           </CardContent>
         </Card>
       </div>

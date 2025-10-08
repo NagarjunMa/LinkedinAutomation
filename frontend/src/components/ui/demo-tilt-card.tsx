@@ -50,15 +50,15 @@ export function DemoTiltCard() {
             className="w-[400px] transition-transform duration-300 ease-out"
             style={{ transformStyle: 'preserve-3d' }}
         >
-            <Card className="h-full border border-gray-200 shadow-sm hover:shadow-lg transition-shadow duration-300">
+            <Card className="h-full premium-card hover:scale-105 transition-all duration-300">
                 <CardContent className="p-6">
                     <div className="space-y-4">
                         {/* Header with Role and Company */}
                         <div className="space-y-2">
-                            <h3 className="font-semibold text-lg leading-tight text-gray-900">
+                            <h3 className="font-semibold text-lg leading-tight text-cream-50">
                                 Software Engineer
                             </h3>
-                            <div className="flex items-center gap-2 text-gray-600">
+                            <div className="flex items-center gap-2 text-cream-300">
                                 <Building className="h-4 w-4" />
                                 <span className="font-medium">Demo Company</span>
                             </div>
@@ -70,7 +70,7 @@ export function DemoTiltCard() {
                                 <div className="text-sm font-medium text-green-700">
                                     $120,000 - $180,000
                                 </div>
-                                <div className="text-sm text-gray-500">
+                                <div className="text-sm text-cream-400">
                                     📍 San Francisco, CA
                                 </div>
                             </div>
@@ -82,8 +82,8 @@ export function DemoTiltCard() {
                         </div>
 
                         {/* Applied Date and AI Score */}
-                        <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                            <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <div className="flex items-center justify-between pt-2 border-t border-primary-600">
+                            <div className="flex items-center gap-2 text-sm text-cream-400">
                                 <Calendar className="h-4 w-4" />
                                 <span>Applied Jul 25, 2025</span>
                             </div>

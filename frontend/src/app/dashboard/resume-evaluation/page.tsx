@@ -134,17 +134,17 @@ export default function ResumeEvaluationPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <h1 className="text-4xl font-bold tracking-tight text-gradient-warm">
                 Resume Evaluation Center
               </h1>
-              <p className="text-xl text-muted-foreground mt-2">
+              <p className="text-xl text-cream-200 mt-2">
                 Expert AI-powered resume analysis by experienced recruiters
               </p>
             </div>
             <Button
               onClick={() => setShowUploadModal(true)}
               size="lg"
-              className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white"
+              className="bg-gradient-warm hover:bg-gradient-gold text-white glow-orange hover:glow-gold transition-all duration-300"
             >
               <Upload className="w-5 h-5 mr-2" />
               Upload New Resume
@@ -153,18 +153,18 @@ export default function ResumeEvaluationPage() {
 
           {/* Latest Resume Status Card */}
           {latestResume && (
-            <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200 mb-6">
+            <Card className="bg-gradient-card border-accent-500/20 mb-6 glow-orange">
               <CardContent className="pt-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="text-center">
                     <div className="flex items-center justify-center gap-2 mb-3">
                       <Clock className="w-6 h-6 text-blue-600" />
-                      <h3 className="text-lg font-semibold text-blue-800">Latest Resume</h3>
+                      <h3 className="text-lg font-semibold text-cream-50">Latest Resume</h3>
                     </div>
-                    <div className="text-2xl font-bold text-blue-700 mb-2">
+                    <div className="text-2xl font-bold text-accent-400 mb-2">
                       {latestResume.filename}
                     </div>
-                    <p className="text-blue-600 text-sm">
+                    <p className="text-cream-300 text-sm">
                       Uploaded {new Date(latestResume.uploaded_at).toLocaleDateString()}
                     </p>
                   </div>
@@ -172,7 +172,7 @@ export default function ResumeEvaluationPage() {
                   <div className="text-center">
                     <div className="flex items-center justify-center gap-2 mb-3">
                       <Target className="w-6 h-6 text-green-600" />
-                      <h3 className="text-lg font-semibold text-green-800">Evaluation Status</h3>
+                      <h3 className="text-lg font-semibold text-cream-50">Evaluation Status</h3>
                     </div>
                     <Badge
                       variant={
@@ -188,7 +188,7 @@ export default function ResumeEvaluationPage() {
                       {latestResume.evaluation_status.charAt(0).toUpperCase() + latestResume.evaluation_status.slice(1)}
                     </Badge>
                     {latestResume.evaluation_status === 'completed' && latestResume.evaluation_result && (
-                      <div className="text-2xl font-bold text-green-700">
+                      <div className="text-2xl font-bold text-green-400">
                         Score: {latestResume.evaluation_result.overall_score}/100
                       </div>
                     )}
@@ -197,11 +197,11 @@ export default function ResumeEvaluationPage() {
                   <div className="text-center">
                     <div className="flex items-center justify-center gap-2 mb-3">
                       <Star className="w-6 h-6 text-yellow-600" />
-                      <h3 className="text-lg font-semibold text-yellow-800">Primary Resume</h3>
+                      <h3 className="text-lg font-semibold text-cream-50">Primary Resume</h3>
                     </div>
                     {primaryResume ? (
                       <div>
-                        <div className="text-lg font-semibold text-yellow-700 mb-2">
+                        <div className="text-lg font-semibold text-gold-400 mb-2">
                           {primaryResume.filename}
                         </div>
                         <Button
@@ -229,13 +229,13 @@ export default function ResumeEvaluationPage() {
 
           {/* Quick Actions */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <Card className="hover:shadow-lg transition-all duration-300 cursor-pointer border-2 border-transparent hover:border-blue-200">
+            <Card className="premium-card hover:scale-105 transition-all duration-300 cursor-pointer border-2 border-transparent hover:border-accent-500">
               <CardContent className="pt-6 text-center">
-                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Target className="w-8 h-8 text-blue-600" />
+                <div className="w-16 h-16 bg-gradient-warm rounded-full flex items-center justify-center mx-auto mb-4 glow-orange">
+                  <Target className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="text-lg font-semibold mb-2">Evaluate Resume</h3>
-                <p className="text-sm text-muted-foreground mb-4">
+                <h3 className="text-lg font-semibold mb-2 text-cream-50">Evaluate Resume</h3>
+                <p className="text-sm text-cream-200 mb-4">
                   Get AI-powered analysis and improvement recommendations
                 </p>
                 {latestResume && latestResume.evaluation_status !== 'evaluating' && (
@@ -257,13 +257,13 @@ export default function ResumeEvaluationPage() {
               </CardContent>
             </Card>
 
-            <Card className="hover:shadow-lg transition-all duration-300 cursor-pointer border-2 border-transparent hover:border-green-200">
+            <Card className="premium-card hover:scale-105 transition-all duration-300 cursor-pointer border-2 border-transparent hover:border-green-400">
               <CardContent className="pt-6 text-center">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Upload className="w-8 h-8 text-green-600" />
+                <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto mb-4 glow-green">
+                  <Upload className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="text-lg font-semibold mb-2">Upload Resume</h3>
-                <p className="text-sm text-muted-foreground mb-4">
+                <h3 className="text-lg font-semibold mb-2 text-cream-50">Upload Resume</h3>
+                <p className="text-sm text-cream-200 mb-4">
                   Add a new resume for evaluation and comparison
                 </p>
                 <Button
@@ -276,13 +276,13 @@ export default function ResumeEvaluationPage() {
               </CardContent>
             </Card>
 
-            <Card className="hover:shadow-lg transition-all duration-300 cursor-pointer border-2 border-transparent hover:border-purple-200">
+            <Card className="premium-card hover:scale-105 transition-all duration-300 cursor-pointer border-2 border-transparent hover:border-purple-400">
               <CardContent className="pt-6 text-center">
-                <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <BookOpen className="w-8 h-8 text-purple-600" />
+                <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4 glow-purple">
+                  <BookOpen className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="text-lg font-semibold mb-2">Study Timeline</h3>
-                <p className="text-sm text-muted-foreground mb-4">
+                <h3 className="text-lg font-semibold mb-2 text-cream-50">Study Timeline</h3>
+                <p className="text-sm text-cream-200 mb-4">
                   Create personalized learning path based on your resume
                 </p>
                 <Button
@@ -304,6 +304,7 @@ export default function ResumeEvaluationPage() {
           onDownloadResume={(resumeId) => window.open(`/api/v1/resumes/${resumeId}/download`, '_blank')}
           onEvaluateResume={handleEvaluateResume}
           evaluatingResume={evaluatingResume}
+          onResumeDeleted={loadResumes}
         />
 
         {/* Modals */}

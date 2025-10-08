@@ -81,15 +81,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOutUser = async () => {
     try {
       setLoading(true)
-      await signOut()
+      // Clear user state immediately to prevent showing protected content
       setUser(null)
       setSession(null)
       // Clear any stored session data
       clearSession()
+      // Sign out from Supabase
+      await signOut()
       // Redirect to landing page
       router.push('/')
     } catch (error) {
       console.error('Error signing out:', error)
+      // Even if signOut fails, we should still redirect
+      router.push('/')
       throw error
     } finally {
       setLoading(false)

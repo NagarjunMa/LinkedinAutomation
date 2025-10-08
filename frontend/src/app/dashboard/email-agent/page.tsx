@@ -78,8 +78,8 @@ export default function EmailAgentPage() {
                             </div>
 
                             <div className="p-4 border rounded-lg bg-blue-50">
-                                <h3 className="font-semibold mb-2 text-blue-800">Google OAuth Setup</h3>
-                                <ul className="text-sm space-y-1 text-blue-700">
+                                <h3 className="font-semibold mb-2 text-blue-900">Google OAuth Setup</h3>
+                                <ul className="text-sm space-y-1 text-blue-800">
                                     <li>• Create a Google Cloud Project</li>
                                     <li>• Enable Gmail API</li>
                                     <li>• Configure OAuth consent screen</li>

@@ -1,10 +1,18 @@
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
+import { Inter, Anton, Asap } from "next/font/google"
 import "./globals.css"
 import { Providers } from "@/components/ui/providers"
 import { AuthProvider } from "@/contexts/auth-context"
 
-const inter = Inter({ subsets: ["latin"] })
+const asap = Asap({
+  subsets: ["latin"],
+  variable: "--font-asset"
+})
+const anton = Anton({
+  subsets: ["latin"],
+  weight: ["400"],
+  variable: "--font-anton"
+})
 
 export const metadata: Metadata = {
   title: {
@@ -113,7 +121,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={inter.className}>
+      <body className={`${asap.className} ${anton.variable} ${asap.variable}`}>
         <AuthProvider>
           <Providers>
             {children}

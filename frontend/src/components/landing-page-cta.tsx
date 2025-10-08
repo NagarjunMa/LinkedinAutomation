@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { XCircle } from "lucide-react"
 
@@ -14,7 +14,7 @@ interface LandingPageCTAProps {
   className?: string
 }
 
-export function LandingPageCTA({
+function LandingPageCTAContent({
   size = "default",
   variant = "default",
   className = ""
@@ -80,5 +80,19 @@ export function LandingPageCTA({
         </Button>
       </div>
     </div>
+  )
+}
+
+export function LandingPageCTA(props: LandingPageCTAProps) {
+  return (
+    <Suspense fallback={
+      <div className="text-center">
+        <Button disabled size={props.size} variant={props.variant} className={props.className}>
+          Loading...
+        </Button>
+      </div>
+    }>
+      <LandingPageCTAContent {...props} />
+    </Suspense>
   )
 }

@@ -125,7 +125,7 @@ export function AIJobMatches({ userId, minScore = 70, limit = 10 }: AIJobMatches
         if (score >= 90) return "text-green-600"
         if (score >= 80) return "text-blue-600"
         if (score >= 70) return "text-yellow-600"
-        return "text-gray-600"
+        return "text-cream-300"
     }
 
     const getScoreBadgeVariant = (score: number) => {
@@ -134,41 +134,41 @@ export function AIJobMatches({ userId, minScore = 70, limit = 10 }: AIJobMatches
         return "outline"
     }
 
-      const formatDate = (dateString: string) => {
-    try {
-      return new Date(dateString).toLocaleDateString()
-    } catch {
-      return dateString
+    const formatDate = (dateString: string) => {
+        try {
+            return new Date(dateString).toLocaleDateString()
+        } catch {
+            return dateString
+        }
     }
-  }
 
-  const handleApplyToJob = async (jobId: number, applicationUrl: string) => {
-    try {
-      // Open the job application in new tab
-      window.open(applicationUrl, '_blank')
-      
-      // Track the application in our system
-      const formData = new FormData()
-      formData.append('user_id', userId)
-      formData.append('application_source', 'external')
-      formData.append('notes', 'Applied via AI job matching system')
-      
-      const response = await fetch(`${API_BASE_URL}/api/v1/jobs/applications/${jobId}/apply`, {
-        method: 'POST',
-        body: formData
-      })
-      
-      if (response.ok) {
-        toast({
-          title: "Application tracked!",
-          description: "We've recorded your job application for tracking.",
-        })
-      }
-    } catch (error) {
-      console.error('Error tracking application:', error)
-      // Don't show error to user as the main action (opening job link) still worked
+    const handleApplyToJob = async (jobId: number, applicationUrl: string) => {
+        try {
+            // Open the job application in new tab
+            window.open(applicationUrl, '_blank')
+
+            // Track the application in our system
+            const formData = new FormData()
+            formData.append('user_id', userId)
+            formData.append('application_source', 'external')
+            formData.append('notes', 'Applied via AI job matching system')
+
+            const response = await fetch(`${API_BASE_URL}/api/v1/jobs/applications/${jobId}/apply`, {
+                method: 'POST',
+                body: formData
+            })
+
+            if (response.ok) {
+                toast({
+                    title: "Application tracked!",
+                    description: "We've recorded your job application for tracking.",
+                })
+            }
+        } catch (error) {
+            console.error('Error tracking application:', error)
+            // Don't show error to user as the main action (opening job link) still worked
+        }
     }
-  }
 
     return (
         <div className="space-y-6">
@@ -356,14 +356,14 @@ export function AIJobMatches({ userId, minScore = 70, limit = 10 }: AIJobMatches
                                     <div className="text-xs text-muted-foreground">
                                         Job ID: {job.job_id}
                                     </div>
-                                                      <Button
-                    variant="default"
-                    size="sm"
-                    onClick={() => handleApplyToJob(job.job_id, job.application_url)}
-                  >
-                    <ExternalLinkIcon className="mr-2 h-4 w-4" />
-                    Apply Now
-                  </Button>
+                                    <Button
+                                        variant="default"
+                                        size="sm"
+                                        onClick={() => handleApplyToJob(job.job_id, job.application_url)}
+                                    >
+                                        <ExternalLinkIcon className="mr-2 h-4 w-4" />
+                                        Apply Now
+                                    </Button>
                                 </div>
                             </CardContent>
                         </Card>

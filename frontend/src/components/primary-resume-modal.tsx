@@ -94,7 +94,7 @@ export function PrimaryResumeModal({ resumes, open, onOpenChange, onPrimaryChang
           {currentPrimary && (
             <Card className="bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-200">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-yellow-800">
+                <CardTitle className="flex items-center gap-2 text-yellow-900">
                   <Star className="w-5 h-5" />
                   Current Primary Resume
                 </CardTitle>
@@ -106,8 +106,8 @@ export function PrimaryResumeModal({ resumes, open, onOpenChange, onPrimaryChang
                       <Star className="w-6 h-6 text-yellow-600" />
                     </div>
                     <div>
-                      <h4 className="font-semibold text-yellow-800">{currentPrimary.filename}</h4>
-                      <p className="text-sm text-yellow-700">
+                      <h4 className="font-semibold text-yellow-900">{currentPrimary.filename}</h4>
+                      <p className="text-sm text-yellow-800">
                         Uploaded {new Date(currentPrimary.uploaded_at).toLocaleDateString()}
                       </p>
                       {currentPrimary.evaluation_status === 'completed' && currentPrimary.evaluation_result && (
@@ -130,7 +130,7 @@ export function PrimaryResumeModal({ resumes, open, onOpenChange, onPrimaryChang
           {/* Why Primary Resume Matters */}
           <Card className="bg-blue-50 border-blue-200">
             <CardHeader>
-              <CardTitle className="text-blue-800 flex items-center gap-2">
+              <CardTitle className="text-blue-900 flex items-center gap-2">
                 <Lightbulb className="w-5 h-5" />
                 Why Set a Primary Resume?
               </CardTitle>
@@ -142,14 +142,14 @@ export function PrimaryResumeModal({ resumes, open, onOpenChange, onPrimaryChang
                     <Target className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
                     <div>
                       <h4 className="font-semibold text-blue-900">AI Evaluation Focus</h4>
-                      <p className="text-sm text-blue-700">Our AI recruiter will prioritize analyzing this resume for detailed feedback</p>
+                      <p className="text-sm text-blue-900">Our AI recruiter will prioritize analyzing this resume for detailed feedback</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
                     <Calendar className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
                     <div>
                       <h4 className="font-semibold text-blue-900">Study Timeline</h4>
-                      <p className="text-sm text-blue-700">Personalized learning path created based on this resume's analysis</p>
+                      <p className="text-sm text-blue-900">Personalized learning path created based on this resume's analysis</p>
                     </div>
                   </div>
                 </div>
@@ -158,14 +158,14 @@ export function PrimaryResumeModal({ resumes, open, onOpenChange, onPrimaryChang
                     <TrendingUp className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
                     <div>
                       <h4 className="font-semibold text-blue-900">Career Tracking</h4>
-                      <p className="text-sm text-blue-700">Progress monitoring and improvement recommendations based on this resume</p>
+                      <p className="text-sm text-blue-900">Progress monitoring and improvement recommendations based on this resume</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
                     <Users className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
                     <div>
                       <h4 className="font-semibold text-blue-900">Future Reference</h4>
-                      <p className="text-sm text-blue-700">All future operations will reference this resume as your main profile</p>
+                      <p className="text-sm text-blue-900">All future operations will reference this resume as your main profile</p>
                     </div>
                   </div>
                 </div>
@@ -287,7 +287,7 @@ export function PrimaryResumeModal({ resumes, open, onOpenChange, onPrimaryChang
           {selectedPrimary && (
             <Card className="bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-purple-800">
+                <CardTitle className="flex items-center gap-2 text-purple-900">
                   <BookOpen className="w-5 h-5" />
                   Study Timeline Preview
                 </CardTitle>
@@ -304,7 +304,7 @@ export function PrimaryResumeModal({ resumes, open, onOpenChange, onPrimaryChang
                       </div>
                       <h4 className="font-semibold text-purple-900">Week 1-2</h4>
                     </div>
-                    <p className="text-sm text-purple-700">
+                    <p className="text-sm text-purple-900">
                       Foundation building based on your resume's current strengths and identified improvement areas
                     </p>
                   </div>
@@ -316,7 +316,7 @@ export function PrimaryResumeModal({ resumes, open, onOpenChange, onPrimaryChang
                       </div>
                       <h4 className="font-semibold text-purple-900">Week 5-6</h4>
                     </div>
-                    <p className="text-sm text-purple-700">
+                    <p className="text-sm text-purple-900">
                       Skill enhancement focusing on industry-specific knowledge and advanced techniques
                     </p>
                   </div>
@@ -328,7 +328,7 @@ export function PrimaryResumeModal({ resumes, open, onOpenChange, onPrimaryChang
                       </div>
                       <h4 className="font-semibold text-purple-900">Week 5-6</h4>
                     </div>
-                    <p className="text-sm text-purple-700">
+                    <p className="text-sm text-purple-900">
                       Application and practice with real-world scenarios and mock interviews
                     </p>
                   </div>

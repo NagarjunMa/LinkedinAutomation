@@ -123,7 +123,7 @@ export function ResumeUploadModal({ open, onOpenChange, onUploadSuccess }: Resum
       <Dialog open={open} onOpenChange={handleClose}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-green-700">
+            <DialogTitle className="flex items-center gap-2 text-green-800">
               <CheckCircle className="w-6 h-6" />
               Resume Uploaded Successfully! 🎉
             </DialogTitle>
@@ -145,7 +145,7 @@ export function ResumeUploadModal({ open, onOpenChange, onUploadSuccess }: Resum
                   <h3 className="text-lg font-semibold text-green-800 mb-2">
                     {uploadedResume.filename}
                   </h3>
-                  <p className="text-green-700 text-sm">
+                  <p className="text-green-800 text-sm">
                     File uploaded successfully • Ready for AI evaluation
                   </p>
                   <div className="flex items-center gap-4 mt-3 text-sm text-green-600">
@@ -207,13 +207,13 @@ export function ResumeUploadModal({ open, onOpenChange, onUploadSuccess }: Resum
             {/* What Happens Next */}
             <Card className="bg-blue-50 border-blue-200">
               <CardHeader>
-                <CardTitle className="text-blue-800 flex items-center gap-2">
+                <CardTitle className="text-blue-900 flex items-center gap-2">
                   <Sparkles className="w-5 h-5" />
                   What Happens Next?
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3 text-sm text-blue-700">
+                <div className="space-y-3 text-sm text-blue-900">
                   <div className="flex items-start gap-2">
                     <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
                     <span>AI recruiter analyzes your resume with 15+ years of experience</span>

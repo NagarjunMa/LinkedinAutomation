@@ -1,7 +1,8 @@
-from sqlalchemy import Column, String, DateTime, Text, Integer, JSON, ForeignKey
+from sqlalchemy import Column, String, DateTime, Text, Integer, JSON, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.base_class import Base
+from datetime import datetime, timedelta, timezone
 
 
 class Resume(Base):
@@ -20,7 +21,13 @@ class Resume(Base):
     evaluation_status = Column(String, default="pending")  # pending, evaluating, completed, failed
     evaluation_result = Column(JSON, nullable=True)
     evaluated_at = Column(DateTime(timezone=True), nullable=True)
-    
+
+    # Status locking mechanism to prevent race conditions
+    is_locked = Column(Boolean, default=False)
+    locked_at = Column(DateTime(timezone=True), nullable=True)
+    locked_by = Column(String, nullable=True)  # process/task identifier
+    lock_expires_at = Column(DateTime(timezone=True), nullable=True)
+
     # AI analysis metadata
     ai_model_version = Column(String, nullable=True)
     processing_time = Column(Integer, nullable=True)  # in seconds
@@ -28,9 +35,61 @@ class Resume(Base):
     # Relationships
     user = relationship("User", back_populates="resumes")
     evaluations = relationship("ResumeEvaluation", back_populates="resume")
+    evaluation_sessions = relationship("ResumeEvaluationSession", back_populates="resume")
     
     def __repr__(self):
         return f"<Resume(id={self.id}, filename={self.filename}, user_id={self.user_id})>"
+
+    def acquire_lock(self, locked_by: str, lock_duration_minutes: int = 10) -> bool:
+        """
+        Acquire a lock for evaluation processing.
+        Returns True if lock was successfully acquired, False otherwise.
+        """
+        now = datetime.now(timezone.utc)
+
+        # Check if already locked and not expired
+        if self.is_locked and self.lock_expires_at and self.lock_expires_at > now:
+            return False
+
+        # Acquire lock
+        self.is_locked = True
+        self.locked_at = now
+        self.locked_by = locked_by
+        self.lock_expires_at = now + timedelta(minutes=lock_duration_minutes)
+        return True
+
+    def release_lock(self):
+        """Release the evaluation lock."""
+        self.is_locked = False
+        self.locked_at = None
+        self.locked_by = None
+        self.lock_expires_at = None
+
+    def is_lock_expired(self) -> bool:
+        """Check if the current lock has expired."""
+        if not self.is_locked or not self.lock_expires_at:
+            return True
+        return datetime.now(timezone.utc) > self.lock_expires_at
+
+    def can_evaluate(self) -> bool:
+        """Check if this resume can be evaluated (not locked or lock expired)."""
+        return not self.is_locked or self.is_lock_expired()
+
+    def update_evaluation_status(self, status: str, release_lock: bool = True):
+        """
+        Update evaluation status and optionally release lock.
+
+        Args:
+            status: New evaluation status ('pending', 'evaluating', 'completed', 'failed')
+            release_lock: Whether to release the lock after status update
+        """
+        self.evaluation_status = status
+
+        if status == "completed":
+            self.evaluated_at = datetime.now(timezone.utc)
+
+        if release_lock:
+            self.release_lock()
 
 
 class ResumeEvaluation(Base):

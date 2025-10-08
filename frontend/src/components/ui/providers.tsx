@@ -5,8 +5,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <ThemeProvider
             attribute="class"
             defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
+            enableSystem={true}
+            storageKey="jobflow-theme"
         >
             {children}
         </ThemeProvider>

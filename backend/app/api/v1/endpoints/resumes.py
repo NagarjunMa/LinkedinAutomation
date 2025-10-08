@@ -5,14 +5,17 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, BackgroundTasks
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from app.db.session import get_db
 from app.schemas.resume import (
     ResumeUploadResponse, ResumeListResponse, ResumeDeleteResponse,
     ResumeWithEvaluation, ResumeStorageInfo, ResumeEvaluationRequest
 )
 from app.services.resume_evaluator import ResumeEvaluatorService
+from app.services.agentic_resume_evaluator import AgenticResumeEvaluatorService
 from app.core.ai_service import get_ai_service
 from app.models.resume import Resume, ResumeEvaluation
+from app.models.agent_models import ResumeEvaluationSession, ResumeAgentResult
 from app.models.user import User
 from app.core.config import settings
 import logging
@@ -97,18 +100,6 @@ async def upload_resume(
         db.commit()
         db.refresh(resume)
         
-        # Start background evaluation
-        background_tasks.add_task(
-            evaluate_resume_background,
-            file_id,
-            file_path,
-            file.content_type or file_ext,
-            target_role,
-            target_industry,
-            db,
-            ai_service
-        )
-        
         return ResumeUploadResponse(
             id=resume.id,
             filename=resume.filename,
@@ -117,7 +108,7 @@ async def upload_resume(
             file_type=resume.file_type,
             uploaded_at=resume.uploaded_at,
             evaluation_status=resume.evaluation_status,
-            message="Resume uploaded successfully. AI evaluation started."
+            message="Resume uploaded successfully. Ready for evaluation."
         )
         
     except Exception as e:
@@ -187,6 +178,52 @@ async def get_storage_info(
         remaining_slots=remaining_slots,
         remaining_storage_mb=round(remaining_storage_mb, 2)
     )
+
+
+@router.get("/agent-metrics")
+async def get_agent_metrics(
+    ai_service = Depends(get_ai_service)
+):
+    """Get performance metrics for all evaluation agents"""
+    try:
+        evaluator = AgenticResumeEvaluatorService(ai_service)
+        metrics = await evaluator.get_agent_performance_metrics()
+        return {"agent_metrics": metrics}
+    except Exception as e:
+        logger.error(f"Failed to get agent metrics: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get agent metrics")
+
+
+@router.get("/evaluation-history")
+async def get_evaluation_history(
+    limit: int = 10,
+    ai_service = Depends(get_ai_service)
+):
+    """Get evaluation history for the current user"""
+    try:
+        # TODO: Get actual user_id from authentication
+        user_id = "demo_user"  # Replace with actual user authentication
+        
+        evaluator = AgenticResumeEvaluatorService(ai_service)
+        history = await evaluator.get_evaluation_history(user_id, limit)
+        return {"evaluation_history": history}
+    except Exception as e:
+        logger.error(f"Failed to get evaluation history: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get evaluation history")
+
+
+@router.get("/agent-status")
+async def get_agent_status(
+    ai_service = Depends(get_ai_service)
+):
+    """Get status and capabilities of all evaluation agents"""
+    try:
+        evaluator = AgenticResumeEvaluatorService(ai_service)
+        status = evaluator.orchestrator.get_agent_status()
+        return {"agent_status": status}
+    except Exception as e:
+        logger.error(f"Failed to get agent status: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get agent status")
 
 
 @router.get("/{resume_id}", response_model=ResumeWithEvaluation)
@@ -266,6 +303,20 @@ async def delete_resume(
         raise HTTPException(status_code=404, detail="Resume not found")
     
     try:
+        # Delete agent results first (they reference evaluation sessions)
+        db.query(ResumeAgentResult).filter(
+            ResumeAgentResult.evaluation_id.in_(
+                db.query(ResumeEvaluationSession.id).filter(
+                    ResumeEvaluationSession.resume_id == resume_id
+                )
+            )
+        ).delete(synchronize_session=False)
+        
+        # Delete evaluation sessions
+        db.query(ResumeEvaluationSession).filter(
+            ResumeEvaluationSession.resume_id == resume_id
+        ).delete()
+        
         # Delete evaluation records
         db.query(ResumeEvaluation).filter(
             ResumeEvaluation.resume_id == resume_id
@@ -298,27 +349,43 @@ async def evaluate_resume(
     db: Session = Depends(get_db),
     ai_service = Depends(get_ai_service)
 ):
-    """Manually trigger resume evaluation"""
-    
+    """Manually trigger resume evaluation with status locking"""
+
     # TODO: Get actual user_id from authentication
     user_id = "demo_user"  # Replace with actual user authentication
-    
+
+    # Generate unique process identifier for this evaluation
+    process_id = f"eval_{uuid.uuid4().hex[:8]}"
+
     resume = db.query(Resume).filter(
         Resume.id == resume_id,
         Resume.user_id == user_id
     ).first()
-    
+
     if not resume:
         raise HTTPException(status_code=404, detail="Resume not found")
-    
-    if resume.evaluation_status == "evaluating":
-        raise HTTPException(status_code=400, detail="Resume is already being evaluated")
-    
+
+    # Check if resume can be evaluated (not locked or lock expired)
+    if not resume.can_evaluate():
+        raise HTTPException(
+            status_code=409,
+            detail=f"Resume is currently being evaluated by another process. Locked by: {resume.locked_by}"
+        )
+
     try:
-        # Update status to evaluating
-        resume.evaluation_status = "evaluating"
+        # Acquire lock for evaluation process
+        if not resume.acquire_lock(process_id, lock_duration_minutes=15):
+            raise HTTPException(
+                status_code=409,
+                detail="Failed to acquire evaluation lock. Another process may be evaluating this resume."
+            )
+
+        # Update status to evaluating (lock prevents race conditions)
+        resume.update_evaluation_status("evaluating", release_lock=False)
         db.commit()
-        
+
+        logger.info(f"Evaluation lock acquired for resume {resume_id} by process {process_id}")
+
         # Start evaluation in background
         background_tasks.add_task(
             evaluate_resume_background,
@@ -327,16 +394,35 @@ async def evaluate_resume(
             resume.file_type,
             evaluation_request.target_role,
             evaluation_request.target_industry,
-            db,
-            ai_service
+            process_id
         )
-        
-        return {"message": "Resume evaluation started"}
-        
+
+        return {
+            "message": "Resume evaluation started",
+            "process_id": process_id,
+            "status": "evaluating"
+        }
+
+    except IntegrityError as e:
+        logger.error(f"Database integrity error during evaluation start: {e}")
+        db.rollback()
+        # Try to release lock if it was acquired
+        try:
+            resume.release_lock()
+            db.commit()
+        except:
+            pass
+        raise HTTPException(status_code=409, detail="Resume evaluation already in progress")
+
     except Exception as e:
         logger.error(f"Failed to start evaluation: {e}")
-        resume.evaluation_status = "failed"
-        db.commit()
+        db.rollback()
+        # Release lock and mark as failed
+        try:
+            resume.update_evaluation_status("failed", release_lock=True)
+            db.commit()
+        except:
+            pass
         raise HTTPException(status_code=500, detail="Failed to start evaluation")
 
 
@@ -374,30 +460,50 @@ async def evaluate_resume_background(
     file_type: str,
     target_role: str,
     target_industry: str,
-    db: Session,
-    ai_service
+    process_id: str
 ):
-    """Background task for resume evaluation"""
-    
+    """Background task for resume evaluation using agentic workflow with proper locking"""
+
+    # Create new database session for background task
+    db = next(get_db())
+    ai_service = get_ai_service()
+
     try:
-        # Update status to evaluating
-        db.query(Resume).filter(Resume.id == resume_id).update({
-            "evaluation_status": "evaluating"
-        })
-        db.commit()
-        
-        # Initialize evaluator service
-        evaluator = ResumeEvaluatorService(ai_service)
-        
+        # Get resume record with current lock info
+        resume = db.query(Resume).filter(Resume.id == resume_id).first()
+        if not resume:
+            logger.error(f"Resume {resume_id} not found during background evaluation")
+            return
+
+        # Verify this process owns the lock
+        if resume.locked_by != process_id:
+            logger.error(f"Process {process_id} does not own lock for resume {resume_id}. Current lock owner: {resume.locked_by}")
+            return
+
+        # Check if lock has expired
+        if resume.is_lock_expired():
+            logger.error(f"Lock expired for resume {resume_id} during evaluation")
+            resume.update_evaluation_status("failed", release_lock=True)
+            db.commit()
+            return
+
+        logger.info(f"Starting background evaluation for resume {resume_id} by process {process_id}")
+
+        # Initialize agentic evaluator service
+        evaluator = AgenticResumeEvaluatorService(ai_service)
+
         # Extract text from resume
         resume_text = await evaluator.extract_resume_text(file_path, file_type)
-        
-        # Evaluate resume
+
+        # Get user_id from resume record
+        user_id = resume.user_id
+
+        # Evaluate resume using agentic workflow
         evaluation_result = await evaluator.evaluate_resume(
-            resume_text, target_role, target_industry
+            resume_text, user_id, resume_id, target_role, target_industry
         )
-        
-        # Save evaluation to database
+
+        # Save evaluation to database (legacy format for compatibility)
         evaluation_record = ResumeEvaluation(
             id=str(uuid.uuid4()),
             resume_id=resume_id,
@@ -416,31 +522,35 @@ async def evaluate_resume_background(
             market_positioning=evaluation_result.market_positioning,
             evaluated_at=evaluation_result.evaluated_at,
             ai_model_version=evaluation_result.ai_model_version,
-            evaluation_prompt="Senior hiring manager evaluation prompt"  # Store the prompt used
+            evaluation_prompt="Agentic multi-agent evaluation workflow"  # Store the evaluation type
         )
-        
+
         db.add(evaluation_record)
-        
-        # Update resume status
-        db.query(Resume).filter(Resume.id == resume_id).update({
-            "evaluation_status": "completed",
-            "evaluated_at": evaluation_result.evaluated_at,
-            "ai_model_version": evaluation_result.ai_model_version,
-            "processing_time": evaluation_result.processing_time
-        })
-        
+
+        # Update resume status and release lock atomically
+        resume.update_evaluation_status("completed", release_lock=True)
+        resume.ai_model_version = evaluation_result.ai_model_version
+        resume.processing_time = evaluation_result.processing_time
+
         db.commit()
-        
-        logger.info(f"Resume {resume_id} evaluated successfully with score {evaluation_result.overall_score}")
-        
+
+        logger.info(f"Agentic resume evaluation completed for {resume_id} with score {evaluation_result.overall_score} by process {process_id}")
+
     except Exception as e:
-        logger.error(f"Resume evaluation failed for {resume_id}: {e}")
-        
-        # Update status to failed
-        db.query(Resume).filter(Resume.id == resume_id).update({
-            "evaluation_status": "failed"
-        })
-        db.commit()
-        
-        # Re-raise to ensure the error is logged
-        raise
+        logger.error(f"Background evaluation failed for resume {resume_id}: {e}")
+        db.rollback()
+
+        try:
+            # Get fresh resume record and mark as failed, release lock
+            resume = db.query(Resume).filter(Resume.id == resume_id).first()
+            if resume and resume.locked_by == process_id:
+                resume.update_evaluation_status("failed", release_lock=True)
+                db.commit()
+                logger.info(f"Marked resume {resume_id} as failed and released lock")
+
+        except Exception as cleanup_error:
+            logger.error(f"Failed to cleanup after evaluation error for resume {resume_id}: {cleanup_error}")
+            db.rollback()
+
+    finally:
+        db.close()

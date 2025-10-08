@@ -11,6 +11,7 @@
 
 @layer base {
   :root {
+    /* Light theme - keeping minimal for now since we're focusing on dark */
     --background: 0 0% 100%;
     --foreground: 0 0% 3.9%;
     --card: 0 0% 100%;
@@ -37,29 +38,40 @@
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
   }
+
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
+    /* Premium dark theme with warm colors */
+    --background: 15 8% 8%;
+    /* #1a1412 */
+    --foreground: 30 6% 98%;
+    /* #fafaf9 */
+    --card: 15 8% 18%;
+    /* #2d2520 */
+    --card-foreground: 30 6% 98%;
+    --popover: 15 8% 18%;
+    --popover-foreground: 30 6% 98%;
+    --primary: 15 8% 8%;
+    --primary-foreground: 30 6% 98%;
+    --secondary: 15 8% 25%;
+    /* #3d342d */
+    --secondary-foreground: 30 6% 98%;
+    --muted: 15 8% 25%;
+    --muted-foreground: 30 6% 70%;
+    /* #d6d3d1 */
+    --accent: 15 8% 25%;
+    --accent-foreground: 30 6% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
+    --border: 15 8% 30%;
+    /* #4d443d */
+    --input: 15 8% 30%;
+    --ring: 15 100% 50%;
+    /* Orange accent */
+    --chart-1: 15 100% 50%;
+    /* Orange */
+    --chart-2: 45 100% 50%;
+    /* Gold */
+    --chart-3: 220 70% 50%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
   }
@@ -71,7 +83,160 @@
   * {
     @apply border-border;
   }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-asset;
   }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-anton;
+  }
+}
+
+/* Premium dark theme styles */
+@layer components {
+  .glass-card {
+    @apply bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl;
+  }
+
+  /* Premium card styles */
+  .premium-card {
+    @apply bg-primary-800 border border-primary-600 rounded-xl shadow-card-subtle hover:shadow-card-elevated transition-all duration-300;
+  }
+
+  .premium-card-elevated {
+    @apply bg-primary-700 border border-primary-500 rounded-xl shadow-card-elevated;
+  }
+
+  /* Gradient buttons */
+  .btn-gradient-warm {
+    @apply bg-gradient-warm text-white px-6 py-3 rounded-lg font-semibold shadow-glow-orange hover:shadow-glow-gold transition-all duration-300 hover:scale-105;
+  }
+
+  .btn-gradient-orange {
+    @apply bg-gradient-orange text-white px-4 py-2 rounded-lg font-medium shadow-glow-orange hover:shadow-glow-gold transition-all duration-300;
+  }
+
+  /* Text styles */
+  .text-premium {
+    @apply text-cream-50;
+  }
+
+  .text-premium-secondary {
+    @apply text-cream-200;
+  }
+
+  .text-premium-muted {
+    @apply text-cream-300;
+  }
+
+  /* Gradient text */
+  .text-gradient-warm {
+    @apply bg-gradient-warm bg-clip-text text-transparent;
+  }
+
+  .bg-gradient-radial {
+    background: radial-gradient(circle, var(--tw-gradient-stops));
+  }
+
+  /* Glow effects */
+  .glow-orange {
+    @apply shadow-glow-orange;
+  }
+
+  .glow-gold {
+    @apply shadow-glow-gold;
+  }
+
+  /* Background gradients */
+  .bg-gradient-glow {
+    background: radial-gradient(circle at 30% 40%, rgba(255, 87, 34, 0.15) 0%, transparent 60%);
+  }
+
+  .bg-gradient-card {
+    background: linear-gradient(to bottom right, rgba(255, 87, 34, 0.1), rgba(245, 158, 11, 0.05));
+  }
+}
+
+.glass-card-dark {
+  @apply bg-black/30 backdrop-blur-xl border border-white/10 rounded-2xl;
+}
+
+.gradient-text {
+  @apply bg-gradient-to-r from-white via-orange-400 to-orange-600 bg-clip-text text-transparent;
+}
+
+.gradient-text-blue {
+  @apply bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent;
+}
+
+.gradient-text-pink {
+  @apply bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent;
+}
+
+.apple-shadow {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.apple-glow {
+  box-shadow: 0 0 20px rgba(255, 165, 0, 0.3);
+}
+
+.apple-glow-blue {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+}
+
+.apple-glow-pink {
+  box-shadow: 0 0 20px rgba(236, 72, 153, 0.3);
+}
+
+.hover-lift {
+  @apply transition-all duration-300 hover:scale-105 hover:-translate-y-1;
+}
+
+.smooth-transition {
+  @apply transition-all duration-300 ease-out;
+}
+
+/* Custom scrollbar for Apple aesthetic */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Smooth animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+/* Glassmorphism effect */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }

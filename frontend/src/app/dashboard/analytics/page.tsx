@@ -17,7 +17,6 @@ import {
     BarChart3Icon,
     MapPinIcon,
     BrainIcon,
-    SearchIcon,
     TargetIcon,
     GraduationCapIcon,
     DollarSignIcon,
@@ -26,13 +25,29 @@ import {
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 
+// Utility function to safely render values that might be objects
+const safeRender = (value: any): string => {
+    if (value === null || value === undefined) return 'N/A'
+    if (typeof value === 'string' || typeof value === 'number') return String(value)
+    if (typeof value === 'object') {
+        // Handle salary range objects
+        if (value.min !== undefined && value.max !== undefined) {
+            const minK = Math.round(value.min / 1000)
+            const maxK = Math.round(value.max / 1000)
+            return `$${minK}k - $${maxK}k`
+        }
+        // Handle other objects by stringifying
+        return JSON.stringify(value)
+    }
+    return String(value)
+}
+
 interface AnalyticsData {
     executive: any
     market: any
     skills: any
     recommendations: any
     job_matches: any
-    search_queries: any
     last_updated: string
 }
 
@@ -100,7 +115,6 @@ export default function AnalyticsPage() {
     const skills = analyticsData?.skills
     const recommendations = analyticsData?.recommendations
     const jobMatches = analyticsData?.job_matches
-    const searchQueries = analyticsData?.search_queries
 
     return (
         <div className="container mx-auto px-4 py-8">
@@ -117,8 +131,8 @@ export default function AnalyticsPage() {
                             Back to Dashboard
                         </Button>
                         <div>
-                            <h1 className="text-3xl font-bold tracking-tight">Job Search Analytics</h1>
-                            <p className="text-muted-foreground">
+                            <h1 className="text-3xl font-bold tracking-tight text-cream-50">Job Search Analytics</h1>
+                            <p className="text-cream-200">
                                 AI-powered insights to optimize your job search strategy
                             </p>
                         </div>
@@ -142,7 +156,7 @@ export default function AnalyticsPage() {
                 </div>
 
                 {/* User Skills Input */}
-                <Card>
+                <Card className="premium-card">
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-4">
                             <div className="flex-1">
@@ -162,54 +176,58 @@ export default function AnalyticsPage() {
                 {/* Executive Dashboard - Key Metrics */}
                 {executive && (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <Card>
+                        <Card className="premium-card hover:scale-105 transition-all duration-300">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">Total Jobs</CardTitle>
-                                <BarChart3Icon className="h-4 w-4 text-muted-foreground" />
+                                <CardTitle className="text-sm font-medium text-cream-50">Total Jobs</CardTitle>
+                                <BarChart3Icon className="h-4 w-4 text-accent-400" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">{executive.total_jobs}</div>
-                                <p className="text-xs text-muted-foreground">
-                                    {executive.new_jobs_7d} new in last 7 days
+                                <div className="text-2xl font-bold text-accent-400">{executive.total_jobs_found}</div>
+                                <p className="text-xs text-cream-300">
+                                    {executive.period_summary?.jobs_found || 0} new in last 30 days
                                 </p>
                             </CardContent>
                         </Card>
 
-                        <Card>
+                        <Card className="premium-card hover:scale-105 transition-all duration-300">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">Applications</CardTitle>
-                                <TargetIcon className="h-4 w-4 text-muted-foreground" />
+                                <CardTitle className="text-sm font-medium text-cream-50">Applications</CardTitle>
+                                <TargetIcon className="h-4 w-4 text-accent-400" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">{executive.total_applications}</div>
-                                <p className="text-xs text-muted-foreground">
-                                    {executive.conversion_rate}% conversion rate
+                                <div className="text-2xl font-bold text-gold-400">{executive.total_applications}</div>
+                                <p className="text-xs text-cream-300">
+                                    {typeof executive.response_rate === 'number' ? executive.response_rate : 0}% response rate
                                 </p>
                             </CardContent>
                         </Card>
 
-                        <Card>
+                        <Card className="premium-card hover:scale-105 transition-all duration-300">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">Avg Salary</CardTitle>
-                                <DollarSignIcon className="h-4 w-4 text-muted-foreground" />
+                                <CardTitle className="text-sm font-medium text-cream-50">Avg Salary</CardTitle>
+                                <DollarSignIcon className="h-4 w-4 text-accent-400" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">{executive.avg_salary_range}</div>
-                                <p className="text-xs text-muted-foreground">
+                                <div className="text-2xl font-bold text-green-400">
+                                    {safeRender(executive.avg_salary_range)}
+                                </div>
+                                <p className="text-xs text-cream-300">
                                     Market average range
                                 </p>
                             </CardContent>
                         </Card>
 
-                        <Card>
+                        <Card className="premium-card hover:scale-105 transition-all duration-300">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">Top Location</CardTitle>
-                                <MapPinIcon className="h-4 w-4 text-muted-foreground" />
+                                <CardTitle className="text-sm font-medium text-cream-50">Top Location</CardTitle>
+                                <MapPinIcon className="h-4 w-4 text-accent-400" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-lg font-bold">{executive.top_location}</div>
-                                <p className="text-xs text-muted-foreground">
-                                    {executive.location_job_count} jobs available
+                                <div className="text-lg font-bold text-blue-400">
+                                    {market?.location_analysis?.[0]?.city || "N/A"}
+                                </div>
+                                <p className="text-xs text-cream-300">
+                                    {market?.location_analysis?.[0]?.job_count || 0} jobs available
                                 </p>
                             </CardContent>
                         </Card>
@@ -218,11 +236,10 @@ export default function AnalyticsPage() {
 
                 {/* Analytics Tabs */}
                 <Tabs defaultValue="overview" className="space-y-4">
-                    <TabsList className="grid w-full grid-cols-6">
+                    <TabsList className="grid w-full grid-cols-5">
                         <TabsTrigger value="overview">Overview</TabsTrigger>
                         <TabsTrigger value="market">Market</TabsTrigger>
                         <TabsTrigger value="skills">Skills</TabsTrigger>
-                        <TabsTrigger value="search">Search</TabsTrigger>
                         <TabsTrigger value="predictions">Predictions</TabsTrigger>
                         <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
                     </TabsList>
@@ -243,16 +260,16 @@ export default function AnalyticsPage() {
                                             <div>
                                                 <div className="flex justify-between text-sm">
                                                     <span>Conversion Rate</span>
-                                                    <span>{executive.conversion_rate}%</span>
+                                                    <span>{typeof executive.conversion_rate === 'number' ? executive.conversion_rate : 0}%</span>
                                                 </div>
-                                                <Progress value={executive.conversion_rate} className="mt-1" />
+                                                <Progress value={typeof executive.conversion_rate === 'number' ? executive.conversion_rate : 0} className="mt-1" />
                                             </div>
                                             <div>
                                                 <div className="flex justify-between text-sm">
                                                     <span>Weekly Growth</span>
-                                                    <span>{executive.weekly_growth}%</span>
+                                                    <span>{typeof executive.weekly_growth === 'number' ? executive.weekly_growth : 0}%</span>
                                                 </div>
-                                                <Progress value={Math.abs(executive.weekly_growth)} className="mt-1" />
+                                                <Progress value={typeof executive.weekly_growth === 'number' ? Math.abs(executive.weekly_growth) : 0} className="mt-1" />
                                             </div>
                                         </div>
                                     </CardContent>
@@ -278,7 +295,7 @@ export default function AnalyticsPage() {
                                             <div className="flex justify-between">
                                                 <span>Last Updated</span>
                                                 <span className="font-medium">
-                                                    {new Date(analyticsData?.last_updated || '').toLocaleDateString()}
+                                                    {analyticsData?.last_updated ? new Date(analyticsData.last_updated).toLocaleDateString() : 'N/A'}
                                                 </span>
                                             </div>
                                         </div>
@@ -303,9 +320,9 @@ export default function AnalyticsPage() {
                                         <div className="space-y-3">
                                             {market.tech_stack_trends?.slice(0, 5).map((tech: any, index: number) => (
                                                 <div key={index} className="flex items-center justify-between">
-                                                    <span className="font-medium">{tech.technology}</span>
+                                                    <span className="font-medium">{tech.skill}</span>
                                                     <div className="flex items-center gap-2">
-                                                        <Badge variant="outline">{tech.job_count} jobs</Badge>
+                                                        <Badge variant="outline">{tech.demand} jobs</Badge>
                                                         <Badge variant={tech.growth > 0 ? "default" : "secondary"}>
                                                             {tech.growth > 0 ? '+' : ''}{tech.growth}%
                                                         </Badge>
@@ -327,10 +344,12 @@ export default function AnalyticsPage() {
                                         <div className="space-y-3">
                                             {market.location_analysis?.slice(0, 5).map((location: any, index: number) => (
                                                 <div key={index} className="flex items-center justify-between">
-                                                    <span className="font-medium">{location.location}</span>
+                                                    <span className="font-medium">{location.city}</span>
                                                     <div className="flex items-center gap-2">
                                                         <Badge variant="outline">{location.job_count} jobs</Badge>
-                                                        <Badge variant="secondary">{location.avg_salary}</Badge>
+                                                        <Badge variant="secondary">
+                                                            {location.trend}
+                                                        </Badge>
                                                     </div>
                                                 </div>
                                             ))}
@@ -352,7 +371,7 @@ export default function AnalyticsPage() {
                                                     <span className="font-medium">{company.company}</span>
                                                     <div className="flex items-center gap-2">
                                                         <Badge variant="outline">{company.job_count} jobs</Badge>
-                                                        <Badge variant="secondary">{company.hiring_rate}% active</Badge>
+                                                        <Badge variant="secondary">{company.hiring_velocity}</Badge>
                                                     </div>
                                                 </div>
                                             ))}
@@ -368,15 +387,15 @@ export default function AnalyticsPage() {
                                         <div className="space-y-2 text-sm">
                                             <div>
                                                 <span className="font-medium">Hottest Skills: </span>
-                                                {market.market_summary?.hottest_skills?.join(", ")}
+                                                {market.tech_stack_trends?.slice(0, 3).map((t: any) => t.skill).join(", ") || "N/A"}
                                             </div>
                                             <div>
                                                 <span className="font-medium">Growing Locations: </span>
-                                                {market.market_summary?.growing_locations?.join(", ")}
+                                                {market.location_analysis?.slice(0, 3).map((l: any) => l.city).join(", ") || "N/A"}
                                             </div>
                                             <div>
                                                 <span className="font-medium">Best Timing: </span>
-                                                {market.timing_insights?.best_time}
+                                                {market.timing_insights?.best_time || "Tuesday 0:00"}
                                             </div>
                                         </div>
                                     </CardContent>
@@ -398,13 +417,13 @@ export default function AnalyticsPage() {
                                     </CardHeader>
                                     <CardContent>
                                         <div className="space-y-3">
-                                            {skills.skills_demand?.slice(0, 8).map((skill: any, index: number) => (
+                                            {skills.in_demand_skills?.slice(0, 8).map((skill: any, index: number) => (
                                                 <div key={index} className="flex items-center justify-between">
                                                     <span className="font-medium">{skill.skill}</span>
                                                     <div className="flex items-center gap-2">
-                                                        <Badge variant="outline">{skill.job_count} jobs</Badge>
-                                                        <Badge variant={skill.market_score > 70 ? "default" : "secondary"}>
-                                                            {skill.market_score} score
+                                                        <Badge variant="outline">{skill.demand} jobs</Badge>
+                                                        <Badge variant={skill.demand > 30 ? "default" : "secondary"}>
+                                                            {skill.growth_rate > 0 ? `+${(skill.growth_rate * 100).toFixed(1)}%` : 'stable'}
                                                         </Badge>
                                                     </div>
                                                 </div>
@@ -421,7 +440,7 @@ export default function AnalyticsPage() {
                                         {userSkills ? (
                                             <div className="space-y-3">
                                                 <div>
-                                                    <span className="font-medium text-green-600">Your Skills: </span>
+                                                    <span className="font-medium text-green-700">Your Skills: </span>
                                                     <div className="flex flex-wrap gap-1 mt-1">
                                                         {userSkills.split(',').map((skill, index) => (
                                                             <Badge key={index} variant="secondary">{skill.trim()}</Badge>
@@ -430,7 +449,7 @@ export default function AnalyticsPage() {
                                                 </div>
                                                 {skills.missing_skills && (
                                                     <div>
-                                                        <span className="font-medium text-orange-600">Missing Skills: </span>
+                                                        <span className="font-medium text-orange-700">Missing Skills: </span>
                                                         <div className="flex flex-wrap gap-1 mt-1">
                                                             {skills.missing_skills.slice(0, 6).map((skill: string, index: number) => (
                                                                 <Badge key={index} variant="outline">{skill}</Badge>
@@ -450,64 +469,7 @@ export default function AnalyticsPage() {
                         )}
                     </TabsContent>
 
-                    {/* Search Performance Tab */}
-                    <TabsContent value="search" className="space-y-4">
-                        {searchQueries && (
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle className="flex items-center gap-2">
-                                            <SearchIcon className="h-5 w-5" />
-                                            Search Performance
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="space-y-4">
-                                            <div>
-                                                <div className="flex justify-between text-sm">
-                                                    <span>Avg Conversion Rate</span>
-                                                    <span>{searchQueries.summary?.avg_conversion_rate || 0}%</span>
-                                                </div>
-                                                <Progress value={searchQueries.summary?.avg_conversion_rate || 0} className="mt-1" />
-                                            </div>
-                                            <div className="space-y-2 text-sm">
-                                                <div className="flex justify-between">
-                                                    <span>Total Queries</span>
-                                                    <span className="font-medium">{searchQueries.summary?.total_queries || 0}</span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span>Active Queries</span>
-                                                    <span className="font-medium">{searchQueries.summary?.active_queries || 0}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
 
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>Top Performing Queries</CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="space-y-3">
-                                            {searchQueries.top_queries?.slice(0, 5).map((query: any, index: number) => (
-                                                <div key={index} className="flex items-center justify-between">
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="font-medium truncate">{query.keywords}</p>
-                                                        <p className="text-xs text-muted-foreground">{query.location}</p>
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <Badge variant="outline">{query.results_count} results</Badge>
-                                                        <Badge variant="secondary">{query.conversion_rate}%</Badge>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            </div>
-                        )}
-                    </TabsContent>
 
                     {/* Job Predictions Tab */}
                     <TabsContent value="predictions" className="space-y-4">
@@ -537,16 +499,18 @@ export default function AnalyticsPage() {
                                                             </div>
                                                         </div>
                                                         <div className="text-right">
-                                                            <div className="text-lg font-bold text-green-600">{job.match_score}%</div>
+                                                            <div className="text-lg font-bold text-green-700">{job.match_score}%</div>
                                                             <p className="text-xs text-muted-foreground">match score</p>
                                                         </div>
                                                     </div>
-                                                    {job.match_reasons && (
+                                                    {job.match_reasons && Array.isArray(job.match_reasons) && (
                                                         <div className="mt-3">
                                                             <p className="text-xs font-medium text-muted-foreground mb-1">Match Reasons:</p>
                                                             <div className="flex flex-wrap gap-1">
                                                                 {job.match_reasons.slice(0, 3).map((reason: string, i: number) => (
-                                                                    <Badge key={i} variant="outline" className="text-xs">{reason}</Badge>
+                                                                    <Badge key={i} variant="outline" className="text-xs">
+                                                                        {typeof reason === 'string' ? reason : String(reason)}
+                                                                    </Badge>
                                                                 ))}
                                                             </div>
                                                         </div>
@@ -626,7 +590,7 @@ export default function AnalyticsPage() {
                                                     <div key={index} className="border-l-4 border-blue-500 pl-4 py-2">
                                                         <h4 className="font-medium text-sm">{tip.category}</h4>
                                                         <p className="text-sm text-muted-foreground">{tip.tip}</p>
-                                                        <p className="text-xs text-blue-600 mt-1">{tip.action}</p>
+                                                        <p className="text-xs text-blue-700 mt-1">{tip.action}</p>
                                                     </div>
                                                 ))}
                                             </div>

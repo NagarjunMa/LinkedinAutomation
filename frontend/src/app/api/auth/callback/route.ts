@@ -56,11 +56,11 @@ export async function GET(request: NextRequest) {
                 )
             }
 
-            console.log('Auth callback: User email:', user.email, 'User ID:', user.id)
+            console.log('Auth callback: User email:', user?.email, 'User ID:', user?.id)
 
             // Check if user has completed onboarding (has profile data)
-            const isNewUser = !user.user_metadata?.onboarding_completed
-            const isFirstTimeOAuth = !user.user_metadata?.oauth_provider
+            const isNewUser = !user?.user_metadata?.onboarding_completed
+            const isFirstTimeOAuth = !user?.user_metadata?.oauth_provider
 
             console.log('Auth callback: Is new user:', isNewUser, 'Is first time OAuth:', isFirstTimeOAuth)
 
