@@ -7,41 +7,46 @@ import { SophisticatedHeader } from "./sophisticated-header"
 interface SophisticatedLayoutProps {
     children: React.ReactNode
     notificationCount?: number
+    showHeader?: boolean
 }
 
 export function SophisticatedLayout({
     children,
-    notificationCount = 2
+    notificationCount = 2,
+    showHeader = true
 }: SophisticatedLayoutProps) {
     const [sidebarOpen, setSidebarOpen] = useState(false)
 
     return (
         <div className="h-screen flex bg-primary-950 overflow-hidden">
-            {/* Sidebar */}
-            <div className="hidden md:flex md:flex-shrink-0">
+            {/* Desktop Sidebar */}
+            <div className="hidden lg:flex lg:flex-shrink-0">
                 <SophisticatedSidebar />
             </div>
 
             {/* Mobile sidebar overlay */}
             {sidebarOpen && (
-                <div className="fixed inset-0 z-40 md:hidden">
-                    <div className="fixed inset-0 bg-primary-900/75" onClick={() => setSidebarOpen(false)} />
-                    <div className="relative flex-1 flex flex-col max-w-xs w-full bg-primary-900">
-                        <SophisticatedSidebar />
+                <div className="fixed inset-0 z-50 lg:hidden">
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
+                    <div className="relative flex-1 flex flex-col max-w-xs w-full bg-primary-900 shadow-2xl">
+                        <SophisticatedSidebar onClose={() => setSidebarOpen(false)} />
                     </div>
                 </div>
             )}
 
             {/* Main content */}
-            <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 flex flex-col overflow-hidden min-w-0">
                 {/* Header */}
-                <SophisticatedHeader
-                    notificationCount={notificationCount}
-                />
+                {showHeader && (
+                    <SophisticatedHeader
+                        notificationCount={notificationCount}
+                        onMenuClick={() => setSidebarOpen(true)}
+                    />
+                )}
 
                 {/* Page content */}
                 <main className="flex-1 overflow-y-auto bg-primary-950">
-                    <div className="p-6 min-h-full">
+                    <div className="min-h-full">
                         {children}
                     </div>
                 </main>

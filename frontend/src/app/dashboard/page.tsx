@@ -1,15 +1,14 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useDashboard } from "../contexts/dashboard-context"
-import { SophisticatedLayout } from "@/components/sophisticated-layout"
+import { useState, useEffect, useMemo } from "react"
+import { useDashboard } from "@/app/contexts/dashboard-context"
 import {
     OverviewCard,
     QuickActionCard,
     RecentJobsCard
 } from "@/components/sophisticated-cards"
 import { EmailStatsCard } from "@/components/email-stats-card"
-import { JobExtractionChart } from "@/components/job-extraction-chart"
+// Removed separate calendar - now integrated into OverviewCard
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -21,6 +20,7 @@ import {
     Search,
     Target,
     TrendingUp,
+    TrendingDown,
     Users,
     Zap,
     Clock,
@@ -33,17 +33,396 @@ import {
     Download,
     Send,
     ArrowUpRight,
-    ChevronDown
+    ChevronDown,
+    Link,
+    Upload
 } from "lucide-react"
 import { Overview } from "@/components/overview"
 import { RecentSales } from "@/components/recent-sales"
 import JobURLExtractor from "@/components/job-url-extractor"
+import { cn } from "@/lib/utils"
 import {
     FadeInUp,
     FadeIn,
     StaggerContainer,
     StaggerItem
 } from "@/components/animated-wrapper"
+import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
+import {
+    ChartConfig,
+    ChartContainer,
+    ChartTooltip,
+    ChartTooltipContent,
+} from "@/components/ui/chart"
+
+// Enhanced component props interfaces
+interface SearchProgressCardProps {
+    goal: number;
+    current: number;
+}
+
+interface SuccessRateCardProps {
+    rate: number;
+    change: number;
+}
+
+interface TodayActivityCardProps {
+    applications: number;
+    profiles: number;
+    messages: number;
+}
+
+// Compact metric card components
+function SearchProgressCard({ goal, current }: SearchProgressCardProps) {
+    const percentage = Math.round((current / goal) * 100);
+
+    return (
+        <Card className="premium-card hover:scale-105 transition-all duration-300 group">
+            <CardHeader className="pb-2 px-4 pt-4">
+                <div className="flex items-center space-x-2">
+                    <Target className="h-4 w-4 text-accent-500" />
+                    <CardTitle className="text-cream-50 text-sm group-hover:text-accent-400 transition-colors">
+                        Search Progress
+                    </CardTitle>
+                </div>
+            </CardHeader>
+            <CardContent className="px-4 pb-4 space-y-3">
+                <div className="flex justify-between text-xs">
+                    <span className="text-cream-300">Weekly Goal</span>
+                    <span className="text-accent-400 font-semibold">{current}/{goal}</span>
+                </div>
+                <div className="w-full bg-primary-700 rounded-full h-2">
+                    <div
+                        className="bg-gradient-warm h-2 rounded-full transition-all duration-500"
+                        style={{ width: `${percentage}%` }}
+                    />
+                </div>
+                <div className="text-xs text-cream-400 text-center">{percentage}% completed</div>
+            </CardContent>
+        </Card>
+    );
+}
+
+function SuccessRateCard({ rate, change }: SuccessRateCardProps) {
+    return (
+        <Card className="premium-card hover:scale-105 transition-all duration-300 group">
+            <CardHeader className="pb-2 px-4 pt-4">
+                <div className="flex items-center space-x-2">
+                    <CheckCircle className="h-4 w-4 text-green-400" />
+                    <CardTitle className="text-cream-50 text-sm group-hover:text-accent-400 transition-colors">
+                        Success Rate
+                    </CardTitle>
+                </div>
+            </CardHeader>
+            <CardContent className="flex-1 flex flex-col justify-center items-center px-4 pb-4">
+                <div className="text-3xl font-bold text-green-400 mb-2">{rate}%</div>
+                <div className="text-xs text-cream-300 text-center">Response rate</div>
+                <div className="text-xs text-cream-400 mt-1">↑ {change}% vs last month</div>
+            </CardContent>
+        </Card>
+    );
+}
+
+function TodayActivityCard({ applications, profiles, messages }: TodayActivityCardProps) {
+    return (
+        <Card className="premium-card hover:scale-105 transition-all duration-300 group">
+            <CardHeader className="pb-2 px-4 pt-4">
+                <div className="flex items-center space-x-2">
+                    <Clock className="h-4 w-4 text-blue-400" />
+                    <CardTitle className="text-cream-50 text-sm group-hover:text-accent-400 transition-colors">
+                        Today's Activity
+                    </CardTitle>
+                </div>
+            </CardHeader>
+            <CardContent className="px-4 pb-4 space-y-2">
+                <div className="flex justify-between items-center">
+                    <span className="text-xs text-cream-300">Applications</span>
+                    <span className="text-cream-50 font-semibold text-sm">{applications}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                    <span className="text-xs text-cream-300">Profiles viewed</span>
+                    <span className="text-cream-50 font-semibold text-sm">{profiles}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                    <span className="text-xs text-cream-300">Messages sent</span>
+                    <span className="text-cream-50 font-semibold text-sm">{messages}</span>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
+// Chart configuration for Application Progress
+const chartConfig = {
+    applications: {
+        label: "Applications",
+        color: "rgb(249, 115, 22)", // Orange color to match theme
+    },
+} satisfies ChartConfig
+
+// ProgressLineGraph component using Recharts
+interface ProgressLineGraphProps {
+    progressData?: { day: number; applications: number }[]
+}
+
+function ProgressLineGraph({ progressData }: ProgressLineGraphProps) {
+    // Generate sample data if none provided (last 7 days)
+    const defaultData = Array.from({ length: 7 }, (_, i) => ({
+        day: i + 1,
+        date: new Date(Date.now() - (6 - i) * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        applications: Math.floor(Math.random() * 50) + 10 // Random between 10-60
+    }))
+
+    const data = progressData?.map((item, i) => ({
+        ...item,
+        date: new Date(Date.now() - (progressData.length - 1 - i) * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    })) || defaultData
+
+    const maxApplications = Math.max(...data.map(d => d.applications))
+
+    return (
+        <div className="w-full h-full">
+            {/* Progress indicator */}
+            <div className="flex items-center justify-between mb-4">
+                <div className="text-sm text-cream-400">Last {data.length} days</div>
+                <div className="text-sm text-cream-300">
+                    Peak: {maxApplications} applications
+                </div>
+            </div>
+
+            {/* Recharts Area Chart */}
+            <ChartContainer config={chartConfig} className="h-[200px] w-full">
+                <AreaChart data={data}>
+                    <defs>
+                        <linearGradient id="fillApplications" x1="0" y1="0" x2="0" y2="1">
+                            <stop
+                                offset="5%"
+                                stopColor="rgb(249, 115, 22)"
+                                stopOpacity={0.8}
+                            />
+                            <stop
+                                offset="95%"
+                                stopColor="rgb(249, 115, 22)"
+                                stopOpacity={0.1}
+                            />
+                        </linearGradient>
+                    </defs>
+                    <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.1)" />
+                    <XAxis
+                        dataKey="date"
+                        tickLine={false}
+                        axisLine={false}
+                        tickMargin={8}
+                        tick={{ fill: "rgb(203, 213, 225)", fontSize: 12 }}
+                    />
+                    <ChartTooltip
+                        cursor={false}
+                        content={
+                            <ChartTooltipContent
+                                labelFormatter={(value) => `${value}`}
+                                formatter={(value, name) => [
+                                    `${value} applications`,
+                                    name === "applications" ? "Applications" : name
+                                ]}
+                                indicator="dot"
+                                className="bg-primary-800 border-primary-600 text-cream-50"
+                            />
+                        }
+                    />
+                    <Area
+                        dataKey="applications"
+                        type="natural"
+                        fill="url(#fillApplications)"
+                        stroke="rgb(249, 115, 22)"
+                        strokeWidth={2}
+                    />
+                </AreaChart>
+            </ChartContainer>
+        </div>
+    )
+}
+
+function ApplicationTrendChart() {
+    const [timeRange, setTimeRange] = useState('7days');
+
+    // Generate sample data based on time range - same format as ProgressCard
+    const progressData = useMemo(() => {
+        const days = timeRange === '7days' ? 7 : timeRange === '10days' ? 10 : 30;
+        return Array.from({ length: days }, (_, i) => ({
+            day: i + 1,
+            applications: Math.floor(Math.random() * 80) + 20 // Random between 20-100 applications per day
+        }));
+    }, [timeRange]);
+
+    // Calculate trend for header
+    const firstHalf = progressData.slice(0, Math.ceil(progressData.length / 2));
+    const secondHalf = progressData.slice(Math.ceil(progressData.length / 2));
+    const firstAvg = firstHalf.reduce((sum, d) => sum + d.applications, 0) / firstHalf.length;
+    const secondAvg = secondHalf.reduce((sum, d) => sum + d.applications, 0) / secondHalf.length;
+    const isIncreasing = secondAvg > firstAvg;
+
+    return (
+        <Card className="premium-card">
+            <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <CardTitle className="text-cream-50 text-lg">Application Progress</CardTitle>
+                        <div className={cn(
+                            "flex items-center gap-1 text-xs font-medium",
+                            isIncreasing ? "text-green-400" : "text-red-400"
+                        )}>
+                            {isIncreasing ? (
+                                <TrendingUp className="h-4 w-4" />
+                            ) : (
+                                <TrendingDown className="h-4 w-4" />
+                            )}
+                            {isIncreasing ? "Trending up" : "Trending down"}
+                        </div>
+                    </div>
+                    <div className="flex gap-2">
+                        {(['7days', '10days', '30days'] as const).map((range) => (
+                            <button
+                                key={range}
+                                onClick={() => setTimeRange(range)}
+                                className={`px-3 py-1 rounded-md text-sm transition-colors ${
+                                    timeRange === range
+                                        ? 'bg-gradient-warm text-white'
+                                        : 'text-cream-300 hover:text-cream-100 hover:bg-primary-700'
+                                }`}
+                            >
+                                {range === '7days' ? '7 Days' : range === '10days' ? '10 Days' : '30 Days'}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            </CardHeader>
+            <CardContent>
+                <div className="h-64 w-full">
+                    <ProgressLineGraph progressData={progressData} />
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
+function RecentApplicationsTable() {
+    // Sample data for the table
+    const applications = [
+        {
+            id: '1',
+            jobTitle: 'Senior Frontend Developer',
+            companyName: 'TechCorp Inc.',
+            location: 'San Francisco, CA',
+            jobType: 'Full-time' as const,
+            skillsPreferred: ['React', 'TypeScript', 'Node.js'],
+            salary: '$120,000 - $150,000',
+            status: 'Waiting' as const,
+            appliedDate: '2 days ago',
+            method: 'LinkedIn' as const
+        },
+        {
+            id: '2',
+            jobTitle: 'Full Stack Engineer',
+            companyName: 'StartupXYZ',
+            location: 'Remote',
+            jobType: 'Full-time' as const,
+            skillsPreferred: ['Python', 'Django', 'PostgreSQL'],
+            salary: '$100,000 - $130,000',
+            status: 'Success' as const,
+            appliedDate: '3 days ago',
+            method: 'Company Site' as const
+        },
+        {
+            id: '3',
+            jobTitle: 'Software Engineer',
+            companyName: 'BigTech Co.',
+            location: 'Seattle, WA',
+            jobType: 'Full-time' as const,
+            skillsPreferred: ['Java', 'Spring', 'AWS'],
+            salary: '$110,000 - $140,000',
+            status: 'Due' as const,
+            appliedDate: '5 days ago',
+            method: 'Indeed' as const
+        }
+    ];
+
+    const getStatusBadge = (status: string) => {
+        const styles = {
+            'Applied': 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+            'Waiting': 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+            'Success': 'bg-green-500/20 text-green-400 border-green-500/30',
+            'Due': 'bg-red-500/20 text-red-400 border-red-500/30',
+            'Disabled': 'bg-gray-500/20 text-gray-400 border-gray-500/30'
+        };
+
+        return (
+            <span className={`px-2 py-1 text-xs font-medium rounded border ${styles[status as keyof typeof styles]}`}>
+                {status}
+            </span>
+        );
+    };
+
+    return (
+        <Card className="premium-card">
+            <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                    <CardTitle className="text-cream-50 text-lg">Recent Applications</CardTitle>
+                    <Button variant="ghost" size="sm" className="text-accent-500 hover:text-accent-400">
+                        Filter
+                    </Button>
+                </div>
+            </CardHeader>
+            <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                    <table className="w-full">
+                        <thead className="bg-primary-700 border-b border-primary-600">
+                            <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-cream-200 uppercase tracking-wider">Type</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-cream-200 uppercase tracking-wider">Amount</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-cream-200 uppercase tracking-wider">Status</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-cream-200 uppercase tracking-wider">Method</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-primary-600">
+                            {applications.map((app) => (
+                                <tr key={app.id} className="hover:bg-primary-700 cursor-pointer transition-colors">
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="text-sm font-medium text-cream-50">{app.jobTitle}</div>
+                                        <div className="text-xs text-cream-300">{app.companyName}</div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="text-sm font-medium text-cream-50">{app.salary}</div>
+                                        <div className="text-xs text-cream-300">{app.location}</div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        {getStatusBadge(app.status)}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="text-sm text-cream-200">{app.method}</div>
+                                        <div className="text-xs text-cream-400">{app.appliedDate}</div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+                <div className="px-6 py-4 border-t border-primary-600 flex items-center justify-between">
+                    <div className="text-sm text-cream-300">
+                        Showing 1-3 of 15 applications
+                    </div>
+                    <div className="flex gap-2">
+                        <Button variant="ghost" size="sm" className="text-cream-300 hover:text-cream-100">
+                            Previous
+                        </Button>
+                        <Button variant="ghost" size="sm" className="text-cream-300 hover:text-cream-100">
+                            Next
+                        </Button>
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
 
 // Startup Job Boards
 const STARTUP_JOB_BOARDS = [
@@ -137,6 +516,37 @@ const overviewData = {
     interviews: 16
 }
 
+// Activity data for current month (0 = no activity, higher numbers = more activity)
+// This simulates LeetCode-style consistency tracking
+const activityData = (() => {
+    const today = new Date()
+    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate()
+    const data = new Array(daysInMonth).fill(0)
+
+    // Simulate some activity on random days (like user login/usage)
+    const activeDays = [1, 5, 9, 10, 15, 18, 22, 25] // Days with activity
+    activeDays.forEach(day => {
+        if (day <= daysInMonth) {
+            data[day - 1] = Math.floor(Math.random() * 5) + 1 // 1-5 activities per day
+        }
+    })
+
+    // Mark today as active if not already
+    const todayDate = today.getDate()
+    if (todayDate <= daysInMonth) {
+        data[todayDate - 1] = Math.max(data[todayDate - 1], 2)
+    }
+
+    return data
+})()
+
+// Progress data for application tracking over the last 7 days
+// This shows user's application progress with relative scaling
+const progressData = Array.from({ length: 7 }, (_, i) => ({
+    day: i + 1,
+    applications: Math.floor(Math.random() * 80) + 20 // Random between 20-100 applications per day
+}))
+
 const recentJobs = [
     {
         id: "1",
@@ -190,15 +600,24 @@ const applicationExtractionData = [
 const quickActions = [
     {
         label: "Extract Job URL",
+        description: "Extract job details from any URL",
         shortcut: "E",
-        icon: Target,
+        icon: Link,
         onClick: () => window.location.href = "/dashboard"
     },
     {
         label: "Upload Resume",
+        description: "AI-powered resume analysis",
         shortcut: "R",
-        icon: FileText,
+        icon: Upload,
         onClick: () => window.location.href = "/dashboard/resume-evaluation"
+    },
+    {
+        label: "View Analytics",
+        description: "Track your progress",
+        shortcut: "A",
+        icon: BarChart3,
+        onClick: () => window.location.href = "/dashboard/analytics"
     }
 ]
 
@@ -251,138 +670,87 @@ export default function DashboardPage() {
     }
 
     return (
-        <SophisticatedLayout
-            notificationCount={2}
-        >
-            <StaggerContainer>
-                {/* Main Dashboard Grid */}
-                <StaggerItem>
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                        {/* Overview Card */}
-                        <div className="h-80">
-                            <OverviewCard
-                                title="Overview"
-                                period="This Week"
-                                stats={overviewData}
-                            />
-                        </div>
+        <div className="min-h-screen bg-primary-950">
+            {/* Main Dashboard Container following handwritten design */}
+            <div className="w-full px-6 py-6">
+                <StaggerContainer>
+                    <div className="space-y-6">
 
-                        {/* Email Stats Card */}
-                        <div className="h-80">
-                            <EmailStatsCard
-                                title="Email Processing"
-                                emailsSent={24}
-                                emailsProcessed={18}
-                                change="+15%"
-                                changeType="increase"
-                            />
-                        </div>
+                        {/* Top Section - 4 cards as per handwritten design */}
+                        <StaggerItem>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                {/* Overview Calendar Card - moved to first position */}
+                                <OverviewCard
+                                    title="Overview Calendar"
+                                    period={`${new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`}
+                                    stats={overviewData}
+                                    activityData={activityData}
+                                />
 
-                        {/* Quick Action Card */}
-                        <div className="h-80">
-                            <QuickActionCard
-                                title="Quick Action"
-                                actions={quickActions}
-                            />
-                        </div>
-                    </div>
-                </StaggerItem>
+                                {/* Top Bar - placeholder for future development */}
+                                <Card className="premium-card">
+                                    <CardHeader className="pb-3">
+                                        <CardTitle className="text-cream-50 text-lg">Top Bar</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="text-center text-cream-400 py-8">
+                                            <div className="text-sm">Keep it blank</div>
+                                            <div className="text-xs mt-1">We will build it later</div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
 
-                {/* Application Extraction Chart and Recent Applications */}
-                <StaggerItem>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                        {/* Application Extraction Chart */}
-                        <div className="h-80">
-                            <JobExtractionChart data={applicationStats} />
-                        </div>
+                                {/* Quick Action Card */}
+                                <QuickActionCard
+                                    title="Quick Action"
+                                    actions={quickActions}
+                                />
 
-                        {/* Recent Applications Card */}
-                        <div className="h-80">
-                            <RecentJobsCard
-                                title="Recent Applications"
-                                jobs={recentJobs}
-                            />
-                        </div>
-                    </div>
-                </StaggerItem>
+                                {/* Email Processing Card */}
+                                <EmailStatsCard
+                                    title="Email Processing"
+                                    emailsSent={24}
+                                    emailsProcessed={18}
+                                    change="+15%"
+                                    changeType="increase"
+                                />
+                            </div>
+                        </StaggerItem>
 
-                {/* Additional Dashboard Content */}
-                <StaggerItem>
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                        {/* Job Search Progress */}
-                        <div className="h-60">
-                            <Card className="premium-card hover:scale-105 transition-all duration-300 group h-full flex flex-col">
-                                <CardHeader className="pb-3 flex-shrink-0">
-                                    <div className="flex items-center space-x-2">
-                                        <Target className="h-5 w-5 text-accent-500" />
-                                        <CardTitle className="text-cream-50 text-lg group-hover:text-accent-400 transition-colors">
-                                            Search Progress
-                                        </CardTitle>
-                                    </div>
+                        {/* Line Graph Section - Full width as per sketch */}
+                        <StaggerItem>
+                            <ApplicationTrendChart />
+                        </StaggerItem>
+
+                        {/* Bottom Section - Success Rate and Today's Activity as per sketch */}
+                        <StaggerItem>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Success Rate Card */}
+                                <SuccessRateCard rate={67} change={12} />
+
+                                {/* Today's Activity Card */}
+                                <TodayActivityCard applications={3} profiles={12} messages={5} />
+                            </div>
+                        </StaggerItem>
+
+                        {/* Sidebar Section - as noted in handwritten design */}
+                        <StaggerItem>
+                            <Card className="premium-card">
+                                <CardHeader className="pb-3">
+                                    <CardTitle className="text-cream-50 text-lg">Sidebar</CardTitle>
                                 </CardHeader>
-                                <CardContent className="flex-1 flex flex-col space-y-4">
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-cream-300">Weekly Goal</span>
-                                        <span className="text-accent-400 font-semibold">15/20 applications</span>
-                                    </div>
-                                    <div className="w-full bg-primary-700 rounded-full h-2">
-                                        <div className="bg-gradient-warm h-2 rounded-full" style={{ width: '75%' }}></div>
-                                    </div>
-                                    <div className="text-xs text-cream-400">75% of weekly goal completed</div>
-                                </CardContent>
-                            </Card>
-                        </div>
-
-                        {/* Success Rate */}
-                        <div className="h-60">
-                            <Card className="premium-card hover:scale-105 transition-all duration-300 group h-full flex flex-col">
-                                <CardHeader className="pb-3 flex-shrink-0">
-                                    <div className="flex items-center space-x-2">
-                                        <CheckCircle className="h-5 w-5 text-green-400" />
-                                        <CardTitle className="text-cream-50 text-lg group-hover:text-accent-400 transition-colors">
-                                            Success Rate
-                                        </CardTitle>
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="flex-1 flex flex-col justify-center items-center">
-                                    <div className="text-4xl font-bold text-green-400 mb-2">67%</div>
-                                    <div className="text-sm text-cream-300 text-center">Response rate this month</div>
-                                    <div className="text-xs text-cream-400 mt-2">↑ 12% from last month</div>
-                                </CardContent>
-                            </Card>
-                        </div>
-
-                        {/* Activity Summary */}
-                        <div className="h-60">
-                            <Card className="premium-card hover:scale-105 transition-all duration-300 group h-full flex flex-col">
-                                <CardHeader className="pb-3 flex-shrink-0">
-                                    <div className="flex items-center space-x-2">
-                                        <Clock className="h-5 w-5 text-blue-400" />
-                                        <CardTitle className="text-cream-50 text-lg group-hover:text-accent-400 transition-colors">
-                                            Today's Activity
-                                        </CardTitle>
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="flex-1 flex flex-col space-y-3">
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-sm text-cream-300">Applications sent</span>
-                                        <span className="text-cream-50 font-semibold">3</span>
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-sm text-cream-300">Profiles viewed</span>
-                                        <span className="text-cream-50 font-semibold">12</span>
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-sm text-cream-300">Messages sent</span>
-                                        <span className="text-cream-50 font-semibold">5</span>
+                                <CardContent>
+                                    <div className="text-center text-cream-400 py-8">
+                                        <div className="text-sm">From data development</div>
+                                        <div className="text-xs mt-1">Future implementation</div>
                                     </div>
                                 </CardContent>
                             </Card>
-                        </div>
-                    </div>
-                </StaggerItem>
+                        </StaggerItem>
 
-            </StaggerContainer>
-        </SophisticatedLayout>
+                    </div>
+                </StaggerContainer>
+            </div>
+        </div>
     )
 } 

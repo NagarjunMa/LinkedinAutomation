@@ -1,10 +1,10 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import jobs, export, analytics, profiles, job_extraction, email_agent, contacts, resumes, application_stats
+from app.api.v1.endpoints import jobs, export, analytics, profiles, job_extraction, email_agent, contacts, resumes, application_stats, search
 
 api_router = APIRouter()
  
 api_router.include_router(jobs.router, prefix="/jobs", tags=["jobs"])
-# api_router.include_router(search.router, prefix="/search", tags=["search"])  # REMOVED: Search queries disabled
+api_router.include_router(search.router, prefix="/search", tags=["search"])
 api_router.include_router(export.router, prefix="/export", tags=["export"])
 api_router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
 api_router.include_router(profiles.router, prefix="/profiles", tags=["profiles"])

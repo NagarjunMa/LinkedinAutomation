@@ -26,7 +26,7 @@ class DetailedAnalysisAgent(BaseAgent):
         """
         context = context or {}
         target_roles = context.get('target_roles', [])
-        target_industry = context.get('target_industry', '')
+        target_seniority = context.get('target_seniority', 'mid-level')
         
         # Limit resume content length to prevent overly long prompts
         max_content_length = 12000  # Increased for more detailed analysis
@@ -44,7 +44,13 @@ class DetailedAnalysisAgent(BaseAgent):
         {resume_content}
 
         Target Roles: {', '.join(target_roles) if target_roles else 'General'}
-        Target Industry: {target_industry if target_industry else 'General'}
+        Target Seniority Level: {target_seniority}
+
+        SENIORITY-SPECIFIC EVALUATION CRITERIA:
+        For Fresh Graduates/Entry-Level: Focus on education, internships, projects, potential, and learning ability
+        For Mid-Level (2-5 years): Focus on skill development, project ownership, and increasing responsibilities
+        For Senior Level (5+ years): Focus on leadership, architecture decisions, mentoring, and strategic impact
+        For Principal/Staff Level (8+ years): Focus on technical vision, cross-team influence, and business impact
 
         Provide a comprehensive analysis that includes:
 
@@ -278,7 +284,7 @@ class DetailedAnalysisAgent(BaseAgent):
             "agent_name": self.agent_name,
             "analysis_type": "detailed_analysis",
             "target_roles": target_roles,
-            "target_industry": target_industry
+            "target_seniority": target_seniority
         })
         
         return result

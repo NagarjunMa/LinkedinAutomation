@@ -26,6 +26,7 @@ class ExperienceAnalysisAgent(BaseAgent):
         """
         context = context or {}
         target_roles = context.get('target_roles', [])
+        target_seniority = context.get('target_seniority', 'mid-level')
         years_experience = context.get('years_experience', 0)
         
         # Limit resume content length to prevent overly long prompts
@@ -42,7 +43,14 @@ class ExperienceAnalysisAgent(BaseAgent):
         {resume_content}
 
         Target Roles: {', '.join(target_roles) if target_roles else 'General technical roles'}
+        Target Seniority Level: {target_seniority}
         Years of Experience: {years_experience}
+
+        SENIORITY-SPECIFIC EXPECTATIONS:
+        Fresh Graduates/Entry-Level: Focus on internships, academic projects, hackathons, and learning potential
+        Mid-Level (2-5 years): Focus on increasing project responsibility, skill development, and measurable outcomes
+        Senior Level (5+ years): Focus on technical leadership, mentoring, architecture decisions, and business impact
+        Principal/Staff Level (8+ years): Focus on strategic technical direction, cross-functional leadership, and organizational impact
 
         Evaluate the following aspects:
 
@@ -132,6 +140,7 @@ class ExperienceAnalysisAgent(BaseAgent):
             "agent_name": self.agent_name,
             "analysis_type": "experience_analysis",
             "target_roles": target_roles,
+            "target_seniority": target_seniority,
             "years_experience": years_experience
         })
         

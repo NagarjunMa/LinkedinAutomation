@@ -14,7 +14,6 @@ import {
     FileText,
     Mail,
     Search,
-    Target,
     TrendingUp,
     Users,
     Zap,
@@ -22,7 +21,7 @@ import {
     HelpCircle,
     Settings,
     Crown,
-    ArrowUpRight
+    X
 } from "lucide-react"
 
 const mainNavigation = [
@@ -33,15 +32,15 @@ const mainNavigation = [
         current: true,
     },
     {
-        name: "Job Search",
-        href: "/dashboard/jobs",
-        icon: Search,
-        current: false,
-    },
-    {
         name: "Applications",
         href: "/dashboard/applications",
         icon: Briefcase,
+        current: false,
+    },
+    {
+        name: "Job Search",
+        href: "/dashboard/jobs",
+        icon: Search,
         current: false,
     },
     {
@@ -64,6 +63,7 @@ const mainNavigation = [
     },
 ]
 
+
 const supportNavigation = [
     {
         name: "Help Center",
@@ -79,9 +79,10 @@ const supportNavigation = [
 
 interface SophisticatedSidebarProps {
     className?: string
+    onClose?: () => void
 }
 
-export function SophisticatedSidebar({ className }: SophisticatedSidebarProps) {
+export function SophisticatedSidebar({ className, onClose }: SophisticatedSidebarProps) {
     const [collapsed, setCollapsed] = useState(false)
     const pathname = usePathname()
     const { user, loading } = useAuth()
@@ -104,14 +105,28 @@ export function SophisticatedSidebar({ className }: SophisticatedSidebarProps) {
                         <span className="text-lg font-semibold text-cream-50">JobFlow Pro</span>
                     </div>
                 )}
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setCollapsed(!collapsed)}
-                    className="h-8 w-8 p-0 text-cream-300 hover:text-cream-50 hover:bg-primary-800 transition-all duration-200"
-                >
-                    <ChevronRight className={cn("h-4 w-4 transition-transform", collapsed && "rotate-180")} />
-                </Button>
+                <div className="flex items-center gap-2">
+                    {/* Mobile close button */}
+                    {onClose && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={onClose}
+                            className="h-8 w-8 p-0 text-cream-300 hover:text-cream-50 hover:bg-primary-800 transition-all duration-200 lg:hidden"
+                        >
+                            <X className="h-4 w-4" />
+                        </Button>
+                    )}
+                    {/* Desktop collapse button */}
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setCollapsed(!collapsed)}
+                        className="h-8 w-8 p-0 text-cream-300 hover:text-cream-50 hover:bg-primary-800 transition-all duration-200 hidden lg:flex"
+                    >
+                        <ChevronRight className={cn("h-4 w-4 transition-transform", collapsed && "rotate-180")} />
+                    </Button>
+                </div>
             </div>
 
             {/* Main Navigation */}
@@ -151,6 +166,7 @@ export function SophisticatedSidebar({ className }: SophisticatedSidebarProps) {
                         )
                     })}
                 </div>
+
 
                 {/* Support Section */}
                 <div className="mt-8">

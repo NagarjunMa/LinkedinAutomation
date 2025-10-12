@@ -24,7 +24,7 @@ class ResumeEvaluationRequest(BaseModel):
     """Request schema for resume evaluation"""
     resume_id: Optional[str] = None  # Optional since it's provided in URL path
     target_role: Optional[str] = None
-    target_industry: Optional[str] = None
+    target_seniority: Optional[str] = None
 
 
 class ResumeEvaluationResult(BaseModel):
@@ -98,7 +98,7 @@ class ResumeStorageInfo(BaseModel):
 class AIEvaluationPrompt(BaseModel):
     """Schema for AI evaluation prompt customization"""
     target_role: Optional[str] = None
-    target_industry: Optional[str] = None
+    target_seniority: Optional[str] = None
     experience_level: Optional[str] = None  # fresher, mid-level, senior
     focus_areas: Optional[List[str]] = None  # specific areas to focus on
     custom_instructions: Optional[str] = None

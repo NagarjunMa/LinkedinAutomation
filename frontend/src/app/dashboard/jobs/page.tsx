@@ -153,32 +153,34 @@ export default function JobsPage() {
     const [activeTab, setActiveTab] = useState("job-search")
 
     return (
-        <div className="container mx-auto p-6 space-y-6">
-            <div className="text-center space-y-2">
-                <h1 className="text-3xl font-bold text-cream-50">Job Search Interface</h1>
-                <p className="text-cream-300">
-                    Find your next opportunity across multiple job platforms
-                </p>
-            </div>
+        <div className="min-h-screen bg-primary-950">
+            {/* Constrain content width for large monitors */}
+            <div className="max-w-7xl mx-auto p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
+                <div className="text-center space-y-2">
+                    <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-4xl 2xl:text-4xl font-bold text-cream-50">Job Search Interface</h1>
+                    <p className="text-cream-300 text-sm sm:text-base lg:text-lg xl:text-lg 2xl:text-lg">
+                        Find your next opportunity across multiple job platforms
+                    </p>
+                </div>
 
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
                 <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="job-search">Job Search</TabsTrigger>
-                    <TabsTrigger value="startup">Startup & Tech</TabsTrigger>
+                    <TabsTrigger value="job-search" className="text-sm">Job Search</TabsTrigger>
+                    <TabsTrigger value="startup" className="text-sm">Startup & Tech</TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="job-search" className="space-y-6">
+                <TabsContent value="job-search" className="space-y-4 sm:space-y-6">
                     <ATSJobSearch />
                 </TabsContent>
 
-                <TabsContent value="startup" className="space-y-6">
+                <TabsContent value="startup" className="space-y-4 sm:space-y-6">
                     {/* Tech Stack Job Boards Section */}
                     <div className="space-y-4">
                         <h3 className="text-lg font-semibold flex items-center gap-2 text-cream-50">
                             <Briefcase className="h-5 w-5 text-accent-500" />
                             Tech Stack Job Boards
                         </h3>
-                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4">
                             {TECH_STACK_JOB_BOARDS.map((board) => (
                                 <Card key={board.name} className="premium-card hover:scale-105 transition-all duration-300 cursor-pointer">
                                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -216,7 +218,7 @@ export default function JobsPage() {
                             <Rocket className="h-5 w-5 text-accent-500" />
                             Startup Job Boards
                         </h3>
-                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4">
                             {STARTUP_JOB_BOARDS.map((board) => (
                                 <Card key={board.name} className="premium-card hover:scale-105 transition-all duration-300 cursor-pointer">
                                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -248,7 +250,8 @@ export default function JobsPage() {
                         </div>
                     </div>
                 </TabsContent>
-            </Tabs>
+                </Tabs>
+            </div>
         </div>
     )
 } 

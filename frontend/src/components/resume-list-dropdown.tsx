@@ -21,7 +21,9 @@ import {
     Trash2,
     Clock,
     RefreshCw,
-    X
+    X,
+    Eye,
+    Sparkles
 } from "lucide-react"
 import { ResumeFile, resumeApi } from "@/app/lib/api"
 import { useToast } from "@/components/ui/use-toast"
@@ -29,6 +31,7 @@ import { useToast } from "@/components/ui/use-toast"
 interface ResumeListDropdownProps {
     resumes: ResumeFile[]
     onViewDetailedAnalysis: (resume: ResumeFile) => void
+    onViewEnhancedAnalysis?: (resume: ResumeFile) => void
     onDownloadResume: (resumeId: string) => void
     onEvaluateResume: (resumeId: string) => void
     evaluatingResume: string | null
@@ -38,6 +41,7 @@ interface ResumeListDropdownProps {
 export function ResumeListDropdown({
     resumes,
     onViewDetailedAnalysis,
+    onViewEnhancedAnalysis,
     onDownloadResume,
     onEvaluateResume,
     evaluatingResume,
@@ -292,21 +296,33 @@ export function ResumeListDropdown({
                                             </div>
 
                                             {/* Quick Actions */}
-                                            <div className="flex gap-3">
+                                            <div className="flex gap-2 flex-wrap">
                                                 <Button
                                                     onClick={() => onViewDetailedAnalysis(resume)}
                                                     className="flex items-center gap-2"
+                                                    size="sm"
                                                 >
                                                     <Target className="w-4 h-4" />
-                                                    View Detailed Analysis
+                                                    View Analysis
                                                 </Button>
+                                                {onViewEnhancedAnalysis && (
+                                                    <Button
+                                                        onClick={() => onViewEnhancedAnalysis(resume)}
+                                                        className="flex items-center gap-2 bg-gradient-warm hover:bg-gradient-gold"
+                                                        size="sm"
+                                                    >
+                                                        <Sparkles className="w-4 h-4" />
+                                                        Enhanced Analysis
+                                                    </Button>
+                                                )}
                                                 <Button
                                                     variant="outline"
                                                     onClick={() => onDownloadResume(resume.id)}
                                                     className="flex items-center gap-2"
+                                                    size="sm"
                                                 >
                                                     <Download className="w-4 h-4" />
-                                                    Download Resume
+                                                    Download
                                                 </Button>
                                             </div>
                                         </div>

@@ -38,7 +38,7 @@ async def upload_resume(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     target_role: str = Form(None),
-    target_industry: str = Form(None),
+    target_seniority: str = Form(None),
     db: Session = Depends(get_db),
     ai_service = Depends(get_ai_service)
 ):
@@ -226,6 +226,37 @@ async def get_agent_status(
         raise HTTPException(status_code=500, detail="Failed to get agent status")
 
 
+@router.get("/{resume_id}/evaluation-progress")
+async def get_evaluation_progress(
+    resume_id: str,
+    db: Session = Depends(get_db),
+    ai_service = Depends(get_ai_service)
+):
+    """Get real-time evaluation progress for a resume."""
+    try:
+        # Get the resume to verify it exists
+        resume = db.query(Resume).filter(Resume.id == resume_id).first()
+        if not resume:
+            raise HTTPException(status_code=404, detail="Resume not found")
+
+        # Get progress from shared orchestrator
+        from app.services.orchestrator_manager import orchestrator_manager
+        orchestrator = orchestrator_manager.get_orchestrator(ai_service)
+        progress = orchestrator.get_evaluation_progress(resume_id)
+
+        return {
+            "resume_id": resume_id,
+            "evaluation_status": resume.evaluation_status,
+            "progress": progress
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get evaluation progress for resume {resume_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get evaluation progress")
+
+
 @router.get("/{resume_id}", response_model=ResumeWithEvaluation)
 async def get_resume(
     resume_id: str,
@@ -393,7 +424,7 @@ async def evaluate_resume(
             resume.file_path,
             resume.file_type,
             evaluation_request.target_role,
-            evaluation_request.target_industry,
+            evaluation_request.target_seniority,
             process_id
         )
 
@@ -459,7 +490,7 @@ async def evaluate_resume_background(
     file_path: str,
     file_type: str,
     target_role: str,
-    target_industry: str,
+    target_seniority: str,
     process_id: str
 ):
     """Background task for resume evaluation using agentic workflow with proper locking"""
@@ -500,7 +531,7 @@ async def evaluate_resume_background(
 
         # Evaluate resume using agentic workflow
         evaluation_result = await evaluator.evaluate_resume(
-            resume_text, user_id, resume_id, target_role, target_industry
+            resume_text, user_id, resume_id, target_role, target_seniority
         )
 
         # Save evaluation to database (legacy format for compatibility)

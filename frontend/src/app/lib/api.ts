@@ -649,11 +649,11 @@ export async function fetchRecentApplications(limit: number = 5) {
 // Resume API endpoints
 export const resumeApi = {
     // Upload resume
-    uploadResume: async (file: File, targetRole?: string, targetIndustry?: string): Promise<ResumeFile> => {
+    uploadResume: async (file: File, targetRole?: string, targetSeniority?: string): Promise<ResumeFile> => {
         const formData = new FormData();
         formData.append('file', file);
         if (targetRole) formData.append('target_role', targetRole);
-        if (targetIndustry) formData.append('target_industry', targetIndustry);
+        if (targetSeniority) formData.append('target_seniority', targetSeniority);
 
         const response = await fetch(`${API_BASE_URL}/api/v1/resumes/upload`, {
             method: 'POST',
@@ -678,7 +678,7 @@ export const resumeApi = {
     },
 
     // Evaluate resume
-    evaluateResume: async (resumeId: string, targetRole?: string, targetIndustry?: string): Promise<{message: string, process_id: string, status: string}> => {
+    evaluateResume: async (resumeId: string, targetRole?: string, targetSeniority?: string): Promise<{message: string, process_id: string, status: string}> => {
         const response = await fetch(`${API_BASE_URL}/api/v1/resumes/${resumeId}/evaluate`, {
             method: 'POST',
             headers: {
@@ -687,7 +687,7 @@ export const resumeApi = {
             body: JSON.stringify({
                 resume_id: resumeId,
                 target_role: targetRole || null,
-                target_industry: targetIndustry || null
+                target_seniority: targetSeniority || null
             })
         });
 
@@ -706,6 +706,34 @@ export const resumeApi = {
             process_id: data.process_id,
             status: data.status
         };
+    },
+
+    getEvaluationProgress: async (resumeId: string): Promise<{
+        resume_id: string
+        evaluation_status: string
+        progress: {
+            status: string
+            started_at: string
+            stages: Record<string, {
+                status: 'pending' | 'running' | 'completed' | 'failed'
+                started_at: string | null
+                completed_at: string | null
+            }>
+            overall_progress: number
+        }
+    }> => {
+        const response = await fetch(`${API_BASE_URL}/api/v1/resumes/${resumeId}/evaluation-progress`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        })
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`)
+        }
+
+        return response.json()
     },
 
     // List resumes

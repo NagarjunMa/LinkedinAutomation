@@ -14,12 +14,13 @@ interface ResumeUploadModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onUploadSuccess: (resume: ResumeFile) => void
+  onEvaluationStart?: (resumeId: string) => void
 }
 
-export function ResumeUploadModal({ open, onOpenChange, onUploadSuccess }: ResumeUploadModalProps) {
+export function ResumeUploadModal({ open, onOpenChange, onUploadSuccess, onEvaluationStart }: ResumeUploadModalProps) {
   const [file, setFile] = useState<File | null>(null)
   const [targetRole, setTargetRole] = useState("")
-  const [targetIndustry, setTargetIndustry] = useState("")
+  const [targetSeniority, setTargetSeniority] = useState("")
   const [uploading, setUploading] = useState(false)
   const [uploadSuccess, setUploadSuccess] = useState(false)
   const [uploadedResume, setUploadedResume] = useState<ResumeFile | null>(null)
@@ -61,7 +62,7 @@ export function ResumeUploadModal({ open, onOpenChange, onUploadSuccess }: Resum
 
     setUploading(true)
     try {
-      const resume = await resumeApi.uploadResume(file, targetRole, targetIndustry)
+      const resume = await resumeApi.uploadResume(file, targetRole, targetSeniority)
       setUploadedResume(resume)
       setUploadSuccess(true)
       toast({
@@ -80,16 +81,47 @@ export function ResumeUploadModal({ open, onOpenChange, onUploadSuccess }: Resum
     }
   }
 
-  const handleEvaluateNow = () => {
+  const handleEvaluateNow = async () => {
     if (uploadedResume) {
-      onUploadSuccess(uploadedResume)
-      onOpenChange(false)
-      // Reset state
-      setFile(null)
-      setTargetRole("")
-      setTargetIndustry("")
-      setUploadSuccess(false)
-      setUploadedResume(null)
+      try {
+        // Start evaluation immediately
+        await resumeApi.evaluateResume(uploadedResume.id, targetRole || undefined, targetSeniority || undefined)
+
+        toast({
+          title: "Evaluation Started! 🚀",
+          description: "AI is analyzing your resume with advanced multi-agent system.",
+        })
+
+        // Notify parent to show progress screen
+        if (onEvaluationStart) {
+          onEvaluationStart(uploadedResume.id)
+        }
+
+        onUploadSuccess(uploadedResume)
+        onOpenChange(false)
+        // Reset state
+        setFile(null)
+        setTargetRole("")
+        setTargetSeniority("")
+        setUploadSuccess(false)
+        setUploadedResume(null)
+      } catch (error) {
+        console.error("Failed to start evaluation:", error)
+        toast({
+          title: "Evaluation Failed",
+          description: "Failed to start evaluation. You can try again later.",
+          variant: "destructive",
+        })
+        // Still close the modal and show the resume
+        onUploadSuccess(uploadedResume)
+        onOpenChange(false)
+        // Reset state
+        setFile(null)
+        setTargetRole("")
+        setTargetSeniority("")
+        setUploadSuccess(false)
+        setUploadedResume(null)
+      }
     }
   }
 
@@ -100,7 +132,7 @@ export function ResumeUploadModal({ open, onOpenChange, onUploadSuccess }: Resum
       // Reset state
       setFile(null)
       setTargetRole("")
-      setTargetIndustry("")
+      setTargetSeniority("")
       setUploadSuccess(false)
       setUploadedResume(null)
     }
@@ -112,7 +144,7 @@ export function ResumeUploadModal({ open, onOpenChange, onUploadSuccess }: Resum
       // Reset state
       setFile(null)
       setTargetRole("")
-      setTargetIndustry("")
+      setTargetSeniority("")
       setUploadSuccess(false)
       setUploadedResume(null)
     }
@@ -306,17 +338,23 @@ export function ResumeUploadModal({ open, onOpenChange, onUploadSuccess }: Resum
 
             <Card>
               <CardHeader>
-                <CardTitle>Target Industry</CardTitle>
+                <CardTitle>Target Seniority Level</CardTitle>
                 <CardDescription>
-                  What industry are you targeting?
+                  What experience level are you targeting?
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Input
-                  placeholder="e.g., Technology, Healthcare, Finance"
-                  value={targetIndustry}
-                  onChange={(e) => setTargetIndustry(e.target.value)}
-                />
+                <select
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  value={targetSeniority}
+                  onChange={(e) => setTargetSeniority(e.target.value)}
+                >
+                  <option value="">Select seniority level</option>
+                  <option value="entry-level">Entry Level / Fresh Graduate</option>
+                  <option value="mid-level">Mid Level (2-5 years)</option>
+                  <option value="senior">Senior Level (5+ years)</option>
+                  <option value="principal">Principal/Staff Level (8+ years)</option>
+                </select>
               </CardContent>
             </Card>
           </div>

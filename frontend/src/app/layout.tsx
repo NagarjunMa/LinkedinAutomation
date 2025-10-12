@@ -1,17 +1,19 @@
 import type { Metadata } from "next"
-import { Inter, Anton, Asap } from "next/font/google"
+import { Inter, Neuton, Fahkwang } from "next/font/google"
 import "./globals.css"
 import { Providers } from "@/components/ui/providers"
 import { AuthProvider } from "@/contexts/auth-context"
 
-const asap = Asap({
+const fahkwang = Fahkwang({
   subsets: ["latin"],
-  variable: "--font-asset"
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-fahkwang"
 })
-const anton = Anton({
+
+const neuton = Neuton({
   subsets: ["latin"],
-  weight: ["400"],
-  variable: "--font-anton"
+  weight: ["300", "400", "700"],
+  variable: "--font-neuton"
 })
 
 export const metadata: Metadata = {
@@ -22,7 +24,7 @@ export const metadata: Metadata = {
   description: "Streamline your job search with AI-powered LinkedIn automation. Extract jobs from URLs, track applications, and get smart job matching. Perfect for students and recent graduates.",
   keywords: [
     "LinkedIn automation",
-    "job search automation", 
+    "job search automation",
     "AI job matching",
     "student job search",
     "LinkedIn job extraction",
@@ -121,7 +123,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${asap.className} ${anton.variable} ${asap.variable}`}>
+      <body className={`${fahkwang.className} ${neuton.variable} ${fahkwang.variable}`}>
         <AuthProvider>
           <Providers>
             {children}

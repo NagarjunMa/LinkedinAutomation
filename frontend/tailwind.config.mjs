@@ -9,42 +9,42 @@ export default {
   theme: {
   	extend: {
   		fontFamily: {
-  			'anton': ['var(--font-anton)', 'Anton', 'sans-serif'],
-  			'asset': ['var(--font-asset)', 'Asap', 'sans-serif'],
+  			'neuton': ['var(--font-neuton)', 'Neuton', 'serif'],
+  			'fahkwang': ['var(--font-fahkwang)', 'Fahkwang', 'sans-serif'],
   		},
-  		colors: {
-  			// Premium dark theme colors
-  			primary: {
-  				950: '#0f0e0d', // Deepest background
-  				900: '#1a1412', // Main background
-  				800: '#2d2520', // Card backgrounds
-  				700: '#3d342d', // Elevated cards
-  				600: '#4d443d', // Borders and dividers
-  				500: '#5d544d', // Hover states
-  				400: '#6d645d', // Active states
-  			},
-  			// Orange accent colors
-  			accent: {
-  				600: '#e64a19', // Darker orange
-  				500: '#ff5722', // Primary orange
-  				400: '#ff6b3d', // Lighter orange
-  				300: '#ff7f57', // Lightest orange
-  			},
-  			// Gold/yellow highlights
-  			gold: {
-  				600: '#d97706', // Deep gold
-  				500: '#f59e0b', // Standard gold
-  				400: '#fbbf24', // Bright gold
-  				300: '#fcd34d', // Light gold
-  			},
-  			// Neutral text colors
-  			cream: {
-  				50: '#fafaf9',  // Primary text
-  				100: '#f5f5f4', // Secondary text
-  				200: '#e7e5e4', // Tertiary text
-  				300: '#d6d3d1', // Muted text
-  				400: '#a8a29e', // Disabled text
-  			},
+		colors: {
+			// Premium theme colors - responsive to theme using CSS variables
+			primary: {
+				950: 'var(--primary-950)',
+				900: 'var(--primary-900)',
+				800: 'var(--primary-800)',
+				700: 'var(--primary-700)',
+				600: 'var(--primary-600)',
+				500: 'var(--primary-500)',
+				400: 'var(--primary-400)',
+			},
+			// Orange accent colors - same for both themes
+			accent: {
+				600: '#e64a19', // Darker orange
+				500: '#ff5722', // Primary orange
+				400: '#ff6b3d', // Lighter orange
+				300: '#ff7f57', // Lightest orange
+			},
+			// Gold/yellow highlights - same for both themes
+			gold: {
+				600: '#d97706', // Deep gold
+				500: '#f59e0b', // Standard gold
+				400: '#fbbf24', // Bright gold
+				300: '#fcd34d', // Light gold
+			},
+			// Neutral text colors - responsive to theme using CSS variables
+			cream: {
+				50: 'var(--cream-50)',
+				100: 'var(--cream-100)',
+				200: 'var(--cream-200)',
+				300: 'var(--cream-300)',
+				400: 'var(--cream-400)',
+			},
   			// Keep existing shadcn colors for compatibility
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',

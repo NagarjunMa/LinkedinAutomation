@@ -41,7 +41,7 @@ class SkillsAssessmentAgent(BaseAgent):
         """
         context = context or {}
         target_roles = context.get('target_roles', [])
-        industry = context.get('industry', 'Technology')
+        target_seniority = context.get('target_seniority', 'mid-level')
         
         prompt = f"""
         You are a technical skills expert and hiring manager with deep knowledge of current technology trends.
@@ -51,7 +51,7 @@ class SkillsAssessmentAgent(BaseAgent):
         {resume_content}
 
         Target Roles: {', '.join(target_roles) if target_roles else 'General technical roles'}
-        Industry: {industry}
+        Target Seniority Level: {target_seniority}
 
         Current Market Trends (2024-2025):
         Hot Skills: {', '.join(self.market_trends['2024_hot_skills'])}
@@ -153,7 +153,7 @@ class SkillsAssessmentAgent(BaseAgent):
             "agent_name": self.agent_name,
             "analysis_type": "skills_assessment",
             "target_roles": target_roles,
-            "industry": industry,
+            "target_seniority": target_seniority,
             "market_trends_version": "2024-2025"
         })
         

@@ -38,7 +38,11 @@ class ResumeEvaluationOrchestrator:
             'detailed_analysis': DetailedAnalysisAgent(self.ai_service),
             'summary': SummaryGeneratorAgent(self.ai_service)
         }
-        
+
+        # Progress tracking for real-time updates
+        self.evaluation_progress = {}
+        self.progress_lock = asyncio.Lock()
+
         # Agent execution configuration
         self.agent_timeouts = {
             'ats': 30,
@@ -65,30 +69,36 @@ class ResumeEvaluationOrchestrator:
     async def evaluate_resume(self, resume_content: str, user_context: Dict[str, Any]) -> Dict[str, Any]:
         """
         Execute comprehensive resume evaluation using multiple agents.
-        
+
         Args:
             resume_content: The resume text to analyze
             user_context: User context including target roles, preferences, etc.
-            
+
         Returns:
             Comprehensive evaluation results
         """
         start_time = datetime.now(timezone.utc)
+        evaluation_id = user_context.get('evaluation_id', 'unknown')
         self.logger.info(f"Starting resume evaluation for user {user_context.get('user_id', 'unknown')}")
-        
+
         try:
-            # Step 1: Execute analysis agents in parallel
-            analysis_results = await self._execute_analysis_agents(resume_content, user_context)
-            
+            # Initialize progress tracking
+            await self.initialize_evaluation_progress(evaluation_id)
+
+            # Step 1: Execute analysis agents with progress tracking
+            analysis_results = await self._execute_analysis_agents_with_progress(resume_content, user_context, evaluation_id)
+
             # Step 2: Generate comprehensive summary
+            await self.update_stage_progress(evaluation_id, 'summary', 'running')
             summary_result = await self._generate_summary(analysis_results, user_context)
-            
+            await self.update_stage_progress(evaluation_id, 'summary', 'completed')
+
             # Step 3: Calculate overall metrics
             evaluation_metrics = self._calculate_evaluation_metrics(analysis_results, summary_result)
-            
+
             # Step 4: Compile final results
             final_results = {
-                'evaluation_id': user_context.get('evaluation_id'),
+                'evaluation_id': evaluation_id,
                 'user_id': user_context.get('user_id'),
                 'overall_score': summary_result.get('overall_score', 0),
                 'executive_summary': summary_result.get('executive_summary', ''),
@@ -99,18 +109,30 @@ class ResumeEvaluationOrchestrator:
                 'processing_time_seconds': (datetime.now(timezone.utc) - start_time).total_seconds(),
                 'agent_performance': self._get_agent_performance_metrics(analysis_results)
             }
-            
+
+            # Mark evaluation as complete
+            async with self.progress_lock:
+                if evaluation_id in self.evaluation_progress:
+                    self.evaluation_progress[evaluation_id]['status'] = 'completed'
+                    self.evaluation_progress[evaluation_id]['completed_at'] = datetime.now(timezone.utc).isoformat()
+
             self.logger.info(f"Resume evaluation completed in {final_results['processing_time_seconds']:.2f} seconds")
             return final_results
-            
+
         except Exception as e:
+            # Mark evaluation as failed
+            async with self.progress_lock:
+                if evaluation_id in self.evaluation_progress:
+                    self.evaluation_progress[evaluation_id]['status'] = 'failed'
+                    self.evaluation_progress[evaluation_id]['error'] = str(e)
+
             self.logger.error(f"Resume evaluation failed: {e}")
             return self._get_fallback_evaluation(user_context, str(e))
     
     async def _execute_analysis_agents(self, resume_content: str, user_context: Dict[str, Any]) -> Dict[str, Any]:
         """Execute all analysis agents in parallel with timeout protection."""
         analysis_agents = {k: v for k, v in self.agents.items() if k != 'summary'}
-        
+
         # Create tasks for parallel execution
         tasks = []
         for agent_name, agent in analysis_agents.items():
@@ -118,11 +140,11 @@ class ResumeEvaluationOrchestrator:
                 agent, resume_content, user_context, self.agent_timeouts[agent_name]
             )
             tasks.append((agent_name, task))
-        
+
         # Execute all agents in parallel
         results = {}
         completed_tasks = await asyncio.gather(*[task for _, task in tasks], return_exceptions=True)
-        
+
         # Process results
         for i, (agent_name, task) in enumerate(tasks):
             result = completed_tasks[i]
@@ -131,7 +153,36 @@ class ResumeEvaluationOrchestrator:
                 results[agent_name] = self._get_agent_fallback_result(agent_name, str(result))
             else:
                 results[agent_name] = result
-        
+
+        return results
+
+    async def _execute_analysis_agents_with_progress(self, resume_content: str, user_context: Dict[str, Any], evaluation_id: str) -> Dict[str, Any]:
+        """Execute all analysis agents in parallel with progress tracking."""
+        analysis_agents = {k: v for k, v in self.agents.items() if k != 'summary'}
+
+        # Create tasks for parallel execution with progress tracking
+        tasks = []
+        for agent_name, agent in analysis_agents.items():
+            task = self._execute_agent_with_progress(
+                agent, agent_name, resume_content, user_context,
+                self.agent_timeouts[agent_name], evaluation_id
+            )
+            tasks.append((agent_name, task))
+
+        # Execute all agents in parallel
+        results = {}
+        completed_tasks = await asyncio.gather(*[task for _, task in tasks], return_exceptions=True)
+
+        # Process results
+        for i, (agent_name, task) in enumerate(tasks):
+            result = completed_tasks[i]
+            if isinstance(result, Exception):
+                self.logger.error(f"Agent {agent_name} failed: {result}")
+                results[agent_name] = self._get_agent_fallback_result(agent_name, str(result))
+                await self.update_stage_progress(evaluation_id, agent_name, 'failed')
+            else:
+                results[agent_name] = result
+
         return results
     
     async def _execute_agent_with_timeout(self, agent: BaseAgent, resume_content: str, 
@@ -155,6 +206,37 @@ class ResumeEvaluationOrchestrator:
             return self._get_agent_fallback_result(agent.agent_name, "Timeout")
         except Exception as e:
             self.logger.error(f"Agent {agent.agent_name} execution failed: {e}")
+            return self._get_agent_fallback_result(agent.agent_name, str(e))
+
+    async def _execute_agent_with_progress(self, agent: BaseAgent, agent_name: str, resume_content: str,
+                                         user_context: Dict[str, Any], timeout_seconds: int, evaluation_id: str) -> Dict[str, Any]:
+        """Execute a single agent with timeout protection and progress tracking."""
+        try:
+            # Mark agent as running
+            await self.update_stage_progress(evaluation_id, agent_name, 'running')
+
+            result = await asyncio.wait_for(
+                agent.execute_with_timeout(resume_content, user_context, timeout_seconds),
+                timeout=timeout_seconds
+            )
+
+            # Validate result
+            if agent.validate_result(result):
+                # Mark agent as completed
+                await self.update_stage_progress(evaluation_id, agent_name, 'completed')
+                return result
+            else:
+                self.logger.warning(f"Agent {agent.agent_name} returned invalid result")
+                await self.update_stage_progress(evaluation_id, agent_name, 'failed')
+                return self._get_agent_fallback_result(agent.agent_name, "Invalid result structure")
+
+        except asyncio.TimeoutError:
+            self.logger.error(f"Agent {agent.agent_name} timed out after {timeout_seconds} seconds")
+            await self.update_stage_progress(evaluation_id, agent_name, 'failed')
+            return self._get_agent_fallback_result(agent.agent_name, "Timeout")
+        except Exception as e:
+            self.logger.error(f"Agent {agent.agent_name} execution failed: {e}")
+            await self.update_stage_progress(evaluation_id, agent_name, 'failed')
             return self._get_agent_fallback_result(agent.agent_name, str(e))
     
     async def _generate_summary(self, analysis_results: Dict[str, Any], user_context: Dict[str, Any]) -> Dict[str, Any]:
@@ -323,3 +405,48 @@ class ResumeEvaluationOrchestrator:
             }
             for agent_name, agent in self.agents.items()
         }
+
+    async def initialize_evaluation_progress(self, evaluation_id: str) -> None:
+        """Initialize progress tracking for an evaluation."""
+        async with self.progress_lock:
+            self.evaluation_progress[evaluation_id] = {
+                'status': 'starting',
+                'started_at': datetime.now(timezone.utc).isoformat(),
+                'stages': {
+                    'ats': {'status': 'pending', 'started_at': None, 'completed_at': None},
+                    'experience': {'status': 'pending', 'started_at': None, 'completed_at': None},
+                    'skills': {'status': 'pending', 'started_at': None, 'completed_at': None},
+                    'format': {'status': 'pending', 'started_at': None, 'completed_at': None},
+                    'red_flags': {'status': 'pending', 'started_at': None, 'completed_at': None},
+                    'company_fit': {'status': 'pending', 'started_at': None, 'completed_at': None},
+                    'detailed_analysis': {'status': 'pending', 'started_at': None, 'completed_at': None},
+                    'summary': {'status': 'pending', 'started_at': None, 'completed_at': None}
+                },
+                'overall_progress': 0
+            }
+
+    async def update_stage_progress(self, evaluation_id: str, stage: str, status: str) -> None:
+        """Update progress for a specific stage."""
+        async with self.progress_lock:
+            if evaluation_id in self.evaluation_progress:
+                now = datetime.now(timezone.utc).isoformat()
+                self.evaluation_progress[evaluation_id]['stages'][stage]['status'] = status
+
+                if status == 'running':
+                    self.evaluation_progress[evaluation_id]['stages'][stage]['started_at'] = now
+                elif status == 'completed':
+                    self.evaluation_progress[evaluation_id]['stages'][stage]['completed_at'] = now
+
+                # Calculate overall progress
+                total_stages = len(self.evaluation_progress[evaluation_id]['stages'])
+                completed_stages = sum(1 for s in self.evaluation_progress[evaluation_id]['stages'].values()
+                                     if s['status'] == 'completed')
+                self.evaluation_progress[evaluation_id]['overall_progress'] = int((completed_stages / total_stages) * 100)
+
+    def get_evaluation_progress(self, evaluation_id: str) -> Dict[str, Any]:
+        """Get current progress for an evaluation."""
+        return self.evaluation_progress.get(evaluation_id, {
+            'status': 'not_found',
+            'stages': {},
+            'overall_progress': 0
+        })

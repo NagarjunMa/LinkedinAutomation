@@ -1,21 +1,24 @@
-import { Metadata } from "next"
+"use client"
+
+import { usePathname } from "next/navigation"
 import { DashboardProvider } from "../contexts/dashboard-context"
 import { ProtectedRoute } from "@/components/protected-route"
-
-export const metadata: Metadata = {
-    title: "Dashboard",
-    description: "LinkedIn Job Search Dashboard",
-}
+import { SophisticatedLayout } from "@/components/sophisticated-layout"
 
 export default function DashboardLayout({
     children,
 }: {
     children: React.ReactNode
 }) {
+    const pathname = usePathname()
+    const isJobsPage = pathname === '/dashboard/jobs'
+
     return (
         <ProtectedRoute>
             <DashboardProvider>
-                {children}
+                <SophisticatedLayout showHeader={!isJobsPage}>
+                    {children}
+                </SophisticatedLayout>
             </DashboardProvider>
         </ProtectedRoute>
     )

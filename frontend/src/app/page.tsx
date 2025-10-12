@@ -12,6 +12,7 @@ import { Logo } from "@/components/logo"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
+import { ThemeToggle } from "@/components/theme-toggle"
 import {
   Search,
   Briefcase,
@@ -50,7 +51,7 @@ import Link from "next/link"
 // Animation variants
 const fadeInVariants = {
   hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
 }
 
 const staggerContainer = {
@@ -129,12 +130,12 @@ function Navigation() {
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="container mx-auto px-6 py-4">
+      <div className="max-w-7xl mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
           <div className="flex items-center space-x-2">
             <Logo size={32} showText={false} />
-            <span className="text-2xl font-anton text-gradient-warm">JOBFLOW PRO</span>
+            <span className="text-2xl font-neuton text-gradient-warm">JOBFLOW PRO</span>
           </div>
 
           {/* Desktop Navigation */}
@@ -146,6 +147,7 @@ function Navigation() {
 
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center space-x-4">
+            <ThemeToggle />
             <Button
               variant="ghost"
               className="text-cream-200 hover:text-cream-50"
@@ -185,6 +187,10 @@ function Navigation() {
               <Link href="#pricing" className="text-cream-200 hover:text-accent-400 transition-colors text-lg">Pricing</Link>
               <Link href="#about" className="text-cream-200 hover:text-accent-400 transition-colors text-lg">About</Link>
               <div className="flex flex-col space-y-2 pt-4 border-t border-primary-600">
+                <div className="flex items-center justify-start mb-2">
+                  <span className="text-cream-200 mr-3">Theme:</span>
+                  <ThemeToggle />
+                </div>
                 <Button
                   variant="ghost"
                   className="text-cream-200 hover:text-cream-50 justify-start"
@@ -246,7 +252,7 @@ function HeroSection() {
         />
       </div>
 
-      <div className="container mx-auto px-6 py-20 pt-32 relative z-10">
+      <div className="max-w-7xl mx-auto px-6 py-20 pt-32 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           {/* Hero Content */}
           <motion.div
@@ -256,7 +262,7 @@ function HeroSection() {
             variants={staggerContainer}
           >
             <motion.h1
-              className="text-5xl lg:text-6xl font-anton text-cream-50 leading-tight"
+              className="text-5xl lg:text-6xl xl:text-6xl 2xl:text-6xl font-neuton text-cream-50 leading-tight"
               variants={staggerItem}
             >
               <TypewriterText text="Stop Wasting Hours on Job Search Admin" speed={50} />
@@ -401,7 +407,7 @@ function ProblemSection() {
 
   return (
     <section id="problems" className="py-20 bg-primary-950">
-      <div className="container mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-6">
         <motion.div
           className="text-center mb-16"
           initial="hidden"
@@ -409,13 +415,13 @@ function ProblemSection() {
           viewport={{ once: true }}
           variants={fadeInVariants}
         >
-          <h2 className="text-4xl font-anton text-cream-50 mb-4">
+          <h2 className="text-4xl font-neuton text-cream-50 mb-4">
             The Job Search Nightmare Students Face
           </h2>
         </motion.div>
 
         <motion.div
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-4 gap-6"
           variants={staggerContainer}
           initial="hidden"
           whileInView="visible"
@@ -429,9 +435,9 @@ function ProblemSection() {
                     className="w-16 h-16 bg-gradient-to-r from-red-500 to-red-600 rounded-full flex items-center justify-center mx-auto mb-4"
                     animate={
                       card.animation === "pulse" ? { scale: [1, 1.1, 1] } :
-                      card.animation === "shake" ? { x: [-2, 2, -2, 2, 0] } :
-                      card.animation === "bounce" ? { y: [0, -10, 0] } :
-                      card.animation === "rotate" ? { rotate: [0, 10, -10, 0] } : {}
+                        card.animation === "shake" ? { x: [-2, 2, -2, 2, 0] } :
+                          card.animation === "bounce" ? { y: [0, -10, 0] } :
+                            card.animation === "rotate" ? { rotate: [0, 10, -10, 0] } : {}
                     }
                     transition={{ duration: 2, repeat: Infinity }}
                   >
@@ -498,7 +504,7 @@ function FeaturesSection() {
 
   return (
     <section id="features" className="py-20 bg-primary-900">
-      <div className="container mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-6">
         <motion.div
           className="text-center mb-16"
           initial="hidden"
@@ -506,7 +512,7 @@ function FeaturesSection() {
           viewport={{ once: true }}
           variants={fadeInVariants}
         >
-          <h2 className="text-4xl lg:text-5xl font-anton text-cream-50 mb-6">
+          <h2 className="text-4xl lg:text-5xl font-neuton text-cream-50 mb-6">
             Everything You Need to Land Your Dream Job
           </h2>
           <p className="text-2xl text-accent-400 max-w-3xl mx-auto">
@@ -515,7 +521,7 @@ function FeaturesSection() {
         </motion.div>
 
         <motion.div
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-3 gap-8"
           variants={staggerContainer}
           initial="hidden"
           whileInView="visible"
@@ -538,7 +544,7 @@ function FeaturesSection() {
                     <feature.icon className="w-8 h-8 text-white" />
                   </motion.div>
 
-                  <h3 className="text-xl font-anton text-cream-50 mb-4">{feature.title}</h3>
+                  <h3 className="text-xl font-neuton text-cream-50 mb-4">{feature.title}</h3>
                   <p className="text-lg text-cream-200 mb-6 leading-relaxed">{feature.description}</p>
 
                   <ul className="space-y-2">
@@ -586,7 +592,7 @@ function SolutionsSection() {
           viewport={{ once: true }}
           variants={fadeInVariants}
         >
-          <h2 className="text-4xl lg:text-5xl font-anton text-cream-50 mb-6">
+          <h2 className="text-4xl lg:text-5xl font-neuton text-cream-50 mb-6">
             Turn Job Search Chaos Into Organized Success
           </h2>
           <p className="text-2xl text-accent-400 max-w-3xl mx-auto">
@@ -604,7 +610,7 @@ function SolutionsSection() {
             variants={staggerContainer}
           >
             <motion.div variants={staggerItem}>
-              <h3 className="text-2xl font-anton text-red-400 mb-4">❌ Without JobFlow Pro</h3>
+              <h3 className="text-2xl font-neuton text-red-400 mb-4">❌ Without JobFlow Pro</h3>
               <ul className="space-y-3">
                 {[
                   "Hours wasted copying job details manually",
@@ -626,7 +632,7 @@ function SolutionsSection() {
             </motion.div>
 
             <motion.div variants={staggerItem}>
-              <h3 className="text-2xl font-anton text-green-400 mb-4">✅ With JobFlow Pro</h3>
+              <h3 className="text-2xl font-neuton text-green-400 mb-4">✅ With JobFlow Pro</h3>
               <ul className="space-y-3">
                 {[
                   "One-click job extraction from any URL",
@@ -663,7 +669,7 @@ function SolutionsSection() {
             >
               <div className="space-y-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h4 className="text-lg font-anton text-cream-50">Job Extraction Demo</h4>
+                  <h4 className="text-lg font-neuton text-cream-50">Job Extraction Demo</h4>
                   <Badge className="bg-green-500 text-white">Live</Badge>
                 </div>
 
@@ -750,7 +756,7 @@ function SocialProofSection() {
 
   return (
     <section className="py-20 bg-primary-900">
-      <div className="container mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-6">
         {/* Stats */}
         <motion.div
           className="text-center mb-16"
@@ -759,7 +765,7 @@ function SocialProofSection() {
           viewport={{ once: true }}
           variants={fadeInVariants}
         >
-          <h2 className="text-4xl lg:text-5xl font-anton text-cream-50 mb-8">
+          <h2 className="text-4xl lg:text-5xl font-neuton text-cream-50 mb-8">
             Trusted by 10,000+ Students Worldwide
           </h2>
 
@@ -777,7 +783,7 @@ function SocialProofSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
               >
-                <div className="text-3xl lg:text-4xl font-anton text-accent-400 mb-2">
+                <div className="text-3xl lg:text-4xl font-neuton text-accent-400 mb-2">
                   <CountUpStat value={parseInt(stat.value)} suffix={stat.value.includes('%') ? '%' : '+'} />
                 </div>
                 <div className="text-lg text-cream-300">{stat.label}</div>
@@ -788,7 +794,7 @@ function SocialProofSection() {
 
         {/* Testimonials */}
         <motion.div
-          className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16"
+          className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-3 gap-8 mb-16"
           variants={staggerContainer}
           initial="hidden"
           whileInView="visible"
@@ -910,7 +916,7 @@ function PricingSection() {
 
   return (
     <section id="pricing" className="py-20 bg-primary-950">
-      <div className="container mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-6">
         <motion.div
           className="text-center mb-16"
           initial="hidden"
@@ -918,7 +924,7 @@ function PricingSection() {
           viewport={{ once: true }}
           variants={fadeInVariants}
         >
-          <h2 className="text-4xl lg:text-5xl font-anton text-cream-50 mb-6">
+          <h2 className="text-4xl lg:text-5xl font-neuton text-cream-50 mb-6">
             Simple Pricing That Scales With You
           </h2>
           <p className="text-2xl text-accent-400 max-w-3xl mx-auto">
@@ -927,7 +933,7 @@ function PricingSection() {
         </motion.div>
 
         <motion.div
-          className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl mx-auto"
+          className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-3 gap-8 max-w-6xl mx-auto"
           variants={staggerContainer}
           initial="hidden"
           whileInView="visible"
@@ -956,9 +962,9 @@ function PricingSection() {
               )}>
                 <CardContent className="p-8">
                   <div className="text-center mb-8">
-                    <h3 className="text-xl font-anton text-cream-50 mb-2">{plan.name}</h3>
+                    <h3 className="text-xl font-neuton text-cream-50 mb-2">{plan.name}</h3>
                     <div className="mb-4">
-                      <span className="text-4xl font-anton text-accent-400">${plan.price}</span>
+                      <span className="text-4xl font-neuton text-accent-400">${plan.price}</span>
                       {plan.price !== "Custom" && (
                         <span className="text-cream-300">/{plan.period}</span>
                       )}
@@ -1000,7 +1006,7 @@ function PricingSection() {
           viewport={{ once: true }}
           variants={fadeInVariants}
         >
-          <h3 className="text-2xl font-anton text-cream-50 text-center mb-8">
+          <h3 className="text-2xl font-neuton text-cream-50 text-center mb-8">
             Frequently Asked Questions
           </h3>
           <div className="space-y-4">
@@ -1071,7 +1077,7 @@ function CTASection() {
           viewport={{ once: true }}
           variants={fadeInVariants}
         >
-          <h2 className="text-4xl lg:text-5xl font-anton text-cream-50 mb-6">
+          <h2 className="text-4xl lg:text-5xl font-neuton text-cream-50 mb-6">
             Ready to Transform Your Job Search?
           </h2>
           <p className="text-2xl text-accent-400 mb-8 max-w-2xl mx-auto">
@@ -1127,13 +1133,13 @@ function Footer() {
 
   return (
     <footer className="bg-primary-900 border-t border-primary-600 py-12">
-      <div className="container mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
               <Logo size={32} showText={false} />
-              <span className="text-xl font-anton text-gradient-warm">JOBFLOW PRO</span>
+              <span className="text-xl font-neuton text-gradient-warm">JOBFLOW PRO</span>
             </div>
             <p className="text-cream-300 text-base">
               AI-powered job search automation for students and recent graduates.

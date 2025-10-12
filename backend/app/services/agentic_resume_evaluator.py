@@ -19,6 +19,7 @@ from app.schemas.resume import ResumeEvaluationResult, AIEvaluationPrompt
 from app.models.resume import Resume, ResumeEvaluation
 from app.models.agent_models import ResumeEvaluationSession, ResumeAgentResult, AgentPerformanceMetrics
 from app.services.agents import ResumeEvaluationOrchestrator
+from app.services.orchestrator_manager import orchestrator_manager
 from app.db.session import get_db
 
 logger = logging.getLogger(__name__)
@@ -29,7 +30,7 @@ class AgenticResumeEvaluatorService:
     
     def __init__(self, ai_service: AIService):
         self.ai_service = ai_service
-        self.orchestrator = ResumeEvaluationOrchestrator(ai_service)
+        self.orchestrator = orchestrator_manager.get_orchestrator(ai_service)
         self.max_resumes_per_user = 5
     
     async def extract_resume_text(self, file_path: str, file_type: str) -> str:
@@ -84,23 +85,23 @@ class AgenticResumeEvaluatorService:
         return text.strip()
     
     async def evaluate_resume(self, resume_text: str, user_id: str, resume_id: str, 
-                            target_role: Optional[str] = None, 
-                            target_industry: Optional[str] = None) -> ResumeEvaluationResult:
+                            target_role: Optional[str] = None,
+                            target_seniority: Optional[str] = None) -> ResumeEvaluationResult:
         """Main method to evaluate resume using agentic workflow"""
         try:
             start_time = datetime.now(timezone.utc)
             evaluation_id = str(uuid.uuid4())
-            
+
             # Preprocess text
             cleaned_text = self._preprocess_resume_text(resume_text)
-            
-            # Prepare user context
+
+            # Prepare user context - use resume_id for progress tracking
             user_context = {
                 'user_id': user_id,
                 'resume_id': resume_id,
-                'evaluation_id': evaluation_id,
+                'evaluation_id': resume_id,  # Use resume_id for progress tracking
                 'target_roles': [target_role] if target_role else [],
-                'industry': target_industry or 'Technology',
+                'target_seniority': target_seniority or 'mid-level',
                 'years_experience': self._estimate_experience_years(cleaned_text),
                 'target_companies': ['maang', 'startups', 'enterprise']  # Default to all
             }
