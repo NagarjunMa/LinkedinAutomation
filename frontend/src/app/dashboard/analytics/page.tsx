@@ -4,90 +4,67 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useToast } from "@/components/ui/use-toast"
-import { Progress } from "@/components/ui/progress"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
     ArrowLeftIcon,
     RefreshCwIcon,
     TrendingUpIcon,
     BarChart3Icon,
-    MapPinIcon,
     BrainIcon,
     TargetIcon,
-    GraduationCapIcon,
-    DollarSignIcon,
-    UsersIcon,
-    ClockIcon
+    Settings,
+    AlertCircle,
+    Activity,
+    Calendar,
+    Award,
+    Lightbulb
 } from "lucide-react"
 import { useRouter } from "next/navigation"
-
-// Utility function to safely render values that might be objects
-const safeRender = (value: any): string => {
-    if (value === null || value === undefined) return 'N/A'
-    if (typeof value === 'string' || typeof value === 'number') return String(value)
-    if (typeof value === 'object') {
-        // Handle salary range objects
-        if (value.min !== undefined && value.max !== undefined) {
-            const minK = Math.round(value.min / 1000)
-            const maxK = Math.round(value.max / 1000)
-            return `$${minK}k - $${maxK}k`
-        }
-        // Handle other objects by stringifying
-        return JSON.stringify(value)
-    }
-    return String(value)
-}
-
-interface AnalyticsData {
-    executive: any
-    market: any
-    skills: any
-    recommendations: any
-    job_matches: any
-    last_updated: string
-}
+import { cn } from "@/lib/utils"
+import { analyticsAPI, FullAnalytics, isInsufficientDataError, isAnalyticsAPIError } from "@/lib/analytics-api"
+import { SkillsAnalyticsCard } from "@/components/skills-analytics-card"
+import { PreferencesAnalyticsCard } from "@/components/preferences-analytics-card"
+import { ApplicationTrendChart } from "@/components/application-trend-chart"
 
 export default function AnalyticsPage() {
-    const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null)
+    const [analyticsData, setAnalyticsData] = useState<FullAnalytics | null>(null)
     const [loading, setLoading] = useState(true)
-    const [userSkills, setUserSkills] = useState("")
-    const [experienceLevel, setExperienceLevel] = useState("mid")
-    const { toast } = useToast()
+    const [error, setError] = useState<string | null>(null)
+    const [refreshing, setRefreshing] = useState(false)
+    const [selectedPeriod, setSelectedPeriod] = useState(30)
     const router = useRouter()
 
-    const fetchAnalytics = async () => {
+    const fetchAnalytics = async (days: number = selectedPeriod, forceRefresh: boolean = false) => {
         try {
-            setLoading(true)
-            const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+            setError(null)
+            if (!forceRefresh) setLoading(true)
 
-            const queryParams = new URLSearchParams({
-                experience_level: experienceLevel,
-                ...(userSkills && { skills: userSkills })
-            })
-
-            const response = await fetch(`${API_URL}/api/v1/analytics/dashboard-all?${queryParams}`)
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`)
-            }
-
-            const data = await response.json()
+            const data = await analyticsAPI.getFullAnalytics(days, forceRefresh)
             setAnalyticsData(data)
-
-        } catch (error) {
-            console.error('Failed to fetch analytics:', error)
-            toast({
-                title: "Error",
-                description: "Failed to load analytics data. Please try again.",
-                variant: "destructive",
-            })
+        } catch (err) {
+            if (isInsufficientDataError(err)) {
+                setError("insufficient_data")
+            } else if (isAnalyticsAPIError(err)) {
+                setError(err.message)
+            } else {
+                setError("Failed to load analytics data")
+            }
         } finally {
             setLoading(false)
+            setRefreshing(false)
         }
+    }
+
+    const handleRefresh = async () => {
+        setRefreshing(true)
+        await fetchAnalytics(selectedPeriod, true)
+    }
+
+    const handlePeriodChange = (days: number) => {
+        setSelectedPeriod(days)
+        fetchAnalytics(days)
     }
 
     useEffect(() => {
@@ -95,519 +72,396 @@ export default function AnalyticsPage() {
     }, [])
 
     if (loading) {
-        return (
-            <div className="container mx-auto px-4 py-8">
-                <div className="space-y-6">
-                    <Skeleton className="h-8 w-80" />
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {[...Array(4)].map((_, i) => (
-                            <Skeleton key={i} className="h-32" />
-                        ))}
-                    </div>
-                    <Skeleton className="h-96 w-full" />
-                </div>
-            </div>
-        )
+        return <AnalyticsPageSkeleton />
     }
 
-    const executive = analyticsData?.executive
-    const market = analyticsData?.market
-    const skills = analyticsData?.skills
-    const recommendations = analyticsData?.recommendations
-    const jobMatches = analyticsData?.job_matches
+    if (error === "insufficient_data") {
+        return <InsufficientDataPage onRetry={() => fetchAnalytics(selectedPeriod, true)} />
+    }
+
+    if (error) {
+        return <ErrorPage error={error} onRetry={() => fetchAnalytics(selectedPeriod, true)} />
+    }
+
+    if (!analyticsData) {
+        return <ErrorPage error="No analytics data available" onRetry={() => fetchAnalytics(selectedPeriod, true)} />
+    }
 
     return (
-        <div className="container mx-auto px-4 py-8">
-            <div className="space-y-6">
+        <div className="w-full px-4 sm:px-6 py-4 sm:py-6">
+            <div className="space-y-4 sm:space-y-6">
                 {/* Header */}
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
                         <Button
                             onClick={() => router.push('/dashboard')}
                             variant="outline"
                             size="sm"
+                            className="border-primary-500 text-cream-300 hover:text-cream-50 hover:border-accent-500"
                         >
                             <ArrowLeftIcon className="h-4 w-4" />
                             Back to Dashboard
                         </Button>
                         <div>
-                            <h1 className="text-3xl font-bold tracking-tight text-cream-50">Job Search Analytics</h1>
-                            <p className="text-cream-200">
-                                AI-powered insights to optimize your job search strategy
+                            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-cream-50">Analytics Intelligence</h1>
+                            <p className="text-cream-200 text-sm sm:text-base">
+                                AI-powered insights from your job application data
                             </p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <Select value={experienceLevel} onValueChange={setExperienceLevel}>
-                            <SelectTrigger className="w-32">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="junior">Junior</SelectItem>
-                                <SelectItem value="mid">Mid</SelectItem>
-                                <SelectItem value="senior">Senior</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <Button onClick={fetchAnalytics} variant="outline" size="sm">
-                            <RefreshCwIcon className="h-4 w-4 mr-2" />
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                        <div className="flex items-center space-x-1">
+                            {[7, 30, 90].map((days) => (
+                                <Button
+                                    key={days}
+                                    variant={selectedPeriod === days ? "secondary" : "ghost"}
+                                    size="sm"
+                                    onClick={() => handlePeriodChange(days)}
+                                    className={cn(
+                                        "text-xs px-2 sm:px-3 py-1",
+                                        selectedPeriod === days
+                                            ? "bg-accent-500 text-white"
+                                            : "text-cream-300 hover:text-cream-50"
+                                    )}
+                                >
+                                    {days} days
+                                </Button>
+                            ))}
+                        </div>
+                        <Button
+                            onClick={handleRefresh}
+                            disabled={refreshing}
+                            variant="outline"
+                            size="sm"
+                            className="border-primary-500 text-cream-300 hover:text-cream-50 hover:border-accent-500"
+                        >
+                            <RefreshCwIcon className={cn("h-4 w-4 mr-2", refreshing && "animate-spin")} />
                             Refresh
                         </Button>
                     </div>
                 </div>
 
-                {/* User Skills Input */}
-                <Card className="premium-card">
-                    <CardContent className="pt-6">
-                        <div className="flex items-center gap-4">
-                            <div className="flex-1">
-                                <Input
-                                    placeholder="Enter your skills (comma-separated) to get personalized insights..."
-                                    value={userSkills}
-                                    onChange={(e) => setUserSkills(e.target.value)}
-                                />
+                {/* Analytics Overview Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <Card className="premium-card hover:scale-105 transition-all duration-300">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium text-cream-50">Total Applications</CardTitle>
+                            <TargetIcon className="h-4 w-4 text-accent-400" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-accent-400">{analyticsData.metadata.total_applications}</div>
+                            <p className="text-xs text-cream-300">
+                                Last {analyticsData.metadata.analysis_period_days} days
+                            </p>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="premium-card hover:scale-105 transition-all duration-300">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium text-cream-50">AI Insights</CardTitle>
+                            <BrainIcon className="h-4 w-4 text-accent-400" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-gold-400">{analyticsData.insights.length}</div>
+                            <p className="text-xs text-cream-300">
+                                Actionable recommendations
+                            </p>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="premium-card hover:scale-105 transition-all duration-300">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium text-cream-50">Skills Tracked</CardTitle>
+                            <Activity className="h-4 w-4 text-accent-400" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-green-400">{analyticsData.skills.top_skills.length}</div>
+                            <p className="text-xs text-cream-300">
+                                In demand skills found
+                            </p>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="premium-card hover:scale-105 transition-all duration-300">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium text-cream-50">Primary Focus</CardTitle>
+                            <Award className="h-4 w-4 text-accent-400" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-lg font-bold text-blue-400">
+                                {analyticsData.preferences.job_titles.primary_focus || "Various"}
                             </div>
-                            <Button onClick={fetchAnalytics}>
-                                Update Analysis
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Executive Dashboard - Key Metrics */}
-                {executive && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <Card className="premium-card hover:scale-105 transition-all duration-300">
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium text-cream-50">Total Jobs</CardTitle>
-                                <BarChart3Icon className="h-4 w-4 text-accent-400" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold text-accent-400">{executive.total_jobs_found}</div>
-                                <p className="text-xs text-cream-300">
-                                    {executive.period_summary?.jobs_found || 0} new in last 30 days
-                                </p>
-                            </CardContent>
-                        </Card>
-
-                        <Card className="premium-card hover:scale-105 transition-all duration-300">
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium text-cream-50">Applications</CardTitle>
-                                <TargetIcon className="h-4 w-4 text-accent-400" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold text-gold-400">{executive.total_applications}</div>
-                                <p className="text-xs text-cream-300">
-                                    {typeof executive.response_rate === 'number' ? executive.response_rate : 0}% response rate
-                                </p>
-                            </CardContent>
-                        </Card>
-
-                        <Card className="premium-card hover:scale-105 transition-all duration-300">
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium text-cream-50">Avg Salary</CardTitle>
-                                <DollarSignIcon className="h-4 w-4 text-accent-400" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold text-green-400">
-                                    {safeRender(executive.avg_salary_range)}
-                                </div>
-                                <p className="text-xs text-cream-300">
-                                    Market average range
-                                </p>
-                            </CardContent>
-                        </Card>
-
-                        <Card className="premium-card hover:scale-105 transition-all duration-300">
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium text-cream-50">Top Location</CardTitle>
-                                <MapPinIcon className="h-4 w-4 text-accent-400" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-lg font-bold text-blue-400">
-                                    {market?.location_analysis?.[0]?.city || "N/A"}
-                                </div>
-                                <p className="text-xs text-cream-300">
-                                    {market?.location_analysis?.[0]?.job_count || 0} jobs available
-                                </p>
-                            </CardContent>
-                        </Card>
-                    </div>
-                )}
+                            <p className="text-xs text-cream-300">
+                                Most applied job type
+                            </p>
+                        </CardContent>
+                    </Card>
+                </div>
 
                 {/* Analytics Tabs */}
                 <Tabs defaultValue="overview" className="space-y-4">
-                    <TabsList className="grid w-full grid-cols-5">
-                        <TabsTrigger value="overview">Overview</TabsTrigger>
-                        <TabsTrigger value="market">Market</TabsTrigger>
-                        <TabsTrigger value="skills">Skills</TabsTrigger>
-                        <TabsTrigger value="predictions">Predictions</TabsTrigger>
-                        <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
+                    <TabsList className="grid w-full grid-cols-4 bg-primary-800 border-primary-600">
+                        <TabsTrigger
+                            value="overview"
+                            className="data-[state=active]:bg-accent-500 data-[state=active]:text-white text-cream-300"
+                        >
+                            Overview
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="skills"
+                            className="data-[state=active]:bg-accent-500 data-[state=active]:text-white text-cream-300"
+                        >
+                            Skills
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="trends"
+                            className="data-[state=active]:bg-accent-500 data-[state=active]:text-white text-cream-300"
+                        >
+                            Trends
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="insights"
+                            className="data-[state=active]:bg-accent-500 data-[state=active]:text-white text-cream-300"
+                        >
+                            AI Insights
+                        </TabsTrigger>
                     </TabsList>
 
                     {/* Overview Tab */}
                     <TabsContent value="overview" className="space-y-4">
-                        {executive && (
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle className="flex items-center gap-2">
-                                            <TrendingUpIcon className="h-5 w-5" />
-                                            Application Performance
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="space-y-4">
-                                            <div>
-                                                <div className="flex justify-between text-sm">
-                                                    <span>Conversion Rate</span>
-                                                    <span>{typeof executive.conversion_rate === 'number' ? executive.conversion_rate : 0}%</span>
-                                                </div>
-                                                <Progress value={typeof executive.conversion_rate === 'number' ? executive.conversion_rate : 0} className="mt-1" />
-                                            </div>
-                                            <div>
-                                                <div className="flex justify-between text-sm">
-                                                    <span>Weekly Growth</span>
-                                                    <span>{typeof executive.weekly_growth === 'number' ? executive.weekly_growth : 0}%</span>
-                                                </div>
-                                                <Progress value={typeof executive.weekly_growth === 'number' ? Math.abs(executive.weekly_growth) : 0} className="mt-1" />
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle className="flex items-center gap-2">
-                                            <ClockIcon className="h-5 w-5" />
-                                            Activity Timeline
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="space-y-2 text-sm">
-                                            <div className="flex justify-between">
-                                                <span>Peak Activity Day</span>
-                                                <span className="font-medium">{executive.peak_day}</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span>Best Application Time</span>
-                                                <span className="font-medium">{executive.best_time}</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span>Last Updated</span>
-                                                <span className="font-medium">
-                                                    {analyticsData?.last_updated ? new Date(analyticsData.last_updated).toLocaleDateString() : 'N/A'}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div className="space-y-6">
+                                <SkillsAnalyticsCard showActions={false} />
+                                <PreferencesAnalyticsCard showActions={false} />
                             </div>
-                        )}
-                    </TabsContent>
+                            <div className="space-y-6">
+                                <ApplicationTrendChart days={selectedPeriod} showActions={false} />
 
-                    {/* Market Intelligence Tab */}
-                    <TabsContent value="market" className="space-y-4">
-                        {market && (
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle className="flex items-center gap-2">
-                                            <TrendingUpIcon className="h-5 w-5" />
-                                            Tech Stack Trends
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="space-y-3">
-                                            {market.tech_stack_trends?.slice(0, 5).map((tech: any, index: number) => (
-                                                <div key={index} className="flex items-center justify-between">
-                                                    <span className="font-medium">{tech.skill}</span>
-                                                    <div className="flex items-center gap-2">
-                                                        <Badge variant="outline">{tech.demand} jobs</Badge>
-                                                        <Badge variant={tech.growth > 0 ? "default" : "secondary"}>
-                                                            {tech.growth > 0 ? '+' : ''}{tech.growth}%
-                                                        </Badge>
+                                {/* Application Behavior Card */}
+                                {analyticsData.behavior && (
+                                    <Card className="premium-card">
+                                        <CardHeader>
+                                            <CardTitle className="flex items-center gap-2 text-cream-50">
+                                                <Activity className="h-5 w-5 text-accent-400" />
+                                                Application Behavior
+                                            </CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="space-y-4">
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="text-center">
+                                                    <div className="text-lg font-bold text-accent-400">
+                                                        {analyticsData.behavior.velocity.apps_per_week}
                                                     </div>
+                                                    <div className="text-xs text-cream-300">Apps per week</div>
                                                 </div>
-                                            ))}
-                                        </div>
-                                    </CardContent>
-                                </Card>
-
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle className="flex items-center gap-2">
-                                            <MapPinIcon className="h-5 w-5" />
-                                            Location Analysis
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="space-y-3">
-                                            {market.location_analysis?.slice(0, 5).map((location: any, index: number) => (
-                                                <div key={index} className="flex items-center justify-between">
-                                                    <span className="font-medium">{location.city}</span>
-                                                    <div className="flex items-center gap-2">
-                                                        <Badge variant="outline">{location.job_count} jobs</Badge>
-                                                        <Badge variant="secondary">
-                                                            {location.trend}
-                                                        </Badge>
+                                                <div className="text-center">
+                                                    <div className="text-lg font-bold text-gold-400">
+                                                        {analyticsData.behavior.success_metrics.application_rate.toFixed(1)}%
                                                     </div>
+                                                    <div className="text-xs text-cream-300">Success rate</div>
                                                 </div>
-                                            ))}
-                                        </div>
-                                    </CardContent>
-                                </Card>
-
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle className="flex items-center gap-2">
-                                            <UsersIcon className="h-5 w-5" />
-                                            Industry Trends
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="space-y-3">
-                                            {market.industry_trends?.slice(0, 5).map((company: any, index: number) => (
-                                                <div key={index} className="flex items-center justify-between">
-                                                    <span className="font-medium">{company.company}</span>
-                                                    <div className="flex items-center gap-2">
-                                                        <Badge variant="outline">{company.job_count} jobs</Badge>
-                                                        <Badge variant="secondary">{company.hiring_velocity}</Badge>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </CardContent>
-                                </Card>
-
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>Market Summary</CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="space-y-2 text-sm">
-                                            <div>
-                                                <span className="font-medium">Hottest Skills: </span>
-                                                {market.tech_stack_trends?.slice(0, 3).map((t: any) => t.skill).join(", ") || "N/A"}
                                             </div>
-                                            <div>
-                                                <span className="font-medium">Growing Locations: </span>
-                                                {market.location_analysis?.slice(0, 3).map((l: any) => l.city).join(", ") || "N/A"}
-                                            </div>
-                                            <div>
-                                                <span className="font-medium">Best Timing: </span>
-                                                {market.timing_insights?.best_time || "Tuesday 0:00"}
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            </div>
-                        )}
-                    </TabsContent>
 
-                    {/* Skills Analysis Tab */}
-                    <TabsContent value="skills" className="space-y-4">
-                        {skills && (
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle className="flex items-center gap-2">
-                                            <BrainIcon className="h-5 w-5" />
-                                            Skills Demand Analysis
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="space-y-3">
-                                            {skills.in_demand_skills?.slice(0, 8).map((skill: any, index: number) => (
-                                                <div key={index} className="flex items-center justify-between">
-                                                    <span className="font-medium">{skill.skill}</span>
-                                                    <div className="flex items-center gap-2">
-                                                        <Badge variant="outline">{skill.demand} jobs</Badge>
-                                                        <Badge variant={skill.demand > 30 ? "default" : "secondary"}>
-                                                            {skill.growth_rate > 0 ? `+${(skill.growth_rate * 100).toFixed(1)}%` : 'stable'}
-                                                        </Badge>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </CardContent>
-                                </Card>
-
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>Skills Gap Analysis</CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        {userSkills ? (
-                                            <div className="space-y-3">
-                                                <div>
-                                                    <span className="font-medium text-green-700">Your Skills: </span>
-                                                    <div className="flex flex-wrap gap-1 mt-1">
-                                                        {userSkills.split(',').map((skill, index) => (
-                                                            <Badge key={index} variant="secondary">{skill.trim()}</Badge>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                                {skills.missing_skills && (
-                                                    <div>
-                                                        <span className="font-medium text-orange-700">Missing Skills: </span>
-                                                        <div className="flex flex-wrap gap-1 mt-1">
-                                                            {skills.missing_skills.slice(0, 6).map((skill: string, index: number) => (
-                                                                <Badge key={index} variant="outline">{skill}</Badge>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ) : (
-                                            <p className="text-muted-foreground text-sm">
-                                                Enter your skills above to see gap analysis
-                                            </p>
-                                        )}
-                                    </CardContent>
-                                </Card>
-                            </div>
-                        )}
-                    </TabsContent>
-
-
-
-                    {/* Job Predictions Tab */}
-                    <TabsContent value="predictions" className="space-y-4">
-                        {jobMatches && (
-                            <div className="space-y-4">
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle className="flex items-center gap-2">
-                                            <TargetIcon className="h-5 w-5" />
-                                            AI Job Match Predictions
-                                        </CardTitle>
-                                        <CardDescription>
-                                            Jobs ranked by AI-calculated match score based on your profile
-                                        </CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="space-y-4">
-                                            {jobMatches.job_matches?.slice(0, 6).map((job: any, index: number) => (
-                                                <div key={index} className="border rounded-lg p-4">
-                                                    <div className="flex items-start justify-between">
-                                                        <div className="flex-1">
-                                                            <h4 className="font-medium">{job.title}</h4>
-                                                            <p className="text-sm text-muted-foreground">{job.company} • {job.location}</p>
-                                                            <div className="flex items-center gap-2 mt-2">
-                                                                <Badge variant="outline">{job.job_type}</Badge>
-                                                                <Badge variant="secondary">{job.experience_level}</Badge>
-                                                            </div>
-                                                        </div>
-                                                        <div className="text-right">
-                                                            <div className="text-lg font-bold text-green-700">{job.match_score}%</div>
-                                                            <p className="text-xs text-muted-foreground">match score</p>
-                                                        </div>
-                                                    </div>
-                                                    {job.match_reasons && Array.isArray(job.match_reasons) && (
-                                                        <div className="mt-3">
-                                                            <p className="text-xs font-medium text-muted-foreground mb-1">Match Reasons:</p>
-                                                            <div className="flex flex-wrap gap-1">
-                                                                {job.match_reasons.slice(0, 3).map((reason: string, i: number) => (
-                                                                    <Badge key={i} variant="outline" className="text-xs">
-                                                                        {typeof reason === 'string' ? reason : String(reason)}
-                                                                    </Badge>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            </div>
-                        )}
-                    </TabsContent>
-
-                    {/* Recommendations Tab */}
-                    <TabsContent value="recommendations" className="space-y-4">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <GraduationCapIcon className="h-5 w-5" />
-                                    Learning Recommendations
-                                </CardTitle>
-                                <CardDescription>
-                                    Based on analysis of your job listings
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                {recommendations ? (
-                                    <div className="space-y-4">
-                                        {/* Skills to Learn */}
-                                        {recommendations.skills_to_learn && (
+                                            {/* Peak Days */}
                                             <div className="space-y-2">
-                                                <h3 className="font-medium">Skills to Learn</h3>
-                                                {recommendations.skills_to_learn.map((skill: any, index: number) => (
-                                                    <div key={index} className="border rounded-lg p-3">
-                                                        <div className="flex items-center justify-between">
-                                                            <div>
-                                                                <h4 className="font-medium">{skill.skill}</h4>
-                                                                <p className="text-sm text-muted-foreground">{skill.category}</p>
-                                                            </div>
-                                                            <div className="flex gap-2">
-                                                                <Badge variant="outline">{skill.demand} jobs</Badge>
-                                                                <Badge variant={skill.priority === 'High' ? 'default' : 'secondary'}>
-                                                                    {skill.priority}
-                                                                </Badge>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ))}
+                                                <h4 className="text-sm font-medium text-cream-200">Peak Application Days</h4>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {analyticsData.behavior.timing_patterns.peak_days.slice(0, 3).map(([day, count], index) => (
+                                                        <Badge key={index} className="bg-accent-500/20 text-accent-300 border-accent-500/30">
+                                                            {day}: {count} apps
+                                                        </Badge>
+                                                    ))}
+                                                </div>
                                             </div>
-                                        )}
-
-                                        {/* Certifications */}
-                                        {recommendations.certifications && (
-                                            <div className="space-y-2">
-                                                <h3 className="font-medium">Recommended Certifications</h3>
-                                                {recommendations.certifications.map((cert: any, index: number) => (
-                                                    <div key={index} className="border rounded-lg p-3">
-                                                        <div className="flex items-center justify-between">
-                                                            <h4 className="font-medium text-sm">{cert.name}</h4>
-                                                            <div className="flex gap-2">
-                                                                <Badge variant={cert.priority === 'High' ? 'default' : 'secondary'}>
-                                                                    {cert.priority}
-                                                                </Badge>
-                                                                <Badge variant="outline">{cert.duration}</Badge>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-
-                                        {/* Resume Tips */}
-                                        {recommendations.resume_optimization && (
-                                            <div className="space-y-2">
-                                                <h3 className="font-medium">Resume Optimization Tips</h3>
-                                                {recommendations.resume_optimization.map((tip: any, index: number) => (
-                                                    <div key={index} className="border-l-4 border-blue-500 pl-4 py-2">
-                                                        <h4 className="font-medium text-sm">{tip.category}</h4>
-                                                        <p className="text-sm text-muted-foreground">{tip.tip}</p>
-                                                        <p className="text-xs text-blue-700 mt-1">{tip.action}</p>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <div className="flex items-center gap-2">
-                                        <RefreshCwIcon className="h-4 w-4 animate-spin" />
-                                        <span className="text-sm text-muted-foreground">
-                                            Loading recommendations...
-                                        </span>
-                                    </div>
+                                        </CardContent>
+                                    </Card>
                                 )}
-                            </CardContent>
-                        </Card>
+                            </div>
+                        </div>
+                    </TabsContent>
+
+                    {/* Skills Tab */}
+                    <TabsContent value="skills" className="space-y-4">
+                        <SkillsAnalyticsCard className="w-full" />
+                    </TabsContent>
+
+                    {/* Trends Tab */}
+                    <TabsContent value="trends" className="space-y-4">
+                        <ApplicationTrendChart days={selectedPeriod} className="w-full" />
+                    </TabsContent>
+
+                    {/* AI Insights Tab */}
+                    <TabsContent value="insights" className="space-y-4">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {analyticsData.insights.map((insight, index) => (
+                                <Card key={index} className="premium-card">
+                                    <CardHeader>
+                                        <div className="flex items-center justify-between">
+                                            <CardTitle className="flex items-center gap-2 text-cream-50">
+                                                <Lightbulb className="h-5 w-5 text-accent-400" />
+                                                {insight.title}
+                                            </CardTitle>
+                                            <Badge
+                                                className={cn(
+                                                    "text-xs",
+                                                    insight.priority === "high"
+                                                        ? "bg-red-500/20 text-red-300 border-red-500/30"
+                                                        : insight.priority === "medium"
+                                                            ? "bg-gold-500/20 text-gold-300 border-gold-500/30"
+                                                            : "bg-accent-500/20 text-accent-300 border-accent-500/30"
+                                                )}
+                                            >
+                                                {insight.priority} priority
+                                            </Badge>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent className="space-y-3">
+                                        <p className="text-sm text-cream-200">{insight.message}</p>
+
+                                        {insight.action && (
+                                            <div className="bg-primary-700 rounded-lg p-3">
+                                                <h4 className="text-sm font-medium text-cream-200 mb-1">Recommended Action:</h4>
+                                                <p className="text-xs text-cream-300">{insight.action}</p>
+                                            </div>
+                                        )}
+
+                                        {insight.impact && (
+                                            <div className="flex items-center justify-between text-xs">
+                                                <span className="text-cream-400">Expected Impact:</span>
+                                                <Badge className="bg-green-500/20 text-green-300 border-green-500/30">
+                                                    {insight.impact}
+                                                </Badge>
+                                            </div>
+                                        )}
+
+                                        <Badge className="bg-primary-700 text-cream-300 border-primary-500 text-xs">
+                                            {insight.type.replace('_', ' ')}
+                                        </Badge>
+                                    </CardContent>
+                                </Card>
+                            ))}
+
+                            {analyticsData.insights.length === 0 && (
+                                <div className="col-span-2 text-center py-12">
+                                    <div className="text-6xl mb-4">💡</div>
+                                    <h3 className="text-lg font-medium text-cream-200 mb-2">No insights available yet</h3>
+                                    <p className="text-sm text-cream-400">
+                                        Continue applying to jobs to generate AI-powered insights
+                                    </p>
+                                </div>
+                            )}
+                        </div>
                     </TabsContent>
                 </Tabs>
+            </div>
+        </div>
+    )
+}
+
+// Helper Components
+function AnalyticsPageSkeleton() {
+    return (
+        <div className="w-full px-6 py-6">
+            <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <Skeleton className="h-9 w-32 bg-primary-700" />
+                        <div className="space-y-2">
+                            <Skeleton className="h-8 w-64 bg-primary-700" />
+                            <Skeleton className="h-4 w-96 bg-primary-700" />
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Skeleton className="h-9 w-24 bg-primary-700" />
+                        <Skeleton className="h-9 w-24 bg-primary-700" />
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                        <Skeleton key={i} className="h-32 bg-primary-700" />
+                    ))}
+                </div>
+
+                <Skeleton className="h-10 w-full bg-primary-700" />
+                <Skeleton className="h-96 w-full bg-primary-700" />
+            </div>
+        </div>
+    )
+}
+
+function InsufficientDataPage({ onRetry }: { onRetry: () => void }) {
+    return (
+        <div className="w-full px-6 py-6">
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="text-center space-y-6 max-w-md">
+                    <div className="text-8xl">📊</div>
+                    <div className="space-y-3">
+                        <h1 className="text-2xl font-bold text-cream-50">Insufficient Data for Analytics</h1>
+                        <p className="text-cream-300">
+                            We need at least 3 job applications to generate meaningful analytics insights.
+                            Start applying to jobs to unlock powerful AI-driven analytics.
+                        </p>
+                    </div>
+
+                    <Alert className="border-gold-500/20 bg-gold-500/10 text-left">
+                        <AlertCircle className="h-4 w-4 text-gold-400" />
+                        <AlertDescription className="text-cream-200">
+                            Your job application data will be analyzed to provide insights on skills demand,
+                            application patterns, market trends, and personalized recommendations.
+                        </AlertDescription>
+                    </Alert>
+
+                    <div className="flex items-center justify-center gap-3">
+                        <Button
+                            onClick={() => window.location.href = '/dashboard/jobs'}
+                            className="bg-accent-500 hover:bg-accent-400 text-white"
+                        >
+                            Browse Jobs
+                        </Button>
+                        <Button
+                            onClick={onRetry}
+                            variant="outline"
+                            className="border-primary-500 text-cream-300 hover:text-cream-50 hover:border-accent-500"
+                        >
+                            <RefreshCwIcon className="h-4 w-4 mr-2" />
+                            Check Again
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+function ErrorPage({ error, onRetry }: { error: string; onRetry: () => void }) {
+    return (
+        <div className="w-full px-6 py-6">
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="text-center space-y-6 max-w-md">
+                    <div className="text-8xl">⚠️</div>
+                    <div className="space-y-3">
+                        <h1 className="text-2xl font-bold text-cream-50">Analytics Error</h1>
+                        <p className="text-cream-300">
+                            Unable to load analytics data. Please try again.
+                        </p>
+                    </div>
+
+                    <Alert className="border-red-500/20 bg-red-500/10 text-left">
+                        <AlertCircle className="h-4 w-4 text-red-400" />
+                        <AlertDescription className="text-cream-200">
+                            {error}
+                        </AlertDescription>
+                    </Alert>
+
+                    <Button
+                        onClick={onRetry}
+                        className="bg-red-500 hover:bg-red-400 text-white"
+                    >
+                        <RefreshCwIcon className="h-4 w-4 mr-2" />
+                        Try Again
+                    </Button>
+                </div>
             </div>
         </div>
     )

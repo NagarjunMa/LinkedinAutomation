@@ -217,8 +217,9 @@ function ProgressLineGraph({ progressData }: ProgressLineGraphProps) {
                     />
                     <ChartTooltip
                         cursor={false}
-                        content={
+                        content={(props) => (
                             <ChartTooltipContent
+                                {...props}
                                 labelFormatter={(value) => `${value}`}
                                 formatter={(value, name) => [
                                     `${value} applications`,
@@ -227,7 +228,7 @@ function ProgressLineGraph({ progressData }: ProgressLineGraphProps) {
                                 indicator="dot"
                                 className="bg-primary-800 border-primary-600 text-cream-50"
                             />
-                        }
+                        )}
                     />
                     <Area
                         dataKey="applications"
@@ -279,16 +280,15 @@ function ApplicationTrendChart() {
                             {isIncreasing ? "Trending up" : "Trending down"}
                         </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                         {(['7days', '10days', '30days'] as const).map((range) => (
                             <button
                                 key={range}
                                 onClick={() => setTimeRange(range)}
-                                className={`px-3 py-1 rounded-md text-sm transition-colors ${
-                                    timeRange === range
-                                        ? 'bg-gradient-warm text-white'
-                                        : 'text-cream-300 hover:text-cream-100 hover:bg-primary-700'
-                                }`}
+                                className={`px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm transition-colors ${timeRange === range
+                                    ? 'bg-gradient-warm text-white'
+                                    : 'text-cream-300 hover:text-cream-100 hover:bg-primary-700'
+                                    }`}
                             >
                                 {range === '7days' ? '7 Days' : range === '10days' ? '10 Days' : '30 Days'}
                             </button>
@@ -297,7 +297,7 @@ function ApplicationTrendChart() {
                 </div>
             </CardHeader>
             <CardContent>
-                <div className="h-64 w-full">
+                <div className="h-48 sm:h-64 w-full">
                     <ProgressLineGraph progressData={progressData} />
                 </div>
             </CardContent>
@@ -672,13 +672,13 @@ export default function DashboardPage() {
     return (
         <div className="min-h-screen bg-primary-950">
             {/* Main Dashboard Container following handwritten design */}
-            <div className="w-full px-6 py-6">
+            <div className="w-full px-4 sm:px-6 py-4 sm:py-6">
                 <StaggerContainer>
-                    <div className="space-y-6">
+                    <div className="space-y-4 sm:space-y-6">
 
                         {/* Top Section - 4 cards as per handwritten design */}
                         <StaggerItem>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                                 {/* Overview Calendar Card - moved to first position */}
                                 <OverviewCard
                                     title="Overview Calendar"
@@ -724,7 +724,7 @@ export default function DashboardPage() {
 
                         {/* Bottom Section - Success Rate and Today's Activity as per sketch */}
                         <StaggerItem>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                                 {/* Success Rate Card */}
                                 <SuccessRateCard rate={67} change={12} />
 
@@ -733,20 +733,6 @@ export default function DashboardPage() {
                             </div>
                         </StaggerItem>
 
-                        {/* Sidebar Section - as noted in handwritten design */}
-                        <StaggerItem>
-                            <Card className="premium-card">
-                                <CardHeader className="pb-3">
-                                    <CardTitle className="text-cream-50 text-lg">Sidebar</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="text-center text-cream-400 py-8">
-                                        <div className="text-sm">From data development</div>
-                                        <div className="text-xs mt-1">Future implementation</div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </StaggerItem>
 
                     </div>
                 </StaggerContainer>

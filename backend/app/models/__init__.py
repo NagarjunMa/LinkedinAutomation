@@ -4,10 +4,11 @@ from .contact import Contact
 from .email_models import UserGmailConnection, EmailEvent, EmailSyncLog
 from .resume import Resume, ResumeEvaluation
 from .agent_models import ResumeEvaluationSession, ResumeAgentResult, AgentPerformanceMetrics
+from .analytics import UserAnalytics, AnalyticsCache, AnalyticsInsight
 
 __all__ = [
     "JobListing",
-    "UserProfile", 
+    "UserProfile",
     "JobApplication",
     "User",
     "Contact",
@@ -18,5 +19,8 @@ __all__ = [
     "ResumeEvaluation",
     "ResumeEvaluationSession",
     "ResumeAgentResult",
-    "AgentPerformanceMetrics"
+    "AgentPerformanceMetrics",
+    "UserAnalytics",
+    "AnalyticsCache",
+    "AnalyticsInsight"
 ] 

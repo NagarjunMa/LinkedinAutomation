@@ -224,10 +224,10 @@ export function JobSearchModal({ isOpen, onClose, initialQuery = "" }: JobSearch
                                     <h3 className="text-lg font-semibold mb-4">Quick Search</h3>
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                         {[
-                                            { icon: Building2, label: "Companies", query: "tech companies" },
-                                            { icon: MapPin, label: "Locations", query: "remote jobs" },
-                                            { icon: Briefcase, label: "Job Types", query: "full-time" },
-                                            { icon: TrendingUp, label: "Trending", query: "software engineer" }
+                                            { icon: Building2, label: "Companies", query: "Google Microsoft Apple" },
+                                            { icon: MapPin, label: "Locations", query: "San Francisco New York Remote" },
+                                            { icon: Briefcase, label: "Job Types", query: "Full-time Part-time Contract" },
+                                            { icon: TrendingUp, label: "Trending", query: "Software Engineer Data Scientist" }
                                         ].map(({ icon: Icon, label, query }) => (
                                             <Button
                                                 key={label}

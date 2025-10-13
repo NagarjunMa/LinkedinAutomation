@@ -20,7 +20,6 @@ import {
     ChevronRight,
     HelpCircle,
     Settings,
-    Crown,
     X
 } from "lucide-react"
 
@@ -192,23 +191,6 @@ export function SophisticatedSidebar({ className, onClose }: SophisticatedSideba
                 </div>
             </div>
 
-            {/* Pro Upgrade Card */}
-            {!collapsed && (
-                <div className="p-4 border-t border-primary-600">
-                    <div className="bg-gradient-card rounded-xl p-4 border border-accent-500/20 glow-orange">
-                        <div className="flex items-center space-x-2 mb-2">
-                            <Crown className="h-5 w-5 text-accent-400" />
-                            <h4 className="font-semibold text-cream-50">Become Pro Access</h4>
-                        </div>
-                        <p className="text-xs text-cream-300 mb-3">
-                            Try your experience for using more features
-                        </p>
-                        <Button className="w-full bg-gradient-warm hover:bg-gradient-gold text-white text-sm py-2 glow-orange hover:glow-gold transition-all duration-300">
-                            Upgrade Pro
-                        </Button>
-                    </div>
-                </div>
-            )}
 
             {/* User Profile */}
             <div className="px-4 py-4 border-t border-primary-600">

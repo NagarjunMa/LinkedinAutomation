@@ -43,32 +43,15 @@ async def search_jobs(
         # Create base query
         query = db.query(JobListing).filter(JobListing.is_active == True)
         
-        # Build search conditions using OR logic across multiple fields
-        search_conditions = []
-        
-        # Search in job title
-        search_conditions.append(JobListing.title.ilike(f"%{search_query}%"))
-        
-        # Search in company name
-        search_conditions.append(JobListing.company.ilike(f"%{search_query}%"))
-        
-        # Search in location
-        search_conditions.append(JobListing.location.ilike(f"%{search_query}%"))
-        
-        # Search in job description
-        search_conditions.append(JobListing.description.ilike(f"%{search_query}%"))
-        
-        # Search in requirements
-        search_conditions.append(JobListing.requirements.ilike(f"%{search_query}%"))
-        
-        # Search in skills (JSON array) - Convert to text for compatibility
-        # This searches the JSON representation as text
-        search_conditions.append(
-            func.cast(JobListing.skills, String).ilike(f"%{search_query}%")
+        # Simplified search - focus on most important fields first
+        # Search in company name (highest priority)
+        query = query.filter(
+            or_(
+                JobListing.company.ilike(f"%{search_query}%"),
+                JobListing.title.ilike(f"%{search_query}%"),
+                JobListing.location.ilike(f"%{search_query}%")
+            )
         )
-        
-        # Apply the search conditions with OR logic
-        query = query.filter(or_(*search_conditions))
         
         # Order by recency for now (simplified)
         query = query.order_by(JobListing.extracted_date.desc())
