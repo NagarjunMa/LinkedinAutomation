@@ -2,6 +2,58 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Absans Font - Primary Application Font */
+@font-face {
+  font-family: 'Absans';
+  src: url('/fonts/Absans-Regular.woff2') format('woff2'),
+    url('/fonts/Absans-Regular.woff') format('woff'),
+    url('/fonts/Absans-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Adieu Font - Application Title Font (if you have the files) */
+@font-face {
+  font-family: 'Adieu';
+  src: url('/fonts/Adieu-Regular.woff2') format('woff2'),
+    url('/fonts/Adieu-Regular.woff') format('woff'),
+    url('/fonts/Adieu-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Adieu';
+  src: url('/fonts/Adieu-Bold.woff2') format('woff2'),
+    url('/fonts/Adieu-Bold.woff') format('woff'),
+    url('/fonts/Adieu-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Adieu';
+  src: url('/fonts/Adieu-Light.woff2') format('woff2'),
+    url('/fonts/Adieu-Light.woff') format('woff'),
+    url('/fonts/Adieu-Light.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Adieu';
+  src: url('/fonts/Adieu-Black.woff2') format('woff2'),
+    url('/fonts/Adieu-Black.woff') format('woff'),
+    url('/fonts/Adieu-Black.ttf') format('truetype');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -68,31 +120,31 @@
   }
 
   .dark {
-    /* Premium dark theme with warm colors */
-    --background: 15 8% 8%;
-    /* #1a1412 */
+    /* Premium dark theme with dark green background and orange accents */
+    --background: 120 8% 20%;
+    /* #2c3632 - dark green background */
     --foreground: 30 6% 98%;
     /* #fafaf9 */
-    --card: 15 8% 18%;
-    /* #2d2520 */
+    --card: 120 8% 25%;
+    /* Darker green for cards */
     --card-foreground: 30 6% 98%;
-    --popover: 15 8% 18%;
+    --popover: 120 8% 25%;
     --popover-foreground: 30 6% 98%;
-    --primary: 15 8% 8%;
+    --primary: 120 8% 20%;
     --primary-foreground: 30 6% 98%;
-    --secondary: 15 8% 25%;
-    /* #3d342d */
+    --secondary: 120 8% 30%;
+    /* Medium green for secondary */
     --secondary-foreground: 30 6% 98%;
-    --muted: 15 8% 25%;
+    --muted: 120 8% 30%;
     --muted-foreground: 30 6% 70%;
     /* #d6d3d1 */
-    --accent: 15 8% 25%;
+    --accent: 120 8% 30%;
     --accent-foreground: 30 6% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 15 8% 30%;
-    /* #4d443d */
-    --input: 15 8% 30%;
+    --border: 120 8% 35%;
+    /* Lighter green for borders */
+    --input: 120 8% 35%;
     --ring: 15 100% 50%;
     /* Orange accent */
     --chart-1: 15 100% 50%;
@@ -103,14 +155,14 @@
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
 
-    /* Custom theme variables for dark mode */
-    --primary-950: #0f0e0d;
-    --primary-900: #1a1412;
-    --primary-800: #2d2520;
-    --primary-700: #3d342d;
-    --primary-600: #4d443d;
-    --primary-500: #5d544d;
-    --primary-400: #6d645d;
+    /* Custom theme variables for dark mode with dark green base */
+    --primary-950: #2c3632;
+    --primary-900: #1f2a26;
+    --primary-800: #2a3a35;
+    --primary-700: #3a4a45;
+    --primary-600: #4a5a55;
+    --primary-500: #5a6a65;
+    --primary-400: #6a7a75;
     --cream-50: #fafaf9;
     --cream-100: #f5f5f4;
     --cream-200: #e7e5e4;
@@ -127,7 +179,7 @@
   }
 
   body {
-    @apply bg-background text-foreground font-fahkwang;
+    @apply bg-background text-foreground font-absans;
   }
 
   h1,
@@ -136,7 +188,27 @@
   h4,
   h5,
   h6 {
-    @apply font-neuton;
+    @apply font-clash;
+  }
+
+  /* Page titles styling - Clash Display for all titles */
+  .page-title {
+    @apply font-title font-semibold tracking-tight;
+  }
+
+  /* Application title styling - Stardom for JOBFLOW PRO */
+  .app-title {
+    @apply font-app-title font-semibold tracking-wide;
+  }
+
+  /* Absans font utilities */
+  .font-absans {
+    font-family: 'Absans', sans-serif;
+  }
+
+  /* Apply Absans to common text elements */
+  p, span, div, label, input, button {
+    font-family: 'Absans', sans-serif;
   }
 }
 

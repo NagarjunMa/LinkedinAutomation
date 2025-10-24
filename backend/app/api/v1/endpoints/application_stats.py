@@ -1,45 +1,68 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
+from sqlalchemy import func, and_, extract
+from datetime import datetime, timedelta, date
 from typing import List, Dict, Any
-import random
 import calendar
 
 from app.db.session import get_db
 from app.models.user import User
+from app.models.job import JobListing, JobApplication
+from app.core.auth import get_authenticated_user_id
 
 router = APIRouter()
 
 @router.get("/application-extraction-stats")
 async def get_application_extraction_stats(
     days: int = 7,
-    user_id: str = Query(default="demo_user", description="User ID for context"),
+    user_id: str = Depends(get_authenticated_user_id),
     db: Session = Depends(get_db)
 ):
     """
     Get application extraction statistics for the last N days.
-    For now, returns random data for demonstration.
+    Returns actual user data from job applications.
     """
     try:
-        # Generate data for the last N days
-        stats = []
-        base_date = datetime.now().date()
+        # Calculate date range
+        end_date = datetime.now().date()
+        start_date = end_date - timedelta(days=days - 1)
 
+        # Query actual job application data grouped by date
+        stats_query = db.query(
+            func.date(JobApplication.application_date).label('date'),
+            func.count(JobApplication.id).label('jobs')
+        ).filter(
+            and_(
+                JobApplication.user_id == user_id,
+                func.date(JobApplication.application_date) >= start_date,
+                func.date(JobApplication.application_date) <= end_date
+            )
+        ).group_by(
+            func.date(JobApplication.application_date)
+        ).order_by('date').all()
+
+        # Create a dictionary for quick lookup
+        stats_dict = {stat.date: stat.jobs for stat in stats_query}
+
+        # Generate data for all days in the range, filling in zeros for days with no applications
+        stats = []
         for i in range(days):
-            date = base_date - timedelta(days=days - 1 - i)
-            # For now, generate random values between 5-20 applications per day
-            applications_extracted = random.randint(5, 20)
+            current_date = start_date + timedelta(days=i)
+            jobs_count = stats_dict.get(current_date, 0)
 
             stats.append({
-                "date": date.isoformat(),
-                "jobs": applications_extracted
+                "date": current_date.isoformat(),
+                "jobs": jobs_count
             })
+
+        total_applications = sum(stat["jobs"] for stat in stats)
+        average_per_day = round(total_applications / days, 1) if days > 0 else 0
 
         return {
             "status": "success",
             "data": stats,
-            "total_applications": sum(stat["jobs"] for stat in stats),
-            "average_per_day": round(sum(stat["jobs"] for stat in stats) / len(stats), 1)
+            "total_applications": total_applications,
+            "average_per_day": average_per_day
         }
 
     except Exception as e:
@@ -47,28 +70,76 @@ async def get_application_extraction_stats(
 
 @router.get("/dashboard-summary")
 async def get_dashboard_summary(
-    user_id: str = Query(default="demo_user", description="User ID for context"),
+    user_id: str = Depends(get_authenticated_user_id),
     db: Session = Depends(get_db)
 ):
     """
     Get summary statistics for the dashboard.
-    For now, returns mock data for demonstration.
+    Returns actual user application data.
     """
     try:
-        # Mock data for demonstration
+        # Get total applications count
+        total_applications = db.query(func.count(JobApplication.id)).filter(
+            JobApplication.user_id == user_id
+        ).scalar() or 0
+
+        # Get applied applications count (status = 'applied')
+        applied_count = db.query(func.count(JobApplication.id)).filter(
+            and_(
+                JobApplication.user_id == user_id,
+                JobApplication.application_status == 'applied'
+            )
+        ).scalar() or 0
+
+        # Get interview count (applications with interview_date set)
+        interview_count = db.query(func.count(JobApplication.id)).filter(
+            and_(
+                JobApplication.user_id == user_id,
+                JobApplication.interview_date.is_not(None)
+            )
+        ).scalar() or 0
+
+        # Calculate weekly change for applied applications
+        one_week_ago = datetime.now() - timedelta(days=7)
+        current_week_applied = db.query(func.count(JobApplication.id)).filter(
+            and_(
+                JobApplication.user_id == user_id,
+                JobApplication.application_status == 'applied',
+                JobApplication.application_date >= one_week_ago
+            )
+        ).scalar() or 0
+
+        previous_week_applied = db.query(func.count(JobApplication.id)).filter(
+            and_(
+                JobApplication.user_id == user_id,
+                JobApplication.application_status == 'applied',
+                JobApplication.application_date >= datetime.now() - timedelta(days=14),
+                JobApplication.application_date < one_week_ago
+            )
+        ).scalar() or 0
+
+        # Calculate percentage change
+        if previous_week_applied > 0:
+            change_percent = round(((current_week_applied - previous_week_applied) / previous_week_applied) * 100, 1)
+            change_type = "increase" if change_percent > 0 else "decrease" if change_percent < 0 else "neutral"
+            change_text = f"{'+' if change_percent > 0 else ''}{change_percent}%"
+        else:
+            change_text = "+100%" if current_week_applied > 0 else "0%"
+            change_type = "increase" if current_week_applied > 0 else "neutral"
+
         return {
             "status": "success",
             "data": {
                 "overview": {
-                    "total": random.randint(35, 50),
-                    "applied": random.randint(20, 30),
-                    "interviews": random.randint(10, 20)
+                    "total": total_applications,
+                    "applied": applied_count,
+                    "interviews": interview_count
                 },
                 "email_processing": {
-                    "emails_sent": random.randint(20, 30),
-                    "emails_processed": random.randint(15, 25),
-                    "change": f"+{random.randint(10, 20)}%",
-                    "change_type": "increase"
+                    "emails_sent": 0,  # This would need email service integration
+                    "emails_processed": 0,  # This would need email service integration
+                    "change": change_text,
+                    "change_type": change_type
                 }
             }
         }
@@ -80,12 +151,12 @@ async def get_dashboard_summary(
 async def get_job_extraction_calendar(
     year: int = Query(default=None, description="Year (default: current year)"),
     month: int = Query(default=None, description="Month (1-12, default: current month)"),
-    user_id: str = Query(default="demo_user", description="User ID for context"),
+    user_id: str = Depends(get_authenticated_user_id),
     db: Session = Depends(get_db)
 ):
     """
     Get job extraction calendar data for a specific month.
-    Returns extraction activity for each day of the month.
+    Returns actual user application activity for each day of the month.
     """
     try:
         # Use current date if not specified
@@ -100,32 +171,48 @@ async def get_job_extraction_calendar(
         # Get number of days in the target month
         days_in_month = calendar.monthrange(target_year, target_month)[1]
 
-        # Generate mock data for demonstration
-        # In a real implementation, this would query your job extraction database
+        # Define the date range for the target month
+        start_date = datetime(target_year, target_month, 1).date()
+        if target_month == 12:
+            end_date = datetime(target_year + 1, 1, 1).date() - timedelta(days=1)
+        else:
+            end_date = datetime(target_year, target_month + 1, 1).date() - timedelta(days=1)
+
+        # Query actual application data grouped by day
+        applications_by_day = db.query(
+            extract('day', JobApplication.application_date).label('day'),
+            func.count(JobApplication.id).label('applications_added')
+        ).filter(
+            and_(
+                JobApplication.user_id == user_id,
+                func.date(JobApplication.application_date) >= start_date,
+                func.date(JobApplication.application_date) <= end_date
+            )
+        ).group_by(
+            extract('day', JobApplication.application_date)
+        ).all()
+
+        # Create a dictionary for quick lookup
+        applications_dict = {int(row.day): row.applications_added for row in applications_by_day}
+
+        # Generate extraction days data
         extraction_days = []
-        total_extractions = 0
         total_applications = 0
         active_days = 0
 
-        # Simulate some extraction activity (about 7-10 active days per month)
-        active_day_count = random.randint(7, 10)
-        active_days_set = set(random.sample(range(1, days_in_month + 1), active_day_count))
+        for day in range(1, days_in_month + 1):
+            applications_added = applications_dict.get(day, 0)
 
-        for day in active_days_set:
-            jobs_extracted = random.randint(15, 30)
-            applications_added = random.randint(8, 18)
+            if applications_added > 0:
+                extraction_days.append({
+                    "date": day,
+                    "jobs_extracted": applications_added,  # Using applications as extraction metric
+                    "applications_added": applications_added
+                })
+                total_applications += applications_added
+                active_days += 1
 
-            extraction_days.append({
-                "date": day,
-                "jobs_extracted": jobs_extracted,
-                "applications_added": applications_added
-            })
-
-            total_extractions += jobs_extracted
-            total_applications += applications_added
-            active_days += 1
-
-        # Sort by date
+        # Sort by date (already in order, but just to be safe)
         extraction_days.sort(key=lambda x: x["date"])
 
         return {
@@ -136,7 +223,7 @@ async def get_job_extraction_calendar(
                 "month_name": calendar.month_name[target_month],
                 "extraction_days": extraction_days,
                 "summary": {
-                    "total_extractions": total_extractions,
+                    "total_extractions": total_applications,  # Using applications as extractions
                     "total_applications": total_applications,
                     "active_days": active_days,
                     "days_in_month": days_in_month

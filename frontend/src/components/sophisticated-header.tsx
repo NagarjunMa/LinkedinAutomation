@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -40,9 +41,18 @@ export function SophisticatedHeader({
     const [searchQuery, setSearchQuery] = useState("")
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false)
     const { user, loading, signOutUser } = useAuth()
+    const router = useRouter()
 
     const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'
     const userEmail = user?.email || ''
+
+    const handleProfileClick = () => {
+        router.push('/dashboard/profile')
+    }
+
+    const handleSettingsClick = () => {
+        router.push('/dashboard/settings')
+    }
 
     // Keyboard shortcut for search (Cmd+F)
     useEffect(() => {
@@ -172,11 +182,17 @@ export function SophisticatedHeader({
                                     </div>
                                 </DropdownMenuLabel>
                                 <DropdownMenuSeparator className="bg-primary-600" />
-                                <DropdownMenuItem className="text-cream-50 hover:bg-primary-700 transition-colors duration-200">
+                                <DropdownMenuItem
+                                    className="text-cream-50 hover:bg-primary-700 transition-colors duration-200 cursor-pointer"
+                                    onClick={handleProfileClick}
+                                >
                                     <User className="mr-2 h-4 w-4" />
                                     <span>Profile</span>
                                 </DropdownMenuItem>
-                                <DropdownMenuItem className="text-cream-50 hover:bg-primary-700 transition-colors duration-200">
+                                <DropdownMenuItem
+                                    className="text-cream-50 hover:bg-primary-700 transition-colors duration-200 cursor-pointer"
+                                    onClick={handleSettingsClick}
+                                >
                                     <Settings className="mr-2 h-4 w-4" />
                                     <span>Settings</span>
                                 </DropdownMenuItem>

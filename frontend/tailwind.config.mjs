@@ -9,8 +9,15 @@ export default {
   theme: {
   	extend: {
   		fontFamily: {
-  			'neuton': ['var(--font-neuton)', 'Neuton', 'serif'],
-  			'fahkwang': ['var(--font-fahkwang)', 'Fahkwang', 'sans-serif'],
+  			'absans': ['Absans', 'sans-serif'], // Primary application font
+  			'sans': ['Absans', 'sans-serif'], // Default sans-serif
+  			'urbanist': ['var(--font-urbanist)', 'Urbanist', 'sans-serif'],
+  			'clash': ['Clash Display', 'sans-serif'],
+  			'heading': ['Clash Display', 'sans-serif'],
+  			'title': ['Clash Display', 'sans-serif'], // All page titles
+  			'stardom': ['Stardom', 'sans-serif'],
+  			'app-title': ['Stardom', 'sans-serif'], // JOBFLOW PRO application name
+  			'adieu': ['Adieu', 'sans-serif'], // Backup for Adieu if files available
   		},
 		colors: {
 			// Premium theme colors - responsive to theme using CSS variables

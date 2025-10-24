@@ -16,6 +16,7 @@ import { JobStatusModal, JobAnalysis, StatusUpdate } from './job-status-modal'
 import { useJobStatusModal } from '@/hooks/use-job-status-modal'
 import { updateJobApplicationStatus } from '@/app/lib/api'
 import { useToast } from '@/components/ui/use-toast'
+import { useActivity } from '@/contexts/activity-context'
 
 interface JobURLExtractorProps {
   userId: string
@@ -28,6 +29,7 @@ export default function JobURLExtractor({ userId, onJobExtracted }: JobURLExtrac
   const [extractedJob, setExtractedJob] = useState<JobAnalysis | null>(null)
   const [error, setError] = useState<string | null>(null)
   const { toast } = useToast()
+  const { trackJobExtractionActivity } = useActivity()
 
   const {
     isModalOpen,
@@ -129,9 +131,24 @@ export default function JobURLExtractor({ userId, onJobExtracted }: JobURLExtrac
           description: `${job.title} at ${job.company}`,
         })
 
-        // Call the callback
+        // Track activity for successful job extraction
+        try {
+          await trackJobExtractionActivity({
+            title: job.title,
+            company: job.company,
+            source: job.source
+          })
+        } catch (error) {
+          console.error('Failed to track job extraction activity:', error)
+        }
+
+        // Call the callback with complete extraction result
         if (onJobExtracted) {
-          onJobExtracted(job)
+          onJobExtracted({
+            ...job,
+            ...result, // Include full API response
+            extracted_job: result.extracted_job // Include the raw extracted data
+          })
         }
       } else {
         setError(result.message || 'Failed to extract job')
@@ -234,6 +251,38 @@ export default function JobURLExtractor({ userId, onJobExtracted }: JobURLExtrac
           </div>
         </CardContent>
       </Card>
+
+      {/* Extraction Progress */}
+      {isExtracting && (
+        <Card className="border-blue-200 bg-blue-50">
+          <CardContent className="pt-6">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+                <div>
+                  <h3 className="font-medium text-blue-800">Extracting Job Details...</h3>
+                  <p className="text-blue-600 text-sm">This may take 10-30 seconds</p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center text-sm text-blue-700">
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Fetching job page content
+                </div>
+                <div className="flex items-center text-sm text-blue-700">
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Analyzing with AI to extract job details
+                </div>
+                <div className="flex items-center text-sm text-blue-600">
+                  <div className="w-4 h-4 mr-2" />
+                  Saving to database and calculating compatibility
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Error Display */}
       {error && (

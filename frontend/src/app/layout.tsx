@@ -1,19 +1,14 @@
 import type { Metadata } from "next"
-import { Inter, Neuton, Fahkwang } from "next/font/google"
+import { Urbanist } from "next/font/google"
 import "./globals.css"
 import { Providers } from "@/components/ui/providers"
 import { AuthProvider } from "@/contexts/auth-context"
+import ErrorBoundary, { PageErrorFallback } from "@/components/error-boundary"
 
-const fahkwang = Fahkwang({
+const urbanist = Urbanist({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  variable: "--font-fahkwang"
-})
-
-const neuton = Neuton({
-  subsets: ["latin"],
-  weight: ["300", "400", "700"],
-  variable: "--font-neuton"
+  weight: ["300", "400", "500", "600", "700", "800", "900"],
+  variable: "--font-urbanist"
 })
 
 export const metadata: Metadata = {
@@ -93,6 +88,12 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        {/* Clash Display Font - All Titles */}
+        <link rel="preconnect" href="https://api.fontshare.com" />
+        <link href="https://api.fontshare.com/v2/css?f[]=clash-display@200,300,400,500,600,700&display=swap" rel="stylesheet" />
+        
+        {/* Stardom Font - Application Name "JOBFLOW PRO" */}
+        <link href="https://api.fontshare.com/v2/css?f[]=stardom@400,500,600,700&display=swap" rel="stylesheet" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -123,12 +124,14 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${fahkwang.className} ${neuton.variable} ${fahkwang.variable}`}>
-        <AuthProvider>
-          <Providers>
-            {children}
-          </Providers>
-        </AuthProvider>
+      <body className={`${urbanist.className} ${urbanist.variable}`}>
+        <ErrorBoundary fallback={PageErrorFallback}>
+          <AuthProvider>
+            <Providers>
+              {children}
+            </Providers>
+          </AuthProvider>
+        </ErrorBoundary>
       </body>
     </html>
   )

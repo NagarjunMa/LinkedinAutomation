@@ -1,8 +1,5 @@
 "use client"
 
-import { useState } from "react"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ATSJobSearch } from "@/components/ats-job-search"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -150,8 +147,6 @@ const TECH_STACK_JOB_BOARDS = [
 ]
 
 export default function JobsPage() {
-    const [activeTab, setActiveTab] = useState("job-search")
-
     return (
         <div className="min-h-screen bg-primary-950">
             {/* Constrain content width for large monitors */}
@@ -163,17 +158,7 @@ export default function JobsPage() {
                     </p>
                 </div>
 
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
-                <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="job-search" className="text-sm">Job Search</TabsTrigger>
-                    <TabsTrigger value="startup" className="text-sm">Startup & Tech</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="job-search" className="space-y-4 sm:space-y-6">
-                    <ATSJobSearch />
-                </TabsContent>
-
-                <TabsContent value="startup" className="space-y-4 sm:space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                     {/* Tech Stack Job Boards Section */}
                     <div className="space-y-4">
                         <h3 className="text-lg font-semibold flex items-center gap-2 text-cream-50">
@@ -249,8 +234,7 @@ export default function JobsPage() {
                             ))}
                         </div>
                     </div>
-                </TabsContent>
-                </Tabs>
+                </div>
             </div>
         </div>
     )

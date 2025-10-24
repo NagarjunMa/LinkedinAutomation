@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     
     # CORS Configuration
-    CORS_ORIGINS: List[AnyHttpUrl] = ["http://localhost:3000"]  # Frontend URL
+    CORS_ORIGINS: List[AnyHttpUrl] = []  # Will be loaded from environment
     
     @validator("CORS_ORIGINS", pre=True)
     def assemble_cors_origins(cls, v: str | List[str]) -> List[str] | str:
@@ -43,6 +43,11 @@ class Settings(BaseSettings):
     OPENAI_MODEL: str = "gpt-4o-mini"  # Cost-efficient model
     OPENAI_MAX_TOKENS: int = 4000  # Token limit for responses
     
+    # Supabase Configuration
+    SUPABASE_URL: str = ""
+    SUPABASE_ANON_KEY: str = ""
+    SUPABASE_JWT_SECRET: str = ""
+
     # Security
     SECRET_KEY: str = "your-secret-key-here"  # Change in production
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8  # 8 days
@@ -50,7 +55,7 @@ class Settings(BaseSettings):
     # Email Agent Configuration - Google OAuth
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
-    GOOGLE_REDIRECT_URI: str = "http://localhost:8000/api/v1/email-agent/oauth/callback"
+    GOOGLE_REDIRECT_URI: str = ""  # Will be loaded from environment
     GOOGLE_SCOPES: List[str] = [
         "openid",
         "https://www.googleapis.com/auth/gmail.readonly",
@@ -62,7 +67,22 @@ class Settings(BaseSettings):
     AUTO_UPDATE_THRESHOLD: float = 0.85
     DEBUG_EMAIL_PROCESSING: bool = True
     LOG_LEVEL: str = "DEBUG"
-    
+
+    # Email Service Configuration - Resend
+    RESEND_API_KEY: str = ""  # Resend API Key
+    MAIL_FROM: str = "noreply.jobflow@gmail.com"
+    MAIL_FROM_NAME: str = "JobFlow Pro"
+
+    # Fallback SMTP Configuration (if needed)
+    MAIL_USERNAME: str = "noreply.jobflow@gmail.com"
+    MAIL_PASSWORD: str = ""  # App-specific password for Gmail
+    MAIL_PORT: int = 587
+    MAIL_SERVER: str = "smtp.gmail.com"
+    MAIL_STARTTLS: bool = True
+    MAIL_SSL_TLS: bool = False
+    USE_CREDENTIALS: bool = True
+    VALIDATE_CERTS: bool = True
+
     # File Upload Configuration
     UPLOAD_DIR: str = "uploads"  # Base upload directory
     

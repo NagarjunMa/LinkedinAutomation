@@ -17,6 +17,11 @@ class User(Base):
     # Relationships
     resumes = relationship("Resume", back_populates="user", foreign_keys="Resume.user_id")
     evaluation_sessions = relationship("ResumeEvaluationSession", back_populates="user")
+    referral_contacts = relationship("ReferralContact", back_populates="user", cascade="all, delete-orphan")
+    referral_email_drafts = relationship("ReferralEmailDraft", back_populates="user", cascade="all, delete-orphan")
+    referral_emails_sent = relationship("ReferralEmailSent", back_populates="user", cascade="all, delete-orphan")
+    profile_info = relationship("ProfileInfo", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    settings = relationship("UserSettings", back_populates="user", uselist=False, cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<User {self.user_id}>" 

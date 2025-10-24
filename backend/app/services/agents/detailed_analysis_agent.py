@@ -34,11 +34,17 @@ class DetailedAnalysisAgent(BaseAgent):
             resume_content = resume_content[:max_content_length] + "... [truncated]"
             self.logger.warning(f"Resume content truncated to {max_content_length} characters")
         
+        current_date = context.get('current_date', 'October 2025')
+        current_year = context.get('current_year', 2025)
+        
         prompt = f"""
         You are a senior resume optimization expert and career coach with 20+ years of experience.
         Analyze this resume LINE BY LINE and provide detailed, actionable feedback with SPECIFIC changes needed.
 
         IMPORTANT: Use the EXACT text from the resume in your analysis. Quote the actual sentences and bullet points that need improvement.
+
+        CURRENT DATE CONTEXT: Today is {current_date} (Year: {current_year})
+        When analyzing dates, remember that dates before {current_year} are in the past, and dates in {current_year} or earlier are valid.
 
         Resume Content:
         {resume_content}
@@ -70,10 +76,12 @@ class DetailedAnalysisAgent(BaseAgent):
            - Overall Market Appeal
 
         3. TIMELINE CONSISTENCY ANALYSIS:
-           - Check for date conflicts and gaps
+           - Check for date conflicts and gaps (remember current date is {current_date})
            - Verify experience duration claims
            - Identify timeline inconsistencies
            - Flag overlapping employment periods
+           - IMPORTANT: Only flag dates as "future" if they are after {current_year}
+           - Dates in {current_year} or earlier are valid and should not be flagged as future dates
 
         4. ATS OPTIMIZATION ISSUES:
            - Formatting problems that break ATS parsing

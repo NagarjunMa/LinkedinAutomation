@@ -20,7 +20,9 @@ import {
     ChevronRight,
     HelpCircle,
     Settings,
-    X
+    X,
+    UserPlus,
+    User
 } from "lucide-react"
 
 const mainNavigation = [
@@ -49,15 +51,21 @@ const mainNavigation = [
         current: false,
     },
     {
-        name: "Email Agent",
-        href: "/dashboard/email-agent",
-        icon: Mail,
+        name: "Referrals",
+        href: "/dashboard/referrals",
+        icon: UserPlus,
         current: false,
     },
     {
         name: "Analytics",
         href: "/dashboard/analytics",
         icon: TrendingUp,
+        current: false,
+    },
+    {
+        name: "Profile",
+        href: "/dashboard/profile",
+        icon: User,
         current: false,
     },
 ]
@@ -68,11 +76,6 @@ const supportNavigation = [
         name: "Help Center",
         href: "/help",
         icon: HelpCircle,
-    },
-    {
-        name: "Settings",
-        href: "/settings",
-        icon: Settings,
     },
 ]
 

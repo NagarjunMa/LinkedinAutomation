@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -24,7 +24,24 @@ export function ResumeUploadModal({ open, onOpenChange, onUploadSuccess, onEvalu
   const [uploading, setUploading] = useState(false)
   const [uploadSuccess, setUploadSuccess] = useState(false)
   const [uploadedResume, setUploadedResume] = useState<ResumeFile | null>(null)
+  const [storageInfo, setStorageInfo] = useState<{ totalCount: number; storageUsed: number; storageLimit: number } | null>(null)
   const { toast } = useToast()
+
+  // Fetch storage info when modal opens
+  useEffect(() => {
+    if (open) {
+      fetchStorageInfo()
+    }
+  }, [open])
+
+  const fetchStorageInfo = async () => {
+    try {
+      const info = await resumeApi.getStorageInfo()
+      setStorageInfo(info)
+    } catch (error) {
+      console.error('Failed to fetch storage info:', error)
+    }
+  }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
@@ -71,11 +88,35 @@ export function ResumeUploadModal({ open, onOpenChange, onUploadSuccess, onEvalu
       })
     } catch (error) {
       console.error("Upload failed:", error)
-      toast({
-        title: "Upload Failed",
-        description: "Failed to upload resume. Please try again.",
-        variant: "destructive",
-      })
+
+      // Handle specific error cases
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+
+      if (errorMessage.includes('Storage limit reached') || errorMessage.includes('Maximum 5 resumes')) {
+        toast({
+          title: "📁 Resume Limit Reached",
+          description: "You can only upload 5 resumes. Please delete an old resume before uploading a new one.",
+          variant: "destructive",
+        })
+      } else if (errorMessage.includes('File too large')) {
+        toast({
+          title: "📄 File Too Large",
+          description: "Please upload a file smaller than 10MB.",
+          variant: "destructive",
+        })
+      } else if (errorMessage.includes('File type not allowed')) {
+        toast({
+          title: "📋 Invalid File Type",
+          description: "Please upload a PDF, DOC, or DOCX file.",
+          variant: "destructive",
+        })
+      } else {
+        toast({
+          title: "❌ Upload Failed",
+          description: errorMessage || "Failed to upload resume. Please try again.",
+          variant: "destructive",
+        })
+      }
     } finally {
       setUploading(false)
     }
@@ -285,6 +326,33 @@ export function ResumeUploadModal({ open, onOpenChange, onUploadSuccess, onEvalu
         </DialogHeader>
 
         <div className="space-y-6">
+          {/* Storage Status */}
+          {storageInfo && (
+            <Card className={`premium-card border-2 ${storageInfo.totalCount >= 5 ? 'border-orange-500/50 bg-orange-900/20' : 'border-accent-500/50 bg-accent-900/20'}`}>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center justify-between text-cream-50">
+                  <span>📂 Storage Status</span>
+                  <span className={`text-xs px-2 py-1 rounded-full ${storageInfo.totalCount >= 5 ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30' : 'bg-accent-500/20 text-accent-300 border border-accent-500/30'}`}>
+                    {storageInfo.totalCount}/5 resumes
+                  </span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                {storageInfo.totalCount >= 5 ? (
+                  <div className="text-sm text-orange-300 flex items-center gap-2">
+                    <span className="w-2 h-2 bg-orange-400 rounded-full flex-shrink-0"></span>
+                    Storage limit reached. Please delete an old resume before uploading a new one.
+                  </div>
+                ) : (
+                  <div className="text-sm text-accent-300 flex items-center gap-2">
+                    <span className="w-2 h-2 bg-accent-400 rounded-full flex-shrink-0"></span>
+                    You have {5 - storageInfo.totalCount} upload slots remaining.
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           {/* File Upload */}
           <Card>
             <CardHeader>
@@ -364,10 +432,10 @@ export function ResumeUploadModal({ open, onOpenChange, onUploadSuccess, onEvalu
             <Button variant="outline" onClick={handleClose} disabled={uploading}>
               Cancel
             </Button>
-            <Button 
-              onClick={handleUpload} 
-              disabled={!file || uploading}
-              className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white"
+            <Button
+              onClick={handleUpload}
+              disabled={!file || uploading || (storageInfo?.totalCount ?? 0) >= 5}
+              className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {uploading ? (
                 <>

@@ -20,6 +20,7 @@ from app.models.resume import Resume, ResumeEvaluation
 from app.models.agent_models import ResumeEvaluationSession, ResumeAgentResult, AgentPerformanceMetrics
 from app.services.agents import ResumeEvaluationOrchestrator
 from app.services.orchestrator_manager import orchestrator_manager
+from app.services.profile_service import ProfileService
 from app.db.session import get_db
 
 logger = logging.getLogger(__name__)
@@ -95,13 +96,31 @@ class AgenticResumeEvaluatorService:
             # Preprocess text
             cleaned_text = self._preprocess_resume_text(resume_text)
 
-            # Prepare user context - use resume_id for progress tracking
+            # Fetch user profile information for enhanced evaluation
+            db = next(get_db())
+            try:
+                profile = ProfileService.get_profile_with_stats(db, user_id)
+            except Exception as e:
+                logger.warning(f"Could not fetch profile for user {user_id}: {e}")
+                profile = None
+            finally:
+                db.close()
+
+            # Prepare enhanced user context with profile data
+            current_date = datetime.now(timezone.utc)
             user_context = {
                 'user_id': user_id,
                 'resume_id': resume_id,
                 'evaluation_id': resume_id,  # Use resume_id for progress tracking
-                'target_roles': [target_role] if target_role else [],
-                'target_seniority': target_seniority or 'mid-level',
+                'current_date': current_date.strftime('%B %Y'),  # e.g., "October 2025"
+                'current_year': current_date.year,
+                'target_roles': profile.get('target_job_titles', []) if profile else ([target_role] if target_role else []),
+                'target_seniority': profile.get('experience_level') or target_seniority or 'mid-level',
+                'preferred_locations': profile.get('preferred_locations', []) if profile else [],
+                'minimum_salary': profile.get('minimum_salary') if profile else None,
+                'background_summary': profile.get('background_summary') if profile else None,
+                'work_experiences': profile.get('work_experiences', []) if profile else [],
+                'education_history': profile.get('education_history', []) if profile else [],
                 'years_experience': self._estimate_experience_years(cleaned_text),
                 'target_companies': ['maang', 'startups', 'enterprise']  # Default to all
             }

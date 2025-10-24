@@ -24,32 +24,12 @@ export function ResumeImprovementModal({ resume, open, onOpenChange }: ResumeImp
 
   if (!resume) return null
 
-  // Create a mock evaluation if none exists for demonstration purposes
-  const evaluation = resume.evaluation_result || {
-    overall_score: 75,
-    ats_compliance_score: 70,
-    content_quality_score: 80,
-    experience_points_score: 75,
-    job_relevance_score: 70,
-    quality_checks_score: 85,
-    ats_compatibility: 'good',
-    keyword_analysis: {
-      relevant: ['JavaScript', 'React', 'Node.js', 'Python'],
-      missing: ['TypeScript', 'Docker', 'AWS', 'CI/CD'],
-      score: 75
-    },
-    strengths: [
-      'Clear work experience timeline',
-      'Good use of action verbs',
-      'Relevant technical skills',
-      'Professional formatting'
-    ],
-    improvements: [
-      'Ensure consistent formatting and spacing throughout the resume.',
-      'Add a professional summary that succinctly highlights key strengths.',
-      'Include more specific metrics in the skills section to demonstrate proficiency.'
-    ]
+  // Use actual evaluation data - don't show modal if no evaluation exists
+  if (!resume.evaluation_result) {
+    return null
   }
+
+  const evaluation = resume.evaluation_result
 
   const getScoreColor = (score: number) => {
     if (score >= 80) return "text-green-600"

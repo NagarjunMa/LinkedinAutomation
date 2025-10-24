@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Form
 from sqlalchemy.orm import Session
 from sqlalchemy import func, cast, Date, Integer, extract, desc
 from app.db.rls_session import get_db, set_current_user
+from app.core.auth import get_authenticated_user_id
 from app.models.job import JobListing, JobApplication
 from app.schemas.job import (
     JobListingCreate, 
@@ -34,7 +35,7 @@ async def get_jobs(
     experience_level: Optional[str] = None,
     sort_by: Optional[str] = "newest",
     applied: Optional[bool] = None,
-    user_id: str = "demo_user",  # Default to demo user for now
+    user_id: str = Depends(get_authenticated_user_id)
 ):
     # Set the current user context for RLS
     set_current_user(user_id)
@@ -370,7 +371,8 @@ async def update_job_status(
 async def update_job_application_status(
     job_id: int,
     status_update: dict,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_authenticated_user_id)
 ):
     """
     Update comprehensive job application status with the new status system
@@ -384,13 +386,13 @@ async def update_job_application_status(
         # Find or create job application record
         application = db.query(JobApplication).filter(
             JobApplication.job_id == job_id,
-            JobApplication.user_id == status_update.get("user_id", "demo_user")
+            JobApplication.user_id == user_id
         ).first()
-        
+
         if not application:
             # Create new application record
             application = JobApplication(
-                user_id=status_update.get("user_id", "demo_user"),
+                user_id=user_id,
                 job_id=job_id,
                 application_status=status_update.get("status", "pending"),
                 application_source="url_extraction",
@@ -644,7 +646,7 @@ async def update_application_status(
 @router.get("/cleanup/stats")
 async def get_cleanup_stats(
     days_old: int = Query(default=20, ge=1, le=365, description="Number of days to check for old jobs"),
-    user_id: str = Query(default="demo_user", description="User ID for RLS context"),
+    user_id: str = Depends(get_authenticated_user_id),
     db: Session = Depends(get_db)
 ):
     """Get statistics about jobs that would be cleaned up"""
@@ -659,7 +661,7 @@ async def get_cleanup_stats(
 @router.post("/cleanup/execute")
 async def execute_cleanup(
     days_old: int = Query(default=20, ge=1, le=365, description="Number of days after which to delete old jobs"),
-    user_id: str = Query(default="demo_user", description="User ID for RLS context"),
+    user_id: str = Depends(get_authenticated_user_id),
     db: Session = Depends(get_db)
 ):
     """Execute cleanup of old jobs that haven't been applied to"""

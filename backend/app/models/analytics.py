@@ -119,8 +119,33 @@ class AnalyticsInsight(Base):
     def __repr__(self):
         return f"<AnalyticsInsight {self.insight_type}: {self.title[:30]}...>"
 
+class FeatureUsageLog(Base):
+    """
+    Simple feature usage tracking for analytics
+    """
+    __tablename__ = "feature_usage_log"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String(100), ForeignKey("users.user_id"), nullable=False, index=True)
+
+    # Feature details
+    feature_name = Column(String(100), nullable=False, index=True)  # "questions_generated", "referral_created", etc.
+    usage_count = Column(Integer, default=1)  # Number of items/actions
+
+    # Context
+    job_id = Column(String(100))  # Optional job context
+    session_id = Column(String(100))  # For grouping related actions
+
+    # Metadata
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    usage_metadata = Column(JSON)  # Additional context data
+
+    def __repr__(self):
+        return f"<FeatureUsageLog {self.user_id} - {self.feature_name}: {self.usage_count}>"
+
 # Performance indexes for efficient querying
 Index('idx_user_analytics_user_updated', UserAnalytics.user_id, UserAnalytics.last_updated.desc())
 Index('idx_analytics_cache_user_expires', AnalyticsCache.user_id, AnalyticsCache.expires_at)
 Index('idx_insights_user_type_priority', AnalyticsInsight.user_id, AnalyticsInsight.insight_type, AnalyticsInsight.priority)
 Index('idx_insights_actionable_shown', AnalyticsInsight.is_actionable, AnalyticsInsight.shown_to_user)
+Index('idx_feature_usage_user_feature_date', FeatureUsageLog.user_id, FeatureUsageLog.feature_name, FeatureUsageLog.created_at.desc())

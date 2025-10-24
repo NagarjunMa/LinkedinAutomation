@@ -56,7 +56,7 @@ def cleanup_unused_tables():
             print("\nAdding user_id to job_listings...")
             conn.execute(text("""
                 ALTER TABLE job_listings 
-                ADD COLUMN IF NOT EXISTS user_id VARCHAR(100) DEFAULT 'demo_user'
+                ADD COLUMN IF NOT EXISTS user_id VARCHAR(100)
             """))
             print("✓ Added user_id to job_listings")
             
@@ -64,7 +64,7 @@ def cleanup_unused_tables():
             print("\nAdding user_id to rss_feed_configurations...")
             conn.execute(text("""
                 ALTER TABLE rss_feed_configurations 
-                ADD COLUMN IF NOT EXISTS user_id VARCHAR(100) DEFAULT 'demo_user'
+                ADD COLUMN IF NOT EXISTS user_id VARCHAR(100)
             """))
             print("✓ Added user_id to rss_feed_configurations")
             
@@ -160,14 +160,7 @@ def cleanup_unused_tables():
             
             print("✓ Created performance indexes")
             
-            # 8. Insert demo user if not exists
-            print("\nSetting up demo user...")
-            conn.execute(text("""
-                INSERT INTO users (user_id, email, full_name) 
-                VALUES ('demo_user', 'demo@example.com', 'Demo User')
-                ON CONFLICT (user_id) DO NOTHING
-            """))
-            print("✓ Demo user setup complete")
+            # Production ready - no demo user creation
             
             # Commit transaction
             trans.commit()

@@ -38,37 +38,45 @@ class FormatStructureAgent(BaseAgent):
 
         Evaluate the following formatting aspects:
 
-        1. VISUAL HIERARCHY (0-10):
+        1. TECHNICAL FORMATTING COMPLIANCE (0-10):
+           - 1-inch margins compliance (top, bottom, left, right)
+           - 10-12pt body text verification (proper font size for readability)
+           - ATS parsing compatibility (no text boxes, tables, or complex formatting)
+           - PDF format validation and file integrity
+           - Font consistency throughout document
+           - Proper line spacing (1.0-1.15 recommended)
+
+        2. VISUAL HIERARCHY (0-10):
            - Clear section headers and organization
            - Consistent font usage and sizing
            - Proper spacing and alignment
            - Visual flow and readability
 
-        2. SECTION ORGANIZATION (0-10):
+        3. SECTION ORGANIZATION (0-10):
            - Logical order of sections
            - Appropriate section lengths
            - Clear section boundaries
            - Professional section headers
 
-        3. BULLET POINT FORMATTING (0-10):
+        4. BULLET POINT FORMATTING (0-10):
            - Consistent bullet point style
            - Proper indentation and alignment
            - Appropriate length and density
            - Clear action verb usage
 
-        4. CONTACT INFORMATION (0-10):
+        5. CONTACT INFORMATION (0-10):
            - Complete and accurate contact details
            - Professional presentation
            - Appropriate placement
            - Easy to find and read
 
-        5. LENGTH AND DENSITY (0-10):
+        6. LENGTH AND DENSITY (0-10):
            - Appropriate resume length
            - Optimal information density
            - White space usage
            - Readability balance
 
-        6. PROFESSIONAL PRESENTATION (0-10):
+        7. PROFESSIONAL PRESENTATION (0-10):
            - Overall visual appeal
            - Professional appearance
            - Consistency throughout
@@ -77,6 +85,16 @@ class FormatStructureAgent(BaseAgent):
         Return your analysis as JSON in this exact format:
         {{
             "format_score": 0-10,
+            "technical_formatting": {{
+                "score": 0-10,
+                "margin_compliance": "excellent|good|fair|poor",
+                "font_size_check": "10-12pt|too_small|too_large|inconsistent",
+                "ats_compatibility": "excellent|good|fair|poor",
+                "pdf_validation": "valid|issues|major_problems",
+                "line_spacing": "optimal|too_tight|too_loose",
+                "formatting_issues": ["Text boxes detected", "Tables used", "Complex formatting found"],
+                "improvements": ["Use standard margins", "Adjust font size to 11pt", "Remove formatting barriers"]
+            }},
             "visual_hierarchy": {{
                 "score": 0-10,
                 "header_consistency": "excellent|good|fair|poor",
@@ -176,5 +194,5 @@ class FormatStructureAgent(BaseAgent):
     
     def validate_result(self, result: Dict[str, Any]) -> bool:
         """Validate format analysis result structure."""
-        required_fields = ["format_score", "visual_hierarchy", "section_organization", "critical_format_issues"]
+        required_fields = ["format_score", "technical_formatting", "visual_hierarchy", "section_organization", "critical_format_issues"]
         return all(field in result for field in required_fields) and isinstance(result.get("format_score"), (int, float))

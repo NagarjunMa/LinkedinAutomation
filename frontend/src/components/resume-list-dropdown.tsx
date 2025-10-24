@@ -58,9 +58,8 @@ export function ResumeListDropdown({
             const now = new Date()
             const stuckResumes = resumes.filter(resume => {
                 if (resume.evaluation_status !== 'evaluating') return false
-                if (!resume.evaluated_at) return true
-                const evaluatedTime = new Date(resume.evaluated_at)
-                const timeDiff = now.getTime() - evaluatedTime.getTime()
+                const uploadedTime = new Date(resume.uploaded_at)
+                const timeDiff = now.getTime() - uploadedTime.getTime()
                 return timeDiff > 5 * 60 * 1000 // 5 minutes
             })
 
@@ -153,15 +152,15 @@ export function ResumeListDropdown({
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold">Your Resumes</h2>
-                <Badge variant="outline" className="text-sm">
+                <h2 className="text-2xl font-bold text-cream-50">Your Resumes</h2>
+                <Badge variant="outline" className="text-sm border-accent-500/50 text-accent-300">
                     {resumes.length} {resumes.length === 1 ? 'Resume' : 'Resumes'}
                 </Badge>
             </div>
 
             <div className="space-y-3">
                 {resumes.map((resume) => (
-                    <Card key={resume.id} className="overflow-hidden">
+                    <Card key={resume.id} className="premium-card overflow-hidden">
                         <Collapsible
                             open={expandedResume === resume.id}
                             onOpenChange={() => toggleResume(resume.id)}
@@ -253,12 +252,12 @@ export function ResumeListDropdown({
                                     {resume.evaluation_status === 'completed' && resume.evaluation_result ? (
                                         <div className="space-y-6">
                                             {/* Success Message */}
-                                            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4">
+                                            <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-4">
                                                 <div className="flex items-center gap-3">
-                                                    <CheckCircle className="w-6 h-6 text-green-600" />
+                                                    <CheckCircle className="w-6 h-6 text-green-400" />
                                                     <div>
-                                                        <h3 className="font-semibold text-green-800">Evaluation Complete! 🎉</h3>
-                                                        <p className="text-sm text-green-700">
+                                                        <h3 className="font-semibold text-green-300">Evaluation Complete! 🎉</h3>
+                                                        <p className="text-sm text-green-200">
                                                             AI analysis completed with detailed scoring and recommendations
                                                         </p>
                                                     </div>
@@ -267,23 +266,23 @@ export function ResumeListDropdown({
 
                                             {/* Score Overview */}
                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                <div className="text-center p-4 bg-gray-50 rounded-lg">
-                                                    <div className={`text-2xl font-bold mb-1 ${getScoreColor(resume.evaluation_result.overall_score)}`}>
+                                                <div className="text-center p-4 premium-card border-accent-500/30 rounded-lg">
+                                                    <div className={`text-2xl font-bold mb-1 ${"text-accent-400"}`}>
                                                         {resume.evaluation_result.overall_score}/100
                                                     </div>
-                                                    <div className="text-sm text-gray-600 mb-2">Overall Score</div>
+                                                    <div className="text-sm text-cream-300 mb-2">Overall Score</div>
                                                     <Progress value={resume.evaluation_result.overall_score} className="h-2" />
                                                 </div>
 
-                                                <div className="text-center p-4 bg-gray-50 rounded-lg">
-                                                    <div className={`text-2xl font-bold mb-1 ${getScoreColor(resume.evaluation_result.ats_compliance_score)}`}>
+                                                <div className="text-center p-4 premium-card border-accent-500/30 rounded-lg">
+                                                    <div className={`text-2xl font-bold mb-1 ${"text-orange-400"}`}>
                                                         {resume.evaluation_result.ats_compliance_score}/100
                                                     </div>
-                                                    <div className="text-sm text-gray-600 mb-2">ATS Compliance</div>
+                                                    <div className="text-sm text-cream-300 mb-2">ATS Compliance</div>
                                                     <Progress value={resume.evaluation_result.ats_compliance_score} className="h-2" />
                                                 </div>
 
-                                                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                                                <div className="text-center p-4 premium-card border-accent-500/30 rounded-lg">
                                                     <Badge
                                                         variant={getATSCompatibilityBadgeVariant(resume.evaluation_result.ats_compatibility)}
                                                         className="text-lg px-4 py-2 mb-2"
@@ -291,7 +290,7 @@ export function ResumeListDropdown({
                                                         {resume.evaluation_result.ats_compatibility.charAt(0).toUpperCase() +
                                                             resume.evaluation_result.ats_compatibility.slice(1)}
                                                     </Badge>
-                                                    <div className="text-sm text-gray-600">ATS Compatibility</div>
+                                                    <div className="text-sm text-cream-300">ATS Compatibility</div>
                                                 </div>
                                             </div>
 

@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from app.db.session import get_db
 from app.models.user import User
 from app.services.analytics_intelligence import AnalyticsIntelligenceService
+from app.core.auth import get_authenticated_user_id
 from app.schemas.analytics import (
     AnalyticsAPIResponse,
     FullAnalyticsResponse,
@@ -25,21 +26,24 @@ from app.tasks.analytics_tasks import update_user_analytics_task
 router = APIRouter()
 
 
-def get_current_user_mock(db: Session = Depends(get_db)) -> User:
+def get_current_user(user_id: str = Depends(get_authenticated_user_id), db: Session = Depends(get_db)) -> User:
     """
-    Temporary mock for user authentication
-    Replace with your actual authentication dependency
+    Get the authenticated user from the database, create if doesn't exist
     """
-    # For now, get the first user in the database
-    user = db.query(User).first()
+    user = db.query(User).filter(User.user_id == user_id).first()
     if not user:
-        raise HTTPException(status_code=404, detail="No users found")
+        # Create new user
+        logger.info(f"Creating new user: {user_id}")
+        user = User(user_id=user_id, email=user_id, full_name="User")
+        db.add(user)
+        db.commit()
+        db.refresh(user)
     return user
 
 
 @router.get("/overview", response_model=AnalyticsAPIResponse)
 async def get_analytics_overview(
-    current_user: User = Depends(get_current_user_mock),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -95,7 +99,7 @@ async def get_analytics_overview(
 async def get_full_analytics(
     days: int = Query(30, ge=7, le=90, description="Analysis period in days"),
     force_refresh: bool = Query(False, description="Force fresh generation"),
-    current_user: User = Depends(get_current_user_mock),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -144,7 +148,7 @@ async def get_full_analytics(
 
 @router.get("/skills", response_model=AnalyticsAPIResponse)
 async def get_skills_analytics(
-    current_user: User = Depends(get_current_user_mock),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -190,7 +194,7 @@ async def get_skills_analytics(
 @router.get("/trends", response_model=AnalyticsAPIResponse)
 async def get_application_trends(
     days: int = Query(30, ge=7, le=90, description="Analysis period in days"),
-    current_user: User = Depends(get_current_user_mock),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -236,7 +240,7 @@ async def get_application_trends(
 async def refresh_analytics(
     background_tasks: BackgroundTasks,
     request: AnalyticsRequest = AnalyticsRequest(),
-    current_user: User = Depends(get_current_user_mock),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -264,7 +268,7 @@ async def refresh_analytics(
 
 @router.get("/health", response_model=AnalyticsAPIResponse)
 async def get_analytics_health(
-    current_user: User = Depends(get_current_user_mock),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -325,7 +329,7 @@ async def get_analytics_health(
 @router.put("/preferences")
 async def update_analytics_preferences(
     preferences: UserPreferencesUpdate,
-    current_user: User = Depends(get_current_user_mock),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -418,7 +422,7 @@ def _convert_to_full_response(analytics_data: dict) -> FullAnalyticsResponse:
     # Create default metadata if missing required fields
     if not metadata or not all(key in metadata for key in ['user_id', 'total_applications', 'analysis_period_days', 'analysis_date']):
         metadata = {
-            "user_id": metadata.get("user_id", "demo_user"),
+            "user_id": metadata.get("user_id", "unknown"),
             "total_applications": metadata.get("total_applications", 0),
             "analysis_period_days": metadata.get("analysis_period_days", 30),
             "analysis_date": metadata.get("analysis_date", datetime.utcnow().isoformat()),

@@ -14,6 +14,7 @@ from app.schemas.resume import (
 from app.services.resume_evaluator import ResumeEvaluatorService
 from app.services.agentic_resume_evaluator import AgenticResumeEvaluatorService
 from app.core.ai_service import get_ai_service
+from app.core.auth import get_authenticated_user_id
 from app.models.resume import Resume, ResumeEvaluation
 from app.models.agent_models import ResumeEvaluationSession, ResumeAgentResult
 from app.models.user import User
@@ -40,7 +41,8 @@ async def upload_resume(
     target_role: str = Form(None),
     target_seniority: str = Form(None),
     db: Session = Depends(get_db),
-    ai_service = Depends(get_ai_service)
+    ai_service = Depends(get_ai_service),
+    user_id: str = Depends(get_authenticated_user_id)
 ):
     """Upload a resume file for AI evaluation"""
     
@@ -62,10 +64,7 @@ async def upload_resume(
             status_code=400, 
             detail=f"File too large. Maximum size: {MAX_FILE_SIZE // (1024*1024)}MB"
         )
-    
-    # TODO: Get actual user_id from authentication
-    user_id = "demo_user"  # Replace with actual user authentication
-    
+
     # Check storage limit
     current_count = db.query(Resume).filter(Resume.user_id == user_id).count()
     if current_count >= MAX_RESUMES_PER_USER:
@@ -121,12 +120,10 @@ async def upload_resume(
 
 @router.get("/list", response_model=ResumeListResponse)
 async def list_resumes(
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_authenticated_user_id)
 ):
     """List all resumes for the current user"""
-    
-    # TODO: Get actual user_id from authentication
-    user_id = "demo_user"  # Replace with actual user authentication
     
     resumes = db.query(Resume).filter(Resume.user_id == user_id).all()
     
@@ -156,12 +153,10 @@ async def list_resumes(
 
 @router.get("/storage-info", response_model=ResumeStorageInfo)
 async def get_storage_info(
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_authenticated_user_id)
 ):
     """Get storage information for the current user"""
-    
-    # TODO: Get actual user_id from authentication
-    user_id = "demo_user"  # Replace with actual user authentication
     
     resumes = db.query(Resume).filter(Resume.user_id == user_id).all()
     
@@ -197,13 +192,11 @@ async def get_agent_metrics(
 @router.get("/evaluation-history")
 async def get_evaluation_history(
     limit: int = 10,
-    ai_service = Depends(get_ai_service)
+    ai_service = Depends(get_ai_service),
+    user_id: str = Depends(get_authenticated_user_id)
 ):
     """Get evaluation history for the current user"""
     try:
-        # TODO: Get actual user_id from authentication
-        user_id = "demo_user"  # Replace with actual user authentication
-        
         evaluator = AgenticResumeEvaluatorService(ai_service)
         history = await evaluator.get_evaluation_history(user_id, limit)
         return {"evaluation_history": history}
@@ -260,12 +253,10 @@ async def get_evaluation_progress(
 @router.get("/{resume_id}", response_model=ResumeWithEvaluation)
 async def get_resume(
     resume_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_authenticated_user_id)
 ):
     """Get resume details and evaluation results"""
-    
-    # TODO: Get actual user_id from authentication
-    user_id = "demo_user"  # Replace with actual user authentication
     
     resume = db.query(Resume).filter(
         Resume.id == resume_id,
@@ -278,27 +269,67 @@ async def get_resume(
     # Get evaluation if completed
     evaluation = None
     if resume.evaluation_status == "completed":
-        evaluation_record = db.query(ResumeEvaluation).filter(
-            ResumeEvaluation.resume_id == resume_id
-        ).first()
-        
-        if evaluation_record:
+        # First try to get detailed evaluation from ResumeEvaluationSession (agentic results)
+        evaluation_session = db.query(ResumeEvaluationSession).filter(
+            ResumeEvaluationSession.resume_id == resume_id
+        ).order_by(ResumeEvaluationSession.created_at.desc()).first()
+
+        if evaluation_session and evaluation_session.evaluation_data:
+            # Use detailed agentic evaluation data
+            eval_data = evaluation_session.evaluation_data
             evaluation = {
-                "overall_score": evaluation_record.overall_score,
-                "ats_compliance_score": evaluation_record.ats_compliance_score,
-                "content_quality_score": evaluation_record.content_quality_score,
-                "experience_points_score": evaluation_record.experience_points_score,
-                "job_relevance_score": evaluation_record.job_relevance_score,
-                "quality_checks_score": evaluation_record.quality_checks_score,
-                "strengths": evaluation_record.strengths or [],
-                "improvements": evaluation_record.improvements or [],
-                "detailed_feedback": evaluation_record.detailed_feedback or "",
-                "ats_compatibility": evaluation_record.ats_compatibility,
-                "keyword_analysis": evaluation_record.keyword_analysis or {},
-                "evaluated_at": evaluation_record.evaluated_at,
-                "ai_model_version": evaluation_record.ai_model_version,
-                "processing_time": resume.processing_time
+                "overall_score": evaluation_session.overall_score or eval_data.get('overall_score', 0),
+                "ats_compliance_score": eval_data.get('ats_compliance_score', 0),
+                "content_quality_score": eval_data.get('content_quality_score', 0),
+                "experience_points_score": eval_data.get('experience_points_score', 0),
+                "job_relevance_score": eval_data.get('job_relevance_score', 0),
+                "quality_checks_score": eval_data.get('quality_checks_score', 0),
+                "strengths": eval_data.get('strengths', []),
+                "improvements": eval_data.get('improvements', []),
+                "detailed_feedback": eval_data.get('detailed_feedback', ''),
+                "ats_compatibility": eval_data.get('ats_compatibility', 'fair'),
+                "keyword_analysis": eval_data.get('keyword_analysis', {}),
+                "evaluated_at": evaluation_session.created_at,
+                "ai_model_version": eval_data.get('ai_model_version', ''),
+                "processing_time": evaluation_session.processing_time_seconds,
+                # Add detailed agent results
+                "agent_results": eval_data.get('agent_results', {}),
+                "critical_issues": eval_data.get('critical_issues', {}),
+                "market_positioning": eval_data.get('market_positioning', {}),
+                "evaluation_metadata": {
+                    "processing_time_seconds": evaluation_session.processing_time_seconds,
+                    "successful_agents": evaluation_session.successful_agents,
+                    "total_agents": evaluation_session.total_agents,
+                    "confidence_percentage": evaluation_session.confidence_percentage,
+                    "evaluation_type": 'agentic'
+                }
             }
+        else:
+            # Fallback to legacy ResumeEvaluation table
+            evaluation_record = db.query(ResumeEvaluation).filter(
+                ResumeEvaluation.resume_id == resume_id
+            ).first()
+
+            if evaluation_record:
+                evaluation = {
+                    "overall_score": evaluation_record.overall_score,
+                    "ats_compliance_score": evaluation_record.ats_compliance_score,
+                    "content_quality_score": evaluation_record.content_quality_score,
+                    "experience_points_score": evaluation_record.experience_points_score,
+                    "job_relevance_score": evaluation_record.job_relevance_score,
+                    "quality_checks_score": evaluation_record.quality_checks_score,
+                    "strengths": evaluation_record.strengths or [],
+                    "improvements": evaluation_record.improvements or [],
+                    "detailed_feedback": evaluation_record.detailed_feedback or "",
+                    "ats_compatibility": evaluation_record.ats_compatibility,
+                    "keyword_analysis": evaluation_record.keyword_analysis or {},
+                    "evaluated_at": evaluation_record.evaluated_at,
+                    "ai_model_version": evaluation_record.ai_model_version,
+                    "processing_time": resume.processing_time,
+                    "evaluation_metadata": {
+                        "evaluation_type": 'legacy'
+                    }
+                }
     
     return ResumeWithEvaluation(
         resume={
@@ -318,12 +349,10 @@ async def get_resume(
 @router.delete("/{resume_id}", response_model=ResumeDeleteResponse)
 async def delete_resume(
     resume_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_authenticated_user_id)
 ):
     """Delete a resume and its evaluation results"""
-    
-    # TODO: Get actual user_id from authentication
-    user_id = "demo_user"  # Replace with actual user authentication
     
     resume = db.query(Resume).filter(
         Resume.id == resume_id,
@@ -378,12 +407,10 @@ async def evaluate_resume(
     evaluation_request: ResumeEvaluationRequest,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    ai_service = Depends(get_ai_service)
+    ai_service = Depends(get_ai_service),
+    user_id: str = Depends(get_authenticated_user_id)
 ):
     """Manually trigger resume evaluation with status locking"""
-
-    # TODO: Get actual user_id from authentication
-    user_id = "demo_user"  # Replace with actual user authentication
 
     # Generate unique process identifier for this evaluation
     process_id = f"eval_{uuid.uuid4().hex[:8]}"
@@ -460,12 +487,10 @@ async def evaluate_resume(
 @router.get("/{resume_id}/download")
 async def download_resume(
     resume_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_authenticated_user_id)
 ):
     """Download a resume file"""
-    
-    # TODO: Get actual user_id from authentication
-    user_id = "demo_user"  # Replace with actual user authentication
     
     resume = db.query(Resume).filter(
         Resume.id == resume_id,

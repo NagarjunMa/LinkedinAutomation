@@ -9,6 +9,7 @@ import {
   Briefcase,
   FileText,
   Home,
+  MessageSquare,
 } from "lucide-react"
 
 const navigation = [
@@ -26,6 +27,11 @@ const navigation = [
     name: "Resume",
     href: "/dashboard/resume-evaluation",
     icon: FileText,
+  },
+  {
+    name: "Questions",
+    href: "/dashboard/question-answering",
+    icon: MessageSquare,
   },
   {
     name: "Analytics",

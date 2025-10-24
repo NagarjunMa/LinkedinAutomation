@@ -18,6 +18,9 @@ from .red_flag_detection_agent import RedFlagDetectionAgent
 from .company_fit_agent import CompanyFitAgent
 from .summary_generator_agent import SummaryGeneratorAgent
 from .detailed_analysis_agent import DetailedAnalysisAgent
+from .above_fold_impact_agent import AboveFoldImpactAgent
+from .recruiter_psychology_agent import RecruiterPsychologyAgent
+from .final_touches_agent import FinalTouchesAgent
 
 
 class ResumeEvaluationOrchestrator:
@@ -36,6 +39,9 @@ class ResumeEvaluationOrchestrator:
             'red_flags': RedFlagDetectionAgent(self.ai_service),
             'company_fit': CompanyFitAgent(self.ai_service),
             'detailed_analysis': DetailedAnalysisAgent(self.ai_service),
+            'above_fold_impact': AboveFoldImpactAgent(self.ai_service),
+            'recruiter_psychology': RecruiterPsychologyAgent(self.ai_service),
+            'final_touches': FinalTouchesAgent(self.ai_service),
             'summary': SummaryGeneratorAgent(self.ai_service)
         }
 
@@ -52,18 +58,24 @@ class ResumeEvaluationOrchestrator:
             'red_flags': 35,
             'company_fit': 40,
             'detailed_analysis': 90,
+            'above_fold_impact': 35,
+            'recruiter_psychology': 40,
+            'final_touches': 30,
             'summary': 60
         }
         
         # Agent weights for overall score calculation
         self.agent_weights = {
-            'ats': 0.15,
-            'experience': 0.35,
-            'skills': 0.15,
-            'format': 0.10,
-            'red_flags': -0.20,  # Negative weight for penalties
-            'company_fit': 0.10,
-            'detailed_analysis': 0.20  # High weight for detailed analysis
+            'ats': 0.12,
+            'experience': 0.25,
+            'skills': 0.12,
+            'format': 0.15,  # Increased for technical formatting compliance
+            'red_flags': -0.15,  # Negative weight for penalties
+            'company_fit': 0.08,
+            'detailed_analysis': 0.15,
+            'above_fold_impact': 0.20,  # High weight for recruiter attention
+            'recruiter_psychology': 0.18,  # High weight for scanning optimization
+            'final_touches': 0.10  # Important for submission readiness
         }
     
     async def evaluate_resume(self, resume_content: str, user_context: Dict[str, Any]) -> Dict[str, Any]:
@@ -313,7 +325,10 @@ class ResumeEvaluationOrchestrator:
             'format': 'format_score',
             'red_flags': 'red_flag_score',
             'company_fit': 'company_fit_scores',
-            'detailed_analysis': 'overall_score'
+            'detailed_analysis': 'overall_score',
+            'above_fold_impact': 'above_fold_score',
+            'recruiter_psychology': 'psychology_score',
+            'final_touches': 'final_touches_score'
         }
         
         score_field = score_fields.get(agent_name)
@@ -420,6 +435,9 @@ class ResumeEvaluationOrchestrator:
                     'red_flags': {'status': 'pending', 'started_at': None, 'completed_at': None},
                     'company_fit': {'status': 'pending', 'started_at': None, 'completed_at': None},
                     'detailed_analysis': {'status': 'pending', 'started_at': None, 'completed_at': None},
+                    'above_fold_impact': {'status': 'pending', 'started_at': None, 'completed_at': None},
+                    'recruiter_psychology': {'status': 'pending', 'started_at': None, 'completed_at': None},
+                    'final_touches': {'status': 'pending', 'started_at': None, 'completed_at': None},
                     'summary': {'status': 'pending', 'started_at': None, 'completed_at': None}
                 },
                 'overall_progress': 0

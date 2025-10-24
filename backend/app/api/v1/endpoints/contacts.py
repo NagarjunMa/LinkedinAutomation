@@ -8,6 +8,7 @@ from app.models import Contact, JobListing
 from app.services.contact_discovery import ContactDiscoveryService
 from app.services.apollo_client import ApolloClient
 from app.utils.logger import get_logger
+from app.core.auth import get_authenticated_user_id
 
 logger = get_logger(__name__)
 router = APIRouter()
@@ -15,7 +16,7 @@ router = APIRouter()
 @router.get("/job/{job_id}")
 async def get_job_contacts(
     job_id: int,
-    user_id: str = Query(default="demo_user", description="User ID for RLS context"),
+    user_id: str = Depends(get_authenticated_user_id),
     db: Session = Depends(get_db)
 ):
     """Get contacts for a specific job"""
@@ -46,7 +47,7 @@ async def get_job_contacts(
 async def discover_job_contacts(
     job_id: int,
     background_tasks: BackgroundTasks,
-    user_id: str = Query(default="demo_user", description="User ID for RLS context"),
+    user_id: str = Depends(get_authenticated_user_id),
     db: Session = Depends(get_db)
 ):
     """Discover contacts for a specific job (DISABLED - no background tasks)"""
@@ -74,7 +75,7 @@ async def discover_job_contacts(
 
 @router.get("/usage")
 async def get_apollo_usage(
-    user_id: str = Query(default="demo_user", description="User ID for RLS context"),
+    user_id: str = Depends(get_authenticated_user_id),
     db: Session = Depends(get_db)
 ):
     """Get Apollo.io API usage statistics"""
@@ -97,7 +98,7 @@ async def get_apollo_usage(
 @router.get("/company/{company_name}")
 async def get_company_contacts(
     company_name: str,
-    user_id: str = Query(default="demo_user", description="User ID for RLS context"),
+    user_id: str = Depends(get_authenticated_user_id),
     db: Session = Depends(get_db)
 ):
     """Get all contacts for a specific company"""
@@ -151,7 +152,7 @@ async def get_company_contacts(
 async def refresh_company_contacts(
     company_name: str,
     background_tasks: BackgroundTasks,
-    user_id: str = Query(default="demo_user", description="User ID for RLS context"),
+    user_id: str = Depends(get_authenticated_user_id),
     db: Session = Depends(get_db)
 ):
     """Refresh contacts for a specific company (DISABLED - no background tasks)"""
@@ -174,7 +175,7 @@ async def refresh_company_contacts(
 
 @router.get("/stats")
 async def get_contact_stats(
-    user_id: str = Query(default="demo_user", description="User ID for RLS context"),
+    user_id: str = Depends(get_authenticated_user_id),
     db: Session = Depends(get_db)
 ):
     """Get contact discovery statistics"""
@@ -214,7 +215,7 @@ async def search_contacts(
     query: str = Query(..., description="Search query for contacts"),
     contact_type: Optional[str] = Query(None, description="Filter by contact type"),
     company: Optional[str] = Query(None, description="Filter by company"),
-    user_id: str = Query(default="demo_user", description="User ID for RLS context"),
+    user_id: str = Depends(get_authenticated_user_id),
     db: Session = Depends(get_db)
 ):
     """Search contacts by name, title, or company"""

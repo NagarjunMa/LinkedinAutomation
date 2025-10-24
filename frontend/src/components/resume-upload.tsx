@@ -511,7 +511,7 @@ export function ResumeUpload() {
               <Upload className="h-8 w-8 text-white" />
             </div>
             <h2 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-              Resume Evaluation Center
+              Resume Review Center
             </h2>
             <p className="text-cream-300 text-lg">
               Expert AI-powered resume analysis by experienced recruiters
@@ -1161,7 +1161,7 @@ export function ResumeUpload() {
                   </div>
                   <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl blur opacity-30 animate-pulse"></div>
                 </div>
-                AI Resume Evaluation
+                Resume Review
               </div>
             </DialogTitle>
           </DialogHeader>

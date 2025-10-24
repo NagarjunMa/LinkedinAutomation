@@ -5,6 +5,7 @@ from sqlalchemy import or_, and_, func, String
 from app.db.rls_session import get_db, set_current_user
 from app.models.job import JobListing
 from app.schemas.job import JobListingResponse
+from app.core.auth import get_authenticated_user_id
 import logging
 
 logger = logging.getLogger(__name__)
@@ -14,7 +15,7 @@ router = APIRouter()
 @router.get("/", response_model=List[JobListingResponse])
 async def search_jobs(
     q: str = Query(..., description="Search query for jobs, companies, or domains"),
-    user_id: str = Query(default="demo_user", description="User ID for RLS context"),
+    user_id: str = Depends(get_authenticated_user_id),
     skip: int = Query(default=0, ge=0, description="Number of records to skip"),
     limit: int = Query(default=20, ge=1, le=100, description="Maximum number of records to return"),
     db: Session = Depends(get_db)
@@ -74,7 +75,7 @@ async def search_jobs(
 @router.get("/suggestions", response_model=List[str])
 async def get_search_suggestions(
     q: str = Query(..., description="Partial search query for suggestions"),
-    user_id: str = Query(default="demo_user", description="User ID for RLS context"),
+    user_id: str = Depends(get_authenticated_user_id),
     limit: int = Query(default=10, ge=1, le=50, description="Maximum number of suggestions"),
     db: Session = Depends(get_db)
 ):
@@ -144,7 +145,7 @@ async def get_search_suggestions(
 
 @router.get("/stats")
 async def get_search_stats(
-    user_id: str = Query(default="demo_user", description="User ID for RLS context"),
+    user_id: str = Depends(get_authenticated_user_id),
     db: Session = Depends(get_db)
 ):
     """

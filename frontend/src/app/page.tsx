@@ -114,12 +114,8 @@ function Navigation() {
       // User is logged in, redirect to dashboard
       router.push('/dashboard')
     } else {
-      // User is not logged in, sign in
-      try {
-        await signIn()
-      } catch (error) {
-        console.error('Sign in error:', error)
-      }
+      // User is not logged in, redirect to login page
+      router.push('/login')
     }
   }
 
@@ -135,7 +131,7 @@ function Navigation() {
           {/* Logo */}
           <div className="flex items-center space-x-2">
             <Logo size={32} showText={false} />
-            <span className="text-2xl font-neuton text-gradient-warm">JOBFLOW PRO</span>
+            <span className="text-2xl app-title text-gradient-warm">JOBFLOW PRO</span>
           </div>
 
           {/* Desktop Navigation */}
@@ -222,11 +218,7 @@ function HeroSection() {
     if (user) {
       router.push('/dashboard')
     } else {
-      try {
-        await signIn()
-      } catch (error) {
-        console.error('Sign in error:', error)
-      }
+      router.push('/login')
     }
   }
 
@@ -262,25 +254,26 @@ function HeroSection() {
             variants={staggerContainer}
           >
             <motion.h1
-              className="text-5xl lg:text-6xl xl:text-6xl 2xl:text-6xl font-neuton text-cream-50 leading-tight"
+              className="text-5xl lg:text-6xl xl:text-6xl 2xl:text-6xl text-cream-50 leading-tight"
               variants={staggerItem}
             >
-              <TypewriterText text="Stop Wasting Hours on Job Search Admin" speed={50} />
+              <TypewriterText text="Transform Your Job Search Into Organized Success" speed={50} />
             </motion.h1>
 
             <motion.p
               className="text-2xl text-accent-400 font-semibold"
               variants={staggerItem}
             >
-              AI-Powered Job Tracking • Expert Resume Evaluation • Automated Email Management
+              AI Resume Evaluation • Smart Job Extraction • Referral Automation • Activity Tracking
             </motion.p>
 
             <motion.p
               className="text-xl text-cream-200 leading-relaxed"
               variants={staggerItem}
             >
-              JobFlow Pro helps students and new graduates save 15+ hours weekly with intelligent job analysis,
-              recruiter-validated resume feedback, and automated application tracking.
+              JobFlow Pro is the complete job search platform that combines AI-powered resume optimization,
+              intelligent job matching, automated referral requests, and LeetCode-style activity tracking
+              to help you land your dream job faster.
             </motion.p>
 
             {/* Stats Row */}
@@ -381,26 +374,26 @@ function ProblemSection() {
   const problemCards = [
     {
       icon: Clock,
-      title: "4-5 Hours Daily Wasted",
-      description: "Copying job details, updating spreadsheets, and checking emails for responses eats up time you should spend on interview prep.",
+      title: "Time-Consuming Admin Work",
+      description: "Hours spent on repetitive tasks like job extraction, application tracking, and email management instead of networking.",
       animation: "pulse"
     },
     {
       icon: BarChart3,
-      title: "Lost in Application Chaos",
-      description: "Tracking applications across LinkedIn, Indeed, and company sites with no centralized organization leads to missed opportunities.",
+      title: "Scattered Job Search",
+      description: "No centralized system to track applications, referrals, and progress across multiple platforms and job boards.",
       animation: "shake"
     },
     {
       icon: Target,
-      title: "Resume Uncertainty",
-      description: "Wondering if your resume will pass ATS systems and attract recruiters. Generic AI tools don't provide recruiter-validated insights.",
+      title: "Resume Guesswork",
+      description: "Uncertain if your resume passes ATS systems or appeals to recruiters without expert-level feedback and validation.",
       animation: "bounce"
     },
     {
       icon: Mail,
-      title: "Email Management Nightmare",
-      description: "Job responses buried in inbox alongside personal emails. Delayed follow-ups and missed interview invitations.",
+      title: "Poor Networking Strategy",
+      description: "Struggling to write effective referral requests and maintain professional relationships systematically for job opportunities.",
       animation: "rotate"
     }
   ]
@@ -415,8 +408,8 @@ function ProblemSection() {
           viewport={{ once: true }}
           variants={fadeInVariants}
         >
-          <h2 className="text-4xl font-neuton text-cream-50 mb-4">
-            The Job Search Nightmare Students Face
+          <h2 className="text-4xl text-cream-50 mb-4">
+            The Job Search Challenges Everyone Faces
           </h2>
         </motion.div>
 
@@ -460,44 +453,44 @@ function FeaturesSection() {
   const features = [
     {
       icon: Zap,
-      title: "AI Job Extraction",
-      description: "Paste any LinkedIn job URL and get instant extraction with AI-powered analysis.",
-      benefits: ["Smart URL parsing", "Automatic data extraction", "Real-time processing"],
+      title: "Job Intelligence",
+      description: "Extract job details from any URL with intelligent parsing and AI-powered analysis.",
+      benefits: ["Multi-platform support", "Smart data extraction", "Real-time processing"],
       gradient: "from-accent-500 to-gold-500"
     },
     {
-      icon: TrendingUp,
-      title: "Smart Job Scoring",
-      description: "AI analyzes job requirements against your profile for perfect matches.",
-      benefits: ["Resume compatibility", "Skill gap analysis", "Match percentage"],
+      icon: FileText,
+      title: "Resume Review",
+      description: "Multi-agent AI system provides recruiter-validated feedback and ATS optimization.",
+      benefits: ["Expert-level feedback", "ATS compatibility", "Score tracking"],
       gradient: "from-gold-500 to-accent-400"
     },
     {
       icon: Mail,
-      title: "Email Integration",
-      description: "Connect Gmail to automatically track application responses and interviews.",
-      benefits: ["Gmail sync", "Response tracking", "Interview alerts"],
+      title: "Referral Assistant",
+      description: "Generate personalized referral emails and manage your professional network.",
+      benefits: ["AI email generation", "Contact management", "Response tracking"],
       gradient: "from-accent-400 to-gold-600"
     },
     {
-      icon: BarChart3,
-      title: "Application Analytics",
-      description: "Track your job search progress with detailed insights and metrics.",
-      benefits: ["Progress tracking", "Success metrics", "Trend analysis"],
+      icon: Calendar,
+      title: "Activity Monitor",
+      description: "LeetCode-style calendar tracks your job search consistency and progress.",
+      benefits: ["Visual progress tracking", "Streak monitoring", "Habit building"],
       gradient: "from-gold-600 to-accent-500"
     },
     {
-      icon: FileText,
-      title: "Resume Optimization",
-      description: "Get recruiter-validated feedback to improve your resume's ATS performance.",
-      benefits: ["ATS optimization", "Expert feedback", "Score tracking"],
+      icon: BarChart3,
+      title: "Performance Dashboard",
+      description: "Comprehensive insights into your job search performance and market trends.",
+      benefits: ["Progress metrics", "Market intelligence", "Personalized recommendations"],
       gradient: "from-accent-500 to-gold-400"
     },
     {
-      icon: Shield,
-      title: "Secure & Private",
-      description: "Enterprise-grade security with local data processing and encryption.",
-      benefits: ["End-to-end encryption", "GDPR compliant", "Local processing"],
+      icon: Target,
+      title: "Question Helper",
+      description: "Generate authentic answers to application questions using your actual projects, work experience, and resume details.",
+      benefits: ["Project-based answers", "Work experience integration", "Resume pointers"],
       gradient: "from-gold-400 to-accent-600"
     }
   ]
@@ -512,11 +505,11 @@ function FeaturesSection() {
           viewport={{ once: true }}
           variants={fadeInVariants}
         >
-          <h2 className="text-4xl lg:text-5xl font-neuton text-cream-50 mb-6">
-            Everything You Need to Land Your Dream Job
+          <h2 className="text-4xl lg:text-5xl text-cream-50 mb-6">
+            The Complete Job Search Platform
           </h2>
           <p className="text-2xl text-accent-400 max-w-3xl mx-auto">
-            From intelligent job extraction to automated tracking - we've built the complete toolkit for modern job seekers.
+            From AI-powered resume evaluation to referral automation - everything you need to transform your job search into organized success.
           </p>
         </motion.div>
 
@@ -544,7 +537,7 @@ function FeaturesSection() {
                     <feature.icon className="w-8 h-8 text-white" />
                   </motion.div>
 
-                  <h3 className="text-xl font-neuton text-cream-50 mb-4">{feature.title}</h3>
+                  <h3 className="text-xl  text-cream-50 mb-4">{feature.title}</h3>
                   <p className="text-lg text-cream-200 mb-6 leading-relaxed">{feature.description}</p>
 
                   <ul className="space-y-2">
@@ -592,7 +585,7 @@ function SolutionsSection() {
           viewport={{ once: true }}
           variants={fadeInVariants}
         >
-          <h2 className="text-4xl lg:text-5xl font-neuton text-cream-50 mb-6">
+          <h2 className="text-4xl lg:text-5xl text-cream-50 mb-6">
             Turn Job Search Chaos Into Organized Success
           </h2>
           <p className="text-2xl text-accent-400 max-w-3xl mx-auto">
@@ -610,14 +603,14 @@ function SolutionsSection() {
             variants={staggerContainer}
           >
             <motion.div variants={staggerItem}>
-              <h3 className="text-2xl font-neuton text-red-400 mb-4">❌ Without JobFlow Pro</h3>
+              <h3 className="text-2xl  text-red-400 mb-4">❌ Without JobFlow Pro</h3>
               <ul className="space-y-3">
                 {[
-                  "Hours wasted copying job details manually",
-                  "Lost applications in email chaos",
-                  "No idea which jobs match your skills",
-                  "Generic resume feedback from AI tools",
-                  "Missing interview invitations"
+                  "Manual job extraction and data entry",
+                  "No systematic resume evaluation process",
+                  "Poor networking and referral strategy",
+                  "No activity tracking or consistency",
+                  "Scattered job search across platforms"
                 ].map((item, index) => (
                   <motion.li
                     key={index}
@@ -632,14 +625,14 @@ function SolutionsSection() {
             </motion.div>
 
             <motion.div variants={staggerItem}>
-              <h3 className="text-2xl font-neuton text-green-400 mb-4">✅ With JobFlow Pro</h3>
+              <h3 className="text-2xl  text-green-400 mb-4">✅ With JobFlow Pro</h3>
               <ul className="space-y-3">
                 {[
-                  "One-click job extraction from any URL",
-                  "Centralized application tracking dashboard",
-                  "AI-powered job-profile matching scores",
-                  "Recruiter-validated resume feedback",
-                  "Automated email monitoring for responses"
+                  "AI-powered job extraction from any URL",
+                  "Multi-agent resume evaluation system",
+                  "Automated referral email generation",
+                  "LeetCode-style activity tracking calendar",
+                  "Centralized job search management platform"
                 ].map((item, index) => (
                   <motion.li
                     key={index}
@@ -669,15 +662,15 @@ function SolutionsSection() {
             >
               <div className="space-y-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h4 className="text-lg font-neuton text-cream-50">Job Extraction Demo</h4>
+                  <h4 className="text-lg  text-cream-50">Resume Evaluation Demo</h4>
                   <Badge className="bg-green-500 text-white">Live</Badge>
                 </div>
 
                 <div className="space-y-4">
                   <div className="bg-primary-800 p-4 rounded-lg">
-                    <div className="text-base text-cream-300 mb-2">LinkedIn URL Input</div>
+                    <div className="text-base text-cream-300 mb-2">Resume Upload</div>
                     <div className="bg-primary-700 p-2 rounded text-sm text-accent-400 font-mono">
-                      linkedin.com/jobs/view/12345...
+                      resume.pdf • 2.3 MB
                     </div>
                   </div>
 
@@ -690,19 +683,19 @@ function SolutionsSection() {
                   </motion.div>
 
                   <div className="bg-primary-800 p-4 rounded-lg">
-                    <div className="text-base text-cream-300 mb-2">Extracted Data</div>
+                    <div className="text-base text-cream-300 mb-2">AI Evaluation Results</div>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-cream-400">Match Score:</span>
-                        <span className="text-green-400 font-bold">92%</span>
+                        <span className="text-cream-400">Overall Score:</span>
+                        <span className="text-green-400 font-bold">87/100</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-cream-400">Company:</span>
-                        <span className="text-cream-200">Google</span>
+                        <span className="text-cream-400">ATS Score:</span>
+                        <span className="text-green-400 font-bold">94/100</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-cream-400">Location:</span>
-                        <span className="text-cream-200">San Francisco</span>
+                        <span className="text-cream-400">Content Quality:</span>
+                        <span className="text-yellow-400 font-bold">82/100</span>
                       </div>
                     </div>
                   </div>
@@ -724,7 +717,7 @@ function SocialProofSection() {
       role: "CS Graduate, Stanford",
       company: "Google",
       image: "/api/placeholder/64/64",
-      quote: "JobFlow Pro helped me land my dream job at Google. The AI matching saved me weeks of applying to wrong positions.",
+      quote: "The AI resume evaluation gave me recruiter-level feedback that helped me land my dream job at Google. The multi-agent system caught issues I never would have noticed.",
       rating: 5
     },
     {
@@ -732,7 +725,7 @@ function SocialProofSection() {
       role: "Recent Graduate, MIT",
       company: "Microsoft",
       image: "/api/placeholder/64/64",
-      quote: "The resume feedback was game-changing. My ATS score went from 67% to 94% and I started getting more interviews.",
+      quote: "The referral email generator is a game-changer. I went from 20% response rate to 60% with personalized, AI-generated referral requests.",
       rating: 5
     },
     {
@@ -740,7 +733,7 @@ function SocialProofSection() {
       role: "MBA Graduate, Wharton",
       company: "McKinsey",
       image: "/api/placeholder/64/64",
-      quote: "Finally, a tool that understands what students need. The email integration caught 3 interview invites I would have missed.",
+      quote: "The activity calendar keeps me consistent with my job search. Seeing my progress visually motivates me to stay active daily.",
       rating: 5
     }
   ]
@@ -765,7 +758,7 @@ function SocialProofSection() {
           viewport={{ once: true }}
           variants={fadeInVariants}
         >
-          <h2 className="text-4xl lg:text-5xl font-neuton text-cream-50 mb-8">
+          <h2 className="text-4xl lg:text-5xl  text-cream-50 mb-8">
             Trusted by 10,000+ Students Worldwide
           </h2>
 
@@ -783,7 +776,7 @@ function SocialProofSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
               >
-                <div className="text-3xl lg:text-4xl font-neuton text-accent-400 mb-2">
+                <div className="text-3xl lg:text-4xl  text-accent-400 mb-2">
                   <CountUpStat value={parseInt(stat.value)} suffix={stat.value.includes('%') ? '%' : '+'} />
                 </div>
                 <div className="text-lg text-cream-300">{stat.label}</div>
@@ -924,7 +917,7 @@ function PricingSection() {
           viewport={{ once: true }}
           variants={fadeInVariants}
         >
-          <h2 className="text-4xl lg:text-5xl font-neuton text-cream-50 mb-6">
+          <h2 className="text-4xl lg:text-5xl text-cream-50 mb-6">
             Simple Pricing That Scales With You
           </h2>
           <p className="text-2xl text-accent-400 max-w-3xl mx-auto">
@@ -962,9 +955,9 @@ function PricingSection() {
               )}>
                 <CardContent className="p-8">
                   <div className="text-center mb-8">
-                    <h3 className="text-xl font-neuton text-cream-50 mb-2">{plan.name}</h3>
+                    <h3 className="text-xl  text-cream-50 mb-2">{plan.name}</h3>
                     <div className="mb-4">
-                      <span className="text-4xl font-neuton text-accent-400">${plan.price}</span>
+                      <span className="text-4xl  text-accent-400">${plan.price}</span>
                       {plan.price !== "Custom" && (
                         <span className="text-cream-300">/{plan.period}</span>
                       )}
@@ -1006,7 +999,7 @@ function PricingSection() {
           viewport={{ once: true }}
           variants={fadeInVariants}
         >
-          <h3 className="text-2xl font-neuton text-cream-50 text-center mb-8">
+          <h3 className="text-2xl  text-cream-50 text-center mb-8">
             Frequently Asked Questions
           </h3>
           <div className="space-y-4">
@@ -1047,11 +1040,7 @@ function CTASection() {
     if (user) {
       router.push('/dashboard')
     } else {
-      try {
-        await signIn()
-      } catch (error) {
-        console.error('Sign in error:', error)
-      }
+      router.push('/login')
     }
   }
 
@@ -1077,7 +1066,7 @@ function CTASection() {
           viewport={{ once: true }}
           variants={fadeInVariants}
         >
-          <h2 className="text-4xl lg:text-5xl font-neuton text-cream-50 mb-6">
+          <h2 className="text-4xl lg:text-5xl text-cream-50 mb-6">
             Ready to Transform Your Job Search?
           </h2>
           <p className="text-2xl text-accent-400 mb-8 max-w-2xl mx-auto">
@@ -1139,7 +1128,7 @@ function Footer() {
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
               <Logo size={32} showText={false} />
-              <span className="text-xl font-neuton text-gradient-warm">JOBFLOW PRO</span>
+              <span className="text-xl app-title text-gradient-warm">JOBFLOW PRO</span>
             </div>
             <p className="text-cream-300 text-base">
               AI-powered job search automation for students and recent graduates.

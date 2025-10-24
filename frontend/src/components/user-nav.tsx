@@ -1,5 +1,6 @@
 "use client"
 
+import { useRouter } from "next/navigation"
 import {
     Avatar,
     AvatarFallback,
@@ -21,6 +22,7 @@ import { LogOut, User, Settings, Mail } from "lucide-react"
 
 export function UserNav() {
     const { user, signOutUser } = useAuth()
+    const router = useRouter()
 
     const handleSignOut = async () => {
         try {
@@ -29,6 +31,18 @@ export function UserNav() {
         } catch (error) {
             console.error('Error signing out:', error)
         }
+    }
+
+    const handleProfileClick = () => {
+        router.push('/dashboard/profile')
+    }
+
+    const handleSettingsClick = () => {
+        router.push('/dashboard/settings')
+    }
+
+    const handleEmailSettingsClick = () => {
+        router.push('/dashboard/settings?tab=email')
     }
 
     const getUserInitials = (email: string) => {
@@ -64,17 +78,17 @@ export function UserNav() {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
-                    <DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleProfileClick}>
                         <User className="mr-2 h-4 w-4" />
                         Profile
                         <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>
                     </DropdownMenuItem>
-                    <DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleEmailSettingsClick}>
                         <Mail className="mr-2 h-4 w-4" />
                         Email Settings
                         <DropdownMenuShortcut>⌘E</DropdownMenuShortcut>
                     </DropdownMenuItem>
-                    <DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleSettingsClick}>
                         <Settings className="mr-2 h-4 w-4" />
                         Settings
                         <DropdownMenuShortcut>⌘S</DropdownMenuShortcut>

@@ -1,14 +1,17 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
+import { useSearchParams } from "next/navigation"
 import { useDashboard } from "@/app/contexts/dashboard-context"
+import { useAuth } from "@/contexts/auth-context"
 import {
     OverviewCard,
     QuickActionCard,
     RecentJobsCard
 } from "@/components/sophisticated-cards"
 import { EmailStatsCard } from "@/components/email-stats-card"
-// Removed separate calendar - now integrated into OverviewCard
+import { ReferralAnalyticsCard } from "@/components/referral-analytics-card"
+// Activity calendar is now integrated into OverviewCard
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -40,6 +43,8 @@ import {
 import { Overview } from "@/components/overview"
 import { RecentSales } from "@/components/recent-sales"
 import JobURLExtractor from "@/components/job-url-extractor"
+import { ProfileSetupModal } from "@/components/profile-setup-modal"
+import { ProfileCompletionBanner } from "@/components/profile-completion-banner"
 import { cn } from "@/lib/utils"
 import {
     FadeInUp,
@@ -216,19 +221,7 @@ function ProgressLineGraph({ progressData }: ProgressLineGraphProps) {
                         tick={{ fill: "rgb(203, 213, 225)", fontSize: 12 }}
                     />
                     <ChartTooltip
-                        cursor={false}
-                        content={(props) => (
-                            <ChartTooltipContent
-                                {...props}
-                                labelFormatter={(value) => `${value}`}
-                                formatter={(value, name) => [
-                                    `${value} applications`,
-                                    name === "applications" ? "Applications" : name
-                                ]}
-                                indicator="dot"
-                                className="bg-primary-800 border-primary-600 text-cream-50"
-                            />
-                        )}
+                        className="bg-primary-800 border border-primary-600 text-cream-50"
                     />
                     <Area
                         dataKey="applications"
@@ -520,19 +513,21 @@ const overviewData = {
 // This simulates LeetCode-style consistency tracking
 const activityData = (() => {
     const today = new Date()
+    const todayDate = today.getDate()
     const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate()
     const data = new Array(daysInMonth).fill(0)
 
-    // Simulate some activity on random days (like user login/usage)
-    const activeDays = [1, 5, 9, 10, 15, 18, 22, 25] // Days with activity
+    // Simulate some activity on days BEFORE today only (like user login/usage)
+    const possibleActiveDays = [1, 5, 9, 10, 15, 18, 20] // Base activity days
+    const activeDays = possibleActiveDays.filter(day => day < todayDate) // Only show activity for past days
+
     activeDays.forEach(day => {
         if (day <= daysInMonth) {
             data[day - 1] = Math.floor(Math.random() * 5) + 1 // 1-5 activities per day
         }
     })
 
-    // Mark today as active if not already
-    const todayDate = today.getDate()
+    // Mark today as active
     if (todayDate <= daysInMonth) {
         data[todayDate - 1] = Math.max(data[todayDate - 1], 2)
     }
@@ -599,21 +594,21 @@ const applicationExtractionData = [
 
 const quickActions = [
     {
-        label: "Extract Job URL",
+        label: "Job Intelligence",
         description: "Extract job details from any URL",
         shortcut: "E",
         icon: Link,
-        onClick: () => window.location.href = "/dashboard"
+        onClick: () => window.location.href = "/dashboard/applications"
     },
     {
-        label: "Upload Resume",
+        label: "Resume Review",
         description: "AI-powered resume analysis",
         shortcut: "R",
         icon: Upload,
         onClick: () => window.location.href = "/dashboard/resume-evaluation"
     },
     {
-        label: "View Analytics",
+        label: "Performance Dashboard",
         description: "Track your progress",
         shortcut: "A",
         icon: BarChart3,
@@ -622,21 +617,53 @@ const quickActions = [
 ]
 
 export default function DashboardPage() {
+    const { user } = useAuth()
     const { stats, loading, error, refreshData } = useDashboard()
+    const searchParams = useSearchParams()
     const [applicationStats, setApplicationStats] = useState(applicationExtractionData)
     const [dashboardSummary, setDashboardSummary] = useState(null)
     const [loadingStats, setLoadingStats] = useState(false)
+    const [showProfileSetup, setShowProfileSetup] = useState(false)
+    const [profileSetupChecked, setProfileSetupChecked] = useState(false)
+
+    // Check for profile setup requirement
+    useEffect(() => {
+        if (!user || profileSetupChecked) return
+
+        const setupParam = searchParams.get('setup')
+
+        if (setupParam === 'true') {
+            // User needs profile setup
+            setShowProfileSetup(true)
+            setProfileSetupChecked(true)
+        } else if (setupParam === 'check') {
+            // Check if user has a profile in backend
+            const checkProfile = async () => {
+                try {
+                    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/user-profiles/${user.id}`)
+                    if (response.status === 404) {
+                        setShowProfileSetup(true)
+                    }
+                } catch (error) {
+                    console.error('Error checking profile:', error)
+                    // On error, assume profile setup is needed
+                    setShowProfileSetup(true)
+                } finally {
+                    setProfileSetupChecked(true)
+                }
+            }
+            checkProfile()
+        } else {
+            setProfileSetupChecked(true)
+        }
+    }, [user, searchParams, profileSetupChecked])
 
     // Fetch application extraction stats from backend
     useEffect(() => {
         const fetchApplicationStats = async () => {
             setLoadingStats(true)
             try {
-                const response = await fetch('/api/v1/stats/application-extraction-stats', {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-                    }
-                })
+                const response = await fetch('/api/v1/stats/application-extraction-stats')
 
                 if (response.ok) {
                     const result = await response.json()
@@ -669,12 +696,27 @@ export default function DashboardPage() {
         )
     }
 
+    const handleProfileSetupComplete = () => {
+        setShowProfileSetup(false)
+        // Optionally refresh the page or update state
+        window.location.href = '/dashboard'
+    }
+
     return (
         <div className="min-h-screen bg-primary-950">
+            {/* Profile Setup Modal */}
+            <ProfileSetupModal
+                isOpen={showProfileSetup}
+                onClose={() => setShowProfileSetup(false)}
+                onComplete={handleProfileSetupComplete}
+            />
+
             {/* Main Dashboard Container following handwritten design */}
             <div className="w-full px-4 sm:px-6 py-4 sm:py-6">
                 <StaggerContainer>
                     <div className="space-y-4 sm:space-y-6">
+                        {/* Profile Completion Banner */}
+                        <ProfileCompletionBanner />
 
                         {/* Top Section - 4 cards as per handwritten design */}
                         <StaggerItem>
@@ -685,20 +727,14 @@ export default function DashboardPage() {
                                     period={`${new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`}
                                     stats={overviewData}
                                     activityData={activityData}
+                                    userId={user?.id}
                                 />
 
-                                {/* Top Bar - placeholder for future development */}
-                                <Card className="premium-card">
-                                    <CardHeader className="pb-3">
-                                        <CardTitle className="text-cream-50 text-lg">Top Bar</CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="text-center text-cream-400 py-8">
-                                            <div className="text-sm">Keep it blank</div>
-                                            <div className="text-xs mt-1">We will build it later</div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
+                                {/* Referral Analytics Card */}
+                                <ReferralAnalyticsCard
+                                    title="📧 Referral Assistant"
+                                    showActions={true}
+                                />
 
                                 {/* Quick Action Card */}
                                 <QuickActionCard

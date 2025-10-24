@@ -21,7 +21,7 @@ class URLJobExtractor:
     def __init__(self):
         self.jina_base_url = "https://r.jina.ai/"
         self.timeout = 30
-        self.max_content_length = 10000  # Limit content for OpenAI
+        self.max_content_length = 20000  # Increased limit for better content extraction
         
     async def extract_job_details(self, url: str, user_context: Optional[Dict] = None) -> Dict[str, Any]:
         """
@@ -362,14 +362,16 @@ User Context (to help with extraction):
 
 """
 
-            prompt = f"""Extract job posting details from the content below and return ONLY a valid JSON object.
+            prompt = f"""Extract job posting details focusing on information most relevant to job applicants and return ONLY a valid JSON object.
 
 {context_info}Instructions:
-1. Extract all relevant job information
-2. Normalize salary ranges (e.g., "120k-150k", "$80,000 - $100,000")
-3. Extract key skills as an array
-4. Provide confidence score (0.0-1.0) based on extraction quality
-5. If information is missing, use null (not empty strings)
+1. Focus on actionable information for job preparation, NOT company marketing content
+2. Separate minimum requirements from preferred qualifications
+3. Extract specific skills, technologies, and tools mentioned
+4. Capture salary, benefits, and compensation details clearly
+5. Include role responsibilities but exclude general company background
+6. Provide confidence score (0.0-1.0) based on extraction quality
+7. If information is missing, use null (not empty strings)
 
 Required JSON format:
 {{
@@ -378,15 +380,28 @@ Required JSON format:
     "location": "San Francisco, CA",
     "salary_range": "$120,000 - $150,000",
     "job_type": "Full-time",
-    "experience_level": "Mid",
+    "experience_level": "Mid-Senior",
     "remote_policy": "Hybrid",
-    "description": "Job description summary (max 500 chars)",
-    "requirements": "Key requirements (max 300 chars)",
-    "skills": ["Python", "React", "AWS"],
-    "benefits": ["Health insurance", "401k"],
+    "description": "Concise role overview and key responsibilities. What you'll actually be doing day-to-day. Focus on the work, not company history.",
+    "minimum_requirements": "Must-have qualifications: education, years of experience, required technical skills, certifications, etc. These are deal-breakers.",
+    "preferred_qualifications": "Nice-to-have qualifications: additional skills, experience, or knowledge that would be beneficial but not required.",
+    "technical_skills": ["Python", "React", "AWS", "Docker", "Kubernetes"],
+    "soft_skills": ["Communication", "Leadership", "Problem-solving"],
+    "benefits": ["Health insurance", "401k matching", "Stock options", "Flexible PTO", "Remote work allowance"],
+    "compensation_details": "Additional compensation info beyond base salary: bonuses, equity, etc.",
     "application_deadline": null,
     "confidence": 0.95
 }}
+
+FOCUS AREAS:
+- What will I be doing? (description)
+- What must I have? (minimum_requirements)
+- What would be nice to have? (preferred_qualifications)
+- What technologies will I use? (technical_skills)
+- What soft skills are needed? (soft_skills)
+- What's the total compensation package? (salary_range, benefits, compensation_details)
+
+AVOID: Company history, mission statements, general corporate information, marketing language.
 
 Job posting content:
 {markdown_content}
@@ -397,7 +412,7 @@ Return ONLY the JSON object (no explanation):"""
             response = await ai_service.client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[{"role": "user", "content": prompt}],
-                max_tokens=1500,
+                max_tokens=3000,  # Increased for detailed responses
                 temperature=0.1
             )
             

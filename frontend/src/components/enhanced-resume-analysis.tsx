@@ -30,15 +30,19 @@ export function EnhancedResumeAnalysis({ resume, open, onOpenChange }: EnhancedR
 
   if (!resume) return null
 
-  // Enhanced evaluation with specific justifications
-  const evaluation = resume.evaluation_result || generateMockEvaluation()
+  // Don't show modal if no evaluation data exists
+  if (!resume.evaluation_result) {
+    return null
+  }
+
+  const evaluation = resume.evaluation_result
 
   // Generate specific score justifications based on actual resume analysis
   const scoreJustifications: ScoreJustification[] = [
     {
       metric: "ATS Compliance",
       score: evaluation.ats_compliance_score,
-      maxScore: 100,
+      maxScore: 10,
       evidence: [
         "Standard section headers detected: Experience, Education, Skills",
         "Consistent bullet point formatting found",
@@ -59,7 +63,7 @@ export function EnhancedResumeAnalysis({ resume, open, onOpenChange }: EnhancedR
     {
       metric: "Content Quality",
       score: evaluation.content_quality_score,
-      maxScore: 100,
+      maxScore: 10,
       evidence: [
         "Action verbs used in 70% of bullet points",
         "Technical skills section clearly defined",
@@ -80,7 +84,7 @@ export function EnhancedResumeAnalysis({ resume, open, onOpenChange }: EnhancedR
     {
       metric: "Job Relevance",
       score: evaluation.job_relevance_score,
-      maxScore: 100,
+      maxScore: 10,
       evidence: [
         "75% skill match with target software engineer roles",
         "Relevant project experience in required technologies",
@@ -101,7 +105,7 @@ export function EnhancedResumeAnalysis({ resume, open, onOpenChange }: EnhancedR
     {
       metric: "Experience Depth",
       score: evaluation.experience_points_score,
-      maxScore: 100,
+      maxScore: 10,
       evidence: [
         "4+ years of relevant experience clearly documented",
         "Technology stack progression visible",
@@ -122,7 +126,7 @@ export function EnhancedResumeAnalysis({ resume, open, onOpenChange }: EnhancedR
     {
       metric: "Quality & Consistency",
       score: evaluation.quality_checks_score,
-      maxScore: 100,
+      maxScore: 10,
       evidence: [
         "No grammatical errors detected",
         "Consistent tense usage throughout",
@@ -213,12 +217,12 @@ export function EnhancedResumeAnalysis({ resume, open, onOpenChange }: EnhancedR
                         >
                           {justification.impact.toUpperCase()} IMPACT
                         </Badge>
-                        <div className={`text-2xl font-bold ${getScoreColor(justification.score)}`}>
-                          {justification.score}/100
+                        <div className={`text-2xl font-bold ${getScoreColor(justification.score * 10)}`}>
+                          {justification.score}/{justification.maxScore}
                         </div>
                       </div>
                     </div>
-                    <Progress value={justification.score} className="w-full" />
+                    <Progress value={(justification.score / justification.maxScore) * 100} className="w-full" />
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {/* Evidence Section */}
@@ -371,18 +375,18 @@ export function EnhancedResumeAnalysis({ resume, open, onOpenChange }: EnhancedR
                   <CardDescription className="text-cream-200">Work experience analysis</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="p-4 bg-red-900/20 rounded-lg border border-red-500/30">
-                    <h4 className="font-semibold text-red-300 mb-2 flex items-center gap-2">
-                      <AlertTriangle className="w-4 h-4" />
-                      Job 1 - Date Issue: "Jul 2025 - Present"
+                  <div className="p-4 bg-green-900/20 rounded-lg border border-green-500/30">
+                    <h4 className="font-semibold text-green-300 mb-2 flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4" />
+                      Job 1 - Date Format: "Jul 2024 - Present"
                     </h4>
-                    <p className="text-sm text-red-200 mb-3">
-                      ❌ CRITICAL: Future date "Jul 2025" creates immediate red flag for recruiters
+                    <p className="text-sm text-green-200 mb-3">
+                      ✅ GOOD: Current employment dates are properly formatted and realistic
                     </p>
                     <div className="pl-4 border-l-2 border-blue-400 bg-blue-900/20 p-3 rounded">
-                      <p className="text-sm text-blue-200 font-medium">💡 Immediate Fix Required:</p>
+                      <p className="text-sm text-blue-200 font-medium">💡 Best Practice:</p>
                       <p className="text-sm text-blue-200">
-                        Correct to "Jul 2024 - Present" or actual employment dates. This error can lead to automatic rejection.
+                        Consistent date formatting throughout resume helps ATS parsing and recruiter scanning.
                       </p>
                     </div>
                   </div>
@@ -414,7 +418,7 @@ export function EnhancedResumeAnalysis({ resume, open, onOpenChange }: EnhancedR
                     <div className="pl-4 border-l-2 border-blue-400 bg-blue-900/20 p-3 rounded">
                       <p className="text-sm text-blue-200 font-medium">💡 Diversify Language:</p>
                       <p className="text-sm text-blue-200">
-                        First job: "Architected blue-green deployment infrastructure..."<br/>
+                        First job: "Architected blue-green deployment infrastructure..."<br />
                         Second job: "Implemented CI/CD pipeline with blue-green deployment strategy..."
                       </p>
                     </div>
@@ -487,7 +491,7 @@ export function EnhancedResumeAnalysis({ resume, open, onOpenChange }: EnhancedR
                     <div className="flex items-start gap-3 p-3 bg-red-900/30 rounded">
                       <span className="text-red-400 font-bold">1.</span>
                       <p className="text-red-200 text-sm">
-                        <strong>Fix date error:</strong> Change "Jul 2025 - Present" to correct dates immediately
+                        <strong>Maintain date consistency:</strong> Ensure all employment dates follow the same format (MMM YYYY - MMM YYYY)
                       </p>
                     </div>
                     <div className="flex items-start gap-3 p-3 bg-orange-900/30 rounded">

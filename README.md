@@ -1,34 +1,81 @@
-# JobFlow Pro - AI-Powered Job Search Automation
+# JobFlow Pro - AI-Powered Job Search Automation Platform
 
-A full-stack application for **on-demand job extraction** from URLs, with integrated Gmail email tracking using Google OAuth.
+A comprehensive full-stack application that transforms job searching from a chaotic process into an organized, AI-powered system. Built for students, new graduates, and job seekers who want to maximize their application success rate while saving 15+ hours weekly.
 
-## Features
+## 🚀 Core Features
 
-- 🔍 **Smart Job Extraction** - Extract job details from LinkedIn URLs with one click
-- 📊 **Interactive Dashboard** - View and filter extracted jobs with modern UI
-- 📤 **Export Functionality** - CSV, Excel, and Google Sheets export
-- 🤖 **AI-Powered Job Matching** - Smart job scoring and skill extraction
-- 📧 **Gmail Integration** - Automatic job application email tracking
-- 📱 **Responsive, Modern UI** - Built with Next.js and Tailwind CSS
+### **Job Management & Extraction**
+- 🔍 **Smart Job Extraction** - Extract job details from any job posting URL (LinkedIn, Indeed, company sites)
+- 📊 **Interactive Dashboard** - Modern UI with activity calendar, progress tracking, and real-time analytics
+- 📤 **Export Functionality** - CSV, Excel, and Google Sheets export for all job data
+- 🤖 **AI-Powered Job Matching** - Smart compatibility scoring based on your profile and skills
+- 🔍 **Advanced Search** - Search across all extracted jobs with filters and intelligent matching
 
-## Tech Stack
+### **Resume Optimization & Evaluation**
+- 📄 **AI Resume Evaluation** - Multi-agent system providing recruiter-validated feedback
+- 🎯 **ATS Optimization** - Ensure your resume passes Applicant Tracking Systems
+- 📈 **Score Tracking** - Monitor improvement with detailed scoring breakdowns
+- 🔧 **Actionable Feedback** - Specific, line-by-line recommendations for improvement
+- 📊 **Market Positioning** - Understand your competitive level and salary range
 
-### Frontend
-- Next.js 14 (App Router)
-- TypeScript
-- Tailwind CSS
-- Shadcn UI
-- React Query
-- Zustand (State Management)
+### **Referral & Networking**
+- 📧 **AI Referral Email Generator** - Generate personalized referral requests
+- 👥 **Contact Management** - Organize and track your professional network
+- 📝 **Email Templates** - Multiple templates for different relationship types
+- 📊 **Referral Analytics** - Track response rates and success metrics
+- 🔄 **Follow-up Automation** - Never miss important networking opportunities
 
-### Backend
-- Python FastAPI
-- BeautifulSoup4 (Web Scraping)
-- PostgreSQL
-- Redis (Caching & Email Queue)
-- Celery (Email Processing Only)
-- Google OAuth 2.0 (Gmail Integration)
-- OpenAI GPT-4o-mini (AI Job Matching)
+### **Email & Application Tracking**
+- 📧 **Gmail Integration** - Automatic job application email tracking with OAuth
+- 📊 **Email Analytics** - Classify and analyze job-related communications
+- 🔔 **Smart Notifications** - Get alerts for interview invitations and responses
+- 📈 **Application Progress** - Track status from application to offer
+- 🎯 **Response Tracking** - Monitor follow-ups and interview scheduling
+
+### **Analytics & Intelligence**
+- 📊 **Activity Calendar** - LeetCode-style consistency tracking for job search activities
+- 📈 **Progress Analytics** - Detailed insights into your job search performance
+- 🎯 **Market Intelligence** - Industry trends, skill demands, and salary insights
+- 📊 **Success Metrics** - Track application rates, interview conversion, and offers
+- 🔍 **Personalized Recommendations** - AI-driven suggestions for profile optimization
+
+## 🛠️ Tech Stack
+
+### **Frontend**
+- **Next.js 14** (App Router) - Modern React framework with server-side rendering
+- **TypeScript** - Type-safe development with enhanced IDE support
+- **Tailwind CSS** - Utility-first CSS framework for rapid UI development
+- **Shadcn UI** - Beautiful, accessible component library
+- **Framer Motion** - Smooth animations and micro-interactions
+- **React Context** - State management for user authentication and data
+- **Custom Fonts** - Clash Display, Stardom, and Urbanist for premium typography
+
+### **Backend**
+- **Python FastAPI** - High-performance async web framework
+- **SQLAlchemy** - Advanced ORM with database migrations
+- **PostgreSQL** - Robust relational database for complex queries
+- **Redis** - Caching and background task queue management
+- **Celery** - Distributed task queue for background processing
+- **Pydantic** - Data validation and serialization
+- **Alembic** - Database migration management
+
+### **AI & Machine Learning**
+- **OpenAI GPT-4o-mini** - Advanced language model for job analysis and resume evaluation
+- **Multi-Agent System** - Specialized AI agents for different evaluation aspects
+- **Jina AI Reader** - Intelligent web scraping and content extraction
+- **Custom AI Services** - Job matching, resume scoring, and email classification
+
+### **Integrations**
+- **Google OAuth 2.0** - Secure Gmail integration and user authentication
+- **Gmail API** - Real-time email monitoring and classification
+- **Apollo API** - Contact discovery and professional networking
+- **Multiple Job Boards** - LinkedIn, Indeed, company career pages
+
+### **DevOps & Deployment**
+- **Docker** - Containerized application deployment
+- **Docker Compose** - Multi-service development environment
+- **Environment Management** - Secure configuration with .env files
+- **Logging & Monitoring** - Comprehensive application monitoring
 
 ## Prerequisites
 
@@ -121,27 +168,52 @@ Comprehensive job tracking system:
 - **Export Options**: CSV, Excel, Google Sheets
 - **Analytics**: Application success rates and insights
 
-## API Endpoints
+## 🔌 API Endpoints
 
-### Job Extraction
-- `POST /api/v1/jobs/extract-from-url` - Extract job from single URL
-- `POST /api/v1/jobs/extract-multiple-urls` - Batch URL extraction
-- `GET /api/v1/jobs/extraction-stats/{user_id}` - User extraction statistics
+### **Job Management**
+- `POST /api/v1/jobs/extract-from-url` - Extract job details from any URL
+- `POST /api/v1/jobs/extract-multiple-urls` - Batch job extraction
+- `GET /api/v1/jobs/` - List and filter jobs with advanced search
+- `GET /api/v1/jobs/{job_id}` - Get specific job details
+- `PUT /api/v1/jobs/{job_id}` - Update job information
+- `DELETE /api/v1/jobs/{job_id}` - Delete job record
+- `GET /api/v1/jobs/user/{user_id}/applications` - Get user's job applications
 
-### Job Management
-- `GET /api/v1/jobs/` - List all jobs
-- `GET /api/v1/jobs/{job_id}` - Get specific job
-- `PUT /api/v1/jobs/{job_id}` - Update job details
-- `DELETE /api/v1/jobs/{job_id}` - Delete job
+### **Resume Evaluation**
+- `POST /api/v1/resumes/upload` - Upload resume for AI analysis
+- `POST /api/v1/resumes/{resume_id}/evaluate` - Start AI-powered resume evaluation
+- `GET /api/v1/resumes/{resume_id}` - Get resume with evaluation results
+- `GET /api/v1/resumes/{resume_id}/progress` - Track evaluation progress
+- `DELETE /api/v1/resumes/{resume_id}` - Delete resume and evaluation data
 
-### User Profiles
-- `POST /api/v1/profiles/upload-resume/{user_id}` - Upload and parse resume
-- `GET /api/v1/profiles/profile/{user_id}` - Get user profile
-- `PUT /api/v1/profiles/profile/{user_id}` - Update profile
+### **Referral & Networking**
+- `POST /api/v1/referral/generate-email` - Generate AI-powered referral emails
+- `POST /api/v1/referral/create-request` - Create complete referral request
+- `GET /api/v1/referral/contacts` - Get user's professional contacts
+- `POST /api/v1/referral/send/{draft_id}` - Send referral email
+- `GET /api/v1/referral/analytics` - Get referral performance metrics
 
-### Email Agent
-- `POST /api/v1/email-agent/process/{user_id}` - Process user emails
-- `GET /api/v1/email-agent/analytics/{user_id}` - Email analytics
+### **Email & Communication**
+- `POST /api/v1/email-agent/connect-gmail` - Connect Gmail account
+- `POST /api/v1/email-agent/process/{user_id}` - Process and classify emails
+- `GET /api/v1/email-agent/analytics/{user_id}` - Email analytics and insights
+- `GET /api/v1/email-agent/events/{user_id}` - Get email events and responses
+
+### **Analytics & Intelligence**
+- `GET /api/v1/analytics/dashboard-all` - Complete analytics dashboard data
+- `GET /api/v1/analytics/executive-dashboard` - Executive summary and KPIs
+- `GET /api/v1/analytics/recommendations` - Personalized job search recommendations
+- `GET /api/v1/analytics/tech-trends` - Industry trends and skill analysis
+
+### **Activity Tracking**
+- `POST /api/v1/activity/track` - Track user activities (job extractions, referrals)
+- `GET /api/v1/activity/stats/{user_id}` - Get activity statistics and streaks
+- `GET /api/v1/activity/daily/{user_id}` - Get daily activity data for calendar
+
+### **User Management**
+- `GET /api/v1/user-profiles/{user_id}` - Get user profile with statistics
+- `POST /api/v1/user-profiles/{user_id}` - Create or update user profile
+- `GET /api/v1/profiles/profile/{user_id}` - Get detailed profile information
 
 ## System Architecture
 

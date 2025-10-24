@@ -132,17 +132,30 @@ async def extract_job_from_url(
             # Safely handle None values and string operations
             description = job_data.get("description") or ""
             requirements = job_data.get("requirements") or ""
-            
+
+            # For now, combine minimum + preferred requirements into requirements field
+            minimum_requirements = job_data.get("minimum_requirements") or ""
+            preferred_qualifications = job_data.get("preferred_qualifications") or ""
+
+            combined_requirements = []
+            if minimum_requirements:
+                combined_requirements.append(f"MINIMUM REQUIREMENTS:\n{minimum_requirements}")
+            if preferred_qualifications:
+                combined_requirements.append(f"PREFERRED QUALIFICATIONS:\n{preferred_qualifications}")
+
+            if combined_requirements:
+                requirements = "\n\n".join(combined_requirements)
+
             job_listing = JobListing(
                 title=job_data.get("title") or "Unknown Position",
                 company=job_data.get("company") or "Unknown Company",
                 location=job_data.get("location") or "Location not specified",
-                description=description[:1000] if description else "",  # Safe string slicing
-                requirements=requirements[:500] if requirements else "",  # Safe string slicing
+                description=description,
+                requirements=requirements,  # Contains categorized requirements
                 job_type=job_data.get("job_type") or "Not specified",
                 experience_level=job_data.get("experience_level") or "Not specified",
-                salary_range=job_data.get("salary_range"),  # Can be None
-                skills=job_data.get("skills") or [],  # Default to empty list
+                salary_range=job_data.get("salary_range"),
+                skills=job_data.get("technical_skills") or job_data.get("skills") or [],
                 application_url=str(request.url),
                 source="url_extraction",
                 source_url=str(request.url),

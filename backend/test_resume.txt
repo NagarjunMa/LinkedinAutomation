@@ -1,5 +1,0 @@
-John Doe
-Software Engineer
-5+ years experience in Python, React, AWS
-Education: BS Computer Science, Stanford University
-Skills: Python, JavaScript, React, Node.js, AWS, Docker

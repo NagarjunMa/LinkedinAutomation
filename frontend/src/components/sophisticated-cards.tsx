@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
@@ -27,6 +28,8 @@ import {
     ChevronDown
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useActivity } from "@/contexts/activity-context"
+import { getDailyActivity } from "@/lib/activity-api"
 
 interface OverviewCardProps {
     title: string
@@ -37,9 +40,10 @@ interface OverviewCardProps {
         interviews: number
     }
     activityData?: number[]  // Activity data for each day of the month
+    userId?: string  // User ID for activity tracking
 }
 
-export function OverviewCard({ title, period, stats, activityData }: OverviewCardProps) {
+export function OverviewCard({ title, period, stats, activityData, userId }: OverviewCardProps) {
     return (
         <Card className="premium-card hover:scale-105 transition-all duration-300 group h-full flex flex-col min-w-[280px] max-w-[500px] w-full">
             <CardHeader className="pb-3 flex-shrink-0">
@@ -66,7 +70,7 @@ export function OverviewCard({ title, period, stats, activityData }: OverviewCar
 
                 {/* Activity Calendar Grid */}
                 <div className="flex-1 flex items-center justify-center px-1 pb-1">
-                    <ActivityCalendar activityData={activityData} />
+                    <ActivityCalendar activityData={activityData} userId={userId} />
                 </div>
             </CardContent>
         </Card>
@@ -317,13 +321,53 @@ export function ProVersionCard({ title, description, price, period }: ProVersion
 
 interface ActivityCalendarProps {
     activityData?: number[]
+    userId?: string
 }
 
-function ActivityCalendar({ activityData }: ActivityCalendarProps) {
+function ActivityCalendar({ activityData, userId }: ActivityCalendarProps) {
+    const { stats } = useActivity()
+    const [realActivityData, setRealActivityData] = useState<{ [key: string]: number }>({})
+    const [loading, setLoading] = useState(false)
+
     const today = new Date()
     const currentMonth = today.getMonth()
     const currentYear = today.getFullYear()
     const currentDate = today.getDate()
+
+    // Load real activity data
+    useEffect(() => {
+        const loadActivityData = async () => {
+            if (!userId) return
+
+            setLoading(true)
+            try {
+                // Get current month's activity data
+                const startOfMonth = new Date(currentYear, currentMonth, 1)
+                const endOfMonth = new Date(currentYear, currentMonth + 1, 0)
+
+                const dailyData = await getDailyActivity(
+                    userId,
+                    startOfMonth.toISOString().split('T')[0],
+                    endOfMonth.toISOString().split('T')[0]
+                )
+
+                // Transform to date -> totalTasks mapping
+                const activityMap: { [key: string]: number } = {}
+                dailyData.forEach((day: any) => {
+                    const totalTasks = (day.job_extractions || 0) + (day.referral_emails || 0)
+                    activityMap[day.date] = totalTasks
+                })
+
+                setRealActivityData(activityMap)
+            } catch (error) {
+                console.error('Error loading activity data:', error)
+            } finally {
+                setLoading(false)
+            }
+        }
+
+        loadActivityData()
+    }, [userId, currentMonth, currentYear])
 
     // Get first day of month and number of days
     const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay()
@@ -346,7 +390,8 @@ function ActivityCalendar({ activityData }: ActivityCalendarProps) {
     // Current month's days
     for (let date = 1; date <= daysInMonth; date++) {
         const isToday = date === currentDate
-        const activity = activityData?.[date - 1] || 0 // Get activity for this day
+        const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(date).padStart(2, '0')}`
+        const activity = realActivityData[dateStr] || activityData?.[date - 1] || 0
 
         calendarDays.push({
             date,
@@ -374,12 +419,12 @@ function ActivityCalendar({ activityData }: ActivityCalendarProps) {
 
         if (activity === 0) {
             return "bg-primary-700 text-cream-400 hover:bg-primary-600"
+        } else if (activity >= 10) {
+            return "bg-orange-600 text-white hover:bg-orange-700" // Dark orange for 10+ tasks
         } else if (activity >= 5) {
-            return "bg-orange-500 text-white"
-        } else if (activity >= 3) {
-            return "bg-orange-400 text-white"
+            return "bg-orange-400 text-white hover:bg-orange-500" // Medium orange for 5-9 tasks
         } else if (activity >= 1) {
-            return "bg-orange-300 text-gray-900"
+            return "bg-orange-200 text-gray-900 hover:bg-orange-300" // Light orange for 1-4 tasks
         }
 
         return "bg-primary-700 text-cream-400"

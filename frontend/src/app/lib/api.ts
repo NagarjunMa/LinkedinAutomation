@@ -3,6 +3,119 @@
 import { JobStats, TimeRange } from '../types/stats';
 import type { JobFilters } from '../types/job';
 
+// Enhanced profile types
+export interface WorkExperience {
+    job_title: string;
+    company: string;
+    location: string;
+    start_date: string;
+    end_date?: string; // Optional for current job
+}
+
+export interface Education {
+    university: string;
+    degree: string;
+    field_of_study: string;
+    location: string;
+    start_date: string;
+    end_date?: string;
+}
+
+// Profile types - Updated to match backend database schema
+export interface UserProfile {
+    user_id: string;
+    full_name: string;
+    email: string;
+    phone?: string;
+    location?: string;
+    work_authorization?: string;
+
+    // Professional Summary
+    years_of_experience?: number;
+    career_level?: string;
+    professional_summary?: string;
+
+    // Skills & Technologies (JSON arrays)
+    programming_languages?: string[];
+    frameworks_libraries?: string[];
+    tools_platforms?: string[];
+    soft_skills?: string[];
+
+    // Experience
+    job_titles?: string[];
+    companies?: string[];
+    industries?: string[];
+    experience_descriptions?: string[];
+
+    // Education
+    degrees?: string[];
+    institutions?: string[];
+    graduation_years?: string[];
+    relevant_coursework?: string[];
+
+    // Job Preferences
+    desired_roles?: string[];
+    preferred_locations?: string[];
+    salary_range_min?: number;
+    salary_range_max?: number;
+    job_types?: string[];
+    company_size_preference?: string[];
+
+    // AI-Generated Insights
+    ai_profile_summary?: string;
+    ai_strengths?: string[];
+    ai_improvement_areas?: string[];
+    ai_career_advice?: string;
+
+    // Legacy/computed fields for backwards compatibility
+    target_job_titles?: string[]; // alias for desired_roles
+    minimum_salary?: number; // alias for salary_range_min
+    experience_level?: string; // alias for career_level
+    graduation_date?: string;
+    university?: string;
+    background_summary?: string; // alias for professional_summary
+    email_signature?: string;
+    primary_resume_id?: string;
+    referral_template?: string;
+    work_experiences?: WorkExperience[];
+    education_history?: Education[];
+
+    // Metadata
+    created_at: string;
+    updated_at: string;
+    last_resume_upload?: string;
+    total_applications: number;
+    total_resumes: number;
+    profile_completion: number;
+}
+
+export interface UserSettings {
+    user_id: string;
+    email_notifications?: {
+        application_updates: boolean;
+        interview_reminders: boolean;
+        weekly_digest: boolean;
+        referral_responses: boolean;
+    };
+    notification_frequency?: string;
+    email_forwarding_enabled?: string;
+    forwarding_address?: string;
+    last_email_check?: string;
+    data_retention_days?: number;
+    analytics_enabled?: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface ProfileChangeHistory {
+    id: string;
+    user_id: string;
+    field_changed: string;
+    old_value?: string;
+    new_value?: string;
+    changed_at: string;
+}
+
 // Resume evaluation types
 export interface ResumeFile {
     id: string;
@@ -59,10 +172,10 @@ export interface ResumeEvaluation {
     };
     // Evaluation metadata
     evaluation_metadata?: {
-        processing_time_seconds: number;
-        successful_agents: number;
-        total_agents: number;
-        confidence_percentage: number;
+        processing_time_seconds?: number;
+        successful_agents?: number;
+        total_agents?: number;
+        confidence_percentage?: number;
         evaluation_type: 'agentic' | 'legacy';
     };
 }
@@ -779,6 +892,11 @@ export const resumeApi = {
                                     ats_compatibility: detailedData.evaluation.ats_compatibility,
                                     detailed_feedback: detailedData.evaluation.detailed_feedback,
                                     keyword_analysis: detailedData.evaluation.keyword_analysis || { relevant: [], missing: [], score: 0 },
+                                    // Include enhanced agentic evaluation data
+                                    agent_results: detailedData.evaluation.agent_results,
+                                    critical_issues: detailedData.evaluation.critical_issues,
+                                    market_positioning: detailedData.evaluation.market_positioning,
+                                    evaluation_metadata: detailedData.evaluation.evaluation_metadata,
                                 };
                             }
                         }
@@ -825,6 +943,11 @@ export const resumeApi = {
                 ats_compatibility: data.evaluation.ats_compatibility,
                 detailed_feedback: data.evaluation.detailed_feedback,
                 keyword_analysis: data.evaluation.keyword_analysis || { relevant: [], missing: [], score: 0 },
+                // Include enhanced agentic evaluation data
+                agent_results: data.evaluation.agent_results,
+                critical_issues: data.evaluation.critical_issues,
+                market_positioning: data.evaluation.market_positioning,
+                evaluation_metadata: data.evaluation.evaluation_metadata,
             } : undefined,
         };
     },
@@ -853,5 +976,295 @@ export const resumeApi = {
             storageUsed: data.storage_used,
             storageLimit: data.storage_limit,
         };
+    },
+};
+
+// Profile API
+export const profileApi = {
+    // Get user profile with statistics
+    getProfile: async (userId: string = 'current'): Promise<UserProfile> => {
+        const response = await fetch(`${API_BASE_URL}/api/v1/user-profiles/${userId}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch profile');
+        }
+        return response.json();
+    },
+
+    // Create user profile
+    createProfile: async (userId: string, profileData: Partial<UserProfile>): Promise<UserProfile> => {
+        const response = await fetch(`${API_BASE_URL}/api/v1/user-profiles/${userId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(profileData),
+        });
+        if (!response.ok) {
+            throw new Error('Failed to create profile');
+        }
+        return response.json();
+    },
+
+    // Update user profile
+    updateProfile: async (profileData: Partial<UserProfile>, userId: string = 'current'): Promise<UserProfile> => {
+        const response = await fetch(`${API_BASE_URL}/api/v1/user-profiles/${userId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(profileData),
+        });
+        if (!response.ok) {
+            throw new Error('Failed to update profile');
+        }
+        return response.json();
+    },
+
+    // Get user settings
+    getSettings: async (userId: string): Promise<UserSettings> => {
+        const response = await fetch(`${API_BASE_URL}/api/v1/user-profiles/${userId}/settings`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch settings');
+        }
+        return response.json();
+    },
+
+    // Update user settings
+    updateSettings: async (userId: string, settingsData: Partial<UserSettings>): Promise<UserSettings> => {
+        const response = await fetch(`${API_BASE_URL}/api/v1/user-profiles/${userId}/settings`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(settingsData),
+        });
+        if (!response.ok) {
+            throw new Error('Failed to update settings');
+        }
+        return response.json();
+    },
+
+    // Update notification settings
+    updateNotifications: async (userId: string, notifications: Partial<UserSettings['email_notifications']>): Promise<UserSettings> => {
+        const response = await fetch(`${API_BASE_URL}/api/v1/user-profiles/${userId}/settings/notifications`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(notifications),
+        });
+        if (!response.ok) {
+            throw new Error('Failed to update notifications');
+        }
+        return response.json();
+    },
+
+    // Update email tracking settings
+    updateEmailTracking: async (userId: string, emailSettings: { email_forwarding_enabled?: string; forwarding_address?: string; notification_frequency?: string }): Promise<UserSettings> => {
+        const response = await fetch(`${API_BASE_URL}/api/v1/user-profiles/${userId}/settings/email-tracking`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(emailSettings),
+        });
+        if (!response.ok) {
+            throw new Error('Failed to update email settings');
+        }
+        return response.json();
+    },
+
+    // Update privacy settings
+    updatePrivacy: async (userId: string, privacySettings: { data_retention_days?: number; analytics_enabled?: string }): Promise<UserSettings> => {
+        const response = await fetch(`${API_BASE_URL}/api/v1/user-profiles/${userId}/settings/privacy`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(privacySettings),
+        });
+        if (!response.ok) {
+            throw new Error('Failed to update privacy settings');
+        }
+        return response.json();
+    },
+
+    // Get profile change history
+    getChangeHistory: async (userId: string, limit: number = 50): Promise<ProfileChangeHistory[]> => {
+        const response = await fetch(`${API_BASE_URL}/api/v1/user-profiles/${userId}/change-history?limit=${limit}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch change history');
+        }
+        return response.json();
+    },
+};
+
+// Referral types and API
+export interface ReferralDetailedInfo {
+    // Sent email info
+    sent_id: number;
+    sent_at: string;
+    response_received: boolean;
+    response_date?: string;
+
+    // Contact information
+    contact_name: string;
+    contact_email: string;
+    company: string;
+    position?: string;
+    contact_relationship?: string;
+
+    // Email content
+    email_subject?: string;
+    email_body?: string;
+    template_used?: string;
+
+    // Job information (if applicable)
+    job_title?: string;
+    job_company?: string;
+    job_id?: number;
+}
+
+export interface ReferralDetailedListResponse {
+    referrals: ReferralDetailedInfo[];
+    total_count: number;
+    page: number;
+    page_size: number;
+}
+
+export interface ReferralFilters {
+    page?: number;
+    page_size?: number;
+    company_filter?: string;
+    date_from?: string;
+    date_to?: string;
+}
+
+// Referral API endpoints
+export const referralApi = {
+    // Get all sent referrals with detailed information
+    getSentReferrals: async (filters?: ReferralFilters): Promise<ReferralDetailedListResponse> => {
+        const queryParams = new URLSearchParams();
+
+        if (filters?.page) queryParams.append('page', filters.page.toString());
+        if (filters?.page_size) queryParams.append('page_size', filters.page_size.toString());
+        if (filters?.company_filter) queryParams.append('company_filter', filters.company_filter);
+        if (filters?.date_from) queryParams.append('date_from', filters.date_from);
+        if (filters?.date_to) queryParams.append('date_to', filters.date_to);
+
+        const url = `${API_BASE_URL}/api/v1/referral/sent${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch sent referrals');
+        }
+
+        return response.json();
+    },
+
+    // Get referral analytics
+    getAnalytics: async () => {
+        const response = await fetch(`${API_BASE_URL}/api/v1/referral/analytics`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch referral analytics');
+        }
+        return response.json();
+    },
+
+    // Get referral stats for dashboard
+    getStats: async () => {
+        const response = await fetch(`${API_BASE_URL}/api/v1/referral/stats`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch referral stats');
+        }
+        return response.json();
+    },
+
+    // Mark response as received
+    markResponseReceived: async (sentId: number, responseDate?: string) => {
+        const body: any = {};
+        if (responseDate) body.response_date = responseDate;
+
+        const response = await fetch(`${API_BASE_URL}/api/v1/referral/responses/${sentId}/mark-received`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to mark response as received');
+        }
+
+        return response.json();
+    },
+
+    // Generate referral email (preview only)
+    generateEmail: async (jobId: string | number, contactInfo: any) => {
+        try {
+            console.log('API call to:', `${API_BASE_URL}/api/v1/referral/generate-email`)
+            console.log('Request payload:', {
+                job_id: parseInt(String(jobId)),
+                contact_info: contactInfo,
+            })
+
+            const response = await fetch(`${API_BASE_URL}/api/v1/referral/generate-email`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    job_id: parseInt(String(jobId)),
+                    contact_info: contactInfo,
+                }),
+            });
+
+            console.log('API response status:', response.status)
+
+            if (!response.ok) {
+                const errorText = await response.text()
+                console.error('API error response:', errorText)
+                throw new Error(`Failed to generate referral email: ${response.status} ${errorText}`)
+            }
+
+            const result = await response.json()
+            console.log('API response data:', result)
+            return result
+        } catch (error) {
+            console.error('API call error:', error)
+            throw error
+        }
+    },
+
+    // Create referral request (save draft and contact)
+    createRequest: async (jobId: string | number, contactInfo: any) => {
+        const response = await fetch(`${API_BASE_URL}/api/v1/referral/create-request`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                job_id: parseInt(String(jobId)),
+                contact_info: contactInfo,
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to create referral request');
+        }
+
+        return response.json();
+    },
+
+    // Update draft email
+    updateDraft: async (draftId: string, updates: any) => {
+        const response = await fetch(`${API_BASE_URL}/api/v1/referral/drafts/${draftId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updates),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to update draft');
+        }
+
+        return response.json();
+    },
+
+    // Send referral email (mark as sent)
+    sendEmail: async (draftId: string) => {
+        const response = await fetch(`${API_BASE_URL}/api/v1/referral/send/${draftId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to send referral email');
+        }
+
+        return response.json();
     },
 };

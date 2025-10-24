@@ -3,6 +3,8 @@
  * Handles all communication with the analytics backend
  */
 
+import { createClient } from '@/lib/supabase'
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const ANALYTICS_BASE = `${API_BASE_URL}/api/v1/analytics-intelligence`;
 
@@ -167,15 +169,26 @@ export class AnalyticsAPI {
     options: RequestInit = {}
   ): Promise<APIResponse<T>> {
     const url = `${this.baseURL}${endpoint}`;
+    console.log('Analytics API Request:', { url, endpoint, baseURL: this.baseURL });
 
     const defaultHeaders = {
       'Content-Type': 'application/json',
     };
 
-    // Add auth token if available
-    const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
-    if (token) {
-      defaultHeaders['Authorization'] = `Bearer ${token}`;
+    // Add auth token from Supabase session
+    if (typeof window !== 'undefined') {
+      try {
+        const supabase = createClient()
+        const { data: { session } } = await supabase.auth.getSession()
+
+        console.log('Supabase session:', { hasSession: !!session, hasToken: !!session?.access_token });
+
+        if (session?.access_token) {
+          defaultHeaders['Authorization'] = `Bearer ${session.access_token}`;
+        }
+      } catch (error) {
+        console.warn('Failed to get Supabase session for analytics API:', error)
+      }
     }
 
     const config: RequestInit = {
@@ -187,10 +200,13 @@ export class AnalyticsAPI {
     };
 
     try {
+      console.log('Making request with config:', { url, headers: defaultHeaders });
       const response = await fetch(url, config);
+      console.log('Response received:', { status: response.status, statusText: response.statusText, url: response.url });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        console.error('API Error:', { status: response.status, statusText: response.statusText, errorData, url });
 
         if (response.status === 400 && errorData.error_code === 'INSUFFICIENT_DATA') {
           throw new InsufficientDataError(errorData.message);
@@ -204,8 +220,10 @@ export class AnalyticsAPI {
       }
 
       const data = await response.json();
+      console.log('API Success:', { data });
       return data as APIResponse<T>;
     } catch (error) {
+      console.error('Analytics API Error:', error);
       if (error instanceof AnalyticsAPIError) {
         throw error;
       }

@@ -27,10 +27,16 @@ class RedFlagDetectionAgent(BaseAgent):
         context = context or {}
         target_roles = context.get('target_roles', [])
         
+        current_date = context.get('current_date', 'October 2025')
+        current_year = context.get('current_year', 2025)
+        
         prompt = f"""
         You are a senior recruiter with 15+ years of experience who has reviewed thousands of resumes.
         Your expertise is in identifying red flags and potential issues that prevent interviews or reduce competitiveness.
         Analyze this resume for any concerning patterns or issues.
+
+        CURRENT DATE CONTEXT: Today is {current_date} (Year: {current_year})
+        When analyzing dates, remember that dates before {current_year} are in the past, and dates in {current_year} or earlier are valid.
 
         Resume Content:
         {resume_content}
