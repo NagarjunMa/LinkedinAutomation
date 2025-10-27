@@ -1,7 +1,7 @@
 // Enhanced API wrapper using the new error handling system
 import { apiRequest, ApiError } from './api-error-handler';
-import type { JobFilters } from '../types/job';
-import type { JobStats, TimeRange } from '../types/stats';
+import type { JobFilters } from '../app/types/job';
+import type { JobStats, TimeRange } from '../app/types/stats';
 import {
   UserProfile,
   UserSettings,
@@ -9,7 +9,7 @@ import {
   ResumeFile,
   ResumeEvaluation,
   RecentApplication
-} from './api';
+} from '../app/lib/api';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 

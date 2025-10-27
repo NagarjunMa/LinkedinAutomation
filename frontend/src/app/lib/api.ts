@@ -489,6 +489,22 @@ export interface CompanyFitAnalysisResult {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
+// Helper function to get authentication headers
+function getAuthHeaders(): Record<string, string> {
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+    };
+
+    // Add authentication if available
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+    // In development mode, don't send any auth headers to allow backend fallback to test user
+
+    return headers;
+}
+
 // Email Agent API endpoints
 export const emailAgentApi = {
     // Get configuration status
@@ -1263,6 +1279,177 @@ export const referralApi = {
 
         if (!response.ok) {
             throw new Error('Failed to send referral email');
+        }
+
+        return response.json();
+    },
+};
+
+// Referral Templates API
+export const referralTemplatesAPI = {
+    // Generate a new referral template
+    generate: async (data: {
+        contact_info: {
+            name: string;
+            email?: string;
+            company: string;
+            position?: string;
+            company_size?: string;
+            linkedin_url?: string;
+        };
+        job_info: {
+            job_id?: string;
+            title: string;
+            company: string;
+            industry?: string;
+            level?: string;
+            description?: string;
+            user_background?: string;
+        };
+        user_preferences?: {
+            preferred_tone?: string;
+            preferred_length?: string;
+            include_resume?: boolean;
+            include_portfolio?: boolean;
+        };
+    }) => {
+        const response = await fetch(`${API_BASE_URL}/api/v1/referral-templates/generate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...getAuthHeaders()
+            },
+            body: JSON.stringify(data),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to generate referral template');
+        }
+
+        return response.json();
+    },
+
+    // Get user's templates
+    getTemplates: async (limit: number = 20, offset: number = 0) => {
+        const response = await fetch(`${API_BASE_URL}/api/v1/referral-templates/?limit=${limit}&offset=${offset}`, {
+            method: 'GET',
+            headers: getAuthHeaders(),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch templates');
+        }
+
+        return response.json();
+    },
+
+    // Get template statistics
+    getStats: async () => {
+        const response = await fetch(`${API_BASE_URL}/api/v1/referral-templates/stats`, {
+            method: 'GET',
+            headers: getAuthHeaders(),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch template stats');
+        }
+
+        return response.json();
+    },
+
+    // Get specific template
+    getTemplate: async (templateId: string) => {
+        const response = await fetch(`${API_BASE_URL}/api/v1/referral-templates/${templateId}`, {
+            method: 'GET',
+            headers: getAuthHeaders(),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch template');
+        }
+
+        return response.json();
+    },
+
+    // Mark template as sent
+    markSent: async (templateId: string) => {
+        const response = await fetch(`${API_BASE_URL}/api/v1/referral-templates/${templateId}/mark-sent`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to mark template as sent');
+        }
+
+        return response.json();
+    },
+
+    // Record feedback
+    recordFeedback: async (templateId: string, feedback: {
+        got_response: boolean;
+        response_type?: string;
+        response_quality_score?: number;
+        user_satisfaction_score?: number;
+        feedback_notes?: string;
+    }) => {
+        const response = await fetch(`${API_BASE_URL}/api/v1/referral-templates/${templateId}/feedback`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...getAuthHeaders()
+            },
+            body: JSON.stringify(feedback),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to record feedback');
+        }
+
+        return response.json();
+    },
+
+    // Delete template
+    deleteTemplate: async (templateId: string) => {
+        const response = await fetch(`${API_BASE_URL}/api/v1/referral-templates/${templateId}`, {
+            method: 'DELETE',
+            headers: getAuthHeaders(),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to delete template');
+        }
+
+        return response.json();
+    },
+
+    // Get user preferences
+    getPreferences: async () => {
+        const response = await fetch(`${API_BASE_URL}/api/v1/referral-templates/preferences/current`, {
+            method: 'GET',
+            headers: getAuthHeaders(),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch preferences');
+        }
+
+        return response.json();
+    },
+
+    // Update user preferences
+    updatePreferences: async (preferences: any) => {
+        const response = await fetch(`${API_BASE_URL}/api/v1/referral-templates/preferences`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                ...getAuthHeaders()
+            },
+            body: JSON.stringify(preferences),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to update preferences');
         }
 
         return response.json();

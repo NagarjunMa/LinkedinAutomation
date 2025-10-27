@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -55,7 +55,7 @@ const validatePassword = (password: string) => {
   return password.length >= 6
 }
 
-export default function LoginPage() {
+function LoginForm() {
   const [isSignUp, setIsSignUp] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [formData, setFormData] = useState({
@@ -609,5 +609,17 @@ export default function LoginPage() {
         </motion.div>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-primary-950 flex items-center justify-center">
+        <div className="text-cream-50">Loading...</div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   )
 }

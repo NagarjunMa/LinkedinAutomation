@@ -171,7 +171,7 @@ export class AnalyticsAPI {
     const url = `${this.baseURL}${endpoint}`;
     console.log('Analytics API Request:', { url, endpoint, baseURL: this.baseURL });
 
-    const defaultHeaders = {
+    const defaultHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
     };
 

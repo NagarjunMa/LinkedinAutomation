@@ -30,6 +30,7 @@ export interface RequestConfig {
   retries?: Partial<RetryConfig>;
   showErrorToast?: boolean;
   silentErrors?: number[];
+  headers?: Record<string, string>;
 }
 
 const DEFAULT_RETRY_CONFIG: RetryConfig = {
@@ -180,7 +181,7 @@ export class ApiErrorHandler {
       }
     };
 
-    let lastError: ApiError;
+    let lastError: ApiError = new Error('Unknown error') as ApiError;
 
     for (let attempt = 0; attempt <= retryConfig.maxRetries; attempt++) {
       try {

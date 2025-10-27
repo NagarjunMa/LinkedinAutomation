@@ -102,10 +102,10 @@ export function SophisticatedSidebar({ className, onClose }: SophisticatedSideba
             {/* Header */}
             <div className="flex h-16 items-center justify-between px-4 border-b border-primary-600">
                 {!collapsed && (
-                    <div className="flex items-center space-x-2">
+                    <Link href="/dashboard" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
                         <Logo size={32} showText={false} />
                         <span className="text-lg font-semibold text-cream-50">JobFlow Pro</span>
-                    </div>
+                    </Link>
                 )}
                 <div className="flex items-center gap-2">
                     {/* Mobile close button */}

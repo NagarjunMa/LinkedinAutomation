@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -87,13 +88,13 @@ export function SophisticatedHeader({
                         )}
 
                         {/* Logo and Title */}
-                        <div className="flex items-center space-x-2 sm:space-x-3">
+                        <Link href="/dashboard" className="flex items-center space-x-2 sm:space-x-3 hover:opacity-80 transition-opacity">
                             <Logo size={32} showText={false} />
                             <div className="hidden sm:block">
                                 <h1 className="text-lg sm:text-xl font-semibold text-cream-50">JobFlow Pro</h1>
                                 <p className="text-xs sm:text-sm text-cream-300">Job Search Assistant</p>
                             </div>
-                        </div>
+                        </Link>
                     </div>
 
                     {/* Right side - Search and User actions */}

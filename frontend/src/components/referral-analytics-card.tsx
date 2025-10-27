@@ -113,21 +113,18 @@ export function ReferralAnalyticsCard({
       "premium-card hover:scale-105 transition-all duration-300 group max-h-[400px] flex flex-col",
       className
     )}>
-      <CardHeader className="pb-3 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Mail className="h-5 w-5 text-accent-400 group-hover:text-accent-300 transition-colors" />
-            <CardTitle className="text-cream-50 text-lg group-hover:text-accent-400 transition-colors">
-              {title}
-            </CardTitle>
-          </div>
+      <CardHeader className="pb-4 flex-shrink-0">
+        <div className="flex items-center justify-between mb-2">
+          <CardTitle className="text-cream-50 text-lg group-hover:text-accent-400 transition-colors">
+            {title}
+          </CardTitle>
           {showActions && (
             <Button
               variant="ghost"
               size="sm"
               onClick={handleRefresh}
               disabled={isRefreshing}
-              className="text-cream-300 hover:text-cream-50 text-xs px-2 py-1"
+              className="text-cream-300 hover:text-cream-50 text-xs px-2 py-1 h-6"
             >
               {isRefreshing ? (
                 <RefreshCw className="h-3 w-3 animate-spin" />
@@ -139,38 +136,33 @@ export function ReferralAnalyticsCard({
         </div>
 
         {/* Trend Summary */}
-        <div className="flex items-center justify-between text-sm">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-1">
-              <TrendIcon className={cn("h-4 w-4", getTrendColor())} />
-              <span className={cn("font-medium capitalize", getTrendColor())}>
-                {trendDirection} trend
-              </span>
-            </div>
-            <Badge className="bg-primary-700 text-cream-300 border-primary-500 text-xs">
-              {Math.round(analyticsData.response_rate)}% response rate
-            </Badge>
+        <div className="flex items-center gap-3 mt-2">
+          <div className="flex items-center space-x-1">
+            <TrendIcon className={cn("h-4 w-4", getTrendColor())} />
+            <span className={cn("font-medium capitalize text-sm", getTrendColor())}>
+              {trendDirection} trend
+            </span>
           </div>
-          <div className="text-cream-400 text-xs">
-            {analyticsData.total_sent} total sent
-          </div>
+          <Badge className="bg-primary-700 text-cream-300 border-primary-500 text-xs">
+            {Math.round(analyticsData.response_rate)}% response rate
+          </Badge>
         </div>
       </CardHeader>
 
       <CardContent className="flex-1 flex flex-col space-y-4 min-h-0">
         {/* Key Metrics */}
-        <div className="grid grid-cols-3 gap-3">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-accent-400">{analyticsData.this_week}</div>
-            <div className="text-xs text-cream-300">This Week</div>
+        <div className="grid grid-cols-3 gap-3 pt-2">
+          <div className="text-center p-3 rounded-lg bg-primary-800/30 hover:bg-primary-800/50 transition-colors">
+            <div className="text-2xl font-bold text-accent-400 mb-1">{analyticsData.this_week}</div>
+            <div className="text-xs text-cream-300 font-medium">This Week</div>
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-cream-50">{analyticsData.total_sent}</div>
-            <div className="text-xs text-cream-300">Total Sent</div>
+          <div className="text-center p-3 rounded-lg bg-primary-800/30 hover:bg-primary-800/50 transition-colors">
+            <div className="text-2xl font-bold text-cream-50 mb-1">{analyticsData.total_sent}</div>
+            <div className="text-xs text-cream-300 font-medium">Total Sent</div>
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-green-400">{analyticsData.response_rate}%</div>
-            <div className="text-xs text-cream-300">Response Rate</div>
+          <div className="text-center p-3 rounded-lg bg-primary-800/30 hover:bg-primary-800/50 transition-colors">
+            <div className="text-2xl font-bold text-green-400 mb-1">{analyticsData.response_rate}%</div>
+            <div className="text-xs text-cream-300 font-medium">Response Rate</div>
           </div>
         </div>
 
@@ -211,15 +203,15 @@ export function ReferralAnalyticsCard({
 
         {/* Action Button */}
         {showActions && (
-          <div className="mt-auto">
+          <div className="mt-4 pt-4 border-t border-primary-700/50">
             <Button
               className="w-full bg-primary-700 hover:bg-primary-600 text-cream-50 border-primary-500 hover:border-accent-500 transition-all duration-200 group/btn"
               onClick={() => {
                 // Navigate to referrals page or open referral form
-                console.log('Open referral management')
+                window.location.href = '/dashboard/referrals'
               }}
             >
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center justify-center space-x-2">
                 <Send className="h-4 w-4 group-hover/btn:text-accent-400 transition-colors" />
                 <span>Manage Referrals</span>
                 <ExternalLink className="h-3 w-3 group-hover/btn:text-accent-400 transition-colors" />
