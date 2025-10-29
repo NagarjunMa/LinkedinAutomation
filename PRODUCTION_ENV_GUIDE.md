@@ -275,7 +275,14 @@ JobFlow Pro Project
 
 **"SQLALCHEMY_DATABASE_URI is required"**
 - Ensure your Supabase connection string is correct
-- Format: `postgresql://postgres:[password]@db.[ref].supabase.co:5432/postgres`
+- **For Railway: Use Connection Pooling (FREE)** instead of Direct connection
+- Format: `postgresql://postgres.YOUR_REF:[password]@aws-0-us-west-1.pooler.supabase.com:6543/postgres`
+
+**"Network is unreachable" or IPv6 connection errors**
+- Use Supabase **Connection Pooler** (port 6543) instead of Direct connection (port 5432)
+- Go to Supabase → Settings → Database → Connection pooling section
+- Copy the pooler URI - it resolves to IPv4 automatically (FREE)
+- **Don't** pay $25/month for IPv4 add-on when pooler works for free!
 
 **"CORS errors in frontend"**
 - Add your frontend URL to `CORS_ORIGINS`

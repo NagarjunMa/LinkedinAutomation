@@ -9,7 +9,7 @@ Configuration is loaded from environment variables with sensible defaults for de
 For production deployment, ensure all required environment variables are set.
 """
 
-from typing import List, Optional
+from typing import List, Optional, Union
 from pydantic_settings import BaseSettings
 from pydantic import AnyHttpUrl, validator
 
@@ -62,7 +62,7 @@ class Settings(BaseSettings):
     """
 
     @validator("CORS_ORIGINS", pre=True)
-    def assemble_cors_origins(cls, v: str | List[str]) -> List[str]:
+    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:
         """
         Parse CORS origins from environment variable.
         Accepts comma-separated string or list format.

@@ -1,0 +1,9 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+restartPolicyType = "on_failure"
+startCommand = "npm start"
+
+[environment]
+NODE_ENV = "production"
