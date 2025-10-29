@@ -225,7 +225,7 @@ export function EnhancedReferralTemplateGenerator({ onTemplateGenerated, onClose
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="space-y-2">
-                        <Label htmlFor="pastedText" className="text-cream-200">
+                        <Label htmlFor="pastedText" className="text-cream-200 text-sm md:text-base">
                             Paste LinkedIn Profile Info
                         </Label>
                         <Textarea
@@ -245,7 +245,7 @@ Email: john@techcorp.com`}
                             value={pastedText}
                             onChange={(e) => setPastedText(e.target.value)}
                             onBlur={handleParseContact}
-                            className="bg-primary-950 border-primary-700 text-cream-50"
+                            className="bg-primary-950 border-primary-700 text-cream-50 text-sm md:text-base min-h-[120px] md:min-h-[150px] touch-manipulation"
                             rows={6}
                         />
                     </div>
@@ -384,18 +384,20 @@ Email: john@techcorp.com`}
             <Button
                 onClick={generateTemplate}
                 disabled={loading}
-                className="w-full bg-accent-500 hover:bg-accent-600 text-white"
+                className="w-full bg-accent-500 hover:bg-accent-600 text-white min-h-[48px] md:min-h-[52px] text-sm md:text-base touch-manipulation"
                 size="lg"
             >
                 {loading ? (
                     <>
                         <Sparkles className="h-5 w-5 mr-2 animate-spin" />
-                        Generating Template...
+                        <span className="hidden sm:inline">Generating Template...</span>
+                        <span className="sm:hidden">Generating...</span>
                     </>
                 ) : (
                     <>
                         <Sparkles className="h-5 w-5 mr-2" />
-                        Generate Referral Template
+                        <span className="hidden sm:inline">Generate Referral Template</span>
+                        <span className="sm:hidden">Generate Template</span>
                     </>
                 )}
             </Button>

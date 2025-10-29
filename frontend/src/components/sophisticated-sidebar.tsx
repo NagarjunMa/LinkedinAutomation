@@ -145,8 +145,9 @@ export function SophisticatedSidebar({ className, onClose }: SophisticatedSideba
                             <Link
                                 key={item.name}
                                 href={item.href}
+                                onClick={onClose}
                                 className={cn(
-                                    "group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200",
+                                    "group flex items-center px-3 py-3 text-sm md:text-base font-medium rounded-lg transition-all duration-200 min-h-[44px] touch-manipulation",
                                     isActive
                                         ? "bg-gradient-warm/20 text-accent-400 border-r-2 border-accent-500 glow-orange"
                                         : "text-cream-300 hover:bg-primary-800 hover:text-cream-50"
@@ -154,12 +155,12 @@ export function SophisticatedSidebar({ className, onClose }: SophisticatedSideba
                             >
                                 <item.icon
                                     className={cn(
-                                        "mr-3 h-5 w-5 flex-shrink-0",
+                                        "mr-3 h-5 w-5 md:h-6 md:w-6 flex-shrink-0",
                                         isActive ? "text-accent-400" : "text-cream-300 group-hover:text-cream-50"
                                     )}
                                 />
                                 {!collapsed && (
-                                    <span className="truncate">{item.name}</span>
+                                    <span className="truncate flex-1">{item.name}</span>
                                 )}
                                 {isActive && !collapsed && (
                                     <ChevronRight className="ml-auto h-4 w-4 text-accent-400" />
@@ -182,11 +183,12 @@ export function SophisticatedSidebar({ className, onClose }: SophisticatedSideba
                             <Link
                                 key={item.name}
                                 href={item.href}
-                                className="group flex items-center px-3 py-2.5 text-sm font-medium text-cream-300 rounded-lg hover:bg-primary-800 hover:text-cream-50 transition-all duration-200"
+                                onClick={onClose}
+                                className="group flex items-center px-3 py-3 text-sm md:text-base font-medium text-cream-300 rounded-lg hover:bg-primary-800 hover:text-cream-50 transition-all duration-200 min-h-[44px] touch-manipulation"
                             >
-                                <item.icon className="mr-3 h-5 w-5 flex-shrink-0 text-cream-300 group-hover:text-cream-50" />
+                                <item.icon className="mr-3 h-5 w-5 md:h-6 md:w-6 flex-shrink-0 text-cream-300 group-hover:text-cream-50" />
                                 {!collapsed && (
-                                    <span className="truncate">{item.name}</span>
+                                    <span className="truncate flex-1">{item.name}</span>
                                 )}
                             </Link>
                         ))}

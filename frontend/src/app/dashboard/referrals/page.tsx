@@ -94,7 +94,7 @@ export default function ReferralsPage() {
             setLoading(true)
             const [templatesData, statsData] = await Promise.all([
                 referralTemplatesAPI.getTemplates(50),
-                referralTemplatesAPI.getTemplateStats()
+                referralTemplatesAPI.getStats()
             ])
             setTemplates(templatesData)
             setTemplateStats(statsData)

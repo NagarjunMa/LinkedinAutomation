@@ -27,8 +27,12 @@ export function SophisticatedLayout({
             {/* Mobile sidebar overlay */}
             {sidebarOpen && (
                 <div className="fixed inset-0 z-50 lg:hidden">
-                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
-                    <div className="relative flex-1 flex flex-col max-w-xs w-full bg-primary-900 shadow-2xl">
+                    <div
+                        className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
+                        onClick={() => setSidebarOpen(false)}
+                        aria-hidden="true"
+                    />
+                    <div className="relative flex-1 flex flex-col max-w-xs w-full bg-primary-900 shadow-2xl animate-in slide-in-from-left duration-300">
                         <SophisticatedSidebar onClose={() => setSidebarOpen(false)} />
                     </div>
                 </div>

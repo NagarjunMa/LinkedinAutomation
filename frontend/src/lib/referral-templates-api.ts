@@ -8,7 +8,7 @@ import { apiRequest } from './api-error-handler';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 // Type definitions
-export interface ContactInfo {
+export interface TemplateContactInfo {
   name: string;
   email?: string;
   company: string;
@@ -35,7 +35,7 @@ export interface UserPreferences {
 }
 
 export interface GenerateTemplateRequest {
-  contact_info: ContactInfo;
+  contact_info: TemplateContactInfo;
   job_info: JobInfo;
   user_preferences?: UserPreferences;
 }
@@ -271,7 +271,7 @@ export const referralTemplatesAPI = new ReferralTemplatesAPI();
 
 // Export types for use in components
 export type {
-  ContactInfo,
+  TemplateContactInfo,
   JobInfo,
   UserPreferences,
   GenerateTemplateRequest,

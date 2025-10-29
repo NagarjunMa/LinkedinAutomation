@@ -81,9 +81,10 @@ export function SophisticatedHeader({
                                 variant="ghost"
                                 size="sm"
                                 onClick={onMenuClick}
-                                className="h-8 w-8 p-0 text-cream-300 hover:text-cream-50 hover:bg-primary-800 transition-all duration-200 lg:hidden"
+                                className="h-10 w-10 p-0 text-cream-50 hover:text-accent-400 hover:bg-primary-800/80 transition-all duration-200 lg:hidden border border-primary-600/50 hover:border-accent-500/50 backdrop-blur-sm"
+                                aria-label="Open navigation menu"
                             >
-                                <Menu className="h-5 w-5" />
+                                <Menu className="h-6 w-6" />
                             </Button>
                         )}
 
