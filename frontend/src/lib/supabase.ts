@@ -1,31 +1,12 @@
 import { createBrowserClient } from '@supabase/ssr'
 
-// Supabase configuration - handle both build time and runtime
-const getSupabaseConfig = () => {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    // During build time, use placeholder values to prevent build errors
-    if (typeof window === 'undefined' && process.env.NODE_ENV === 'production') {
-      return {
-        url: 'https://placeholder.supabase.co',
-        key: 'placeholder-key'
-      }
-    }
-    throw new Error('Missing Supabase environment variables. Please check NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set.')
-  }
-
-  return {
-    url: supabaseUrl,
-    key: supabaseAnonKey
-  }
-}
+// Supabase configuration
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
 // Browser client for client-side operations
 export const createClient = () => {
-  const config = getSupabaseConfig()
-  return createBrowserClient(config.url, config.key, {
+  return createBrowserClient(supabaseUrl, supabaseAnonKey, {
     auth: {
       flowType: 'pkce'
     }
