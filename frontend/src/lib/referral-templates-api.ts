@@ -271,7 +271,6 @@ export const referralTemplatesAPI = new ReferralTemplatesAPI();
 
 // Export types for use in components
 export type {
-  TemplateContactInfo,
   JobInfo,
   UserPreferences,
   GenerateTemplateRequest,
