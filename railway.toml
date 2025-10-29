@@ -1,28 +1,11 @@
-[build]
+# Railway configuration for separate services
+# Deploy backend and frontend as separate Railway services
+
+[backend]
 builder = "DOCKERFILE"
-
-[deploy]
+dockerfilePath = "backend/Dockerfile"
 healthcheckPath = "/health"
-healthcheckTimeout = 300
-restartPolicyType = "ON_FAILURE"
-watchPatterns = ["**/*.py", "**/*.tsx", "**/*.ts"]
 
-[[services]]
-name = "backend"
-source = "./backend"
-buildCommand = "pip install -r requirements.txt"
-startCommand = "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
-
-[[services]]
-name = "frontend"
-source = "./frontend"
-buildCommand = "npm ci && npm run build"
-startCommand = "npm start"
-
-[[services]]
-name = "redis"
-type = "redis"
-
-[[services]]
-name = "postgres"
-type = "postgresql"
+[frontend]
+builder = "DOCKERFILE"
+dockerfilePath = "frontend/Dockerfile"
