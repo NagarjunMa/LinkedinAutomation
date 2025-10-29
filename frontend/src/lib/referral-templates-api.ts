@@ -269,14 +269,5 @@ class ReferralTemplatesAPI {
 // Export singleton instance
 export const referralTemplatesAPI = new ReferralTemplatesAPI();
 
-// Export types for use in components
-export type {
-  JobInfo,
-  UserPreferences,
-  GenerateTemplateRequest,
-  TemplateResponse,
-  TemplateFeedback,
-  TemplateListItem,
-  TemplateStats,
-  UserReferralPreferences
-};
+// All types are already exported above with 'export interface'
+// No need for additional type exports
