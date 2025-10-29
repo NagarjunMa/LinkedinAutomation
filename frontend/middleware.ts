@@ -2,7 +2,6 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-    console.log('Middleware: Processing request for:', request.nextUrl.pathname)
 
     let supabaseResponse = NextResponse.next({
         request,
@@ -34,17 +33,14 @@ export async function middleware(request: NextRequest) {
         data: { session },
     } = await supabase.auth.getSession()
 
-    console.log('Middleware: Session exists:', !!session, 'Path:', request.nextUrl.pathname)
 
     // If no session and trying to access protected routes, redirect to landing
     if (!session && request.nextUrl.pathname.startsWith('/dashboard')) {
-        console.log('Middleware: Redirecting to landing page from dashboard')
         return NextResponse.redirect(new URL('/', request.url))
     }
 
     // If no session and trying to access onboarding, redirect to landing
     if (!session && request.nextUrl.pathname === '/onboarding') {
-        console.log('Middleware: Redirecting to landing page from onboarding')
         return NextResponse.redirect(new URL('/', request.url))
     }
 
@@ -63,12 +59,10 @@ export async function middleware(request: NextRequest) {
 
         // Only redirect if user has completed both onboarding and OAuth
         if (hasCompletedOnboarding && hasOAuthProvider) {
-            console.log('Middleware: Redirecting to dashboard from onboarding (completed)')
             return NextResponse.redirect(new URL('/dashboard', request.url))
         }
     }
 
-    console.log('Middleware: Allowing request to proceed')
     return supabaseResponse
 }
 

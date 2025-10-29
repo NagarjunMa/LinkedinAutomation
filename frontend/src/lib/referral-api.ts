@@ -69,8 +69,6 @@ export class ReferralAPIError extends Error {
 async function apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const url = `${REFERRAL_BASE}${endpoint}`;
 
-  console.log('🌐 API Call:', url)
-  console.log('🌐 Options:', options)
 
   const response = await fetch(url, {
     headers: {
@@ -80,7 +78,6 @@ async function apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<
     ...options,
   });
 
-  console.log('🌐 Response status:', response.status)
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
@@ -92,7 +89,6 @@ async function apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<
   }
 
   const result = await response.json();
-  console.log('🌐 API Success:', result)
   return result;
 }
 
@@ -102,21 +98,18 @@ export const referralAPI = {
     jobId: string | null,
     contactInfo: ContactInfo
   ): Promise<GeneratedEmail> => {
-    console.log('🔥 referralAPI.generateEmail called with:', { jobId, contactInfo })
 
     // Convert jobId to integer if it's not null and not "sample-job-id"
     let processedJobId = null
     if (jobId && jobId !== 'sample-job-id') {
       processedJobId = parseInt(jobId)
       if (isNaN(processedJobId)) {
-        console.warn('Invalid job ID, using default')
         processedJobId = 1 // Default fallback
       }
     } else {
       processedJobId = 1 // Default fallback for sample
     }
 
-    console.log('🔥 Processed job ID:', processedJobId)
 
     // Map frontend field names to backend expected names
     const backendContactInfo = {
@@ -127,7 +120,6 @@ export const referralAPI = {
       relationship: contactInfo.relationship
     }
 
-    console.log('🔥 Mapped contact info for backend:', backendContactInfo)
 
     return apiCall<GeneratedEmail>('/generate-email', {
       method: 'POST',
@@ -148,7 +140,6 @@ export const referralAPI = {
     if (jobId && jobId !== 'sample-job-id') {
       processedJobId = parseInt(jobId)
       if (isNaN(processedJobId)) {
-        console.warn('Invalid job ID, setting to null')
         processedJobId = null
       }
     } else {
@@ -165,8 +156,6 @@ export const referralAPI = {
       relationship: contactInfo.relationship
     }
 
-    console.log('🔥 createReferralRequest - Processed job ID:', processedJobId)
-    console.log('🔥 createReferralRequest - Mapped contact info:', backendContactInfo)
 
     return apiCall('/create-request', {
       method: 'POST',

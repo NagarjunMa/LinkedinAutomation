@@ -77,14 +77,6 @@ export function ReferralRequestModal({ job, isOpen, onClose }: ReferralRequestMo
     const [draftId, setDraftId] = useState<string | null>(null)
     const { toast } = useToast()
 
-    // Debug log when modal opens
-    console.log('📱 ReferralRequestModal mounted/updated:', {
-        job,
-        isOpen,
-        step,
-        contactInfo,
-        isLoading
-    })
 
     const handleClose = () => {
         // Reset state when closing
@@ -104,18 +96,13 @@ export function ReferralRequestModal({ job, isOpen, onClose }: ReferralRequestMo
     }
 
     const handleGenerate = async () => {
-        console.log('🚀 handleGenerate function called!')
-        console.log('Job data:', job)
-        console.log('Contact info:', contactInfo)
 
         if (!job) {
-            console.log('❌ No job data available')
             return
         }
 
         // Validate required fields
         if (!contactInfo.name || !contactInfo.contact_email || !contactInfo.company || !contactInfo.relationship) {
-            console.log('❌ Missing required fields')
             toast({
                 title: "Missing Information",
                 description: "Please fill in all required fields (Name, Email, Company, and Relationship)",
@@ -126,10 +113,8 @@ export function ReferralRequestModal({ job, isOpen, onClose }: ReferralRequestMo
 
         setIsLoading(true)
         try {
-            console.log('Generating email with:', { jobId: job.id, contactInfo })
             // Generate email preview
             const draft = await referralApi.generateEmail(job.id, contactInfo)
-            console.log('Generated email:', draft)
             setGeneratedEmail(draft)
             setEditedEmail({ ...draft }) // Create editable copy
             setStep('preview')
@@ -340,7 +325,6 @@ export function ReferralRequestModal({ job, isOpen, onClose }: ReferralRequestMo
                                 onClick={(e) => {
                                     e.preventDefault()
                                     e.stopPropagation()
-                                    console.log('🔴 Button clicked!')
                                     handleGenerate()
                                 }}
                                 disabled={isLoading}

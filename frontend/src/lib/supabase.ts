@@ -17,7 +17,6 @@ export const createClient = () => {
 export const signInWithGoogle = async () => {
   const supabase = createClient()
 
-  console.log('Initiating Google sign in...')
 
   // Use signInWithOAuth with proper options for existing user detection
   const { data, error } = await supabase.auth.signInWithOAuth({
@@ -32,7 +31,6 @@ export const signInWithGoogle = async () => {
     }
   })
 
-  console.log('Google OAuth response:', { data, error })
 
   if (error) throw error
   return data

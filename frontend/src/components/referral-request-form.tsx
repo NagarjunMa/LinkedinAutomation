@@ -45,7 +45,6 @@ export function ReferralRequestForm({
   onSuccess,
   className
 }: ReferralRequestFormProps) {
-  console.log('🟢 ReferralRequestForm COMPONENT RENDERED!', { jobId, jobTitle, companyName })
   const [contactInfo, setContactInfo] = useState<ContactInfo>({
     contact_name: '',
     contact_email: '',
@@ -77,12 +76,8 @@ export function ReferralRequestForm({
   }
 
   const handleGenerate = async () => {
-    console.log('🚀 ReferralRequestForm.handleGenerate called!')
-    console.log('📝 Contact info:', contactInfo)
-    console.log('📝 Job ID:', jobId)
 
     if (!contactInfo.contact_name || !contactInfo.contact_email) {
-      console.log('❌ Missing required contact info')
       setError('Please provide contact name and email')
       return
     }
@@ -91,9 +86,7 @@ export function ReferralRequestForm({
     setError(null)
 
     try {
-      console.log('🔗 Calling referralAPI.generateEmail...')
       const result = await referralAPI.generateEmail(jobId, contactInfo)
-      console.log('✅ Email generated successfully:', result)
       setGeneratedEmail(result)
     } catch (err) {
       console.error('❌ Error generating email:', err)
@@ -301,10 +294,6 @@ export function ReferralRequestForm({
 
             <Button
               onClick={(e) => {
-                console.log('🔴 BUTTON CLICKED - Generate Referral Email button clicked!')
-                console.log('🔴 EVENT:', e)
-                console.log('🔴 CONTACT INFO:', contactInfo)
-                console.log('🔴 JOB ID:', jobId)
                 alert('BUTTON CLICKED! Check console for logs')
                 e.preventDefault()
                 handleGenerate()

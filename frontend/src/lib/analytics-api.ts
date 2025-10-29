@@ -169,7 +169,6 @@ export class AnalyticsAPI {
     options: RequestInit = {}
   ): Promise<APIResponse<T>> {
     const url = `${this.baseURL}${endpoint}`;
-    console.log('Analytics API Request:', { url, endpoint, baseURL: this.baseURL });
 
     const defaultHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -181,13 +180,11 @@ export class AnalyticsAPI {
         const supabase = createClient()
         const { data: { session } } = await supabase.auth.getSession()
 
-        console.log('Supabase session:', { hasSession: !!session, hasToken: !!session?.access_token });
 
         if (session?.access_token) {
           defaultHeaders['Authorization'] = `Bearer ${session.access_token}`;
         }
       } catch (error) {
-        console.warn('Failed to get Supabase session for analytics API:', error)
       }
     }
 
@@ -200,9 +197,7 @@ export class AnalyticsAPI {
     };
 
     try {
-      console.log('Making request with config:', { url, headers: defaultHeaders });
       const response = await fetch(url, config);
-      console.log('Response received:', { status: response.status, statusText: response.statusText, url: response.url });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -220,7 +215,6 @@ export class AnalyticsAPI {
       }
 
       const data = await response.json();
-      console.log('API Success:', { data });
       return data as APIResponse<T>;
     } catch (error) {
       console.error('Analytics API Error:', error);

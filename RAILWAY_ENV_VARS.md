@@ -7,39 +7,60 @@ Copy these environment variables to your Railway services:
 ### **Backend Service Environment Variables:**
 
 ```bash
-# Database (Railway will provide these)
-DATABASE_URL=${{Postgres.DATABASE_URL}}
-REDIS_URL=${{Redis.REDIS_URL}}
+# Database Configuration (Using Supabase PostgreSQL)
+SQLALCHEMY_DATABASE_URI=postgresql://postgres:[password]@db.[project-ref].supabase.co:5432/postgres
+POSTGRES_SERVER=db.[project-ref].supabase.co
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=[your-supabase-db-password]
+POSTGRES_DB=postgres
+
+# Redis Configuration (Railway Redis Service)
+REDIS_HOST=${{Redis.REDIS_HOST}}
+REDIS_PORT=${{Redis.REDIS_PORT}}
+CELERY_BROKER_URL=${{Redis.REDIS_URL}}/0
+CELERY_RESULT_BACKEND=${{Redis.REDIS_URL}}/0
+
+# Alternative: External Redis (if not using Railway Redis)
+# REDIS_HOST=your-redis-host.com
+# REDIS_PORT=6379
+# CELERY_BROKER_URL=redis://your-redis-host.com:6379/0
+# CELERY_RESULT_BACKEND=redis://your-redis-host.com:6379/0
 
 # Security
 SECRET_KEY=your-super-secret-key-min-32-chars-production
-ENVIRONMENT=production
-DEBUG=false
+ACCESS_TOKEN_EXPIRE_MINUTES=11520
 
-# Supabase Authentication
+# Supabase Authentication (CRITICAL - App won't start without these)
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_ANON_KEY=your-supabase-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
 SUPABASE_JWT_SECRET=your-supabase-jwt-secret
 
-# AI Services
-OPENAI_API_KEY=your-openai-api-key
-ANTHROPIC_API_KEY=your-anthropic-api-key
-
-# External APIs
-APOLLO_API_KEY=your-apollo-api-key
-ARCADE_API_KEY=your-arcade-api-key
+# AI Services (CRITICAL - OpenAI required)
+OPENAPI_KEY=your-openai-api-key
+OPENAI_MODEL=gpt-4o-mini
+OPENAI_MAX_TOKENS=4000
 
 # Email Service
 RESEND_API_KEY=your-resend-api-key
+MAIL_FROM=noreply@yourdomain.com
+MAIL_FROM_NAME=JobFlow Pro
 
 # Google OAuth (for email agent)
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
+GOOGLE_REDIRECT_URI=https://your-backend.railway.app/api/v1/auth/google/callback
 
 # CORS and Security
-ALLOWED_HOSTS=your-backend-domain.railway.app
-CORS_ORIGINS=https://your-frontend-domain.railway.app
+CORS_ORIGINS=https://your-frontend.railway.app
+PROJECT_NAME=JobFlow Pro Production
+
+# Optional Configuration
+EMAIL_CLASSIFICATION_MODEL=gpt-4o-mini
+EMAIL_SYNC_FREQUENCY_MINUTES=15
+EMAIL_CONFIDENCE_THRESHOLD=0.8
+AUTO_UPDATE_THRESHOLD=0.85
+DEBUG_EMAIL_PROCESSING=false
+LOG_LEVEL=INFO
 ```
 
 ### **Frontend Service Environment Variables:**
@@ -84,13 +105,39 @@ NODE_ENV=production
    - Add custom domains in Railway settings
    - Update CORS_ORIGINS and API URLs accordingly
 
-## **🔍 Environment Variable Validation:**
+## **🔍 Critical Deployment Steps:**
 
-After setting variables, check the deployment logs for:
+### **1. FIRST - Add Database Services:**
+- Add PostgreSQL database service in Railway
+- Add Redis service in Railway
+- Copy the generated connection URLs
+
+### **2. SECOND - Set Environment Variables:**
+- Go to backend service → Variables tab
+- Add ALL variables from the template above
+- Replace placeholder values with your actual API keys
+
+### **3. CRITICAL Variables to Set BEFORE Deployment:**
+```bash
+# These MUST be set or app will fail to start:
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-actual-anon-key
+OPENAPI_KEY=your-actual-openai-key
+SQLALCHEMY_DATABASE_URI=${{Postgres.DATABASE_URL}}
+```
+
+### **4. Environment Variable Validation:**
+After deployment, check logs for:
 - ✅ "All critical imports successful"
 - ✅ "Database connection established"
 - ✅ "Redis connection established"
 - ✅ "FastAPI app started successfully"
+
+### **5. Common Deployment Failures:**
+- ❌ Missing SUPABASE_URL → App won't start
+- ❌ Missing OPENAPI_KEY → AI features fail
+- ❌ Missing DATABASE_URL → Database errors
+- ❌ Typo in variable names → Silent failures
 
 ## **🚨 Security Notes:**
 
