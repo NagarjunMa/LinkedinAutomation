@@ -22,7 +22,7 @@
               "style-src 'self' 'unsafe-inline' https://api.fontshare.com https://fonts.googleapis.com",
               "font-src 'self' https://api.fontshare.com https://fonts.gstatic.com data:",
               "img-src 'self' data: blob: https: http:",
-              "connect-src 'self' http://localhost:8000 https://api.supabase.io https://fecoflibopgxliexcdbg.supabase.co https://fonts.googleapis.com https://api.fontshare.com",
+              "connect-src 'self' http://localhost:8000 https://linkedinautomation-production-7ae9.up.railway.app https://api.supabase.io https://fecoflibopgxliexcdbg.supabase.co https://fonts.googleapis.com https://api.fontshare.com",
               "frame-src 'self' https://www.google.com",
               "object-src 'none'",
               "base-uri 'self'",
