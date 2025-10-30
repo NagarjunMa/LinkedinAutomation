@@ -53,15 +53,13 @@ app.state.debug_mode = not is_production
 # setup_error_handlers(app)
 
 # Enhanced CORS middleware with tighter security
-allowed_origins = [
+allowed_origins = settings.CORS_ORIGINS if settings.CORS_ORIGINS else [
     "http://localhost:3000",  # Development frontend
     "http://127.0.0.1:3000",
-    "https://jobflowpro.com",  # Production frontend
-    "https://www.jobflowpro.com",
 ]
 
-# In development, allow all origins for easier testing
-if not is_production:
+# In development, allow all origins for easier testing if no specific origins are set
+if not is_production and not settings.CORS_ORIGINS:
     allowed_origins = ["*"]
 
 app.add_middleware(

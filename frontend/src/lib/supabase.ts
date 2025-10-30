@@ -22,7 +22,7 @@ export const signInWithGoogle = async () => {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${window.location.origin}/api/auth/callback`,
+      redirectTo: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/email-agent/oauth/callback`,
       queryParams: {
         access_type: 'offline',
         prompt: 'select_account', // This allows user to choose account but doesn't force re-consent
@@ -98,7 +98,7 @@ export const connectGmailForExistingUser = async () => {
   const { data, error } = await supabase.auth.linkIdentity({
     provider: 'google',
     options: {
-      redirectTo: `${window.location.origin}/api/auth/callback?next=/dashboard/settings`,
+      redirectTo: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/email-agent/oauth/callback?next=/dashboard/settings`,
       queryParams: {
         access_type: 'offline',
         prompt: 'consent', // Force consent to ensure we get refresh token
