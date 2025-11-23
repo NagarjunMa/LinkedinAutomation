@@ -77,27 +77,7 @@ export function ActivityCalendar({ userId, className = "" }: ActivityCalendarPro
         return data
     }
 
-    // Mock data for demonstration - replace with actual API calls
-    const generateMockData = (baseData: ActivityData[]): ActivityData[] => {
-        return baseData.map(day => {
-            // Simulate some activity patterns
-            const random = Math.random()
-            let jobExtractions = 0
-            let referralEmails = 0
-
-            if (random > 0.7) { // 30% chance of activity
-                jobExtractions = Math.floor(Math.random() * 8) + 1
-                referralEmails = Math.floor(Math.random() * 3)
-            }
-
-            return {
-                ...day,
-                jobExtractions,
-                referralEmails,
-                totalTasks: jobExtractions + referralEmails
-            }
-        })
-    }
+    // Activity data is now loaded from the API or shows as empty
 
     // Calculate statistics
     const calculateStats = (data: ActivityData[]) => {
@@ -155,10 +135,9 @@ export function ActivityCalendar({ userId, className = "" }: ActivityCalendarPro
 
             } catch (error) {
                 console.error('Error loading activity data:', error)
-                // Fallback to mock data if API fails
+                // Show empty state instead of mock data
                 const baseData = generateCalendarData()
-                const mockData = generateMockData(baseData)
-                setActivityData(mockData)
+                setActivityData(baseData) // All days with 0 activity
             } finally {
                 setCalendarLoading(false)
             }

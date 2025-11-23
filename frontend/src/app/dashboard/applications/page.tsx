@@ -30,58 +30,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { fetchRecentApplications } from "@/app/lib/api"
 import { useToast } from "@/components/ui/use-toast"
 
-// Mock data for applications
-const mockApplications = [
-    {
-        id: "1",
-        title: "Senior Frontend Developer",
-        company: "TechCorp Inc.",
-        location: "San Francisco, CA",
-        salary: "$120,000 - $150,000",
-        status: "applied",
-        appliedDate: "2024-09-10",
-        source: "LinkedIn",
-        compatibilityScore: 92,
-        notes: "Great company culture, remote friendly"
-    },
-    {
-        id: "2",
-        title: "Full Stack Engineer",
-        company: "StartupXYZ",
-        location: "New York, NY",
-        salary: "$100,000 - $130,000",
-        status: "interview_scheduled",
-        appliedDate: "2024-09-08",
-        source: "Indeed",
-        compatibilityScore: 87,
-        notes: "Interview scheduled for next week"
-    },
-    {
-        id: "3",
-        title: "Software Engineer",
-        company: "BigTech Co.",
-        location: "Seattle, WA",
-        salary: "$110,000 - $140,000",
-        status: "want_to_apply",
-        appliedDate: null,
-        source: "Company Website",
-        compatibilityScore: 95,
-        notes: "High priority - perfect match"
-    },
-    {
-        id: "4",
-        title: "DevOps Engineer",
-        company: "Innovation Labs",
-        location: "Austin, TX",
-        salary: "$95,000 - $125,000",
-        status: "not_interested",
-        appliedDate: null,
-        source: "AngelList",
-        compatibilityScore: 78,
-        notes: "Not a good cultural fit"
-    }
-]
-
+// Application status configuration
 const statusConfig = {
     applied: { label: "Applied", color: "bg-blue-500", icon: CheckCircle },
     interview_scheduled: { label: "Interview Scheduled", color: "bg-yellow-500", icon: Clock },
@@ -126,11 +75,11 @@ export default function ApplicationsPage() {
             setApplications(mappedApplications)
         } catch (error) {
             console.error('Failed to fetch applications:', error)
-            // Fallback to mock data if API fails
-            setApplications(mockApplications)
+            // Show empty state instead of mock data
+            setApplications([])
             toast({
-                title: "Warning",
-                description: "Using demo data. Could not fetch real applications.",
+                title: "Error",
+                description: "Could not load your applications. Please try again later.",
                 variant: "destructive",
             })
         } finally {

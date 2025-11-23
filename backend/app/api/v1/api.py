@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import jobs, export, analytics, profiles, job_extraction, email_agent, contacts, resumes, application_stats, search, analytics_intelligence, referral, user_profiles, activity, email_scanning, application_questions, email, referral_templates
+from app.api.v1.endpoints import jobs, export, analytics, profiles, job_extraction, email_agent, contacts, resumes, application_stats, search, analytics_intelligence, referral, user_profiles, activity, email_scanning, application_questions, email, referral_templates, education
 
 api_router = APIRouter()
 
@@ -20,4 +20,5 @@ api_router.include_router(activity.router, prefix="/activity", tags=["activity"]
 api_router.include_router(email_scanning.router, prefix="/email-scanning", tags=["email-scanning"])
 api_router.include_router(application_questions.router, prefix="/application-questions", tags=["application-questions"])
 api_router.include_router(email.router, prefix="/email", tags=["email"])
-api_router.include_router(referral_templates.router, prefix="/referral-templates", tags=["referral-templates"]) 
+api_router.include_router(referral_templates.router, prefix="/referral-templates", tags=["referral-templates"])
+api_router.include_router(education.router, prefix="/education", tags=["education"]) 

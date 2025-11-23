@@ -66,26 +66,12 @@ export function JobExtractionCalendar({ className }: JobExtractionCalendarProps)
     }
 
     const useFallbackData = () => {
-      const mockData: JobExtractionDay[] = [
-        { date: 1, jobsExtracted: 15, applicationsAdded: 8 },
-        { date: 5, jobsExtracted: 22, applicationsAdded: 12 },
-        { date: 10, jobsExtracted: 18, applicationsAdded: 9 },
-        { date: 15, jobsExtracted: 25, applicationsAdded: 15 },
-        { date: 18, jobsExtracted: 20, applicationsAdded: 11 },
-        { date: 22, jobsExtracted: 30, applicationsAdded: 18 },
-        { date: 25, jobsExtracted: 28, applicationsAdded: 16 },
-      ]
-
-      setExtractionData(mockData)
-
-      const totalExtractions = mockData.reduce((sum, day) => sum + day.jobsExtracted, 0)
-      const totalApplications = mockData.reduce((sum, day) => sum + day.applicationsAdded, 0)
-      const activeDays = mockData.length
-
+      // Show empty state when API fails
+      setExtractionData([])
       setTotalStats({
-        totalExtractions,
-        totalApplications,
-        activeDays
+        totalExtractions: 0,
+        totalApplications: 0,
+        activeDays: 0
       })
     }
 

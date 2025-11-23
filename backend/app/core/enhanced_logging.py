@@ -14,8 +14,12 @@ import time
 import traceback
 from pathlib import Path
 
-class StructuredFormatter(logging.Formatter):
-    """Custom formatter that outputs structured JSON logs"""
+class RailwayOptimizedFormatter(logging.Formatter):
+    """Railway-optimized formatter that outputs structured JSON logs"""
+
+    def __init__(self):
+        super().__init__()
+        self.is_railway = "RAILWAY_DEPLOYMENT_ID" in os.environ
 
     def format(self, record):
         log_entry = {
@@ -25,10 +29,19 @@ class StructuredFormatter(logging.Formatter):
             "message": record.getMessage(),
             "module": record.module,
             "function": record.funcName,
-            "line": record.lineno,
-            "process_id": os.getpid(),
-            "thread_id": record.thread
+            "line": record.lineno
         }
+
+        # Add Railway-specific context
+        if self.is_railway:
+            log_entry.update({
+                "railway_deployment": os.getenv("RAILWAY_DEPLOYMENT_ID"),
+                "railway_environment": os.getenv("RAILWAY_ENVIRONMENT_NAME"),
+                "service_name": "jobflow-pro-backend"
+            })
+
+        # Add environment context
+        log_entry["environment"] = os.getenv("ENVIRONMENT", "development")
 
         # Add extra fields if present
         if hasattr(record, 'user_id'):
@@ -41,6 +54,12 @@ class StructuredFormatter(logging.Formatter):
             log_entry['api_endpoint'] = record.api_endpoint
         if hasattr(record, 'status_code'):
             log_entry['status_code'] = record.status_code
+        if hasattr(record, 'openai_operation'):
+            log_entry['openai_operation'] = record.openai_operation
+        if hasattr(record, 'openai_model'):
+            log_entry['openai_model'] = record.openai_model
+        if hasattr(record, 'tokens_used'):
+            log_entry['tokens_used'] = record.tokens_used
 
         # Add exception info if present
         if record.exc_info:
@@ -50,7 +69,7 @@ class StructuredFormatter(logging.Formatter):
                 'traceback': traceback.format_exception(*record.exc_info)
             }
 
-        return json.dumps(log_entry)
+        return json.dumps(log_entry, separators=(',', ':'))
 
 class EnhancedLogger:
     """Enhanced logging system with structured output and monitoring capabilities"""
@@ -60,11 +79,11 @@ class EnhancedLogger:
         self.setup_logging()
 
     def setup_logging(self):
-        """Configure comprehensive logging system"""
+        """Configure Railway-optimized logging system"""
 
-        # Create logs directory
-        log_dir = Path("logs")
-        log_dir.mkdir(exist_ok=True)
+        # Detect Railway environment
+        is_railway = "RAILWAY_DEPLOYMENT_ID" in os.environ
+        is_production = os.getenv("ENVIRONMENT", "development").lower() == "production"
 
         # Root logger configuration
         root_logger = logging.getLogger()
@@ -73,13 +92,13 @@ class EnhancedLogger:
         # Clear existing handlers
         root_logger.handlers.clear()
 
-        # Console handler with colored output for development
+        # Console handler optimized for Railway
         console_handler = logging.StreamHandler(sys.stdout)
         console_handler.setLevel(logging.INFO)
 
-        if os.getenv("ENVIRONMENT", "development").lower() == "production":
-            # Production: Use structured JSON logging
-            console_handler.setFormatter(StructuredFormatter())
+        if is_railway or is_production:
+            # Railway/Production: Use structured JSON logging
+            console_handler.setFormatter(RailwayOptimizedFormatter())
         else:
             # Development: Use human-readable format
             console_format = logging.Formatter(
@@ -89,23 +108,36 @@ class EnhancedLogger:
 
         root_logger.addHandler(console_handler)
 
-        # File handlers for persistent logging
-        self._setup_file_handlers(root_logger, log_dir)
+        # Only create file handlers in development (Railway uses its own log collection)
+        if not is_railway:
+            log_dir = Path("logs")
+            log_dir.mkdir(exist_ok=True)
+            self._setup_file_handlers(root_logger, log_dir)
 
         # Set specific logger levels
         self._configure_logger_levels()
 
-        # Performance monitoring logger
+        # Specialized loggers
         self.perf_logger = logging.getLogger('performance')
-
-        # Security monitoring logger
         self.security_logger = logging.getLogger('security')
-
-        # Business logic logger
         self.business_logger = logging.getLogger('business')
+        self.openai_logger = logging.getLogger('openai')
 
-        print(f"✅ Enhanced logging system initialized")
-        print(f"📂 Log files location: {log_dir.absolute()}")
+        # Log startup information
+        startup_msg = "Enhanced logging system initialized"
+        if is_railway:
+            startup_msg += " (Railway deployment)"
+            root_logger.info(startup_msg, extra={
+                'railway_deployment': os.getenv("RAILWAY_DEPLOYMENT_ID"),
+                'environment': os.getenv("ENVIRONMENT", "development"),
+                'openai_configured': bool(os.getenv("OPENAI_API_KEY")),
+                'deployment_status': 'starting'
+            })
+        else:
+            print(f"✅ {startup_msg}")
+            if not is_production:
+                log_dir = Path("logs")
+                print(f"📂 Log files location: {log_dir.absolute()}")
 
     def _setup_file_handlers(self, root_logger, log_dir):
         """Setup rotating file handlers for different log levels"""
@@ -270,6 +302,79 @@ def log_business_event(event_type: str, user_id: str, details: Dict[str, Any]):
             **details
         }
     )
+
+def log_openai_request(operation: str, model: str, tokens_used: int = None, cost_estimate: float = None):
+    """Log OpenAI API usage for monitoring"""
+    logger = logging.getLogger('openai')
+
+    logger.info(
+        f"OpenAI API call: {operation}",
+        extra={
+            'openai_operation': operation,
+            'openai_model': model,
+            'tokens_used': tokens_used,
+            'cost_estimate_usd': cost_estimate,
+            'railway_deployment': "RAILWAY_DEPLOYMENT_ID" in os.environ
+        }
+    )
+
+def log_openai_error(operation: str, error: Exception, retry_count: int = 0):
+    """Log OpenAI API errors with context for Railway debugging"""
+    logger = logging.getLogger('openai')
+
+    logger.error(
+        f"OpenAI API error: {operation}",
+        extra={
+            'openai_operation': operation,
+            'error_type': type(error).__name__,
+            'error_message': str(error),
+            'retry_count': retry_count,
+            'railway_deployment': "RAILWAY_DEPLOYMENT_ID" in os.environ,
+            'openai_key_configured': bool(os.getenv("OPENAI_API_KEY"))
+        }
+    )
+
+def validate_railway_config():
+    """Validate Railway deployment configuration and log results"""
+    logger = logging.getLogger('railway_config')
+
+    required_vars = {
+        'OPENAI_API_KEY': 'OpenAI API integration',
+        'SUPABASE_URL': 'Database connection',
+        'SQLALCHEMY_DATABASE_URI': 'SQLAlchemy database',
+        'SUPABASE_JWT_SECRET': 'JWT verification'
+    }
+
+    missing_vars = []
+    configured_vars = []
+
+    for var_name, purpose in required_vars.items():
+        if os.getenv(var_name):
+            configured_vars.append({'name': var_name, 'purpose': purpose})
+        else:
+            missing_vars.append({'name': var_name, 'purpose': purpose})
+
+    if missing_vars:
+        logger.error(
+            "Missing required environment variables for Railway deployment",
+            extra={
+                'missing_variables': missing_vars,
+                'configured_variables': configured_vars,
+                'deployment_status': 'configuration_error',
+                'railway_deployment': os.getenv("RAILWAY_DEPLOYMENT_ID")
+            }
+        )
+        return False
+    else:
+        logger.info(
+            "Railway deployment configuration validated successfully",
+            extra={
+                'configured_variables': configured_vars,
+                'deployment_status': 'ready',
+                'railway_deployment': os.getenv("RAILWAY_DEPLOYMENT_ID")
+            }
+        )
+        return True
 
 class HealthMonitor:
     """System health monitoring and metrics collection"""

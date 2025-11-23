@@ -15,7 +15,7 @@ from app.middleware.security import create_security_middleware_stack
 # from app.core.error_handlers import setup_error_handlers
 
 # Setup enhanced logging system
-from app.core.enhanced_logging import setup_enhanced_logging, health_monitor, log_security_event
+from app.core.enhanced_logging import setup_enhanced_logging, health_monitor, log_security_event, validate_railway_config
 
 # Initialize enhanced logging
 enhanced_logger = setup_enhanced_logging()
@@ -24,8 +24,18 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    logger.info("Starting up application...")
+    logger.info("Starting up JobFlow Pro application...")
+
+    # Validate Railway configuration if deployed
+    if "RAILWAY_DEPLOYMENT_ID" in os.environ:
+        config_valid = validate_railway_config()
+        if not config_valid:
+            logger.error("Railway configuration validation failed - some features may not work")
+        else:
+            logger.info("Railway configuration validated successfully")
+
     yield
+
     # Shutdown
     logger.info("Shutting down application...")
 

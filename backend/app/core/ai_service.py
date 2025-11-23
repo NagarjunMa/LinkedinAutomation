@@ -3,6 +3,7 @@ import json
 import logging
 from typing import Dict, List, Any, Optional, Tuple
 from app.core.config import settings
+from app.core.enhanced_logging import log_openai_request, log_openai_error
 
 logger = logging.getLogger(__name__)
 
@@ -12,10 +13,16 @@ class AIService:
     """
     
     def __init__(self):
-        self.client = AsyncOpenAI(api_key=settings.OPENAPI_KEY)
+        if not settings.OPENAI_API_KEY:
+            logger.error("OpenAI API key not configured - AI features will not work")
+            raise ValueError("OPENAI_API_KEY environment variable is required")
+
+        self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
         self.model = settings.OPENAI_MODEL
         self.model_name = settings.OPENAI_MODEL  # Add for compatibility
         self.max_tokens = settings.OPENAI_MAX_TOKENS
+
+        logger.info(f"AIService initialized with model: {self.model}")
     
     async def get_completion(self, prompt: str, max_tokens: int = None, temperature: float = 0.3) -> str:
         """
@@ -23,6 +30,9 @@ class AIService:
         Used by resume evaluator and other services
         """
         try:
+            # Log the request
+            log_openai_request("completion", self.model)
+
             response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[
@@ -31,12 +41,21 @@ class AIService:
                 max_tokens=max_tokens or self.max_tokens,
                 temperature=temperature
             )
-            
+
             content = response.choices[0].message.content
             if content is None:
                 logger.warning("OpenAI returned None content")
                 return ""
-            
+
+            # Log successful completion with token usage
+            if hasattr(response, 'usage') and response.usage:
+                log_openai_request(
+                    "completion_success",
+                    self.model,
+                    tokens_used=response.usage.total_tokens,
+                    cost_estimate=self._estimate_cost(response.usage.total_tokens)
+                )
+
             # Extract JSON from markdown code blocks if present
             content = content.strip()
             if "```json" in content:
@@ -51,12 +70,19 @@ class AIService:
                 end = content.find("```", start)
                 if end != -1:
                     content = content[start:end].strip()
-            
+
             return content
-            
+
         except Exception as e:
+            log_openai_error("completion", e)
             logger.error(f"Error getting AI completion: {e}")
             raise
+
+    def _estimate_cost(self, tokens: int) -> float:
+        """Estimate cost for GPT-4o-mini usage"""
+        # GPT-4o-mini pricing (as of 2024): $0.00015 per 1K input tokens, $0.0006 per 1K output tokens
+        # Approximating with average cost of $0.0003 per 1K tokens
+        return (tokens / 1000) * 0.0003
         
     async def parse_resume(self, resume_text: str) -> Dict[str, Any]:
         """

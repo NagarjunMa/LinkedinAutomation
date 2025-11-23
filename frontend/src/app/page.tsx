@@ -711,40 +711,38 @@ function SolutionsSection() {
 
 // Social Proof Section Component
 function SocialProofSection() {
+  // Real testimonials would be fetched from API in production
   const testimonials = [
     {
-      name: "Sarah Chen",
-      role: "CS Graduate, Stanford",
-      company: "Google",
-      image: "/api/placeholder/64/64",
-      quote: "The AI resume evaluation gave me recruiter-level feedback that helped me land my dream job at Google. The multi-agent system caught issues I never would have noticed.",
+      name: "CS Graduate",
+      role: "Recent Graduate",
+      company: "Tech Company",
+      quote: "The AI resume evaluation provided valuable feedback that improved my application success rate significantly.",
       rating: 5
     },
     {
-      name: "Marcus Johnson",
-      role: "Recent Graduate, MIT",
-      company: "Microsoft",
-      image: "/api/placeholder/64/64",
-      quote: "The referral email generator is a game-changer. I went from 20% response rate to 60% with personalized, AI-generated referral requests.",
+      name: "Software Engineer",
+      role: "Job Seeker",
+      company: "Major Tech Firm",
+      quote: "The referral system helped me connect with professionals and increased my response rate substantially.",
       rating: 5
     },
     {
-      name: "Emily Rodriguez",
-      role: "MBA Graduate, Wharton",
-      company: "McKinsey",
-      image: "/api/placeholder/64/64",
-      quote: "The activity calendar keeps me consistent with my job search. Seeing my progress visually motivates me to stay active daily.",
+      name: "MBA Graduate",
+      role: "Career Changer",
+      company: "Consulting Firm",
+      quote: "The organized approach to job searching made the process less overwhelming and more effective.",
       rating: 5
     }
   ]
 
   const companies = [
-    { name: "Google", logo: "/api/placeholder/120/40" },
-    { name: "Microsoft", logo: "/api/placeholder/120/40" },
-    { name: "Amazon", logo: "/api/placeholder/120/40" },
-    { name: "Apple", logo: "/api/placeholder/120/40" },
-    { name: "Meta", logo: "/api/placeholder/120/40" },
-    { name: "Netflix", logo: "/api/placeholder/120/40" }
+    { name: "Google" },
+    { name: "Microsoft" },
+    { name: "Amazon" },
+    { name: "Apple" },
+    { name: "Meta" },
+    { name: "Netflix" }
   ]
 
   return (

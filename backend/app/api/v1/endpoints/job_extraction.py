@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.job import JobListing, JobApplication, UserProfile
 from app.services.url_job_extractor import url_job_extractor
+from app.services.job_extraction_strategy import job_extraction_strategy
 from app.services.smart_job_scorer import smart_job_scorer
 from datetime import datetime
 
@@ -75,10 +76,10 @@ async def extract_job_from_url(
 ):
     """
     Extract job details from URL and optionally create application entry
-    
+
     This endpoint:
     1. Validates the URL
-    2. Extracts job details using Jina AI Reader + OpenAI
+    2. Extracts job details using strategic approach (Playwright for LinkedIn/Indeed, Jina AI for others)
     3. Saves job to database
     4. Optionally creates application tracking entry
     5. Triggers background job scoring
@@ -97,8 +98,8 @@ async def extract_job_from_url(
                 "locations": user_profile.preferred_locations or []
             }
         
-        # Extract job details using our service
-        job_data = await url_job_extractor.extract_job_details(str(request.url), user_context)
+        # Extract job details using strategic approach with fallback
+        job_data = await job_extraction_strategy.extract_job_with_fallback(str(request.url), user_context)
         
         # Check for duplicate jobs (same URL or similar title+company)
         existing_job = db.query(JobListing).filter(
@@ -343,6 +344,23 @@ async def get_extraction_stats(user_id: str, db: Session = Depends(get_db)):
     except Exception as e:
         logger.error(f"Failed to get extraction stats: {e}")
         raise HTTPException(status_code=500, detail="Failed to get extraction statistics")
+
+@router.get("/domain-info")
+async def get_domain_extraction_info(url: str):
+    """
+    Get information about how a domain will be processed for job extraction.
+    Useful for understanding which extraction method will be used.
+    """
+    try:
+        domain_info = job_extraction_strategy.get_domain_info(url)
+        return {
+            "success": True,
+            "url": url,
+            "domain_info": domain_info
+        }
+    except Exception as e:
+        logger.error(f"Failed to get domain info for {url}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to analyze domain: {str(e)}")
 
 # =====================================================
 # BACKGROUND TASK FUNCTIONS

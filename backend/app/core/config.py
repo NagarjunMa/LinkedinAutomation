@@ -122,13 +122,18 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
     """OpenAI API key for AI-powered features like resume analysis and job matching"""
 
-    @property
-    def OPENAPI_KEY(self) -> str:
+    @validator("OPENAI_API_KEY", pre=True)
+    def validate_openai_key(cls, v: str) -> str:
         """
-        Backward compatibility alias for OPENAI_API_KEY.
-        Some legacy code still uses OPENAPI_KEY.
+        Validate OpenAI API key format and presence when AI features are enabled.
+        Railway deployment requires this to be set correctly.
         """
-        return self.OPENAI_API_KEY
+        if not v and cls.__fields__["ENABLE_AI_FEATURES"].default:
+            # Allow empty in development, but warn
+            import os
+            if os.getenv("ENVIRONMENT", "development").lower() == "production":
+                raise ValueError("OPENAI_API_KEY is required when AI features are enabled in production")
+        return v
 
     @property
     def CELERY_BROKER_URL(self) -> str:

@@ -9,10 +9,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { X, User, Briefcase, MapPin, DollarSign, GraduationCap, CheckCircle } from "lucide-react"
+import { X, User, Briefcase, MapPin, DollarSign, GraduationCap, CheckCircle, AlertCircle } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
 import { LocationAutoComplete } from "@/components/location-auto-complete"
+import { SkillsAutocomplete } from "@/components/skills-autocomplete"
+import { FormError } from "@/components/ui/form-error"
+import { useFormValidation } from "@/hooks/use-form-validation"
+import {
+  validateCompleteProfile,
+  validatePersonalInfo,
+  validateProfessionalInfo,
+  validateSkills,
+  validateJobPreferences
+} from "@/lib/validation/profile-schemas"
+import { serializeProfileData } from "@/lib/form-utils"
 
 interface ProfileSetupModalProps {
   isOpen: boolean
@@ -24,36 +35,59 @@ export function ProfileSetupModal({ isOpen, onClose, onComplete }: ProfileSetupM
   const { user } = useAuth()
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState(1)
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const [formData, setFormData] = useState({
-    // Personal Info
-    full_name: user?.user_metadata?.full_name || "",
-    email: user?.email || "",
-    phone: "",
-    location: "",
+  // Initialize form with validation
+  const form = useFormValidation({
+    initialValues: {
+      // Personal Info
+      full_name: user?.user_metadata?.full_name || "",
+      email: user?.email || "",
+      phone: "",
+      location: "",
 
-    // Professional Info
-    years_of_experience: 0,
-    career_level: "",
-    professional_summary: "",
+      // Professional Info
+      years_of_experience: 0,
+      career_level: "",
+      professional_summary: "",
 
-    // Skills & Tech
-    programming_languages: [] as string[],
-    frameworks_libraries: [] as string[],
-    tools_platforms: [] as string[],
+      // Skills & Tech
+      programming_languages: [] as string[],
+      frameworks_libraries: [] as string[],
+      tools_platforms: [] as string[],
 
-    // Job Preferences
-    desired_roles: [] as string[],
-    preferred_locations: [] as string[],
-    salary_range_min: 0,
-    salary_range_max: 0,
-    job_types: [] as string[],
+      // Job Preferences
+      desired_roles: [] as string[],
+      preferred_locations: [] as string[],
+      salary_range_min: 0,
+      salary_range_max: 0,
+    },
+    validationSchema: validateCompleteProfile,
+    onSubmit: async (data) => {
+      try {
+        const serializedData = serializeProfileData(data)
 
-    // Education
-    degrees: [] as string[],
-    institutions: [] as string[],
-    graduation_years: [] as string[]
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/user-profiles/${user?.id}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(serializedData)
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => null)
+          throw new Error(errorData?.detail || 'Failed to create profile')
+        }
+
+        onComplete()
+        router.push('/dashboard')
+      } catch (error: any) {
+        console.error('Profile creation error:', error)
+        throw new Error(error.message || 'Failed to create profile. Please try again.')
+      }
+    },
+    validateOnChange: true,
+    validateOnBlur: true
   })
 
   const steps = [

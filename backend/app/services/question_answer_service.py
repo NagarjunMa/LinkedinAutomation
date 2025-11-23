@@ -4,7 +4,7 @@ Generates authentic responses based on user's actual experience
 """
 
 import asyncio
-import openai
+from openai import AsyncOpenAI
 from typing import List, Dict
 from sqlalchemy.orm import Session
 from app.core.config import settings
@@ -16,15 +16,17 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# Set OpenAI API key
-openai.api_key = settings.OPENAPI_KEY
-
 
 class QuestionAnswerService:
     """Service for generating authentic application answers"""
 
     def __init__(self, db: Session):
         self.db = db
+        if not settings.OPENAI_API_KEY:
+            logger.error("OpenAI API key not configured - QuestionAnswerService will not work")
+            raise ValueError("OPENAI_API_KEY environment variable is required")
+
+        self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
 
     async def generate_answers_batch(
         self,
@@ -285,7 +287,7 @@ Format as bullet list with metrics.
         """Make OpenAI API call with error handling"""
 
         try:
-            response = openai.ChatCompletion.create(
+            response = await self.client.chat.completions.create(
                 model=settings.OPENAI_MODEL,
                 messages=[
                     {"role": "user", "content": prompt}
@@ -294,7 +296,12 @@ Format as bullet list with metrics.
                 temperature=0.7
             )
 
-            return response.choices[0].message.content
+            content = response.choices[0].message.content
+            if content is None:
+                logger.warning("OpenAI returned None content")
+                return "Based on my experience in software development, I believe I can contribute effectively to this role and am excited about the opportunity to apply my skills."
+
+            return content
         except Exception as e:
             logger.error(f"OpenAI API call failed: {e}")
             # Return a fallback response

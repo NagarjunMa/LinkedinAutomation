@@ -1,5 +1,5 @@
 import json
-import openai
+from openai import AsyncOpenAI
 from typing import Dict, List, Optional
 from sqlalchemy.orm import Session
 from app.core.config import settings
@@ -8,9 +8,6 @@ from app.models.user import User
 import logging
 
 logger = logging.getLogger(__name__)
-
-# Set OpenAI API key
-openai.api_key = settings.OPENAPI_KEY
 
 
 class ReferralEmailGenerator:
@@ -57,6 +54,11 @@ class ReferralEmailGenerator:
 
     def __init__(self, db: Session):
         self.db = db
+        if not settings.OPENAI_API_KEY:
+            logger.warning("OpenAI API key not configured - using fallback email generation")
+            self.client = None
+        else:
+            self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
 
     def classify_job_category(self, job_title: str, job_description: str = "") -> str:
         """Classify job into template category based on title and description"""

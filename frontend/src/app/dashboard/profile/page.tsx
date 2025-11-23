@@ -38,6 +38,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [editingSection, setEditingSection] = useState<string | null>(null)
+  const [editingEducationId, setEditingEducationId] = useState<string | null>(null)
   const [workExperiences, setWorkExperiences] = useState<WorkExperience[]>([])
   const [educationHistory, setEducationHistory] = useState<Education[]>([])
   const [referralTemplate, setReferralTemplate] = useState('')
@@ -133,18 +134,6 @@ Best regards,
     setEditingSection('work-experience')
   }
 
-  const addEducation = () => {
-    const newEdu: Education = {
-      university: '',
-      degree: '',
-      field_of_study: '',
-      location: '',
-      start_date: '',
-      end_date: ''
-    }
-    setEducationHistory([...educationHistory, newEdu])
-    setEditingSection('education')
-  }
 
   const removeWorkExperience = (index: number) => {
     setWorkExperiences(workExperiences.filter((_, i) => i !== index))
@@ -152,6 +141,63 @@ Best regards,
 
   const removeEducation = (index: number) => {
     setEducationHistory(educationHistory.filter((_, i) => i !== index))
+  }
+
+  const handleSaveEducation = async (education: Education, index: number) => {
+    try {
+      setSaving(true)
+      const updatedEducation = [...educationHistory]
+      updatedEducation[index] = education
+
+      await profileApi.updateProfile(user?.id ? String(user.id) : 'current', {
+        education_history: updatedEducation
+      })
+
+      setEducationHistory(updatedEducation)
+      setEditingEducationId(null)
+
+      toast({
+        title: "Success",
+        description: "Education entry saved successfully.",
+      })
+    } catch (error) {
+      console.error('Error saving education:', error)
+      toast({
+        title: "Error",
+        description: "Failed to save education entry.",
+        variant: "destructive",
+      })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDeleteEducation = async (index: number) => {
+    try {
+      setSaving(true)
+      const updatedEducation = educationHistory.filter((_, i) => i !== index)
+
+      await profileApi.updateProfile(user?.id ? String(user.id) : 'current', {
+        education_history: updatedEducation
+      })
+
+      setEducationHistory(updatedEducation)
+      setEditingEducationId(null)
+
+      toast({
+        title: "Success",
+        description: "Education entry deleted successfully.",
+      })
+    } catch (error) {
+      console.error('Error deleting education:', error)
+      toast({
+        title: "Error",
+        description: "Failed to delete education entry.",
+        variant: "destructive",
+      })
+    } finally {
+      setSaving(false)
+    }
   }
 
   const fetchResumes = async () => {
@@ -447,24 +493,6 @@ Best regards,
                 <GraduationCap className="w-5 h-5 text-accent-400" />
                 <CardTitle className="text-cream-50">Education</CardTitle>
               </div>
-              <div className="flex space-x-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setEditingSection(editingSection === 'education' ? null : 'education')}
-                  className="text-accent-400 hover:text-accent-300 hover:bg-accent-500/10"
-                >
-                  <Edit2 className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={addEducation}
-                  className="text-accent-400 hover:text-accent-300 hover:bg-accent-500/10"
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
-              </div>
             </div>
             <CardDescription className="text-cream-400">
               Add your educational background for better resume analysis and alumni network matching.
@@ -474,10 +502,10 @@ Best regards,
             <EducationSection
               education={educationHistory}
               setEducation={setEducationHistory}
-              editing={editingSection === 'education'}
-              onSave={() => handleSaveProfile('Education', { education_history: educationHistory })}
-              onCancel={() => setEditingSection(null)}
-              onRemove={removeEducation}
+              editingEducationId={editingEducationId}
+              setEditingEducationId={setEditingEducationId}
+              onSaveEducation={handleSaveEducation}
+              onDeleteEducation={handleDeleteEducation}
               saving={saving}
             />
           </CardContent>
@@ -940,129 +968,227 @@ function WorkExperienceSection({ experiences, setExperiences, editing, onSave, o
 }
 
 
-function EducationSection({ education, setEducation, editing, onSave, onCancel, onRemove, saving }: {
+function EducationSection({ education, setEducation, editingEducationId, setEditingEducationId, onSaveEducation, onDeleteEducation, saving }: {
   education: Education[];
   setEducation: (edu: Education[]) => void;
-  editing: boolean;
-  onSave: () => void;
-  onCancel: () => void;
-  onRemove: (index: number) => void;
+  editingEducationId: string | null;
+  setEditingEducationId: (id: string | null) => void;
+  onSaveEducation: (education: Education, index: number) => void;
+  onDeleteEducation: (index: number) => void;
   saving: boolean;
 }) {
+  const [addingNew, setAddingNew] = useState(false)
+  const [originalEducation, setOriginalEducation] = useState<Education | null>(null)
+
+  const startEditing = (index: number) => {
+    setEditingEducationId(index.toString())
+    setOriginalEducation({ ...education[index] })
+  }
+
+  const cancelEditing = () => {
+    if (originalEducation && editingEducationId !== null) {
+      const updated = [...education]
+      updated[parseInt(editingEducationId)] = originalEducation
+      setEducation(updated)
+    }
+    setEditingEducationId(null)
+    setOriginalEducation(null)
+    setAddingNew(false)
+  }
+
   const updateEducation = (index: number, field: keyof Education, value: string) => {
     const updated = [...education]
     updated[index] = { ...updated[index], [field]: value }
     setEducation(updated)
   }
 
-  if (!editing) {
-    return (
-      <div className="space-y-4">
-        {education.map((edu, index) => (
-          <div key={index} className="bg-primary-800/50 border border-primary-600/50 rounded-lg p-4">
-            <div className="flex justify-between items-start">
-              <div className="flex-1">
-                <h4 className="text-cream-50 font-semibold">{edu.degree}</h4>
-                <p className="text-accent-400">{edu.university}</p>
-                <p className="text-cream-300 text-sm">{edu.field_of_study}</p>
-                <p className="text-cream-300 text-sm">{edu.location}</p>
-                <p className="text-cream-400 text-xs mt-1">
-                  {edu.start_date} - {edu.end_date || 'Present'}
-                </p>
-              </div>
-            </div>
-          </div>
-        ))}
-        {education.length === 0 && (
-          <p className="text-cream-400 text-center py-8">No education history added yet</p>
-        )}
-      </div>
-    )
+  const addNewEducation = () => {
+    const newEducation: Education = {
+      university: '',
+      degree: '',
+      field_of_study: '',
+      location: '',
+      start_date: '',
+      end_date: ''
+    }
+    setEducation([...education, newEducation])
+    setEditingEducationId((education.length).toString())
+    setAddingNew(true)
+    setOriginalEducation(null)
+  }
+
+  const handleSave = (index: number) => {
+    onSaveEducation(education[index], index)
+    setEditingEducationId(null)
+    setOriginalEducation(null)
+    setAddingNew(false)
+  }
+
+  const handleDelete = (index: number) => {
+    if (window.confirm('Are you sure you want to delete this education entry?')) {
+      onDeleteEducation(index)
+      setEditingEducationId(null)
+      setOriginalEducation(null)
+      setAddingNew(false)
+    }
   }
 
   return (
     <div className="space-y-4">
-      {education.map((edu, index) => (
-        <div key={index} className="bg-primary-800/50 border border-primary-600/50 rounded-lg p-4 space-y-3">
-          <div className="flex justify-between items-center">
-            <h4 className="text-cream-50 font-semibold">Education {index + 1}</h4>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onRemove(index)}
-              className="text-red-400 hover:text-red-300"
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <Label className="text-cream-200">University</Label>
-              <Input
-                value={edu.university}
-                onChange={(e) => updateEducation(index, 'university', e.target.value)}
-                className="bg-primary-700/50 border-primary-600 text-cream-50"
-              />
-            </div>
-            <div>
-              <Label className="text-cream-200">Degree</Label>
-              <Input
-                value={edu.degree}
-                onChange={(e) => updateEducation(index, 'degree', e.target.value)}
-                className="bg-primary-700/50 border-primary-600 text-cream-50"
-              />
-            </div>
-            <div>
-              <Label className="text-cream-200">Field of Study</Label>
-              <Input
-                value={edu.field_of_study}
-                onChange={(e) => updateEducation(index, 'field_of_study', e.target.value)}
-                className="bg-primary-700/50 border-primary-600 text-cream-50"
-              />
-            </div>
-            <div>
-              <Label className="text-cream-200">Location</Label>
-              <Input
-                value={edu.location}
-                onChange={(e) => updateEducation(index, 'location', e.target.value)}
-                className="bg-primary-700/50 border-primary-600 text-cream-50"
-              />
-            </div>
-            <div>
-              <Label className="text-cream-200">Start Date</Label>
-              <Input
-                type="date"
-                value={edu.start_date}
-                onChange={(e) => updateEducation(index, 'start_date', e.target.value)}
-                className="bg-primary-700/50 border-primary-600 text-cream-50"
-              />
-            </div>
-            <div>
-              <Label className="text-cream-200">End Date (leave empty if current)</Label>
-              <Input
-                type="date"
-                value={edu.end_date || ''}
-                onChange={(e) => updateEducation(index, 'end_date', e.target.value)}
-                className="bg-primary-700/50 border-primary-600 text-cream-50"
-              />
-            </div>
-          </div>
-        </div>
-      ))}
+      {education.map((edu, index) => {
+        const isEditing = editingEducationId === index.toString()
 
-      <div className="flex space-x-2">
+        if (isEditing) {
+          // Edit mode for this specific entry
+          return (
+            <div key={index} className="bg-primary-800/50 border border-primary-600/50 rounded-lg p-4 space-y-3">
+              <div className="flex justify-between items-center">
+                <h4 className="text-cream-50 font-semibold">
+                  {addingNew && index === education.length - 1 ? 'Add New Education' : `Edit Education ${index + 1}`}
+                </h4>
+                <div className="flex space-x-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleSave(index)}
+                    disabled={saving}
+                    className="text-green-400 hover:text-green-300"
+                  >
+                    <Save className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={cancelEditing}
+                    className="text-gray-400 hover:text-gray-300"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                  {!addingNew && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(index)}
+                      className="text-red-400 hover:text-red-300"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-cream-200">University</Label>
+                  <Input
+                    value={edu.university}
+                    onChange={(e) => updateEducation(index, 'university', e.target.value)}
+                    className="bg-primary-700/50 border-primary-600 text-cream-50"
+                    placeholder="University name"
+                  />
+                </div>
+                <div>
+                  <Label className="text-cream-200">Degree</Label>
+                  <Input
+                    value={edu.degree}
+                    onChange={(e) => updateEducation(index, 'degree', e.target.value)}
+                    className="bg-primary-700/50 border-primary-600 text-cream-50"
+                    placeholder="Degree type"
+                  />
+                </div>
+                <div>
+                  <Label className="text-cream-200">Field of Study</Label>
+                  <Input
+                    value={edu.field_of_study}
+                    onChange={(e) => updateEducation(index, 'field_of_study', e.target.value)}
+                    className="bg-primary-700/50 border-primary-600 text-cream-50"
+                    placeholder="Field of study"
+                  />
+                </div>
+                <div>
+                  <Label className="text-cream-200">Location</Label>
+                  <Input
+                    value={edu.location}
+                    onChange={(e) => updateEducation(index, 'location', e.target.value)}
+                    className="bg-primary-700/50 border-primary-600 text-cream-50"
+                    placeholder="City, State"
+                  />
+                </div>
+                <div>
+                  <Label className="text-cream-200">Start Date</Label>
+                  <Input
+                    type="date"
+                    value={edu.start_date}
+                    onChange={(e) => updateEducation(index, 'start_date', e.target.value)}
+                    className="bg-primary-700/50 border-primary-600 text-cream-50"
+                  />
+                </div>
+                <div>
+                  <Label className="text-cream-200">End Date (leave empty if current)</Label>
+                  <Input
+                    type="date"
+                    value={edu.end_date}
+                    onChange={(e) => updateEducation(index, 'end_date', e.target.value)}
+                    className="bg-primary-700/50 border-primary-600 text-cream-50"
+                  />
+                </div>
+              </div>
+            </div>
+          )
+        } else {
+          // View mode for this entry
+          return (
+            <div key={index} className="bg-primary-800/50 border border-primary-600/50 rounded-lg p-4">
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <h4 className="text-cream-50 font-semibold">{edu.degree || 'Degree'}</h4>
+                  <p className="text-accent-400">{edu.university || 'University'}</p>
+                  <p className="text-cream-300 text-sm">{edu.field_of_study}</p>
+                  <p className="text-cream-300 text-sm">{edu.location}</p>
+                  <p className="text-cream-400 text-xs mt-1">
+                    {edu.start_date} - {edu.end_date || 'Present'}
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => startEditing(index)}
+                  className="text-cream-400 hover:text-cream-300 hover:bg-primary-700/50"
+                  disabled={editingEducationId !== null}
+                >
+                  <Edit2 className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          )
+        }
+      })}
+
+      {/* Empty state */}
+      {education.length === 0 && (
+        <div className="text-center py-8">
+          <p className="text-cream-400 mb-4">No education history added yet</p>
+          <Button
+            onClick={addNewEducation}
+            className="bg-accent-600 hover:bg-accent-700 text-white"
+            disabled={editingEducationId !== null}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Education
+          </Button>
+        </div>
+      )}
+
+      {/* Add new education button */}
+      {education.length > 0 && editingEducationId === null && (
         <Button
-          onClick={onSave}
-          disabled={saving}
-          className="bg-gradient-warm hover:bg-gradient-warm/90"
+          onClick={addNewEducation}
+          variant="outline"
+          className="w-full border-primary-600 text-cream-300 hover:text-cream-50 hover:bg-primary-700/50"
         >
-          <Save className="w-4 h-4 mr-2" />
-          {saving ? 'Saving...' : 'Save Education'}
+          <Plus className="w-4 h-4 mr-2" />
+          Add Education
         </Button>
-        <Button variant="ghost" onClick={onCancel} className="text-cream-300 hover:text-cream-50">
-          Cancel
-        </Button>
-      </div>
+      )}
     </div>
   )
 }
