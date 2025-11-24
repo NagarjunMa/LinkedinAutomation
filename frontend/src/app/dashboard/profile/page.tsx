@@ -28,7 +28,8 @@ import {
   FileText,
   Upload,
   Download,
-  Eye
+  Eye,
+  X
 } from "lucide-react"
 import { profileApi, resumeApi, UserProfile, WorkExperience, Education, ResumeFile } from '@/app/lib/api'
 import { useAuth } from '@/contexts/auth-context'
@@ -148,10 +149,11 @@ Best regards,
       setSaving(true)
       const updatedEducation = [...educationHistory]
       updatedEducation[index] = education
+      const userId = user?.id ? String(user.id) : 'current'
 
-      await profileApi.updateProfile(user?.id ? String(user.id) : 'current', {
+      await profileApi.updateProfile({
         education_history: updatedEducation
-      })
+      }, userId)
 
       setEducationHistory(updatedEducation)
       setEditingEducationId(null)
@@ -176,10 +178,11 @@ Best regards,
     try {
       setSaving(true)
       const updatedEducation = educationHistory.filter((_, i) => i !== index)
+      const userId = user?.id ? String(user.id) : 'current'
 
-      await profileApi.updateProfile(user?.id ? String(user.id) : 'current', {
+      await profileApi.updateProfile({
         education_history: updatedEducation
-      })
+      }, userId)
 
       setEducationHistory(updatedEducation)
       setEditingEducationId(null)

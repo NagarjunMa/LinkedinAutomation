@@ -122,32 +122,34 @@ export function ProfileSetupModal({ isOpen, onClose, onComplete }: ProfileSetupM
     if (field === 'years_of_experience') {
       const stringValue = value as string
       if (stringValue === '') {
-        setFormData(prev => ({ ...prev, [field]: 0 }))
+        form.setValue(field as any, 0)
       } else {
         const numValue = parseFloat(stringValue)
         if (!isNaN(numValue)) {
-          setFormData(prev => ({ ...prev, [field]: numValue }))
+          form.setValue(field as any, numValue)
         }
       }
     } else if (field === 'salary_range_min' || field === 'salary_range_max') {
       const stringValue = value as string
       if (stringValue === '') {
-        setFormData(prev => ({ ...prev, [field]: 0 }))
+        form.setValue(field as any, 0)
       } else {
         const numValue = parseInt(stringValue)
         if (!isNaN(numValue)) {
-          setFormData(prev => ({ ...prev, [field]: numValue }))
+          form.setValue(field as any, numValue)
         }
       }
     } else {
-      setFormData(prev => ({ ...prev, [field]: value }))
+      form.setValue(field as any, value)
     }
   }
 
   const handleArrayInput = (field: string, value: string) => {
     if (value.trim()) {
       const items = value.split(',').map(item => item.trim()).filter(Boolean)
-      setFormData(prev => ({ ...prev, [field]: items }))
+      form.setValue(field as any, items)
+    } else {
+      form.setValue(field as any, [])
     }
   }
 
@@ -163,28 +165,11 @@ export function ProfileSetupModal({ isOpen, onClose, onComplete }: ProfileSetupM
     }
   }
 
-  const handleSubmit = async () => {
-    setIsSubmitting(true)
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/user-profiles/${user?.id}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData)
-      })
-
-      if (response.ok) {
-        onComplete()
-        router.push('/dashboard')
-      } else {
-        throw new Error('Failed to create profile')
-      }
-    } catch (error) {
-      console.error('Profile creation error:', error)
-      alert('Failed to create profile. Please try again.')
-    } finally {
-      setIsSubmitting(false)
+  const handleFormSubmit = async () => {
+    const success = await form.handleSubmit()
+    if (success) {
+      onComplete()
+      router.push('/dashboard')
     }
   }
 
@@ -198,22 +183,30 @@ export function ProfileSetupModal({ isOpen, onClose, onComplete }: ProfileSetupM
                 <Label htmlFor="full_name">Full Name *</Label>
                 <Input
                   id="full_name"
-                  value={formData.full_name}
+                  value={form.values.full_name}
                   onChange={(e) => handleInputChange("full_name", e.target.value)}
+                  onBlur={() => form.handleBlur("full_name")}
                   placeholder="John Doe"
                   required
                 />
+                {form.errors.full_name && form.touched.full_name && (
+                  <FormError message={form.errors.full_name} />
+                )}
               </div>
               <div>
                 <Label htmlFor="email">Email *</Label>
                 <Input
                   id="email"
-                  value={formData.email}
+                  value={form.values.email}
                   onChange={(e) => handleInputChange("email", e.target.value)}
+                  onBlur={() => form.handleBlur("email")}
                   placeholder="john@example.com"
                   type="email"
                   required
                 />
+                {form.errors.email && form.touched.email && (
+                  <FormError message={form.errors.email} />
+                )}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -221,19 +214,26 @@ export function ProfileSetupModal({ isOpen, onClose, onComplete }: ProfileSetupM
                 <Label htmlFor="phone">Phone</Label>
                 <Input
                   id="phone"
-                  value={formData.phone}
+                  value={form.values.phone}
                   onChange={(e) => handleInputChange("phone", e.target.value)}
+                  onBlur={() => form.handleBlur("phone")}
                   placeholder="+1 (555) 123-4567"
                 />
+                {form.errors.phone && form.touched.phone && (
+                  <FormError message={form.errors.phone} />
+                )}
               </div>
               <div>
                 <Label htmlFor="location">Location</Label>
                 <LocationAutoComplete
                   id="location"
-                  value={formData.location}
+                  value={form.values.location}
                   onChange={(value) => handleInputChange("location", value)}
                   placeholder="San Francisco, CA"
                 />
+                {form.errors.location && form.touched.location && (
+                  <FormError message={form.errors.location} />
+                )}
               </div>
             </div>
           </div>
@@ -277,11 +277,15 @@ export function ProfileSetupModal({ isOpen, onClose, onComplete }: ProfileSetupM
               <Label htmlFor="professional_summary">Professional Summary</Label>
               <Textarea
                 id="professional_summary"
-                value={formData.professional_summary}
+                value={form.values.professional_summary}
                 onChange={(e) => handleInputChange("professional_summary", e.target.value)}
+                onBlur={() => form.handleBlur("professional_summary")}
                 placeholder="Brief description of your background and goals..."
                 rows={3}
               />
+              {form.errors.professional_summary && form.touched.professional_summary && (
+                <FormError message={form.errors.professional_summary} />
+              )}
             </div>
           </div>
         )
@@ -340,21 +344,29 @@ export function ProfileSetupModal({ isOpen, onClose, onComplete }: ProfileSetupM
                 <Label htmlFor="salary_range_min">Minimum Salary ($)</Label>
                 <Input
                   id="salary_range_min"
-                  value={formData.salary_range_min === 0 ? '' : formData.salary_range_min}
+                  value={form.values.salary_range_min === 0 ? '' : form.values.salary_range_min}
                   onChange={(e) => handleInputChange("salary_range_min", e.target.value)}
+                  onBlur={() => form.handleBlur("salary_range_min")}
                   placeholder="80000"
                   type="number"
                 />
+                {form.errors.salary_range_min && form.touched.salary_range_min && (
+                  <FormError message={form.errors.salary_range_min} />
+                )}
               </div>
               <div>
                 <Label htmlFor="salary_range_max">Maximum Salary ($)</Label>
                 <Input
                   id="salary_range_max"
-                  value={formData.salary_range_max === 0 ? '' : formData.salary_range_max}
+                  value={form.values.salary_range_max === 0 ? '' : form.values.salary_range_max}
                   onChange={(e) => handleInputChange("salary_range_max", e.target.value)}
+                  onBlur={() => form.handleBlur("salary_range_max")}
                   placeholder="120000"
                   type="number"
                 />
+                {form.errors.salary_range_max && form.touched.salary_range_max && (
+                  <FormError message={form.errors.salary_range_max} />
+                )}
               </div>
             </div>
           </div>
@@ -457,11 +469,11 @@ export function ProfileSetupModal({ isOpen, onClose, onComplete }: ProfileSetupM
 
                   {currentStep === steps.length ? (
                     <Button
-                      onClick={handleSubmit}
-                      disabled={isSubmitting || !formData.full_name || !formData.email}
+                      onClick={handleFormSubmit}
+                      disabled={form.isSubmitting || !form.values.full_name || !form.values.email}
                       className="bg-gradient-warm hover:bg-gradient-gold text-white px-8"
                     >
-                      {isSubmitting ? "Creating Profile..." : "Complete Setup"}
+                      {form.isSubmitting ? "Creating Profile..." : "Complete Setup"}
                       <CheckCircle className="ml-2 h-4 w-4" />
                     </Button>
                   ) : (

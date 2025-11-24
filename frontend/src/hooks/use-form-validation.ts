@@ -25,7 +25,7 @@ export function useFormValidation<T extends Record<string, any>>({
   debounceMs = 300
 }: UseFormValidationOptions<T>) {
   const [values, setValues] = useState<T>(initialValues)
-  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [errors, setErrors] = useState<Record<string, string | null>>({})
   const [touched, setTouched] = useState<Record<string, boolean>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitErrors, setSubmitErrors] = useState<FormError[]>([])
@@ -40,10 +40,15 @@ export function useFormValidation<T extends Record<string, any>>({
         const fieldErrors = extractZodErrors(result.error)
         const fieldError = fieldErrors.find(err => err.field === fieldName)
 
-        setErrors(prev => ({
-          ...prev,
-          [fieldName]: fieldError?.message || null
-        }))
+        setErrors(prev => {
+          const newErrors = { ...prev }
+          if (fieldError?.message) {
+            newErrors[fieldName] = fieldError.message
+          } else {
+            delete newErrors[fieldName]
+          }
+          return newErrors
+        })
       } else {
         setErrors(prev => {
           const newErrors = { ...prev }
@@ -68,7 +73,7 @@ export function useFormValidation<T extends Record<string, any>>({
 
     if (result.error) {
       const formErrors = extractZodErrors(result.error)
-      const errorMap: Record<string, string> = {}
+      const errorMap: Record<string, string | null> = {}
 
       formErrors.forEach(error => {
         errorMap[error.field] = error.message

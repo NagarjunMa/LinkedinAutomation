@@ -41,13 +41,20 @@ export function EducationForm({ value, onChange, className }: EducationFormProps
       coursework: [] as string[],
       technical_skills_gained: [] as string[],
     },
-    validationSchema: validateEducation,
+    validationSchema: (data: any) => validateEducation(data),
     onSubmit: (data) => {
       const newEducation: Education = {
-        ...data,
-        start_date: new Date(data.start_date),
-        end_date: data.end_date ? new Date(data.end_date) : undefined,
-        graduation_date: data.graduation_date ? new Date(data.graduation_date) : undefined,
+        institution_name: data.institution_name,
+        degree_type: data.degree_type,
+        field_of_study: data.field_of_study,
+        major: data.major,
+        gpa: data.gpa,
+        start_date: new Date(data.start_date as string),
+        end_date: data.end_date ? new Date(data.end_date as string) : undefined,
+        graduation_date: data.graduation_date ? new Date(data.graduation_date as string) : undefined,
+        is_current: data.is_current,
+        coursework: data.coursework,
+        technical_skills_gained: data.technical_skills_gained,
       }
       onChange({
         education_records: [...value.education_records, newEducation],
@@ -67,12 +74,15 @@ export function EducationForm({ value, onChange, className }: EducationFormProps
       never_expires: false,
       skills_validated: [] as string[],
     },
-    validationSchema: validateCertification,
+    validationSchema: (data: any) => validateCertification(data),
     onSubmit: (data) => {
       const newCertification: Certification = {
-        ...data,
-        issue_date: new Date(data.issue_date),
-        expiration_date: data.expiration_date ? new Date(data.expiration_date) : undefined,
+        name: data.name,
+        issuing_organization: data.issuing_organization,
+        issue_date: new Date(data.issue_date as string),
+        expiration_date: data.expiration_date ? new Date(data.expiration_date as string) : undefined,
+        never_expires: data.never_expires,
+        skills_validated: data.skills_validated,
       }
       onChange({
         education_records: value.education_records,
@@ -223,7 +233,9 @@ export function EducationForm({ value, onChange, className }: EducationFormProps
                     <Label htmlFor="institution_name">Institution Name *</Label>
                     <Input
                       id="institution_name"
-                      {...educationForm.getFieldProps("institution_name")}
+                      value={educationForm.values.institution_name}
+                      onChange={(e) => educationForm.setValue("institution_name", e.target.value)}
+                      onBlur={() => educationForm.handleBlur("institution_name")}
                       placeholder="Harvard University"
                       className={educationForm.errors.institution_name ? "border-red-500" : ""}
                     />
@@ -257,7 +269,9 @@ export function EducationForm({ value, onChange, className }: EducationFormProps
                     <Label htmlFor="field_of_study">Field of Study *</Label>
                     <Input
                       id="field_of_study"
-                      {...educationForm.getFieldProps("field_of_study")}
+                      value={educationForm.values.field_of_study}
+                      onChange={(e) => educationForm.setValue("field_of_study", e.target.value)}
+                      onBlur={() => educationForm.handleBlur("field_of_study")}
                       placeholder="Computer Science"
                       className={educationForm.errors.field_of_study ? "border-red-500" : ""}
                     />
@@ -268,7 +282,9 @@ export function EducationForm({ value, onChange, className }: EducationFormProps
                     <Label htmlFor="major">Major (Optional)</Label>
                     <Input
                       id="major"
-                      {...educationForm.getFieldProps("major")}
+                      value={educationForm.values.major}
+                      onChange={(e) => educationForm.setValue("major", e.target.value)}
+                      onBlur={() => educationForm.handleBlur("major")}
                       placeholder="Software Engineering"
                     />
                   </div>
@@ -297,7 +313,9 @@ export function EducationForm({ value, onChange, className }: EducationFormProps
                     <Input
                       id="start_date"
                       type="date"
-                      {...educationForm.getFieldProps("start_date")}
+                      value={educationForm.values.start_date}
+                      onChange={(e) => educationForm.setValue("start_date", e.target.value)}
+                      onBlur={() => educationForm.handleBlur("start_date")}
                       className={educationForm.errors.start_date ? "border-red-500" : ""}
                     />
                     <FormError message={educationForm.errors.start_date} />
@@ -308,7 +326,9 @@ export function EducationForm({ value, onChange, className }: EducationFormProps
                     <Input
                       id="end_date"
                       type="date"
-                      {...educationForm.getFieldProps("end_date")}
+                      value={educationForm.values.end_date}
+                      onChange={(e) => educationForm.setValue("end_date", e.target.value)}
+                      onBlur={() => educationForm.handleBlur("end_date")}
                       disabled={educationForm.values.is_current}
                     />
                   </div>
@@ -331,14 +351,14 @@ export function EducationForm({ value, onChange, className }: EducationFormProps
 
                 {/* Skills Gained */}
                 <div>
-                  <SkillsAutocomplete
-                    category="programming_languages"
-                    value={educationForm.values.technical_skills_gained}
-                    onChange={(skills) => educationForm.setValue("technical_skills_gained", skills)}
-                    label="Technical Skills Gained"
-                    placeholder="Skills you learned or improved..."
-                    maxSkills={30}
-                  />
+                    <SkillsAutocomplete
+                      category="programming_languages"
+                      value={educationForm.values.technical_skills_gained || []}
+                      onChange={(skills) => educationForm.setValue("technical_skills_gained", skills)}
+                      label="Technical Skills Gained"
+                      placeholder="Skills you learned or improved..."
+                      maxSkills={30}
+                    />
                 </div>
 
                 {/* Submit Button */}
@@ -461,7 +481,7 @@ export function EducationForm({ value, onChange, className }: EducationFormProps
                     <Input
                       id="issue_date"
                       type="date"
-                      value={certificationForm.values.issue_date}
+                      value={certificationForm.values.issue_date || ""}
                       onChange={(e) => certificationForm.setValue("issue_date", e.target.value)}
                       onBlur={() => certificationForm.handleBlur("issue_date")}
                       className={certificationForm.errors.issue_date ? "border-red-500" : ""}
@@ -474,8 +494,9 @@ export function EducationForm({ value, onChange, className }: EducationFormProps
                     <Input
                       id="expiration_date"
                       type="date"
-                      value={certificationForm.values.expiration_date}
+                      value={certificationForm.values.expiration_date || ""}
                       onChange={(e) => certificationForm.setValue("expiration_date", e.target.value)}
+                      onBlur={() => certificationForm.handleBlur("expiration_date")}
                       disabled={certificationForm.values.never_expires}
                     />
                   </div>
@@ -498,14 +519,14 @@ export function EducationForm({ value, onChange, className }: EducationFormProps
 
                 {/* Skills Validated */}
                 <div>
-                  <SkillsAutocomplete
-                    category="programming_languages"
-                    value={certificationForm.values.skills_validated}
-                    onChange={(skills) => certificationForm.setValue("skills_validated", skills)}
-                    label="Skills Validated by This Certification"
-                    placeholder="Skills this certification validates..."
-                    maxSkills={20}
-                  />
+                    <SkillsAutocomplete
+                      category="programming_languages"
+                      value={certificationForm.values.skills_validated || []}
+                      onChange={(skills) => certificationForm.setValue("skills_validated", skills)}
+                      label="Skills Validated by This Certification"
+                      placeholder="Skills this certification validates..."
+                      maxSkills={20}
+                    />
                 </div>
 
                 {/* Submit Button */}

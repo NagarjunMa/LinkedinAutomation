@@ -127,7 +127,7 @@ export function EnhancedProfileSetupModal({ isOpen, onClose, onComplete }: Enhan
     const stepData: any = {}
 
     currentStepData.fields.forEach(field => {
-      stepData[field] = form.values[field]
+      stepData[field] = (form.values as any)[field]
     })
 
     const result = currentStepData.validator(stepData)
@@ -141,7 +141,7 @@ export function EnhancedProfileSetupModal({ isOpen, onClose, onComplete }: Enhan
     } else {
       // Mark fields as touched to show validation errors
       steps[currentStep - 1].fields.forEach(field => {
-        form.setFieldTouched(field, true)
+        form.setFieldTouched(field as keyof typeof form.values, true)
       })
     }
   }
@@ -450,7 +450,9 @@ export function EnhancedProfileSetupModal({ isOpen, onClose, onComplete }: Enhan
                     <AlertTriangle className="h-5 w-5" />
                     <span className="font-medium">Please fix the following errors:</span>
                   </div>
-                  <FormErrorsList errors={form.errors} className="mt-2" />
+                  <FormErrorsList errors={Object.fromEntries(
+                    Object.entries(form.errors).filter(([_, value]) => value !== null)
+                  ) as Record<string, string>} className="mt-2" />
                 </div>
               )}
 
