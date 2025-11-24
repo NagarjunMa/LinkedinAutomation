@@ -22,7 +22,7 @@ import {
   validateProfessionalInfo,
   validateSkills,
   validateJobPreferences
-} from "./../lib/validation/profile-schemas"
+} from "@/lib/validation/profile-schemas"
 import { serializeProfileData } from "./../lib/form-utils"
 
 interface ProfileSetupModalProps {
