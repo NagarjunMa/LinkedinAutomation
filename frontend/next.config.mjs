@@ -1,5 +1,6 @@
    import path from 'path';
    import { fileURLToPath } from 'url';
+   import fs from 'fs';
 
    const __filename = fileURLToPath(import.meta.url);
    const __dirname = path.dirname(__filename);
@@ -136,9 +137,17 @@
     }
 
     // Ensure path aliases work in Docker build
+    // Try multiple path resolution strategies for maximum compatibility
+    const srcPath = path.resolve(__dirname, 'src');
+    const cwdSrcPath = path.resolve(process.cwd(), 'src');
+    
+    // Use the path that actually exists (fallback to __dirname if neither exists)
+    const actualSrcPath = fs.existsSync(srcPath) ? srcPath : 
+                         (fs.existsSync(cwdSrcPath) ? cwdSrcPath : srcPath);
+    
     config.resolve.alias = {
       ...config.resolve.alias,
-      '@': path.resolve(__dirname, './src'),
+      '@': actualSrcPath,
     };
 
     return config;

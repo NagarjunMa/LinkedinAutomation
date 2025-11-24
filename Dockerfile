@@ -6,6 +6,9 @@ WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm ci
 COPY frontend/ ./
+# Verify files are copied correctly
+RUN ls -la src/lib/validation/ || echo "Validation directory not found"
+RUN ls -la src/lib/form-utils.ts || echo "form-utils.ts not found"
 RUN npm run build
 
 FROM python:3.11-slim AS backend

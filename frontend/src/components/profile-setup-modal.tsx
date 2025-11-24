@@ -23,7 +23,7 @@ import {
   validateSkills,
   validateJobPreferences
 } from "@/lib/validation/profile-schemas"
-import { serializeProfileData } from "./../lib/form-utils"
+import { serializeProfileData } from "@/lib/form-utils"
 
 interface ProfileSetupModalProps {
   isOpen: boolean
