@@ -98,6 +98,21 @@ export function ProfileCompletionBanner() {
     }
   }, [user?.id])
 
+  // Listen for profile update events
+  useEffect(() => {
+    const handleProfileUpdate = () => {
+      if (user?.id) {
+        fetchProfile()
+      }
+    }
+
+    window.addEventListener('profileUpdated', handleProfileUpdate)
+
+    return () => {
+      window.removeEventListener('profileUpdated', handleProfileUpdate)
+    }
+  }, [user?.id])
+
   const fetchProfile = async () => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/user-profiles/${user?.id}`)

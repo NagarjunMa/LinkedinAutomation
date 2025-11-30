@@ -154,11 +154,18 @@ export function EnhancedReferralTemplateGenerator({ onTemplateGenerated, onClose
                 user_background: userBackground
             }
 
-            const response = await referralTemplatesAPI.generate({
+            const requestData = {
                 contact_info: contactInfo,
                 job_info: jobInfo,
                 user_preferences: preferences
-            })
+            }
+
+            console.log('Sending referral template request:', requestData)
+            console.log('API endpoint:', `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/referral-templates/generate`)
+
+            const response = await referralTemplatesAPI.generate(requestData)
+
+            console.log('Referral template response:', response)
 
             setGeneratedTemplate(response)
 
@@ -171,11 +178,27 @@ export function EnhancedReferralTemplateGenerator({ onTemplateGenerated, onClose
                 onTemplateGenerated(response)
             }
 
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error generating template:', error)
+
+            let errorMessage = "Failed to generate template. Please try again."
+
+            // Provide more specific error messages
+            if (error.message?.includes('Failed to fetch')) {
+                errorMessage = "Network error. Please check your connection and try again."
+            } else if (error.message?.includes('401')) {
+                errorMessage = "Authentication error. Please refresh the page and try again."
+            } else if (error.message?.includes('403')) {
+                errorMessage = "Permission denied. Please ensure you have the right access."
+            } else if (error.message?.includes('500')) {
+                errorMessage = "Server error. Our team has been notified."
+            } else if (error.message) {
+                errorMessage = `API Error: ${error.message}`
+            }
+
             toast({
                 title: "Error",
-                description: "Failed to generate template. Please try again.",
+                description: errorMessage,
                 variant: "destructive",
             })
         } finally {

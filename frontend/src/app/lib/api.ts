@@ -1313,20 +1313,31 @@ export const referralTemplatesAPI = {
             include_portfolio?: boolean;
         };
     }) => {
-        const response = await fetch(`${API_BASE_URL}/api/v1/referral-templates/generate`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                ...getAuthHeaders()
-            },
-            body: JSON.stringify(data),
-        });
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/v1/referral-templates/generate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...getAuthHeaders()
+                },
+                body: JSON.stringify(data),
+            });
 
-        if (!response.ok) {
-            throw new Error('Failed to generate referral template');
+            if (!response.ok) {
+                const errorData = await response.text();
+                console.error('Referral template API error:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    body: errorData
+                });
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            return response.json();
+        } catch (error) {
+            console.error('Referral template generation failed:', error);
+            throw error;
         }
-
-        return response.json();
     },
 
     // Get user's templates

@@ -50,6 +50,7 @@ export default function ApplicationsPage() {
     const [showJobDetails, setShowJobDetails] = useState(false)
     const [jobDetails, setJobDetails] = useState<any>(null)
     const [loadingJobDetails, setLoadingJobDetails] = useState(false)
+    const [recentlyExtractedJob, setRecentlyExtractedJob] = useState<any>(null)
 
     // Fetch real applications data
     const fetchApplications = async () => {
@@ -100,10 +101,22 @@ export default function ApplicationsPage() {
     })
 
     const handleJobExtracted = async (job: any) => {
+        // Store recently extracted job for immediate feedback
+        const extractedJobData = {
+            id: job.job_id || job.id,
+            title: job.extracted_job?.title || job.title,
+            company: job.extracted_job?.company || job.company,
+            location: job.extracted_job?.location || job.location,
+            sourceUrl: job.extracted_job?.application_url || job.original_url,
+            extractedAt: new Date().toISOString(),
+            ...job
+        }
+        setRecentlyExtractedJob(extractedJobData)
+
         // Show success message
         toast({
-            title: "Success!",
-            description: `Successfully extracted: ${job.extracted_job?.title || job.title} at ${job.extracted_job?.company || job.company}`,
+            title: "Job Extracted Successfully!",
+            description: `${extractedJobData.title} at ${extractedJobData.company}`,
         })
 
         // Refresh the applications list to show the new extraction
@@ -164,6 +177,70 @@ export default function ApplicationsPage() {
         )
     }
 
+    // Recently Extracted Job Card Component
+    const RecentlyExtractedJobCard = () => {
+        if (!recentlyExtractedJob) return null
+
+        return (
+            <Card className="bg-gradient-to-r from-green-900/20 to-blue-900/20 border border-green-500/30">
+                <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                            <CheckCircle className="w-5 h-5 text-green-400" />
+                            <CardTitle className="text-lg text-cream-50">Recently Extracted Job</CardTitle>
+                        </div>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setRecentlyExtractedJob(null)}
+                        >
+                            <X className="w-4 h-4" />
+                        </Button>
+                    </div>
+                    <CardDescription className="text-cream-300">
+                        Job successfully extracted from URL
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-3">
+                        <div>
+                            <h3 className="font-semibold text-cream-50">{recentlyExtractedJob.title}</h3>
+                            <p className="text-cream-300">{recentlyExtractedJob.company}</p>
+                            {recentlyExtractedJob.location && (
+                                <div className="flex items-center text-sm text-cream-400 mt-1">
+                                    <MapPin className="w-3 h-3 mr-1" />
+                                    {recentlyExtractedJob.location}
+                                </div>
+                            )}
+                        </div>
+                        <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleViewJob(recentlyExtractedJob)}
+                                className="flex-1"
+                            >
+                                <Briefcase className="w-4 h-4 mr-2" />
+                                View Details
+                            </Button>
+                            {recentlyExtractedJob.sourceUrl && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => window.open(recentlyExtractedJob.sourceUrl, '_blank')}
+                                    className="flex-1"
+                                >
+                                    <ExternalLink className="w-4 h-4 mr-2" />
+                                    Go to Job
+                                </Button>
+                            )}
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+        )
+    }
+
     return (
         <div className="px-4 sm:px-6 lg:px-8 space-y-4 sm:space-y-6">
             {/* Header */}
@@ -196,6 +273,9 @@ export default function ApplicationsPage() {
                     <span className="text-cream-300">Loading applications...</span>
                 </div>
             )}
+
+            {/* Recently Extracted Job Card */}
+            <RecentlyExtractedJobCard />
 
             {/* Stats Cards */}
             {!loading && (

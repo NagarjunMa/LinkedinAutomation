@@ -299,45 +299,44 @@ function ApplicationTrendChart() {
 }
 
 function RecentApplicationsTable() {
-    // Sample data for the table
-    const applications = [
-        {
-            id: '1',
-            jobTitle: 'Senior Frontend Developer',
-            companyName: 'TechCorp Inc.',
-            location: 'San Francisco, CA',
-            jobType: 'Full-time' as const,
-            skillsPreferred: ['React', 'TypeScript', 'Node.js'],
-            salary: '$120,000 - $150,000',
-            status: 'Waiting' as const,
-            appliedDate: '2 days ago',
-            method: 'LinkedIn' as const
-        },
-        {
-            id: '2',
-            jobTitle: 'Full Stack Engineer',
-            companyName: 'StartupXYZ',
-            location: 'Remote',
-            jobType: 'Full-time' as const,
-            skillsPreferred: ['Python', 'Django', 'PostgreSQL'],
-            salary: '$100,000 - $130,000',
-            status: 'Success' as const,
-            appliedDate: '3 days ago',
-            method: 'Company Site' as const
-        },
-        {
-            id: '3',
-            jobTitle: 'Software Engineer',
-            companyName: 'BigTech Co.',
-            location: 'Seattle, WA',
-            jobType: 'Full-time' as const,
-            skillsPreferred: ['Java', 'Spring', 'AWS'],
-            salary: '$110,000 - $140,000',
-            status: 'Due' as const,
-            appliedDate: '5 days ago',
-            method: 'Indeed' as const
-        }
-    ];
+    const { recentApplications } = useDashboard();
+
+    // Show empty state or loading if no data
+    if (!recentApplications || recentApplications.length === 0) {
+        return (
+            <Card className="bg-gradient-to-br from-primary-900/50 to-primary-800/30 border-primary-700/50">
+                <CardHeader>
+                    <CardTitle className="text-lg font-semibold text-cream-50">
+                        Recent Applications
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="text-center py-8">
+                        <Briefcase className="mx-auto h-12 w-12 text-primary-400 mb-4" />
+                        <h3 className="text-lg font-medium text-cream-200 mb-2">No Applications Yet</h3>
+                        <p className="text-cream-400 mb-4">Start applying to jobs to see them here</p>
+                        <Button variant="outline" size="sm">
+                            Extract Job URL
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
+        );
+    }
+
+    // Map recentApplications to the format expected by the component
+    const applications = recentApplications.map(app => ({
+        id: app.id,
+        jobTitle: app.jobTitle || 'Unknown Position',
+        companyName: app.companyName || 'Unknown Company',
+        location: app.location || 'Remote',
+        jobType: 'Full-time' as const,
+        skillsPreferred: app.skillsPreferred || [],
+        salary: app.salary || 'TBD',
+        status: app.status || 'Applied',
+        appliedDate: app.appliedDate || 'Recently',
+        method: app.method || 'Manual'
+    }));
 
     const getStatusBadge = (status: string) => {
         const styles = {
@@ -502,95 +501,15 @@ const TECH_STACK_JOB_BOARDS = [
     }
 ]
 
-// Sample data for sophisticated dashboard
-const overviewData = {
-    total: 40,
-    applied: 24,
-    interviews: 16
-}
+// Overview data will be taken from dashboard context
 
-// Activity data for current month (0 = no activity, higher numbers = more activity)
-// This simulates LeetCode-style consistency tracking
-const activityData = (() => {
-    const today = new Date()
-    const todayDate = today.getDate()
-    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate()
-    const data = new Array(daysInMonth).fill(0)
+// Activity data will be taken from backend when available
 
-    // Simulate some activity on days BEFORE today only (like user login/usage)
-    const possibleActiveDays = [1, 5, 9, 10, 15, 18, 20] // Base activity days
-    const activeDays = possibleActiveDays.filter(day => day < todayDate) // Only show activity for past days
+// Progress data will be generated from real application data
 
-    activeDays.forEach(day => {
-        if (day <= daysInMonth) {
-            data[day - 1] = Math.floor(Math.random() * 5) + 1 // 1-5 activities per day
-        }
-    })
+// Recent jobs will be taken from dashboard context
 
-    // Mark today as active
-    if (todayDate <= daysInMonth) {
-        data[todayDate - 1] = Math.max(data[todayDate - 1], 2)
-    }
-
-    return data
-})()
-
-// Progress data for application tracking over the last 7 days
-// This shows user's application progress with relative scaling
-const progressData = Array.from({ length: 7 }, (_, i) => ({
-    day: i + 1,
-    applications: Math.floor(Math.random() * 80) + 20 // Random between 20-100 applications per day
-}))
-
-const recentJobs = [
-    {
-        id: "1",
-        company: "TechCorp Inc.",
-        position: "Senior Frontend Developer",
-        amount: "$120,000 - $150,000",
-        status: "waiting" as const,
-        method: "LinkedIn Application",
-        date: "Applied Aug 24, 2024"
-    },
-    {
-        id: "2",
-        company: "StartupXYZ",
-        position: "Full Stack Engineer",
-        amount: "$100,000 - $130,000",
-        status: "success" as const,
-        method: "Company Website",
-        date: "Applied Aug 18, 2024"
-    },
-    {
-        id: "3",
-        company: "BigTech Co.",
-        position: "Software Engineer",
-        amount: "$110,000 - $140,000",
-        status: "due" as const,
-        method: "Indeed Application",
-        date: "Applied Aug 8, 2024"
-    },
-    {
-        id: "4",
-        company: "Innovation Labs",
-        position: "DevOps Engineer",
-        amount: "$95,000 - $125,000",
-        status: "disabled" as const,
-        method: "AngelList",
-        date: "Applied Aug 2, 2024"
-    }
-]
-
-// Sample data for application extraction chart - random values for demo
-const applicationExtractionData = [
-    { date: "2024-10-01", jobs: 12 },
-    { date: "2024-10-02", jobs: 8 },
-    { date: "2024-10-03", jobs: 15 },
-    { date: "2024-10-04", jobs: 6 },
-    { date: "2024-10-05", jobs: 18 },
-    { date: "2024-10-06", jobs: 10 },
-    { date: "2024-10-07", jobs: 14 }
-]
+// Application extraction data will be fetched from the backend
 
 const quickActions = [
     {
@@ -620,7 +539,7 @@ export default function DashboardPage() {
     const { user } = useAuth()
     const { stats, loading, error, refreshData } = useDashboard()
     const searchParams = useSearchParams()
-    const [applicationStats, setApplicationStats] = useState(applicationExtractionData)
+    const [applicationStats, setApplicationStats] = useState([])
     const [dashboardSummary, setDashboardSummary] = useState(null)
     const [loadingStats, setLoadingStats] = useState(false)
     const [showProfileSetup, setShowProfileSetup] = useState(false)
@@ -696,10 +615,12 @@ export default function DashboardPage() {
         )
     }
 
-    const handleProfileSetupComplete = () => {
+    const handleProfileSetupComplete = async () => {
         setShowProfileSetup(false)
-        // Optionally refresh the page or update state
-        window.location.href = '/dashboard'
+        // Refresh dashboard data instead of full page reload
+        await refreshData()
+        // Also trigger a profile data refresh event to update profile completion banner
+        window.dispatchEvent(new CustomEvent('profileUpdated'))
     }
 
     return (
@@ -725,8 +646,12 @@ export default function DashboardPage() {
                                 <OverviewCard
                                     title="Overview Calendar"
                                     period={`${new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`}
-                                    stats={overviewData}
-                                    activityData={activityData}
+                                    stats={stats ? {
+                                        total: stats.totalJobs || 0,
+                                        applied: stats.appliedJobs || 0,
+                                        interviews: stats.interviews || 0
+                                    } : { total: 0, applied: 0, interviews: 0 }}
+                                    activityData={[]} // Real activity data will be implemented later
                                     userId={user?.id}
                                 />
 
@@ -762,10 +687,17 @@ export default function DashboardPage() {
                         <StaggerItem>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                                 {/* Success Rate Card */}
-                                <SuccessRateCard rate={67} change={12} />
+                                <SuccessRateCard
+                                    rate={stats?.successRate || 0}
+                                    change={stats?.successRateChange || 0}
+                                />
 
                                 {/* Today's Activity Card */}
-                                <TodayActivityCard applications={3} profiles={12} messages={5} />
+                                <TodayActivityCard
+                                    applications={stats?.todayApplications || 0}
+                                    profiles={stats?.todayProfiles || 0}
+                                    messages={stats?.todayMessages || 0}
+                                />
                             </div>
                         </StaggerItem>
 

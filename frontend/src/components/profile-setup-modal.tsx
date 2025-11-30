@@ -168,6 +168,8 @@ export function ProfileSetupModal({ isOpen, onClose, onComplete }: ProfileSetupM
   const handleFormSubmit = async () => {
     const success = await form.handleSubmit()
     if (success) {
+      // Trigger profile update event for components to refresh
+      window.dispatchEvent(new CustomEvent('profileUpdated'))
       onComplete()
       router.push('/dashboard')
     }
