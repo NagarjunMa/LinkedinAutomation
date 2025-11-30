@@ -149,7 +149,9 @@ class EnhancedLogger:
             backupCount=10
         )
         app_handler.setLevel(logging.INFO)
-        app_handler.setFormatter(StructuredFormatter())
+        app_handler.setFormatter(logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        ))
         root_logger.addHandler(app_handler)
 
         # Error logs (rotating)
@@ -159,7 +161,9 @@ class EnhancedLogger:
             backupCount=5
         )
         error_handler.setLevel(logging.ERROR)
-        error_handler.setFormatter(StructuredFormatter())
+        error_handler.setFormatter(logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        ))
         root_logger.addHandler(error_handler)
 
         # Performance logs (daily rotation)
@@ -169,7 +173,9 @@ class EnhancedLogger:
             backupCount=30
         )
         perf_handler.setLevel(logging.INFO)
-        perf_handler.setFormatter(StructuredFormatter())
+        perf_handler.setFormatter(logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        ))
 
         # Security logs (daily rotation)
         security_handler = logging.handlers.TimedRotatingFileHandler(
@@ -178,7 +184,9 @@ class EnhancedLogger:
             backupCount=90  # Keep security logs longer
         )
         security_handler.setLevel(logging.INFO)
-        security_handler.setFormatter(StructuredFormatter())
+        security_handler.setFormatter(logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        ))
 
         # Add handlers to specific loggers
         logging.getLogger('performance').addHandler(perf_handler)

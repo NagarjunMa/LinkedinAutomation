@@ -119,7 +119,7 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 .pnpm-debug.log*
-
+.claude/    # Claude files
 # Build outputs
 dist/
 build/

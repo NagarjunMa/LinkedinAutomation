@@ -268,3 +268,151 @@ Development history and context is tracked in the `.claude/` folder:
 - **feature-implementations.md**: Detailed feature documentation and implementation guides
 
 This structure ensures continuity across development sessions and provides comprehensive context for future development work.
+
+## Recent Implementations and Bug Fixes (November 2025)
+
+### Critical Issues Resolved
+
+#### 1. Resume Evaluation NoneType Errors (`backend/app/services/agentic_resume_evaluator.py`)
+**Issue**: 'NoneType' object has no attribute 'get' errors causing resume evaluation failures.
+
+**Root Cause**: Missing null checks when building user context from profile data.
+
+**Fix Applied**:
+- Added defensive null checks before all `.get()` calls on profile objects (line 118)
+- Enhanced error logging for debugging profile fetching issues
+- Added validation for orchestrator execution and result handling
+
+**Code Changes**:
+```python
+# Before (causing errors)
+'target_seniority': profile.get('experience_level') or target_seniority or 'mid-level',
+
+# After (with null safety)
+'target_seniority': (profile.get('experience_level') if profile else None) or target_seniority or 'mid-level',
+```
+
+#### 2. Dashboard Dummy Data Removal (`frontend/src/app/dashboard/page.tsx`)
+**Issue**: New users immediately saw hardcoded fake metrics instead of empty states.
+
+**Root Cause**: Dashboard components using hardcoded data instead of real API data.
+
+**Fix Applied**:
+- Removed all hardcoded dummy data arrays (lines 506-593)
+- Integrated dashboard context for real data consumption
+- Updated components to use actual stats from `useDashboard()` context
+- Added empty states for new users with no data
+
+**Affected Components**:
+- `OverviewCard`: Now uses `stats.totalJobs`, `stats.appliedJobs`, `stats.interviews`
+- `RecentApplicationsTable`: Uses `recentApplications` from context with empty state UI
+- `SuccessRateCard` & `TodayActivityCard`: Use real stats with fallback to 0
+
+#### 3. Dashboard Refresh After Profile Updates (`frontend/src/app/dashboard/page.tsx`, `frontend/src/components/profile-completion-banner.tsx`)
+**Issue**: Profile completion banner didn't refresh after updating preferences, showing outdated completion status.
+
+**Root Cause**: No communication between profile setup modal completion and dashboard state.
+
+**Fix Applied**:
+- Replaced full page reload with dashboard data refresh in `handleProfileSetupComplete()`
+- Added custom event system for profile updates
+- `ProfileCompletionBanner` now listens for 'profileUpdated' events
+- Both `ProfileSetupModal` and dashboard trigger the event after successful updates
+
+**Implementation**:
+```javascript
+// Dashboard page
+const handleProfileSetupComplete = async () => {
+    await refreshData()
+    window.dispatchEvent(new CustomEvent('profileUpdated'))
+}
+
+// Profile completion banner
+useEffect(() => {
+    const handleProfileUpdate = () => fetchProfile()
+    window.addEventListener('profileUpdated', handleProfileUpdate)
+    return () => window.removeEventListener('profileUpdated', handleProfileUpdate)
+}, [user?.id])
+```
+
+#### 4. Education Collection Added to Onboarding (`frontend/src/app/onboarding/page.tsx`)
+**Issue**: Onboarding lacked education details collection, causing incomplete profiles.
+
+**Root Cause**: Only 3 steps existed (basic info, permissions, terms) without education step.
+
+**Implementation**:
+- Added education state management with support for multiple entries
+- Created Step 3: Education with dynamic form fields
+- Moved terms/permissions to Step 4
+- Added validation requiring at least degree and institution
+- Updated progress indicator to show 4 steps
+- Enhanced review section to display education information
+
+**New Features**:
+- Multiple education entries support (bachelor's, master's, etc.)
+- Add/remove education functionality
+- Comprehensive validation and review
+
+#### 5. Job Extraction UX Enhancement (`frontend/src/app/dashboard/applications/page.tsx`)
+**Issue**: No visual feedback after job extraction - users couldn't tell if extraction succeeded.
+
+**Root Cause**: Only toast notification provided, no persistent visual confirmation with action buttons.
+
+**Solution Implemented**:
+- Created `RecentlyExtractedJobCard` component with immediate visual feedback
+- Added "View Details" and "Go to Job" buttons for extracted jobs
+- Enhanced `handleJobExtracted()` to store recently extracted job data
+- Card appears prominently after successful extraction with dismissible interface
+
+**Features Added**:
+- Recently extracted job card with job title, company, location
+- View Details button to open job analysis modal
+- Go to Job button to redirect to original job URL
+- Dismissible card interface
+
+#### 6. Referral Template Generation Debugging (`frontend/src/components/enhanced-referral-template-generator.tsx`, `frontend/src/app/lib/api.ts`)
+**Issue**: Referral template generation button had no response in UI or logs.
+
+**Root Cause**: Likely backend API connectivity or authentication issues with insufficient error reporting.
+
+**Debugging Improvements Applied**:
+- Enhanced error handling with specific HTTP status code messages
+- Added comprehensive console logging for request/response debugging
+- Improved API error handling with detailed error context
+- Better user feedback for different error scenarios (network, auth, server errors)
+
+**Enhanced Error Handling**:
+```javascript
+// Specific error messages for different scenarios
+if (error.message?.includes('Failed to fetch')) {
+    errorMessage = "Network error. Please check your connection and try again."
+} else if (error.message?.includes('401')) {
+    errorMessage = "Authentication error. Please refresh the page and try again."
+} else if (error.message?.includes('500')) {
+    errorMessage = "Server error. Our team has been notified."
+}
+```
+
+### Testing Recommendations
+
+1. **Resume Evaluation**: Test with users who have incomplete or missing profiles
+2. **Dashboard**: Verify new users see empty states instead of fake data
+3. **Profile Updates**: Test that completion banner updates immediately after profile changes
+4. **Education**: Test onboarding flow with multiple education entries and validation
+5. **Job Extraction**: Verify recently extracted job card appears and buttons work correctly
+6. **Referral Templates**: Check console logs when generation fails for debugging info
+
+### Security Considerations
+
+- All user data properly isolated with user_id filtering maintained
+- No actual security breaches found (user concern was false alarm)
+- Authentication patterns preserved throughout all changes
+- Profile update events don't expose sensitive data
+
+### Performance Improvements
+
+- Removed hardcoded data generation reducing initial render overhead
+- Dashboard context properly utilized for efficient data management
+- Event-driven profile updates prevent unnecessary full page reloads
+
+This comprehensive fix set addresses critical user experience issues, data integrity problems, and debugging capabilities while maintaining security and performance standards.

@@ -100,6 +100,10 @@ class AgenticResumeEvaluatorService:
             db = next(get_db())
             try:
                 profile = ProfileService.get_profile_with_stats(db, user_id)
+                if profile is None:
+                    logger.info(f"No profile found for user {user_id}, using default values")
+                else:
+                    logger.debug(f"Successfully fetched profile for user {user_id}")
             except Exception as e:
                 logger.warning(f"Could not fetch profile for user {user_id}: {e}")
                 profile = None
@@ -115,7 +119,7 @@ class AgenticResumeEvaluatorService:
                 'current_date': current_date.strftime('%B %Y'),  # e.g., "October 2025"
                 'current_year': current_date.year,
                 'target_roles': profile.get('target_job_titles', []) if profile else ([target_role] if target_role else []),
-                'target_seniority': profile.get('experience_level') or target_seniority or 'mid-level',
+                'target_seniority': (profile.get('experience_level') if profile else None) or target_seniority or 'mid-level',
                 'preferred_locations': profile.get('preferred_locations', []) if profile else [],
                 'minimum_salary': profile.get('minimum_salary') if profile else None,
                 'background_summary': profile.get('background_summary') if profile else None,
@@ -126,7 +130,15 @@ class AgenticResumeEvaluatorService:
             }
             
             # Execute agentic evaluation
-            evaluation_results = await self.orchestrator.evaluate_resume(cleaned_text, user_context)
+            logger.debug(f"Starting agentic evaluation for resume {resume_id} with user context keys: {list(user_context.keys())}")
+            try:
+                evaluation_results = await self.orchestrator.evaluate_resume(cleaned_text, user_context)
+                if evaluation_results is None:
+                    raise ValueError("Orchestrator returned None results")
+                logger.debug(f"Orchestrator completed successfully with overall score: {evaluation_results.get('overall_score', 'unknown')}")
+            except Exception as e:
+                logger.error(f"Orchestrator evaluation failed for resume {resume_id}: {e}")
+                raise
             
             # Store evaluation session and agent results
             await self._store_evaluation_results(evaluation_results, user_id, resume_id)
