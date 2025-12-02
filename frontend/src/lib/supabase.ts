@@ -11,31 +11,72 @@ export const createClient = () => {
       flowType: 'pkce',
       autoRefreshToken: true,
       persistSession: true,
-      detectSessionInUrl: true
+      detectSessionInUrl: true,
+      debug: process.env.NODE_ENV === 'development'
     },
     cookies: {
       get(name: string) {
         if (typeof window === 'undefined') return undefined
-        const cookies = document.cookie.split(';')
-        const cookie = cookies.find(c => c.trim().startsWith(`${name}=`))
-        return cookie ? cookie.split('=')[1] : undefined
+        try {
+          const cookies = document.cookie.split(';')
+          const cookie = cookies.find(c => c.trim().startsWith(`${name}=`))
+          const value = cookie ? decodeURIComponent(cookie.split('=')[1]) : undefined
+          if (process.env.NODE_ENV === 'development' && name.includes('code_verifier')) {
+            console.log(`🍪 Getting cookie ${name}:`, value ? 'found' : 'not found')
+          }
+          return value
+        } catch (error) {
+          console.warn(`Failed to get cookie ${name}:`, error)
+          return undefined
+        }
       },
       set(name: string, value: string, options: Record<string, string | number | boolean>) {
         if (typeof window === 'undefined') return
-        const optionsString = Object.entries(options || {})
-          .map(([key, val]) => {
-            if (key === 'maxAge') return `max-age=${val}`
-            if (key === 'sameSite') return `samesite=${val}`
-            return `${key}=${val}`
-          })
-          .join('; ')
-        document.cookie = `${name}=${value}; ${optionsString}`
+        try {
+          const secureOptions = {
+            ...options,
+            secure: window.location.protocol === 'https:',
+            sameSite: 'lax',
+            path: '/'
+          }
+
+          const optionsString = Object.entries(secureOptions || {})
+            .map(([key, val]) => {
+              if (key === 'maxAge') return `max-age=${val}`
+              if (key === 'sameSite') return `samesite=${val}`
+              if (typeof val === 'boolean') return val ? key : ''
+              return `${key}=${val}`
+            })
+            .filter(Boolean)
+            .join('; ')
+
+          const cookieString = `${name}=${encodeURIComponent(value)}; ${optionsString}`
+          document.cookie = cookieString
+
+          if (process.env.NODE_ENV === 'development' && name.includes('code_verifier')) {
+            console.log(`🍪 Setting cookie ${name}:`, cookieString)
+          }
+        } catch (error) {
+          console.warn(`Failed to set cookie ${name}:`, error)
+        }
       },
       remove(name: string, options: Record<string, string | number | boolean> = {}) {
         if (typeof window === 'undefined') return
-        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; ${Object.entries(options)
-          .map(([key, val]) => `${key}=${val}`)
-          .join('; ')}`
+        try {
+          const removeOptions = {
+            ...options,
+            path: '/'
+          }
+          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; ${Object.entries(removeOptions)
+            .map(([key, val]) => `${key}=${val}`)
+            .join('; ')}`
+
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`🍪 Removing cookie ${name}`)
+          }
+        } catch (error) {
+          console.warn(`Failed to remove cookie ${name}:`, error)
+        }
       }
     }
   })
@@ -45,23 +86,32 @@ export const createClient = () => {
 export const signInWithGoogle = async () => {
   const supabase = createClient()
 
-
-  // Use signInWithOAuth with proper options for existing user detection
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: `${window.location.origin}/api/auth/callback`,
-      queryParams: {
-        access_type: 'offline',
-        prompt: 'select_account', // This allows user to choose account but doesn't force re-consent
-        scope: 'email profile https://www.googleapis.com/auth/gmail.readonly'
+  try {
+    // Use signInWithOAuth with proper PKCE handling
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/api/auth/callback`,
+        skipBrowserRedirect: false,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'select_account',
+          scope: 'email profile https://www.googleapis.com/auth/gmail.readonly'
+        }
       }
+    })
+
+    if (error) {
+      console.error('OAuth initiation error:', error)
+      throw error
     }
-  })
 
-
-  if (error) throw error
-  return data
+    console.log('OAuth initiated successfully:', { url: data.url })
+    return data
+  } catch (error) {
+    console.error('signInWithGoogle failed:', error)
+    throw error
+  }
 }
 
 export const signOut = async () => {

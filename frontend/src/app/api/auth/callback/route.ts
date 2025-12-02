@@ -25,6 +25,14 @@ export async function GET(request: NextRequest) {
     const supabase = createServerSupabaseClientWithResponse(response)
 
     try {
+      // More detailed logging for PKCE debugging
+      console.log('Attempting code exchange with enhanced PKCE handling:', {
+        codeLength: code.length,
+        hasCode: !!code,
+        redirectTo: next,
+        userAgent: request.headers.get('user-agent')?.substring(0, 100)
+      })
+
       const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
       console.log('Session exchange result:', {
