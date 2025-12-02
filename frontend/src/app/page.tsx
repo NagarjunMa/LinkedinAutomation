@@ -89,20 +89,9 @@ function CountUpStat({ value, suffix = "" }: { value: number; suffix?: string })
 }
 
 // Main Navigation Component
-function Navigation() {
+function Navigation({ onAuthAction }: { onAuthAction: () => void }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const { user } = useAuth()
-  const router = useRouter()
-
-  const handleAuthAction = async () => {
-    if (user) {
-      // User is logged in, redirect to dashboard
-      router.push('/dashboard')
-    } else {
-      // User is not logged in, redirect to login page
-      router.push('/login')
-    }
-  }
 
   return (
     <motion.nav
@@ -132,13 +121,13 @@ function Navigation() {
             <Button
               variant="ghost"
               className="text-cream-200 hover:text-cream-50"
-              onClick={handleAuthAction}
+              onClick={onAuthAction}
             >
               {user ? 'Dashboard' : 'Sign In'}
             </Button>
             <Button
               className="bg-gradient-warm hover:bg-gradient-gold text-white glow-orange hover:glow-gold transition-all duration-300"
-              onClick={handleAuthAction}
+              onClick={onAuthAction}
             >
               {user ? 'Go to Dashboard' : 'Start Free'}
             </Button>
@@ -175,13 +164,13 @@ function Navigation() {
                 <Button
                   variant="ghost"
                   className="text-cream-200 hover:text-cream-50 justify-start"
-                  onClick={handleAuthAction}
+                  onClick={onAuthAction}
                 >
                   {user ? 'Dashboard' : 'Sign In'}
                 </Button>
                 <Button
                   className="bg-gradient-warm hover:bg-gradient-gold text-white"
-                  onClick={handleAuthAction}
+                  onClick={onAuthAction}
                 >
                   {user ? 'Go to Dashboard' : 'Start Free'}
                 </Button>
@@ -195,17 +184,8 @@ function Navigation() {
 }
 
 // Hero Section Component
-function HeroSection() {
+function HeroSection({ onAuthAction }: { onAuthAction: () => void }) {
   const { user } = useAuth()
-  const router = useRouter()
-
-  const handleAuthAction = async () => {
-    if (user) {
-      router.push('/dashboard')
-    } else {
-      router.push('/login')
-    }
-  }
 
   return (
     <section className="relative min-h-screen bg-primary-900 overflow-hidden flex items-center">
@@ -294,7 +274,7 @@ function HeroSection() {
               <Button
                 size="lg"
                 className="bg-gradient-warm hover:bg-gradient-gold text-white text-lg px-8 py-4 glow-orange hover:glow-gold transition-all duration-300 hover:scale-105"
-                onClick={handleAuthAction}
+                onClick={onAuthAction}
               >
                 {user ? 'Go to Dashboard' : 'Start Free Trial'}
                 <ArrowRight className="ml-2 h-5 w-5" />
@@ -1015,17 +995,8 @@ function PricingSection() {
 }
 
 // CTA Section Component
-function CTASection() {
+function CTASection({ onAuthAction }: { onAuthAction: () => void }) {
   const { user } = useAuth()
-  const router = useRouter()
-
-  const handleAuthAction = async () => {
-    if (user) {
-      router.push('/dashboard')
-    } else {
-      router.push('/login')
-    }
-  }
 
   return (
     <section className="py-20 bg-primary-900 relative overflow-hidden">
@@ -1061,7 +1032,7 @@ function CTASection() {
             <Button
               size="lg"
               className="bg-gradient-warm hover:bg-gradient-gold text-white text-lg px-8 py-4 glow-orange hover:glow-gold transition-all duration-300 hover:scale-105"
-              onClick={handleAuthAction}
+              onClick={onAuthAction}
             >
               {user ? 'Go to Dashboard' : 'Start Free Trial'}
               <ArrowRight className="ml-2 h-5 w-5" />
@@ -1171,16 +1142,40 @@ function Footer() {
 
 // Main Landing Page Component
 export default function LandingPage() {
+  const { user } = useAuth()
+  const router = useRouter()
+
+  // Shared authentication handler to prevent stale closure issues
+  const handleAuthAction = async () => {
+    try {
+      if (user) {
+        // User is logged in, navigate to dashboard
+        await router.push('/dashboard')
+      } else {
+        // User is not logged in, navigate to login page
+        await router.push('/login')
+      }
+    } catch (error) {
+      console.error('Navigation error:', error)
+      // Fallback navigation using window.location
+      if (user) {
+        window.location.href = '/dashboard'
+      } else {
+        window.location.href = '/login'
+      }
+    }
+  }
+
   return (
     <div className="min-h-screen bg-primary-950">
-      <Navigation />
-      <HeroSection />
+      <Navigation onAuthAction={handleAuthAction} />
+      <HeroSection onAuthAction={handleAuthAction} />
       <ProblemSection />
       <FeaturesSection />
       <SolutionsSection />
       <SocialProofSection />
       <PricingSection />
-      <CTASection />
+      <CTASection onAuthAction={handleAuthAction} />
       <Footer />
     </div>
   )

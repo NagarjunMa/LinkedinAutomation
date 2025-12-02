@@ -2,9 +2,17 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 const DASHBOARD_ROOT = '/dashboard'
 const ACCESS_COOKIE = 'sb-access-token'
+const REFRESH_COOKIE = 'sb-refresh-token'
 
-const hasSupabaseSession = (request: NextRequest) =>
-    Boolean(request.cookies.get(ACCESS_COOKIE)?.value)
+const hasSupabaseSession = (request: NextRequest) => {
+    const hasAccessToken = Boolean(request.cookies.get(ACCESS_COOKIE)?.value)
+    const hasRefreshToken = Boolean(request.cookies.get(REFRESH_COOKIE)?.value)
+    // Check for any Supabase auth cookie patterns
+    const hasAnySupabaseAuth = Array.from(request.cookies.keys()).some(key =>
+        key.startsWith('sb-') && request.cookies.get(key)?.value
+    )
+    return hasAccessToken || hasRefreshToken || hasAnySupabaseAuth
+}
 
 export function middleware(request: NextRequest) {
     const pathname = request.nextUrl.pathname
