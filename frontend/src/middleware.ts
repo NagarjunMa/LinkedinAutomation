@@ -7,10 +7,15 @@ const REFRESH_COOKIE = 'sb-refresh-token'
 const hasSupabaseSession = (request: NextRequest) => {
     const hasAccessToken = Boolean(request.cookies.get(ACCESS_COOKIE)?.value)
     const hasRefreshToken = Boolean(request.cookies.get(REFRESH_COOKIE)?.value)
-    // Check for any Supabase auth cookie patterns
-    const hasAnySupabaseAuth = Array.from(request.cookies.keys()).some(key =>
-        key.startsWith('sb-') && request.cookies.get(key)?.value
-    )
+
+    // Check for any Supabase auth cookie patterns using the correct Next.js cookies API
+    let hasAnySupabaseAuth = false
+    request.cookies.getAll().forEach(cookie => {
+        if (cookie.name.startsWith('sb-') && cookie.value) {
+            hasAnySupabaseAuth = true
+        }
+    })
+
     return hasAccessToken || hasRefreshToken || hasAnySupabaseAuth
 }
 
