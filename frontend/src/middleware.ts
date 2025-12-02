@@ -5,32 +5,117 @@ const ACCESS_COOKIE = 'sb-access-token'
 const REFRESH_COOKIE = 'sb-refresh-token'
 
 const hasSupabaseSession = (request: NextRequest) => {
-    const hasAccessToken = Boolean(request.cookies.get(ACCESS_COOKIE)?.value)
-    const hasRefreshToken = Boolean(request.cookies.get(REFRESH_COOKIE)?.value)
+    // Get Supabase project reference from environment
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const projectRef = supabaseUrl ? new URL(supabaseUrl).hostname.split('.')[0] : 'fecoflibopgxliexcdbg'
 
-    // Check for any Supabase auth cookie patterns using the correct Next.js cookies API
-    let hasAnySupabaseAuth = false
+    // Check for Supabase auth token cookies (they can be chunked)
+    const authCookiePattern = `sb-${projectRef}-auth-token`
+
+    let hasValidAuthCookie = false
+    const foundCookies: string[] = []
+
     request.cookies.getAll().forEach(cookie => {
-        if (cookie.name.startsWith('sb-') && cookie.value) {
-            hasAnySupabaseAuth = true
+        // Check for main auth token cookie or chunked versions
+        if (cookie.name === authCookiePattern || cookie.name.startsWith(`${authCookiePattern}.`)) {
+            foundCookies.push(cookie.name)
+            // Validate cookie value - should contain JSON-like structure for access_token
+            if (cookie.value &&
+                cookie.value.length > 10 &&
+                (cookie.value.includes('access_token') ||
+                 cookie.value.includes('refresh_token') ||
+                 cookie.value.startsWith('base64-'))) {
+                hasValidAuthCookie = true
+            }
         }
     })
 
-    return hasAccessToken || hasRefreshToken || hasAnySupabaseAuth
+    // Also check for legacy cookie names as fallback
+    const hasLegacyAuth = Boolean(
+        request.cookies.get('sb-access-token')?.value ||
+        request.cookies.get('sb-refresh-token')?.value ||
+        request.cookies.get(ACCESS_COOKIE)?.value ||
+        request.cookies.get(REFRESH_COOKIE)?.value
+    )
+
+    // Enhanced logging for debugging
+    if (process.env.NODE_ENV === 'development' && request.nextUrl.pathname.startsWith('/dashboard')) {
+        console.log('Middleware auth check:', {
+            projectRef,
+            authCookiePattern,
+            foundCookies,
+            hasValidAuthCookie,
+            hasLegacyAuth,
+            totalCookies: request.cookies.getAll().length
+        })
+    }
+
+    return hasValidAuthCookie || hasLegacyAuth
 }
 
 export function middleware(request: NextRequest) {
     const pathname = request.nextUrl.pathname
+
+    // Skip auth middleware for auth-related routes and API routes
+    if (pathname.startsWith('/api/auth') ||
+        pathname.startsWith('/login') ||
+        pathname.startsWith('/signup') ||
+        pathname.startsWith('/reset-password')) {
+        return NextResponse.next()
+    }
+
+    // Special handling for potential auth callback scenarios
+    const searchParams = request.nextUrl.searchParams
+    const hasAuthCode = searchParams.has('code')
+    const hasTokenHash = searchParams.has('token_hash')
+    const isAuthCallback = hasAuthCode || hasTokenHash
+
+    // If this looks like an auth callback, be more lenient with timing
+    if (isAuthCallback && pathname.startsWith(DASHBOARD_ROOT)) {
+        if (process.env.NODE_ENV === 'development') {
+            console.log(`🔄 Middleware: Potential auth callback detected on ${pathname}, allowing through temporarily`)
+        }
+        // Allow the request to proceed - let the auth context handle the session loading
+        return NextResponse.next()
+    }
+
     const loggedIn = hasSupabaseSession(request)
 
+    // Enhanced debugging for auth issues
+    if (process.env.NODE_ENV === 'development') {
+        console.log(`Middleware: ${pathname} - Auth status: ${loggedIn}`, {
+            hasAuthCode,
+            hasTokenHash,
+            isAuthCallback
+        })
+        if (pathname.startsWith('/dashboard') && !loggedIn && !isAuthCallback) {
+            console.warn('⚠️  Dashboard access denied - no valid auth cookies found')
+        }
+    }
+
     if (!loggedIn && pathname.startsWith(DASHBOARD_ROOT)) {
+        // Add debugging info to redirect
         const redirectUrl = new URL('/', request.url)
-        return NextResponse.redirect(redirectUrl)
+        if (process.env.NODE_ENV === 'development') {
+            console.log(`🚫 Redirecting ${pathname} to ${redirectUrl.toString()} - No auth session`)
+        }
+
+        const response = NextResponse.redirect(redirectUrl)
+        // Prevent caching of the redirect response
+        response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
+        response.headers.set('Pragma', 'no-cache')
+        response.headers.set('Expires', '0')
+        return response
     }
 
     if (loggedIn && pathname === '/') {
         const redirectUrl = new URL(DASHBOARD_ROOT, request.url)
-        return NextResponse.redirect(redirectUrl)
+        if (process.env.NODE_ENV === 'development') {
+            console.log(`✅ Redirecting authenticated user from ${pathname} to ${redirectUrl.toString()}`)
+        }
+        const response = NextResponse.redirect(redirectUrl)
+        response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
+        return response
     }
 
     return NextResponse.next()

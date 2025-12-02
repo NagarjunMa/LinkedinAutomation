@@ -8,7 +8,35 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 export const createClient = () => {
   return createBrowserClient(supabaseUrl, supabaseAnonKey, {
     auth: {
-      flowType: 'pkce'
+      flowType: 'pkce',
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true
+    },
+    cookies: {
+      get(name: string) {
+        if (typeof window === 'undefined') return undefined
+        const cookies = document.cookie.split(';')
+        const cookie = cookies.find(c => c.trim().startsWith(`${name}=`))
+        return cookie ? cookie.split('=')[1] : undefined
+      },
+      set(name: string, value: string, options: Record<string, string | number | boolean>) {
+        if (typeof window === 'undefined') return
+        const optionsString = Object.entries(options || {})
+          .map(([key, val]) => {
+            if (key === 'maxAge') return `max-age=${val}`
+            if (key === 'sameSite') return `samesite=${val}`
+            return `${key}=${val}`
+          })
+          .join('; ')
+        document.cookie = `${name}=${value}; ${optionsString}`
+      },
+      remove(name: string, options: Record<string, string | number | boolean> = {}) {
+        if (typeof window === 'undefined') return
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; ${Object.entries(options)
+          .map(([key, val]) => `${key}=${val}`)
+          .join('; ')}`
+      }
     }
   })
 }
@@ -22,7 +50,7 @@ export const signInWithGoogle = async () => {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/email-agent/oauth/callback`,
+      redirectTo: `${window.location.origin}/api/auth/callback`,
       queryParams: {
         access_type: 'offline',
         prompt: 'select_account', // This allows user to choose account but doesn't force re-consent
@@ -51,9 +79,26 @@ export const getCurrentUser = async () => {
 
 export const getSession = async () => {
   const supabase = createClient()
-  const { data: { session }, error } = await supabase.auth.getSession()
-  if (error) throw error
-  return session
+
+  try {
+    const { data: { session }, error } = await supabase.auth.getSession()
+
+    if (error) {
+      console.warn('getSession error:', error.message)
+      // Don't throw on certain recoverable errors
+      if (error.message?.includes('Invalid Refresh Token') ||
+          error.message?.includes('refresh_token_not_found')) {
+        console.log('Session expired or invalid, returning null')
+        return null
+      }
+      throw error
+    }
+
+    return session
+  } catch (error) {
+    console.error('getSession failed:', error)
+    throw error
+  }
 }
 
 export const signInWithPassword = async (email: string, password: string) => {
