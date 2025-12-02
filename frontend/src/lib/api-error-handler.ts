@@ -3,7 +3,7 @@
 export interface ApiError extends Error {
   status?: number;
   code?: string;
-  details?: any;
+  details?: unknown;
   timestamp?: string;
   requestId?: string;
   retryable?: boolean;
@@ -13,7 +13,7 @@ export interface ApiErrorResponse {
   error: string;
   message: string;
   status_code: number;
-  detail?: any;
+  detail?: unknown;
   request_id?: string;
 }
 
@@ -32,6 +32,16 @@ export interface RequestConfig {
   silentErrors?: number[];
   headers?: Record<string, string>;
 }
+
+type ErrorLogEntry = {
+  timestamp?: string;
+  message: string;
+  status?: number;
+  code?: string;
+  url?: string;
+  userAgent: string;
+  requestId?: string;
+};
 
 const DEFAULT_RETRY_CONFIG: RetryConfig = {
   maxRetries: 3,
@@ -156,7 +166,6 @@ export class ApiErrorHandler {
     const {
       timeout = 30000,
       retries = {},
-      showErrorToast = true,
       silentErrors = [],
       ...fetchOptions
     } = options;
@@ -298,7 +307,7 @@ export class ApiErrorHandler {
   }
 
   // Get error logs for debugging
-  getErrorLogs(): any[] {
+  getErrorLogs(): ErrorLogEntry[] {
     try {
       return JSON.parse(localStorage.getItem('api_error_logs') || '[]');
     } catch {
@@ -334,7 +343,7 @@ export const apiRequest = {
   get: <T>(url: string, config?: RequestConfig) =>
     apiErrorHandler.fetchWithRetry<T>(url, { ...config, method: 'GET' }),
 
-  post: <T>(url: string, data?: any, config?: RequestConfig) =>
+  post: <T>(url: string, data?: Record<string, unknown>, config?: RequestConfig) =>
     apiErrorHandler.fetchWithRetry<T>(url, {
       ...config,
       method: 'POST',
@@ -345,7 +354,7 @@ export const apiRequest = {
       body: data ? JSON.stringify(data) : undefined,
     }),
 
-  put: <T>(url: string, data?: any, config?: RequestConfig) =>
+  put: <T>(url: string, data?: Record<string, unknown>, config?: RequestConfig) =>
     apiErrorHandler.fetchWithRetry<T>(url, {
       ...config,
       method: 'PUT',
@@ -359,7 +368,7 @@ export const apiRequest = {
   delete: <T>(url: string, config?: RequestConfig) =>
     apiErrorHandler.fetchWithRetry<T>(url, { ...config, method: 'DELETE' }),
 
-  patch: <T>(url: string, data?: any, config?: RequestConfig) =>
+  patch: <T>(url: string, data?: Record<string, unknown>, config?: RequestConfig) =>
     apiErrorHandler.fetchWithRetry<T>(url, {
       ...config,
       method: 'PATCH',

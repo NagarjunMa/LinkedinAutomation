@@ -43,7 +43,7 @@ export function JobCleanupManager() {
       } else {
         throw new Error("Failed to fetch cleanup stats")
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to fetch cleanup statistics",
@@ -83,7 +83,7 @@ export function JobCleanupManager() {
       } else {
         throw new Error("Failed to execute cleanup")
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to execute cleanup",
@@ -116,7 +116,7 @@ export function JobCleanupManager() {
             Job Cleanup Manager
           </CardTitle>
           <CardDescription>
-            Automatically remove old job listings that haven't been applied to, keeping your job pool fresh and relevant.
+            Automatically remove old job listings that haven&apos;t been applied to, keeping your job pool fresh and relevant.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -193,7 +193,7 @@ export function JobCleanupManager() {
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
                 <strong>{stats.would_be_deleted} jobs</strong> will be permanently deleted. 
-                This action cannot be undone. Only jobs that haven't been applied to will be removed.
+                This action cannot be undone. Only jobs that haven&apos;t been applied to will be removed.
               </AlertDescription>
             </Alert>
           )}

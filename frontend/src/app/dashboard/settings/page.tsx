@@ -37,7 +37,7 @@ const EmailScanningTab = dynamic(() => import('@/components/email-scanning-setti
 
 export default function SettingsPage() {
   const { user } = useAuth()
-  const { toast } = useToast()
+  const { toast: _toast } = useToast()
   const [activeTab, setActiveTab] = useState("notifications")
 
   // Handle URL tab parameter

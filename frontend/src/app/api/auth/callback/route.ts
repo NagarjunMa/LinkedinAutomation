@@ -2,6 +2,8 @@ import { createServerClient } from '@supabase/ssr'
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 
+export const runtime = 'nodejs'
+
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
@@ -18,6 +20,7 @@ export async function GET(request: NextRequest) {
 
   if (code) {
     const cookieStore = cookies()
+    type CookieOptions = Parameters<typeof cookieStore.set>[2]
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -26,10 +29,10 @@ export async function GET(request: NextRequest) {
           get(name: string) {
             return cookieStore.get(name)?.value
           },
-          set(name: string, value: string, options: any) {
+          set(name: string, value: string, options: CookieOptions) {
             cookieStore.set(name, value, options)
           },
-          remove(name: string, options: any) {
+          remove(name: string) {
             cookieStore.delete(name)
           },
         },

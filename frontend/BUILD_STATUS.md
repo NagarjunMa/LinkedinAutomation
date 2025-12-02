@@ -4,6 +4,12 @@
 **Build Command:** `npm run build`
 **Status:** ✅ **SUCCESS** (Exit Code: 0)
 
+## Lint & Type-Check Requirements
+
+- Run `npm run lint` before every build; it executes Next.js’ strict ESLint preset defined in `.eslintrc.json`.
+- The preset extends `next/core-web-vitals` and `next/typescript`, so unused symbols, `any` types, hook dependency gaps, and unescaped text now block builds.
+- The build command already runs linting; fixing warnings locally before `npm run build` prevents CI failures.
+
 ## Build Summary
 
 The build completed successfully with no blocking errors. All pages compiled and generated correctly.

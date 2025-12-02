@@ -16,7 +16,6 @@ import {
 } from "lucide-react"
 import { useJobSearch, useSearchSuggestions } from "@/hooks/use-job-search"
 import { JobSearchResults } from "@/components/job-search-results"
-import { cn } from "@/lib/utils"
 
 interface JobSearchModalProps {
     isOpen: boolean
@@ -30,12 +29,12 @@ export function JobSearchModal({ isOpen, onClose, initialQuery = "" }: JobSearch
     const [recentSearches, setRecentSearches] = useState<string[]>([])
     const inputRef = useRef<HTMLInputElement>(null)
 
-    const { searchResults, isLoading, hasResults } = useJobSearch({
+    const { searchResults, isLoading } = useJobSearch({
         query: searchQuery,
         enabled: isOpen
     })
 
-    const { suggestions, isLoading: suggestionsLoading } = useSearchSuggestions(
+    const { suggestions } = useSearchSuggestions(
         showSuggestions ? searchQuery : ""
     )
 

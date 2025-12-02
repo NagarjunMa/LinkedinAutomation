@@ -8,10 +8,63 @@ import {
   ProfileChangeHistory,
   ResumeFile,
   ResumeEvaluation,
-  RecentApplication
+  RecentApplication,
+  JobApiResponse,
+  DailyStatsResponse,
+  RecentApplicationResponse,
+  ResumeListItemResponse,
+  JobApplicationStatusUpdate
 } from '../app/lib/api';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+interface JobCountsResponse {
+  total_jobs?: number;
+  applied_count?: number;
+  want_to_apply_count?: number;
+  maybe_later_count?: number;
+  not_interested_count?: number;
+  pending_count?: number;
+}
+
+interface JobStatsApiResponse {
+  total_jobs?: number;
+  total_applied?: number;
+  success_rate?: number;
+  success_rate_change?: number;
+  interview_count?: number;
+  interviews?: number;
+  today_applications?: number;
+  today_profiles?: number;
+  today_messages?: number;
+  daily_stats?: DailyStatsResponse[];
+}
+
+interface ResumeUploadResponse {
+  id: string;
+  original_filename: string;
+  file_size: number;
+  file_type: string;
+  uploaded_at: string;
+  evaluation_status: string;
+}
+
+interface ResumeListResponse {
+  resumes: ResumeListItemResponse[];
+  total_count?: number;
+  totalCount?: number;
+}
+
+interface ResumeDetailResponse {
+  resume: ResumeFile;
+  evaluation?: ResumeEvaluation;
+}
+
+interface StorageInfoResponse {
+  total_count: number;
+  storage_used: number;
+  storage_limit: number;
+}
 
 // Enhanced Email Agent API endpoints with error handling
 export const enhancedEmailAgentApi = {
@@ -43,7 +96,7 @@ export const enhancedEmailAgentApi = {
 
   // Process emails
   processEmails: async (userId: string, userEmail?: string) => {
-    const body: any = {};
+    const body: Record<string, string> = {};
     if (userEmail) {
       body.user_email = userEmail;
     }
@@ -114,11 +167,11 @@ export async function enhancedFetchJobs(filters?: JobFilters & {
 
     const url = `${API_BASE_URL}/api/v1/jobs/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
 
-    const data = await apiRequest.get<any[]>(url, {
+    const data = await apiRequest.get<JobApiResponse[]>(url, {
       retries: { maxRetries: 2 }
     });
 
-    return data.map((job: any) => ({
+    return data.map((job) => ({
       id: job.id,
       title: job.title,
       company: job.company,
@@ -166,7 +219,7 @@ export async function enhancedFetchJobCounts(filters?: JobFilters) {
 
     const url = `${API_BASE_URL}/api/v1/jobs/counts${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
 
-    const data = await apiRequest.get<any>(url, {
+    const data = await apiRequest.get<JobCountsResponse>(url, {
       retries: { maxRetries: 2 }
     });
 
@@ -197,7 +250,7 @@ export async function enhancedFetchJobStats(timeRange: TimeRange = 'last_30_days
   try {
     console.log('Fetching job stats for time range:', timeRange);
 
-    const data = await apiRequest.get<any>(`${API_BASE_URL}/api/v1/jobs/stats?time_range=${timeRange}`, {
+    const data = await apiRequest.get<JobStatsApiResponse>(`${API_BASE_URL}/api/v1/jobs/stats?time_range=${timeRange}`, {
       retries: { maxRetries: 2 },
       timeout: 30000
     });
@@ -209,7 +262,13 @@ export async function enhancedFetchJobStats(timeRange: TimeRange = 'last_30_days
       appliedJobs: data.total_applied || 0,
       pendingJobs: Math.max(0, (data.total_jobs || 0) - (data.total_applied || 0)),
       responseRate: data.success_rate || 0,
-      applicationsByDate: (data.daily_stats || []).map((stat: any) => ({
+      successRate: data.success_rate || 0,
+      successRateChange: data.success_rate_change || 0,
+      interviews: data.interview_count || data.interviews || 0,
+      todayApplications: data.today_applications || 0,
+      todayProfiles: data.today_profiles || 0,
+      todayMessages: data.today_messages || 0,
+      applicationsByDate: (data.daily_stats || []).map((stat: DailyStatsResponse) => ({
         date: stat.date,
         jobs_extracted: stat.jobs_extracted || 0,
         jobs_applied: stat.jobs_applied || 0,
@@ -230,6 +289,12 @@ export async function enhancedFetchJobStats(timeRange: TimeRange = 'last_30_days
         appliedJobs: 0,
         pendingJobs: 0,
         responseRate: 0,
+        successRate: 0,
+        successRateChange: 0,
+        interviews: 0,
+        todayApplications: 0,
+        todayProfiles: 0,
+        todayMessages: 0,
         applicationsByDate: []
       };
     }
@@ -243,7 +308,7 @@ export async function enhancedUpdateJobStatus(jobId: string, applied: boolean) {
   });
 }
 
-export async function enhancedUpdateJobApplicationStatus(jobId: string, statusUpdate: any) {
+export async function enhancedUpdateJobApplicationStatus(jobId: string, statusUpdate: JobApplicationStatusUpdate) {
   return apiRequest.put(`${API_BASE_URL}/api/v1/jobs/${jobId}/application-status`, statusUpdate, {
     retries: { maxRetries: 2 }
   });
@@ -251,18 +316,23 @@ export async function enhancedUpdateJobApplicationStatus(jobId: string, statusUp
 
 export async function enhancedFetchRecentApplications(limit: number = 5): Promise<RecentApplication[]> {
   try {
-    const data = await apiRequest.get<any[]>(`${API_BASE_URL}/api/v1/jobs/recent-applications?limit=${limit}`, {
+    const data = await apiRequest.get<RecentApplicationResponse[]>(`${API_BASE_URL}/api/v1/jobs/recent-applications?limit=${limit}`, {
       silentErrors: [404]
     });
 
-    return data.map((app: any) => ({
+    return data.map((app) => ({
       id: app.id,
       title: app.title,
       company: app.company,
       appliedAt: app.applied_date,
       extracted_date: app.extracted_date,
       status: app.status || 'Applied',
-      companyLogo: app.company_logo
+      companyLogo: app.company_logo,
+      location: app.location,
+      salary: app.salary_range,
+      applicationSource: app.application_source,
+      sourceUrl: app.source_url,
+      compatibilityScore: app.compatibility_score
     }));
   } catch (error) {
     if (error instanceof Error && (error as ApiError).status === 404) {
@@ -281,7 +351,7 @@ export const enhancedResumeApi = {
     if (targetRole) formData.append('target_role', targetRole);
     if (targetSeniority) formData.append('target_seniority', targetSeniority);
 
-    const data = await apiRequest.post<any>(`${API_BASE_URL}/api/v1/resumes/upload`, formData, {
+    const data = await apiRequest.post<ResumeUploadResponse>(`${API_BASE_URL}/api/v1/resumes/upload`, formData, {
       headers: {}, // Let browser set Content-Type for FormData
       timeout: 60000, // 60s timeout for uploads
       retries: { maxRetries: 1 } // Limited retries for uploads
@@ -328,7 +398,7 @@ export const enhancedResumeApi = {
   // List resumes with error handling
   listResumes: async (): Promise<{ resumes: ResumeFile[]; totalCount: number }> => {
     try {
-      const data = await apiRequest.get<any>(`${API_BASE_URL}/api/v1/resumes/list`, {
+      const data = await apiRequest.get<ResumeListResponse>(`${API_BASE_URL}/api/v1/resumes/list`, {
         retries: { maxRetries: 2 }
       });
 
@@ -336,7 +406,7 @@ export const enhancedResumeApi = {
 
       // Process resumes with detailed evaluations
       const resumesWithEvaluations = await Promise.all(
-        data.resumes.map(async (r: any) => {
+        data.resumes.map(async (r: ResumeListItemResponse) => {
           const baseResume: ResumeFile = {
             id: r.id,
             filename: r.original_filename || r.filename || 'Untitled Resume',
@@ -351,7 +421,7 @@ export const enhancedResumeApi = {
           // Fetch detailed evaluation if completed
           if (baseResume.evaluation_status === 'completed') {
             try {
-              const detailedData = await apiRequest.get<any>(`${API_BASE_URL}/api/v1/resumes/${r.id}`, {
+              const detailedData = await apiRequest.get<ResumeDetailResponse>(`${API_BASE_URL}/api/v1/resumes/${r.id}`, {
                 silentErrors: [404, 500], // Don't fail the whole list if one evaluation fails
                 retries: { maxRetries: 1 }
               });
@@ -399,7 +469,7 @@ export const enhancedResumeApi = {
 
   // Get resume with evaluation
   getResume: async (resumeId: string): Promise<ResumeFile & { evaluationResult?: ResumeEvaluation }> => {
-    const data = await apiRequest.get<any>(`${API_BASE_URL}/api/v1/resumes/${resumeId}`, {
+    const data = await apiRequest.get<ResumeDetailResponse>(`${API_BASE_URL}/api/v1/resumes/${resumeId}`, {
       retries: { maxRetries: 2 }
     });
 
@@ -440,7 +510,7 @@ export const enhancedResumeApi = {
 
   // Get storage info
   getStorageInfo: async (): Promise<{ totalCount: number; storageUsed: number; storageLimit: number }> => {
-    const data = await apiRequest.get<any>(`${API_BASE_URL}/api/v1/resumes/storage-info`, {
+    const data = await apiRequest.get<StorageInfoResponse>(`${API_BASE_URL}/api/v1/resumes/storage-info`, {
       retries: { maxRetries: 2 }
     });
 

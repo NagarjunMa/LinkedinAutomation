@@ -70,7 +70,7 @@ export function JobSearch() {
                 title: "Search executed",
                 description: `Found ${result.length} jobs`,
             })
-        } catch (error) {
+        } catch {
             toast({
                 title: "Error",
                 description: "Failed to execute search",

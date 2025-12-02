@@ -22,7 +22,7 @@ function ClientOnly({ children, fallback }: { children: React.ReactNode; fallbac
   return <>{children}</>
 }
 
-export interface ColorModeProviderProps extends ThemeProviderProps {}
+export type ColorModeProviderProps = ThemeProviderProps
 
 export function ColorModeProvider(props: ColorModeProviderProps) {
   return (
@@ -61,7 +61,7 @@ export function ColorModeIcon() {
   return colorMode === "dark" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />
 }
 
-interface ColorModeButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {}
+type ColorModeButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement>
 
 export const ColorModeButton = React.forwardRef<
   HTMLButtonElement,

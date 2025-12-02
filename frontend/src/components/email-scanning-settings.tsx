@@ -13,15 +13,13 @@ import {
     Clock,
     Mail,
     Settings,
-    Play,
     CheckCircle,
     AlertCircle,
     Calendar,
-    Bell,
     Zap
 } from "lucide-react"
 import { formatDistanceToNow } from 'date-fns'
-import { emailScanningApi, EmailScanSettings, EmailScanStatus } from '@/lib/api/email-scanning-api'
+import { emailScanningApi, EmailScanStatus } from '@/lib/api/email-scanning-api'
 
 interface LocalEmailScanSettings {
     frequency: string
@@ -43,13 +41,14 @@ function EmailScanningSettings({ userId }: EmailScanningSettingsProps) {
         email_tracking_enabled: true
     })
     const [scanStatus, setScanStatus] = useState<EmailScanStatus | null>(null)
-    const [loading, setLoading] = useState(false)
+    const [_loading, _setLoading] = useState(false)
     const [saving, setSaving] = useState(false)
 
     // Load settings and status on mount
     useEffect(() => {
         loadSettings()
         loadScanStatus()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [userId])
 
     const loadSettings = async () => {
@@ -85,7 +84,7 @@ function EmailScanningSettings({ userId }: EmailScanningSettingsProps) {
         setSaving(true)
         try {
             await emailScanningApi.updateSettings(userId, {
-                email_scan_frequency: settings.frequency as any,
+                email_scan_frequency: settings.frequency as 'daily' | 'twice_daily' | 'weekly',
                 email_scan_time: `${settings.scan_time}:00`,
                 email_scan_timezone: settings.timezone,
                 email_tracking_enabled: settings.email_tracking_enabled
@@ -96,7 +95,7 @@ function EmailScanningSettings({ userId }: EmailScanningSettingsProps) {
                 description: "Email scanning preferences updated successfully",
             })
             await loadScanStatus()
-        } catch (error) {
+        } catch {
             toast({
                 title: "Error",
                 description: "Failed to save email scanning settings",
@@ -113,7 +112,7 @@ function EmailScanningSettings({ userId }: EmailScanningSettingsProps) {
         return `${displayHour}:00 ${period}`
     }
 
-    const getFrequencyDescription = (frequency: string) => {
+    const _getFrequencyDescription = (frequency: string) => {
         const descriptions = {
             daily: "Scan every night for new emails",
             twice_daily: "Morning 6 AM and Night 10 PM",

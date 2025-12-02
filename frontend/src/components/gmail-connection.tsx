@@ -13,7 +13,6 @@ import {
   AlertCircle,
   Loader2,
   RefreshCw,
-  Link as LinkIcon,
   Unlink,
   Eye,
   Shield,
@@ -49,9 +48,10 @@ export function GmailConnection({
       const connected = await checkGmailConnection()
       setIsConnected(connected)
       onConnectionChange?.(connected)
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error checking Gmail connection:', error)
-      setError(error.message || "Failed to check Gmail connection")
+      const errorObj = error as { message?: string }
+      setError(errorObj.message || "Failed to check Gmail connection")
     } finally {
       setIsLoading(false)
     }
@@ -68,9 +68,10 @@ export function GmailConnection({
       setError("")
       await connectGmailForExistingUser()
       // The OAuth flow will redirect, so we don't need to update state here
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error connecting Gmail:', error)
-      setError(error.message || "Failed to connect Gmail")
+      const errorObj = error as { message?: string }
+      setError(errorObj.message || "Failed to connect Gmail")
       setIsConnecting(false)
     }
   }
@@ -83,9 +84,10 @@ export function GmailConnection({
       await unlinkGmail()
       setIsConnected(false)
       onConnectionChange?.(false)
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error disconnecting Gmail:', error)
-      setError(error.message || "Failed to disconnect Gmail")
+      const errorObj = error as { message?: string }
+      setError(errorObj.message || "Failed to disconnect Gmail")
     } finally {
       setIsDisconnecting(false)
     }

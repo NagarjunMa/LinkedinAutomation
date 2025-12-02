@@ -13,7 +13,6 @@ import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
 import { LocationAutoComplete } from "@/components/location-auto-complete"
 import { SkillsAutocomplete } from "@/components/skills-autocomplete"
-import { EducationForm } from "@/components/education-form"
 import { FormError, FormErrorsList } from "@/components/ui/form-error"
 import { useFormValidation } from "@/hooks/use-form-validation"
 import {
@@ -81,9 +80,10 @@ export function EnhancedProfileSetupModal({ isOpen, onClose, onComplete }: Enhan
 
         onComplete()
         router.push('/dashboard')
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Profile creation error:', error)
-        throw new Error(error.message || 'Failed to create profile. Please try again.')
+        const errorMessage = error instanceof Error ? error.message : 'Failed to create profile. Please try again.'
+        throw new Error(errorMessage)
       }
     },
     validateOnChange: false,
@@ -124,10 +124,10 @@ export function EnhancedProfileSetupModal({ isOpen, onClose, onComplete }: Enhan
   // Step validation for better UX
   const validateCurrentStep = () => {
     const currentStepData = steps[currentStep - 1]
-    const stepData: any = {}
+    const stepData: Record<string, unknown> = {}
 
     currentStepData.fields.forEach(field => {
-      stepData[field] = (form.values as any)[field]
+      stepData[field] = (form.values as Record<string, unknown>)[field]
     })
 
     const result = currentStepData.validator(stepData)

@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { X, Plus, ChevronDown } from "lucide-react"
 import { searchSkills, getPopularSkills, type SkillDatabase } from "@/lib/skills-database"
@@ -150,7 +150,7 @@ export function SkillsAutocomplete({
                           className="w-full justify-start mt-2"
                         >
                           <Plus className="h-4 w-4 mr-2" />
-                          Add "{inputValue}"
+                          Add &quot;{inputValue}&quot;
                         </Button>
                       </div>
                     ) : (
@@ -179,7 +179,7 @@ export function SkillsAutocomplete({
                         className="cursor-pointer border-t"
                       >
                         <Plus className="h-4 w-4 mr-2" />
-                        Add "{inputValue}"
+                        Add &quot;{inputValue}&quot;
                       </CommandItem>
                     )}
                   </CommandGroup>

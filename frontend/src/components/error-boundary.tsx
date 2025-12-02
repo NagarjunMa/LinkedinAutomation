@@ -227,7 +227,7 @@ Please describe what you were doing when this error occurred:
 };
 
 // Specialized Error Fallbacks
-export const PageErrorFallback: React.FC<ErrorFallbackProps> = ({ error, resetError, errorId }) => {
+export const PageErrorFallback: React.FC<ErrorFallbackProps> = ({ _error, resetError, errorId }) => {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-background">
       <Card className="w-full max-w-lg mx-auto">
@@ -237,7 +237,7 @@ export const PageErrorFallback: React.FC<ErrorFallbackProps> = ({ error, resetEr
           </div>
           <CardTitle className="text-2xl font-bold">Page Error</CardTitle>
           <CardDescription className="text-base">
-            This page encountered an error and couldn't load properly.
+            This page encountered an error and couldn&apos;t load properly.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -261,7 +261,7 @@ export const PageErrorFallback: React.FC<ErrorFallbackProps> = ({ error, resetEr
   );
 };
 
-export const ComponentErrorFallback: React.FC<ErrorFallbackProps> = ({ error, resetError, errorId }) => {
+export const ComponentErrorFallback: React.FC<ErrorFallbackProps> = ({ _error, resetError, errorId }) => {
   return (
     <Alert variant="destructive" className="my-4">
       <AlertTriangle className="h-4 w-4" />
@@ -278,7 +278,7 @@ export const ComponentErrorFallback: React.FC<ErrorFallbackProps> = ({ error, re
 
 // Hook for programmatic error handling
 export const useErrorHandler = () => {
-  return (error: Error, errorInfo?: any) => {
+  return (error: Error, errorInfo?: unknown) => {
     if (process.env.NODE_ENV === 'development') {
       console.error('Handled Error:', error, errorInfo);
     }

@@ -5,13 +5,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { Mail, Settings } from "lucide-react"
+import { Mail } from "lucide-react"
 
 interface EmailTabProps {
     userId: string
 }
 
-function EmailTab({ userId }: EmailTabProps) {
+function EmailTab({ userId: _userId }: EmailTabProps) {
     const [settings, setSettings] = useState({
         email_forwarding_enabled: false,
         forwarding_address: '',

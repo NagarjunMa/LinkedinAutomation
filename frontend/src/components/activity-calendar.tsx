@@ -2,13 +2,10 @@
 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { useActivity } from "@/contexts/activity-context"
 import { getDailyActivity } from "@/lib/activity-api"
 import {
     Calendar,
-    Target,
-    TrendingUp,
     Zap,
     Briefcase,
     Mail
@@ -80,7 +77,7 @@ export function ActivityCalendar({ userId, className = "" }: ActivityCalendarPro
     // Activity data is now loaded from the API or shows as empty
 
     // Calculate statistics
-    const calculateStats = (data: ActivityData[]) => {
+    const _calculateStats = (data: ActivityData[]) => {
         const totalTasks = data.reduce((sum, day) => sum + day.totalTasks, 0)
         const activeDays = data.filter(day => day.totalTasks > 0).length
 
@@ -124,7 +121,7 @@ export function ActivityCalendar({ userId, className = "" }: ActivityCalendarPro
                 )
 
                 // Transform API data to our format
-                const transformedData = dailyData.map((day: any) => ({
+                const transformedData = dailyData.map((day: { date: string; job_extractions?: number; referral_emails?: number }) => ({
                     date: day.date,
                     jobExtractions: day.job_extractions || 0,
                     referralEmails: day.referral_emails || 0,
@@ -253,7 +250,7 @@ export function ActivityCalendar({ userId, className = "" }: ActivityCalendarPro
                                 </div>
 
                                 <div className="grid grid-cols-7 gap-1">
-                                    {days.map((day, index) => {
+                                    {days.map((day, _index) => {
                                         const dayDate = new Date(day.date)
                                         const dayOfWeek = dayDate.getDay()
 

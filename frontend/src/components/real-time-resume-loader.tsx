@@ -9,7 +9,7 @@ interface EvaluationStage {
   id: string
   name: string
   description: string
-  icon: React.ComponentType<any>
+  icon: React.ComponentType<{ className?: string }>
   color: string
 }
 
@@ -118,7 +118,7 @@ export function RealTimeResumeLoader({ isVisible, resumeId, onComplete }: RealTi
   useEffect(() => {
     if (!isVisible || !resumeId) return
 
-    let pollInterval: NodeJS.Timeout
+    let pollInterval: NodeJS.Timeout | undefined = undefined
 
     const pollProgress = async () => {
       try {
@@ -290,10 +290,10 @@ export function RealTimeResumeLoader({ isVisible, resumeId, onComplete }: RealTi
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 1.2, duration: 0.6 }}
           >
-            {evaluationStages.map((stage, index) => {
+            {evaluationStages.map((stage, _index) => {
               const isCompleted = completedStages.has(stage.id)
               const isCurrent = currentStage === stage.id
-              const isPending = !isCompleted && !isCurrent
+              const _isPending = !isCompleted && !isCurrent
 
               return (
                 <motion.div

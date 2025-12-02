@@ -17,12 +17,8 @@ import {
     FileText,
     Download,
     Calendar,
-    User,
     Trash2,
-    Clock,
     RefreshCw,
-    X,
-    Eye,
     Sparkles
 } from "lucide-react"
 import { ResumeFile, resumeApi } from "@/app/lib/api"
@@ -81,13 +77,13 @@ export function ResumeListDropdown({
         return () => clearInterval(interval)
     }, [resumes, onResumeDeleted])
 
-    const getScoreColor = (score: number) => {
+    const _getScoreColor = (score: number) => {
         if (score >= 80) return "text-green-600"
         if (score >= 60) return "text-yellow-600"
         return "text-red-600"
     }
 
-    const getScoreBadgeVariant = (score: number) => {
+    const _getScoreBadgeVariant = (score: number) => {
         if (score >= 80) return "default"
         if (score >= 60) return "secondary"
         return "destructive"
@@ -393,7 +389,7 @@ export function ResumeListDropdown({
                             Delete Resume
                         </DialogTitle>
                         <DialogDescription>
-                            Are you sure you want to delete "{deleteConfirmResume?.original_filename}"? This action cannot be undone.
+                            Are you sure you want to delete &quot;{deleteConfirmResume?.original_filename}&quot;? This action cannot be undone.
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>

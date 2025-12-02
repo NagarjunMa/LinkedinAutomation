@@ -13,24 +13,20 @@ import { referralTemplatesAPI } from '@/app/lib/api'
 import {
     MessageSquare,
     User,
-    Building,
-    Briefcase,
     Sparkles,
     Send,
     Copy,
-    Save,
     Settings
 } from "lucide-react"
-import { cn } from "@/lib/utils"
 
 interface TemplateGeneratorProps {
-    onTemplateGenerated?: (template: any) => void
+    onTemplateGenerated?: (template: Record<string, unknown>) => void
     onClose?: () => void
 }
 
-export function EnhancedReferralTemplateGenerator({ onTemplateGenerated, onClose }: TemplateGeneratorProps) {
+export function EnhancedReferralTemplateGenerator({ onTemplateGenerated, _onClose }: TemplateGeneratorProps) {
     const [loading, setLoading] = useState(false)
-    const [generatedTemplate, setGeneratedTemplate] = useState<any>(null)
+    const [generatedTemplate, setGeneratedTemplate] = useState<Record<string, unknown> | null>(null)
     const [pastedText, setPastedText] = useState("")
     const [showManualEdit, setShowManualEdit] = useState(false)
     const { toast } = useToast()
@@ -178,19 +174,20 @@ export function EnhancedReferralTemplateGenerator({ onTemplateGenerated, onClose
                 onTemplateGenerated(response)
             }
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error generating template:', error)
 
             let errorMessage = "Failed to generate template. Please try again."
 
             // Provide more specific error messages
-            if (error.message?.includes('Failed to fetch')) {
+            const errorObj = error as { message?: string }
+            if (errorObj.message?.includes('Failed to fetch')) {
                 errorMessage = "Network error. Please check your connection and try again."
-            } else if (error.message?.includes('401')) {
+            } else if (errorObj.message?.includes('401')) {
                 errorMessage = "Authentication error. Please refresh the page and try again."
-            } else if (error.message?.includes('403')) {
+            } else if (errorObj.message?.includes('403')) {
                 errorMessage = "Permission denied. Please ensure you have the right access."
-            } else if (error.message?.includes('500')) {
+            } else if (errorObj.message?.includes('500')) {
                 errorMessage = "Server error. Our team has been notified."
             } else if (error.message) {
                 errorMessage = `API Error: ${error.message}`
@@ -243,7 +240,7 @@ export function EnhancedReferralTemplateGenerator({ onTemplateGenerated, onClose
                         Contact Information
                     </CardTitle>
                     <p className="text-cream-400 text-sm mt-2">
-                        Copy contact info from LinkedIn and paste below. We'll extract the details automatically.
+                        Copy contact info from LinkedIn and paste below. We&apos;ll extract the details automatically.
                     </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -344,7 +341,7 @@ Email: john@techcorp.com`}
                         Your Background
                     </CardTitle>
                     <p className="text-cream-400 text-sm mt-2">
-                        Brief summary of your relevant experience and why you're interested in their company.
+                        Brief summary of your relevant experience and why you&apos;re interested in their company.
                     </p>
                 </CardHeader>
                 <CardContent>

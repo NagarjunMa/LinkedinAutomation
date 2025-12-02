@@ -29,7 +29,7 @@ class ApiClient {
         return headers
     }
 
-    async get(url: string) {
+    async get<T>(url: string): Promise<T> {
         const headers = await this.getAuthHeaders()
         const response = await fetch(`${this.baseUrl}${url}`, {
             method: 'GET',
@@ -40,10 +40,10 @@ class ApiClient {
             throw new Error(`HTTP error! status: ${response.status}`)
         }
 
-        return response.json()
+        return response.json() as Promise<T>
     }
 
-    async post(url: string, data?: any) {
+    async post<T>(url: string, data?: Record<string, unknown>): Promise<T> {
         const headers = await this.getAuthHeaders()
         const response = await fetch(`${this.baseUrl}${url}`, {
             method: 'POST',
@@ -55,10 +55,10 @@ class ApiClient {
             throw new Error(`HTTP error! status: ${response.status}`)
         }
 
-        return response.json()
+        return response.json() as Promise<T>
     }
 
-    async put(url: string, data?: any) {
+    async put<T>(url: string, data?: Record<string, unknown>): Promise<T> {
         const headers = await this.getAuthHeaders()
         const response = await fetch(`${this.baseUrl}${url}`, {
             method: 'PUT',
@@ -70,10 +70,10 @@ class ApiClient {
             throw new Error(`HTTP error! status: ${response.status}`)
         }
 
-        return response.json()
+        return response.json() as Promise<T>
     }
 
-    async delete(url: string) {
+    async delete<T>(url: string): Promise<T> {
         const headers = await this.getAuthHeaders()
         const response = await fetch(`${this.baseUrl}${url}`, {
             method: 'DELETE',
@@ -84,7 +84,7 @@ class ApiClient {
             throw new Error(`HTTP error! status: ${response.status}`)
         }
 
-        return response.json()
+        return response.json() as Promise<T>
     }
 }
 

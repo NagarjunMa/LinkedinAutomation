@@ -17,17 +17,11 @@ import {
     Building,
     User,
     Star,
-    Plus,
-    Filter,
-    Download,
     BarChart3,
     Eye,
     Clock,
-    CheckCircle,
-    AlertCircle,
-    Search
+    CheckCircle
 } from "lucide-react"
-import { cn } from "@/lib/utils"
 
 interface FeedbackFormProps {
     templateId: string
@@ -153,8 +147,8 @@ function FeedbackForm({ templateId, onSubmit, onCancel }: FeedbackFormProps) {
 }
 
 export function ReferralTemplateManager() {
-    const [templates, setTemplates] = useState<any[]>([])
-    const [stats, setStats] = useState<any>(null)
+    const [templates, setTemplates] = useState<Array<Record<string, unknown>>>([])
+    const [stats, setStats] = useState<Record<string, unknown> | null>(null)
     const [loading, setLoading] = useState(false)
     const [showFeedbackForm, setShowFeedbackForm] = useState<string | null>(null)
     const [expandedTemplate, setExpandedTemplate] = useState<string | null>(null)
@@ -231,7 +225,7 @@ export function ReferralTemplateManager() {
         }
     }
 
-    const getStatusBadge = (template: any) => {
+    const getStatusBadge = (template: Record<string, unknown>) => {
         if (template.got_response) {
             return (
                 <Badge className="bg-green-500/20 text-green-400 border-green-500/30">

@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Star, Target, Calendar, TrendingUp, CheckCircle, FileText, Clock, Award, Users, BookOpen, Lightbulb } from "lucide-react"
+import { Star, Target, Calendar, TrendingUp, BookOpen, Lightbulb, Users, Award } from "lucide-react"
 import { ResumeFile } from "@/app/lib/api"
 import { useToast } from "@/components/ui/use-toast"
 
@@ -22,7 +22,6 @@ export function PrimaryResumeModal({ resumes, open, onOpenChange, onPrimaryChang
   const { toast } = useToast()
 
   const currentPrimary = resumes.find(r => r.is_primary)
-  const completedResumes = resumes.filter(r => r.evaluation_status === 'completed')
 
   const handleSetPrimary = async () => {
     if (!selectedPrimary) {
@@ -46,7 +45,7 @@ export function PrimaryResumeModal({ resumes, open, onOpenChange, onPrimaryChang
       
       onPrimaryChange()
       onOpenChange(false)
-    } catch (error) {
+    } catch {
       toast({
         title: "Update Failed",
         description: "Failed to update primary resume. Please try again.",
@@ -149,7 +148,7 @@ export function PrimaryResumeModal({ resumes, open, onOpenChange, onPrimaryChang
                     <Calendar className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
                     <div>
                       <h4 className="font-semibold text-blue-900">Study Timeline</h4>
-                      <p className="text-sm text-blue-900">Personalized learning path created based on this resume's analysis</p>
+                      <p className="text-sm text-blue-900">Personalized learning path created based on this resume&apos;s analysis</p>
                     </div>
                   </div>
                 </div>
@@ -292,7 +291,7 @@ export function PrimaryResumeModal({ resumes, open, onOpenChange, onPrimaryChang
                   Study Timeline Preview
                 </CardTitle>
                 <CardDescription>
-                  Based on your selected primary resume, here's what your personalized learning path will include
+                  Based on your selected primary resume, here&apos;s what your personalized learning path will include
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -305,7 +304,7 @@ export function PrimaryResumeModal({ resumes, open, onOpenChange, onPrimaryChang
                       <h4 className="font-semibold text-purple-900">Week 1-2</h4>
                     </div>
                     <p className="text-sm text-purple-900">
-                      Foundation building based on your resume's current strengths and identified improvement areas
+                      Foundation building based on your resume&apos;s current strengths and identified improvement areas
                     </p>
                   </div>
                   

@@ -26,11 +26,31 @@ export interface ActivityStats {
     }[]
 }
 
+export type ActivityMetadata = {
+    job_title?: string
+    company?: string
+    source?: string
+    referral_contact?: string
+    position?: string
+}
+
+export interface JobExtractionActivityInput {
+    title: string
+    company: string
+    source?: string
+}
+
+export interface ReferralEmailActivityInput {
+    contact: string
+    company: string
+    position?: string
+}
+
 // Track a new activity
 export const trackActivity = async (
     userId: string,
     activityType: 'job_extraction' | 'referral_email',
-    metadata?: any
+    metadata?: ActivityMetadata
 ): Promise<ActivityRecord> => {
     try {
         const response = await fetch(`${API_BASE_URL}/api/v1/activity/track`, {
@@ -93,7 +113,7 @@ export const getDailyActivity = async (userId: string, startDate?: string, endDa
 }
 
 // Track job extraction activity
-export const trackJobExtraction = async (userId: string, jobData: any) => {
+export const trackJobExtraction = async (userId: string, jobData: JobExtractionActivityInput) => {
     return trackActivity(userId, 'job_extraction', {
         job_title: jobData.title,
         company: jobData.company,
@@ -102,7 +122,7 @@ export const trackJobExtraction = async (userId: string, jobData: any) => {
 }
 
 // Track referral email activity
-export const trackReferralEmail = async (userId: string, referralData: any) => {
+export const trackReferralEmail = async (userId: string, referralData: ReferralEmailActivityInput) => {
     return trackActivity(userId, 'referral_email', {
         referral_contact: referralData.contact,
         company: referralData.company,

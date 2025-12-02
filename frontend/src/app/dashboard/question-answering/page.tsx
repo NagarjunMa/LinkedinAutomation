@@ -337,7 +337,7 @@ What interests you most about this role?"
                     No answers generated yet
                   </h3>
                   <p className="text-cream-300">
-                    Enter your questions and click "Generate Answers" to get started
+                    Enter your questions and click &quot;Generate Answers&quot; to get started
                   </p>
                 </CardContent>
               </Card>

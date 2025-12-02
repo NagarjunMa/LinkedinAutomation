@@ -8,23 +8,18 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import {
   Mail,
   User,
-  Building,
-  Briefcase,
-  Users,
   RefreshCw,
   Send,
-  Save,
   AlertCircle,
   CheckCircle,
   Wand2,
   Edit,
-  Trash2
+  Save
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { referralAPI, ContactInfo, GeneratedEmail, EmailDraft, ReferralContact, isReferralAPIError } from "@/lib/referral-api"

@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useCallback, useEffect, useState } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -10,14 +10,10 @@ import { Skeleton } from "@/components/ui/skeleton"
 import {
     ArrowLeftIcon,
     RefreshCwIcon,
-    TrendingUpIcon,
-    BarChart3Icon,
     BrainIcon,
     TargetIcon,
-    Settings,
     AlertCircle,
     Activity,
-    Calendar,
     Award,
     Lightbulb
 } from "lucide-react"
@@ -36,7 +32,7 @@ export default function AnalyticsPage() {
     const [selectedPeriod, setSelectedPeriod] = useState(30)
     const router = useRouter()
 
-    const fetchAnalytics = async (days: number = selectedPeriod, forceRefresh: boolean = false) => {
+    const fetchAnalytics = useCallback(async (days: number = selectedPeriod, forceRefresh: boolean = false) => {
         try {
             setError(null)
             if (!forceRefresh) setLoading(true)
@@ -55,7 +51,7 @@ export default function AnalyticsPage() {
             setLoading(false)
             setRefreshing(false)
         }
-    }
+    }, [selectedPeriod])
 
     const handleRefresh = async () => {
         setRefreshing(true)
@@ -69,7 +65,7 @@ export default function AnalyticsPage() {
 
     useEffect(() => {
         fetchAnalytics()
-    }, [])
+    }, [fetchAnalytics])
 
     if (loading) {
         return <AnalyticsPageSkeleton />

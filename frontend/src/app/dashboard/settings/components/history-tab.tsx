@@ -3,13 +3,13 @@
 import React, { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Clock, Settings } from "lucide-react"
+import { Clock } from "lucide-react"
 
 interface HistoryTabProps {
     userId: string
 }
 
-function HistoryTab({ userId }: HistoryTabProps) {
+function HistoryTab({ userId: _userId }: HistoryTabProps) {
     const [history] = useState([
         {
             id: 1,

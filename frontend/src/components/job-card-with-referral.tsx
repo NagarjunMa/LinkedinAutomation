@@ -9,7 +9,6 @@ import {
   MapPin,
   Calendar,
   DollarSign,
-  Users,
   Mail,
   ExternalLink,
   Star
@@ -155,7 +154,7 @@ export function JobCardWithReferral({ job, className }: JobCardWithReferralProps
 }
 
 // Example usage component showing how to integrate into job listings
-export function JobListingWithReferrals({ jobs }: { jobs: Array<any> }) {
+export function JobListingWithReferrals({ jobs }: { jobs: Array<Record<string, unknown>> }) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">

@@ -3,6 +3,12 @@ export interface JobStats {
     appliedJobs: number;
     pendingJobs: number;
     responseRate: number;
+    successRate: number;
+    successRateChange: number;
+    interviews: number;
+    todayApplications: number;
+    todayProfiles: number;
+    todayMessages: number;
     applicationsByDate: {
         date: string;
         jobs_extracted: number;

@@ -24,7 +24,7 @@ interface ErrorLog {
 
 export const ErrorLogger: React.FC = () => {
   const [errorLogs, setErrorLogs] = useState<ErrorLog[]>([]);
-  const [apiErrorLogs, setApiErrorLogs] = useState<any[]>([]);
+  const [apiErrorLogs, setApiErrorLogs] = useState<Array<Record<string, unknown>>>([]);
 
   useEffect(() => {
     loadLogs();
@@ -75,7 +75,7 @@ export const ErrorLogger: React.FC = () => {
     return new Date(timestamp).toLocaleString();
   };
 
-  const getErrorSeverity = (log: ErrorLog | any) => {
+  const getErrorSeverity = (log: ErrorLog | Record<string, unknown>) => {
     if (log.status >= 500 || log.message?.includes('Network')) return 'destructive';
     if (log.status >= 400 || log.message?.includes('Error')) return 'secondary';
     return 'outline';
@@ -257,7 +257,7 @@ export const ErrorLogger: React.FC = () => {
 
 // Global Error Reporter Hook
 export const useErrorReporter = () => {
-  const reportError = (error: Error, context?: any) => {
+  const reportError = (error: Error, context?: unknown) => {
     // In production, this would send to error reporting service
     if (process.env.NODE_ENV === 'production') {
       // Send to Sentry, LogRocket, or other service

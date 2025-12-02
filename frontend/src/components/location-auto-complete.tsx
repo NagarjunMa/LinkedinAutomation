@@ -2,7 +2,6 @@
 
 import React, { useState, useRef, useEffect } from "react"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { MapPin, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { searchLocations } from "@/lib/location-data"

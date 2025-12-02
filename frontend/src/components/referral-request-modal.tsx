@@ -74,7 +74,7 @@ export function ReferralRequestModal({ job, isOpen, onClose }: ReferralRequestMo
     })
     const [generatedEmail, setGeneratedEmail] = useState<GeneratedEmail | null>(null)
     const [editedEmail, setEditedEmail] = useState<GeneratedEmail | null>(null)
-    const [draftId, setDraftId] = useState<string | null>(null)
+    const [_draftId, setDraftId] = useState<string | null>(null)
     const { toast } = useToast()
 
 
@@ -391,7 +391,7 @@ export function ReferralRequestModal({ job, isOpen, onClose }: ReferralRequestMo
                                 </div>
                                 <div className="text-sm text-amber-700">
                                     <p className="font-medium">Important Note</p>
-                                    <p>This will prepare your referral request. You'll need to manually send the email from your own email client to maintain authenticity and control.</p>
+                                    <p>This will prepare your referral request. You&apos;ll need to manually send the email from your own email client to maintain authenticity and control.</p>
                                 </div>
                             </div>
                         </div>

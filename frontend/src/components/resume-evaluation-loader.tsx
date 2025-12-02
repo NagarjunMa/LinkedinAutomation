@@ -2,14 +2,14 @@
 
 import { motion, AnimatePresence } from "framer-motion"
 import { useEffect, useState } from "react"
-import { CheckCircle, FileText, Target, Brain, Shield, Users, Building2, Sparkles } from "lucide-react"
-import { resumeApi, ResumeFile } from "@/app/lib/api"
+import { CheckCircle, FileText, Target, Brain, Shield, Building2, Sparkles } from "lucide-react"
+import { resumeApi } from "@/app/lib/api"
 
 interface EvaluationStage {
   id: string
   name: string
   description: string
-  icon: React.ComponentType<any>
+  icon: React.ComponentType<{ className?: string }>
   color: string
   duration: number
 }
@@ -307,7 +307,7 @@ export function ResumeEvaluationLoader({ isVisible, resumeId, onComplete }: Resu
             {evaluationStages.map((stage, index) => {
               const isCompleted = completedStages.has(stage.id)
               const isCurrent = index === currentStageIndex
-              const isPending = index > currentStageIndex
+              const _isPending = index > currentStageIndex
 
               return (
                 <motion.div

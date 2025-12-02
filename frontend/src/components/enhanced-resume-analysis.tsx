@@ -229,7 +229,7 @@ export function EnhancedResumeAnalysis({ resume, open, onOpenChange }: EnhancedR
                     <div className="p-4 bg-green-900/20 rounded-lg border border-green-500/30">
                       <h4 className="font-semibold text-cream-50 mb-3 flex items-center gap-2">
                         <CheckCircle className="w-4 h-4 text-green-400" />
-                        What's Working Well
+                        What&apos;s Working Well
                       </h4>
                       <ul className="space-y-2">
                         {justification.evidence.map((item, i) => (
@@ -296,7 +296,7 @@ export function EnhancedResumeAnalysis({ resume, open, onOpenChange }: EnhancedR
                   <div className="p-4 bg-red-900/20 rounded-lg border border-red-500/30">
                     <h4 className="font-semibold text-red-300 mb-2 flex items-center gap-2">
                       <AlertTriangle className="w-4 h-4" />
-                      Line 1: "Nagarjun Mallesh"
+                      Line 1: &quot;Nagarjun Mallesh&quot;
                     </h4>
                     <p className="text-sm text-red-200 mb-3">
                       ❌ Name formatting lacks professional impact and ATS optimization
@@ -304,7 +304,7 @@ export function EnhancedResumeAnalysis({ resume, open, onOpenChange }: EnhancedR
                     <div className="pl-4 border-l-2 border-blue-400 bg-blue-900/20 p-3 rounded">
                       <p className="text-sm text-blue-200 font-medium">💡 Recommendation:</p>
                       <p className="text-sm text-blue-200">
-                        Use "NAGARJUN MALLESH" in larger, bold font. Consider adding relevant certifications or titles like "NAGARJUN MALLESH, MS" to stand out to recruiters.
+                        Use &quot;NAGARJUN MALLESH&quot; in larger, bold font. Consider adding relevant certifications or titles like &quot;NAGARJUN MALLESH, MS&quot; to stand out to recruiters.
                       </p>
                     </div>
                   </div>
@@ -320,7 +320,7 @@ export function EnhancedResumeAnalysis({ resume, open, onOpenChange }: EnhancedR
                     <div className="pl-4 border-l-2 border-blue-400 bg-blue-900/20 p-3 rounded">
                       <p className="text-sm text-blue-200 font-medium">💡 Recommendation:</p>
                       <p className="text-sm text-blue-200">
-                        Format as: "Boston, MA | (857) 799-0214 | nagarjunmallesh@gmail.com | linkedin.com/in/nagarjun-mallesh"
+                        Format as: &quot;Boston, MA | (857) 799-0214 | nagarjunmallesh@gmail.com | linkedin.com/in/nagarjun-mallesh&quot;
                       </p>
                     </div>
                   </div>
@@ -337,15 +337,15 @@ export function EnhancedResumeAnalysis({ resume, open, onOpenChange }: EnhancedR
                   <div className="p-4 bg-red-900/20 rounded-lg border border-red-500/30">
                     <h4 className="font-semibold text-red-300 mb-2 flex items-center gap-2">
                       <AlertTriangle className="w-4 h-4" />
-                      Line 1: "Results-driven GenAI Software Engineer with 4+ years..."
+                      Line 1: &quot;Results-driven GenAI Software Engineer with 4+ years...&quot;
                     </h4>
                     <p className="text-sm text-red-200 mb-3">
-                      ❌ Generic opening phrase "Results-driven" - overused by 89% of candidates
+                      ❌ Generic opening phrase &quot;Results-driven&quot; - overused by 89% of candidates
                     </p>
                     <div className="pl-4 border-l-2 border-blue-400 bg-blue-900/20 p-3 rounded">
                       <p className="text-sm text-blue-200 font-medium">💡 Recommendation:</p>
                       <p className="text-sm text-blue-200">
-                        Start with: "GenAI Software Engineer specializing in distributed systems and cloud architecture with proven track record of..."
+                        Start with: &quot;GenAI Software Engineer specializing in distributed systems and cloud architecture with proven track record of...&quot;
                       </p>
                     </div>
                   </div>
@@ -353,7 +353,7 @@ export function EnhancedResumeAnalysis({ resume, open, onOpenChange }: EnhancedR
                   <div className="p-4 bg-green-900/20 rounded-lg border border-green-500/30">
                     <h4 className="font-semibold text-green-300 mb-2 flex items-center gap-2">
                       <CheckCircle className="w-4 h-4" />
-                      Line 2: "Led cross-functional teams delivering 70% performance improvements..."
+                      Line 2: &quot;Led cross-functional teams delivering 70% performance improvements...&quot;
                     </h4>
                     <p className="text-sm text-green-200 mb-3">
                       ✅ Excellent quantified achievement with specific metrics
@@ -361,7 +361,7 @@ export function EnhancedResumeAnalysis({ resume, open, onOpenChange }: EnhancedR
                     <div className="pl-4 border-l-2 border-blue-400 bg-blue-900/20 p-3 rounded">
                       <p className="text-sm text-blue-200 font-medium">💡 Enhancement:</p>
                       <p className="text-sm text-blue-200">
-                        Add team size for more impact: "Led cross-functional teams of 8+ engineers delivering 70% performance improvements..."
+                        Add team size for more impact: &quot;Led cross-functional teams of 8+ engineers delivering 70% performance improvements...&quot;
                       </p>
                     </div>
                   </div>
@@ -378,7 +378,7 @@ export function EnhancedResumeAnalysis({ resume, open, onOpenChange }: EnhancedR
                   <div className="p-4 bg-green-900/20 rounded-lg border border-green-500/30">
                     <h4 className="font-semibold text-green-300 mb-2 flex items-center gap-2">
                       <CheckCircle className="w-4 h-4" />
-                      Job 1 - Date Format: "Jul 2024 - Present"
+                      Job 1 - Date Format: &quot;Jul 2024 - Present&quot;
                     </h4>
                     <p className="text-sm text-green-200 mb-3">
                       ✅ GOOD: Current employment dates are properly formatted and realistic
@@ -394,15 +394,15 @@ export function EnhancedResumeAnalysis({ resume, open, onOpenChange }: EnhancedR
                   <div className="p-4 bg-yellow-900/20 rounded-lg border border-yellow-500/30">
                     <h4 className="font-semibold text-yellow-300 mb-2 flex items-center gap-2">
                       <AlertTriangle className="w-4 h-4" />
-                      Bullet Point: "Enhanced technical roadmap by conducting real-time inventory..."
+                      Bullet Point: &quot;Enhanced technical roadmap by conducting real-time inventory...&quot;
                     </h4>
                     <p className="text-sm text-yellow-200 mb-3">
-                      ⚠️ Vague language - "enhanced technical roadmap" doesn't clearly convey the action or impact
+                      ⚠️ Vague language - &quot;enhanced technical roadmap&quot; doesn&apos;t clearly convey the action or impact
                     </p>
                     <div className="pl-4 border-l-2 border-blue-400 bg-blue-900/20 p-3 rounded">
                       <p className="text-sm text-blue-200 font-medium">💡 Rewrite Suggestion:</p>
                       <p className="text-sm text-blue-200">
-                        "Streamlined development processes by implementing real-time inventory monitoring across 5+ platforms, accelerating team delivery velocity by 40%"
+                        &quot;Streamlined development processes by implementing real-time inventory monitoring across 5+ platforms, accelerating team delivery velocity by 40%&quot;
                       </p>
                     </div>
                   </div>
@@ -410,7 +410,7 @@ export function EnhancedResumeAnalysis({ resume, open, onOpenChange }: EnhancedR
                   <div className="p-4 bg-red-900/20 rounded-lg border border-red-500/30">
                     <h4 className="font-semibold text-red-300 mb-2 flex items-center gap-2">
                       <AlertTriangle className="w-4 h-4" />
-                      Repetitive Content: "Designed a blue-green deployment pipeline"
+                      Repetitive Content: &quot;Designed a blue-green deployment pipeline&quot;
                     </h4>
                     <p className="text-sm text-red-200 mb-3">
                       ❌ This exact phrase appears in both job descriptions - shows copy-paste approach
@@ -418,8 +418,8 @@ export function EnhancedResumeAnalysis({ resume, open, onOpenChange }: EnhancedR
                     <div className="pl-4 border-l-2 border-blue-400 bg-blue-900/20 p-3 rounded">
                       <p className="text-sm text-blue-200 font-medium">💡 Diversify Language:</p>
                       <p className="text-sm text-blue-200">
-                        First job: "Architected blue-green deployment infrastructure..."<br />
-                        Second job: "Implemented CI/CD pipeline with blue-green deployment strategy..."
+                        First job: &quot;Architected blue-green deployment infrastructure...&quot;<br />
+                        Second job: &quot;Implemented CI/CD pipeline with blue-green deployment strategy...&quot;
                       </p>
                     </div>
                   </div>
@@ -471,7 +471,7 @@ export function EnhancedResumeAnalysis({ resume, open, onOpenChange }: EnhancedR
                     <div className="pl-4 border-l-2 border-blue-400 bg-blue-900/20 p-3 rounded">
                       <p className="text-sm text-blue-200 font-medium">💡 Enhancement Opportunity:</p>
                       <p className="text-sm text-blue-200">
-                        Add GPA if 3.5+ and relevant coursework: "Relevant Coursework: Machine Learning, Cloud Computing, System Design"
+                        Add GPA if 3.5+ and relevant coursework: &quot;Relevant Coursework: Machine Learning, Cloud Computing, System Design&quot;
                       </p>
                     </div>
                   </div>
@@ -497,13 +497,13 @@ export function EnhancedResumeAnalysis({ resume, open, onOpenChange }: EnhancedR
                     <div className="flex items-start gap-3 p-3 bg-orange-900/30 rounded">
                       <span className="text-orange-400 font-bold">2.</span>
                       <p className="text-orange-200 text-sm">
-                        <strong>Remove repetitive content:</strong> Diversify the "blue-green deployment" descriptions
+                        <strong>Remove repetitive content:</strong> Diversify the &quot;blue-green deployment&quot; descriptions
                       </p>
                     </div>
                     <div className="flex items-start gap-3 p-3 bg-yellow-900/30 rounded">
                       <span className="text-yellow-400 font-bold">3.</span>
                       <p className="text-yellow-200 text-sm">
-                        <strong>Replace generic opener:</strong> Remove "Results-driven" from summary
+                        <strong>Replace generic opener:</strong> Remove &quot;Results-driven&quot; from summary
                       </p>
                     </div>
                   </div>
@@ -518,7 +518,7 @@ export function EnhancedResumeAnalysis({ resume, open, onOpenChange }: EnhancedR
 }
 
 // Mock evaluation generator for demonstration
-function generateMockEvaluation(): ResumeEvaluation {
+function _generateMockEvaluation(): ResumeEvaluation {
   return {
     overall_score: 72,
     ats_compliance_score: 65,

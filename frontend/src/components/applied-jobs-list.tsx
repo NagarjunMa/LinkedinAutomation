@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ExternalLink, Building, Calendar, Zap, Brain, RefreshCw } from "lucide-react"
+import { ExternalLink, Building, Calendar, Brain, RefreshCw } from "lucide-react"
 import { format, isValid, parseISO } from "date-fns"
 import { useDashboard } from "@/app/contexts/dashboard-context"
 
@@ -51,7 +51,7 @@ function formatDate(dateString: string): string {
             return 'Invalid date'
         }
         return format(date, 'MMM d, yyyy')
-    } catch (error) {
+    } catch {
         return 'Invalid date'
     }
 }
@@ -224,6 +224,7 @@ export function AppliedJobsList({ userId, limit = 10 }: AppliedJobsListProps) {
 
     useEffect(() => {
         fetchApplications()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [userId, page, refreshAppliedJobsKey])
 
     // Refresh function to be called when tab is opened
@@ -244,6 +245,7 @@ export function AppliedJobsList({ userId, limit = 10 }: AppliedJobsListProps) {
         return () => {
             document.removeEventListener('visibilitychange', handleVisibilityChange)
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     const fetchApplications = async () => {

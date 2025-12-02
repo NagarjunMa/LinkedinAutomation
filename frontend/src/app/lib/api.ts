@@ -3,6 +3,75 @@
 import { JobStats, TimeRange } from '../types/stats';
 import type { JobFilters } from '../types/job';
 
+export type JsonRecord = Record<string, unknown>;
+
+export interface JobApiResponse extends JsonRecord {
+    id: string;
+    title: string;
+    company: string;
+    location?: string;
+    job_type?: string;
+    description?: string;
+    application_url?: string;
+    posted_date?: string;
+    salary_range?: string;
+    experience_level?: string;
+    skills?: string[];
+    applied?: boolean;
+    applied_date?: string;
+    extracted_date?: string;
+    application_status?: string;
+    application_notes?: string;
+    application_context?: string;
+    compatibility_score?: number;
+    ai_insights?: string;
+}
+
+export interface DailyStatsResponse {
+    date: string;
+    jobs_extracted?: number;
+    jobs_applied?: number;
+    jobs_from_url?: number;
+    jobs_from_extension?: number;
+}
+
+export interface RecentApplicationResponse extends JsonRecord {
+    id: string;
+    title?: string;
+    company?: string;
+    applied_date?: string;
+    extracted_date?: string;
+    status?: string;
+    company_logo?: string;
+}
+
+export interface ResumeListItemResponse extends JsonRecord {
+    id: string;
+    original_filename?: string;
+    filename?: string;
+    file_size?: number;
+    size?: number;
+    file_type?: string;
+    type?: string;
+    uploaded_at?: string;
+    uploadedAt?: string;
+    evaluation_status?: string;
+    evaluationStatus?: string;
+}
+
+export interface ReferralContactInfo extends JsonRecord {
+    contact?: string;
+    name?: string;
+    email?: string;
+    company?: string;
+    position?: string;
+    linkedin?: string;
+}
+
+export type ReferralDraftUpdate = JsonRecord;
+export type ReferralPreferencePayload = JsonRecord;
+export type JobApplicationStatusUpdate = JsonRecord;
+
 // Enhanced profile types
 export interface WorkExperience {
     job_title: string;
@@ -536,7 +605,7 @@ export const emailAgentApi = {
 
     // Process emails
     processEmails: async (userId: string, userEmail?: string) => {
-        const body: any = {}
+        const body: Record<string, string> = {}
         if (userEmail) {
             body.user_email = userEmail
         }
@@ -617,16 +686,16 @@ export async function fetchJobs(filters?: JobFilters & {
     if (!response.ok) {
         throw new Error("Failed to fetch jobs");
     }
-    const data = await response.json();
+    const data = await response.json() as JobApiResponse[];
 
-    return data.map((job: any) => ({
+    return data.map((job) => ({
         id: job.id,
         title: job.title,
         company: job.company,
-        location: job.location,
-        type: job.job_type,
-        description: job.description,
-        url: job.application_url,
+        location: job.location ?? '',
+        type: job.job_type ?? '',
+        description: job.description ?? '',
+        url: job.application_url ?? '',
         postedAt: job.posted_date ? job.posted_date.split('T')[0] : new Date().toISOString().split('T')[0],
         salary: job.salary_range,
         experience: job.experience_level,
@@ -689,16 +758,22 @@ export async function fetchJobStats(timeRange: TimeRange = 'last_30_days'): Prom
             throw new Error(`Failed to fetch job stats: ${response.status} ${errorText}`);
         }
 
-        const data = await response.json();
+        const data = await response.json() as Record<string, unknown>;
         console.log('Raw API response:', data);
 
         // Map backend response to frontend interface
         const mappedData = {
-            totalJobs: data.total_jobs || 0,
-            appliedJobs: data.total_applied || 0,
-            pendingJobs: Math.max(0, (data.total_jobs || 0) - (data.total_applied || 0)),
-            responseRate: data.success_rate || 0,
-            applicationsByDate: (data.daily_stats || []).map((stat: any) => ({
+            totalJobs: (typeof data.total_jobs === 'number' ? data.total_jobs : 0) || 0,
+            appliedJobs: (typeof data.total_applied === 'number' ? data.total_applied : 0) || 0,
+            pendingJobs: Math.max(0, ((typeof data.total_jobs === 'number' ? data.total_jobs : 0) || 0) - ((typeof data.total_applied === 'number' ? data.total_applied : 0) || 0)),
+            responseRate: (typeof data.success_rate === 'number' ? data.success_rate : 0) || 0,
+            successRate: (typeof data.success_rate === 'number' ? data.success_rate : 0) || 0,
+            successRateChange: (typeof data.success_rate_change === 'number' ? data.success_rate_change : 0) || 0,
+            interviews: ((typeof data.interview_count === 'number' ? data.interview_count : 0) || (typeof data.interviews === 'number' ? data.interviews : 0)) || 0,
+            todayApplications: (typeof data.today_applications === 'number' ? data.today_applications : 0) || 0,
+            todayProfiles: (typeof data.today_profiles === 'number' ? data.today_profiles : 0) || 0,
+            todayMessages: (typeof data.today_messages === 'number' ? data.today_messages : 0) || 0,
+            applicationsByDate: ((Array.isArray(data.daily_stats) ? data.daily_stats : []) as DailyStatsResponse[]).map((stat) => ({
                 date: stat.date,
                 jobs_extracted: stat.jobs_extracted || 0,
                 jobs_applied: stat.jobs_applied || 0,
@@ -731,7 +806,7 @@ export async function updateJobStatus(jobId: string, applied: boolean) {
 }
 
 // New function for comprehensive status updates
-export async function updateJobApplicationStatus(jobId: string, statusUpdate: any) {
+export async function updateJobApplicationStatus(jobId: string, statusUpdate: JobApplicationStatusUpdate) {
     const response = await fetch(`${API_BASE_URL}/api/v1/jobs/${jobId}/application-status`, {
         method: 'PUT',
         headers: {
@@ -754,6 +829,11 @@ export interface RecentApplication {
     extracted_date: string;
     status: string;
     companyLogo?: string;
+    location?: string;
+    salary?: string;
+    applicationSource?: string;
+    sourceUrl?: string;
+    compatibilityScore?: number;
 }
 
 export async function fetchRecentApplications(limit: number = 5) {
@@ -761,17 +841,22 @@ export async function fetchRecentApplications(limit: number = 5) {
     if (!response.ok) {
         throw new Error('Failed to fetch recent applications');
     }
-    const data = await response.json();
+    const data = await response.json() as RecentApplicationResponse[];
 
     // Map backend response to frontend interface
-    return data.map((app: any) => ({
+    return data.map((app) => ({
         id: app.id,
-        title: app.title,
-        company: app.company,
-        appliedAt: app.applied_date,
-        extracted_date: app.extracted_date,
+        title: app.title ?? 'Unknown Position',
+        company: app.company ?? 'Unknown Company',
+        appliedAt: app.applied_date || '',
+        extracted_date: app.extracted_date || '',
         status: app.status || 'Applied',
-        companyLogo: app.company_logo
+        companyLogo: app.company_logo,
+        location: (typeof app.location === 'string' ? app.location : 'Remote') || 'Remote',
+        salary: (typeof app.salary_range === 'string' ? app.salary_range : 'Not specified') || 'Not specified',
+        applicationSource: (typeof app.application_source === 'string' ? app.application_source : 'Manual') || 'Manual',
+        sourceUrl: (typeof app.source_url === 'string' ? app.source_url : undefined),
+        compatibilityScore: (typeof app.compatibility_score === 'number' ? app.compatibility_score : 0) || 0
     }));
 }
 
@@ -877,7 +962,7 @@ export const resumeApi = {
 
         // For each resume, fetch the detailed evaluation if status is completed
         const resumesWithEvaluations = await Promise.all(
-            data.resumes.map(async (r: any) => {
+            (Array.isArray(data.resumes) ? data.resumes : [] as ResumeListItemResponse[]).map(async (r: ResumeListItemResponse) => {
                 const baseResume: ResumeFile = {
                     id: r.id,
                     filename: r.original_filename || r.filename || 'Untitled Resume',
@@ -885,7 +970,7 @@ export const resumeApi = {
                     file_size: r.file_size || r.size || 0,
                     file_type: r.file_type || r.type || 'unknown',
                     uploaded_at: r.uploaded_at || r.uploadedAt || new Date().toISOString(),
-                    evaluation_status: r.evaluation_status || r.evaluationStatus || 'pending',
+                    evaluation_status: (r.evaluation_status || r.evaluationStatus || 'pending') as 'pending' | 'completed' | 'failed' | 'evaluating',
                     evaluation_result: undefined,
                 };
 
@@ -1186,7 +1271,7 @@ export const referralApi = {
 
     // Mark response as received
     markResponseReceived: async (sentId: number, responseDate?: string) => {
-        const body: any = {};
+        const body: { response_date?: string } = {};
         if (responseDate) body.response_date = responseDate;
 
         const response = await fetch(`${API_BASE_URL}/api/v1/referral/responses/${sentId}/mark-received`, {
@@ -1203,7 +1288,7 @@ export const referralApi = {
     },
 
     // Generate referral email (preview only)
-    generateEmail: async (jobId: string | number, contactInfo: any) => {
+    generateEmail: async (jobId: string | number, contactInfo: ReferralContactInfo) => {
         try {
             console.log('API call to:', `${API_BASE_URL}/api/v1/referral/generate-email`)
             console.log('Request payload:', {
@@ -1238,7 +1323,7 @@ export const referralApi = {
     },
 
     // Create referral request (save draft and contact)
-    createRequest: async (jobId: string | number, contactInfo: any) => {
+    createRequest: async (jobId: string | number, contactInfo: ReferralContactInfo) => {
         const response = await fetch(`${API_BASE_URL}/api/v1/referral/create-request`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1256,7 +1341,7 @@ export const referralApi = {
     },
 
     // Update draft email
-    updateDraft: async (draftId: string, updates: any) => {
+    updateDraft: async (draftId: string, updates: ReferralDraftUpdate) => {
         const response = await fetch(`${API_BASE_URL}/api/v1/referral/drafts/${draftId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
@@ -1449,7 +1534,7 @@ export const referralTemplatesAPI = {
     },
 
     // Update user preferences
-    updatePreferences: async (preferences: any) => {
+    updatePreferences: async (preferences: ReferralPreferencePayload) => {
         const response = await fetch(`${API_BASE_URL}/api/v1/referral-templates/preferences`, {
             method: 'PUT',
             headers: {

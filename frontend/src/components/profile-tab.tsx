@@ -68,7 +68,7 @@ export function ProfileTab({ userId }: ProfileTabProps) {
     const [currentProfile, setCurrentProfile] = useState<ParsedProfile | null>(null)
     const [activeTab, setActiveTab] = useState("upload")
 
-    const handleProfileUpdate = (profile: ParsedProfile) => {
+    const _handleProfileUpdate = (profile: ParsedProfile) => {
         setCurrentProfile(profile)
         // Automatically switch to preferences tab after successful profile creation
         setActiveTab("preferences")
@@ -110,7 +110,7 @@ export function ProfileTab({ userId }: ProfileTabProps) {
                 <TabsContent value="preferences" className="space-y-4">
                     <PreferencesForm
                         userId={userId}
-                        onSave={(preferences) => {
+                        onSave={(_preferences) => {
                             // Auto-switch to matches tab after saving preferences
                             setActiveTab("matches")
                         }}
@@ -134,7 +134,7 @@ export function ProfileTab({ userId }: ProfileTabProps) {
                                 <UserIcon className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                                 <h3 className="text-lg font-medium mb-2">No profile yet</h3>
                                 <p className="text-sm text-muted-foreground">
-                                    Upload your resume in the "Resume & Profile" tab to see your detailed profile information here.
+                                    Upload your resume in the &quot;Resume & Profile&quot; tab to see your detailed profile information here.
                                 </p>
                             </CardContent>
                         </Card>

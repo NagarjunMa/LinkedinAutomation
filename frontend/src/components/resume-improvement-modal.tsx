@@ -7,8 +7,8 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
-import { CheckCircle, AlertCircle, TrendingUp, Target, Zap, ArrowRight, Star, Lightbulb, FileText, Copy, Check, Users, Award, Calendar, TrendingDown, BookOpen } from "lucide-react"
-import { ResumeFile, ResumeEvaluation } from "@/app/lib/api"
+import { CheckCircle, AlertCircle, TrendingUp, Target, ArrowRight, Star, Lightbulb, Copy, Check, Award } from "lucide-react"
+import { ResumeFile } from "@/app/lib/api"
 import { useToast } from "@/components/ui/use-toast"
 
 interface ResumeImprovementModalProps {
@@ -37,7 +37,7 @@ export function ResumeImprovementModal({ resume, open, onOpenChange }: ResumeImp
     return "text-red-600"
   }
 
-  const getScoreBadgeVariant = (score: number) => {
+  const _getScoreBadgeVariant = (score: number) => {
     if (score >= 80) return "default"
     if (score >= 60) return "secondary"
     return "destructive"
@@ -79,7 +79,7 @@ export function ResumeImprovementModal({ resume, open, onOpenChange }: ResumeImp
         description: "Recommendation copied successfully!",
       })
       setTimeout(() => setCopiedText(null), 2000)
-    } catch (error) {
+    } catch {
       toast({
         title: "Copy failed",
         description: "Failed to copy to clipboard. Please copy manually.",
@@ -388,7 +388,7 @@ export function ResumeImprovementModal({ resume, open, onOpenChange }: ResumeImp
                     Personalized Score Analysis
                   </CardTitle>
                   <CardDescription>
-                    Detailed breakdown of your resume's performance across key metrics
+                    Detailed breakdown of your resume&apos;s performance across key metrics
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -501,7 +501,7 @@ export function ResumeImprovementModal({ resume, open, onOpenChange }: ResumeImp
                             </div>
 
                             <div className="flex items-center justify-between">
-                              <p className="text-sm text-blue-700 italic">"{rec.reasoning}"</p>
+                              <p className="text-sm text-blue-700 italic">&quot;{rec.reasoning}&quot;</p>
                               <Button
                                 size="sm"
                                 variant="outline"

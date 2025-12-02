@@ -102,24 +102,24 @@ const ChartTooltip = React.forwardRef<
     HTMLDivElement,
     React.ComponentProps<"div"> & {
         active?: boolean
-        payload?: Array<{
+            payload?: Array<{
             dataKey: string
             color: string
             value: number | string
-            payload: any
+            payload: Record<string, unknown>
         }>
         label?: string
         indicator?: "line" | "dot" | "dashed"
         hideLabel?: boolean
         hideIndicator?: boolean
-        labelFormatter?: (label: any, payload: any) => React.ReactNode
+        labelFormatter?: (label: unknown, payload: unknown) => React.ReactNode
         labelClassName?: string
         formatter?: (
-            value: any,
-            name: any,
-            item: any,
-            index: any,
-            payload: any
+            value: unknown,
+            name: unknown,
+            item: unknown,
+            index: unknown,
+            payload: unknown
         ) => React.ReactNode
     }
 >(
@@ -148,8 +148,8 @@ const ChartTooltip = React.forwardRef<
             }
 
             const [item] = payload
-            const key = `${labelClassName || item?.dataKey || (item as any)?.name || "value"}`
-            const itemConfig = getPayloadConfigFromPayload(config, item, key)
+            const key = `${labelClassName || item?.dataKey || (item as { name?: string })?.name || "value"}`
+            const _itemConfig = getPayloadConfigFromPayload(config, item, key)
             const value =
                 !labelFormatter && item?.payload?.[key]
                     ? item?.payload?.[key]
@@ -189,9 +189,10 @@ const ChartTooltip = React.forwardRef<
                 {!nestLabel ? tooltipLabel : null}
                 <div className="grid gap-1.5">
                     {payload.map((item, index) => {
-                        const key = `${item.dataKey || (item as any).name || "value"}`
+                        const itemWithName = item as { dataKey?: string; name?: string; value?: unknown; payload?: Record<string, unknown>; color?: string }
+                        const key = `${item.dataKey || itemWithName.name || "value"}`
                         const itemConfig = getPayloadConfigFromPayload(config, item, key)
-                        const indicatorColor = color || item.payload.fill || item.color
+                        const indicatorColor = color || (item.payload as { fill?: string } | undefined)?.fill || item.color
 
                         return (
                             <div
@@ -201,8 +202,8 @@ const ChartTooltip = React.forwardRef<
                                     indicator === "dot" && "items-center"
                                 )}
                             >
-                                {formatter && item?.value !== undefined && (item as any).name ? (
-                                    formatter(item.value, (item as any).name, item, index, item.payload)
+                                {formatter && item?.value !== undefined && itemWithName.name ? (
+                                    formatter(item.value, itemWithName.name, item, index, item.payload)
                                 ) : (
                                     <>
                                         {itemConfig?.icon ? (
@@ -238,7 +239,7 @@ const ChartTooltip = React.forwardRef<
                                             <div className="grid gap-1.5">
                                                 {nestLabel ? tooltipLabel : null}
                                                 <span className="text-muted-foreground">
-                                                    {itemConfig?.label || (item as any).name}
+                                                    {itemConfig?.label || itemWithName.name}
                                                 </span>
                                             </div>
                                             {item.value && (
@@ -294,7 +295,7 @@ function getPayloadConfigFromPayload(
             ? payload.payload
             : undefined
 
-    let configLabelKey: string = key
+    const configLabelKey: string = key
 
     if (
         key in config ||

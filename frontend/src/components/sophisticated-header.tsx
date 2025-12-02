@@ -19,9 +19,6 @@ import {
     Settings,
     User,
     ChevronDown,
-    Command,
-    Plus,
-    Filter,
     Menu
 } from "lucide-react"
 import { Input } from "@/components/ui/input"

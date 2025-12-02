@@ -33,14 +33,14 @@ export interface EmailScanHistory {
     urgent_emails_found: number
     scan_started_at: string
     scan_completed_at: string | null
-    errors: any[] | null
+    errors: string[] | null
 }
 
 class EmailScanningApi {
     private baseUrl = '/api/v1/email-scanning'
 
     async getSettings(userId: string): Promise<EmailScanSettings & EmailScanStatus> {
-        const response = await apiClient.get(`${this.baseUrl}/settings/${userId}`)
+        const response = await apiClient.get<EmailScanSettings & EmailScanStatus>(`${this.baseUrl}/settings/${userId}`)
         return response
     }
 
@@ -51,33 +51,38 @@ class EmailScanningApi {
         })
     }
 
-    async getScanStatus(userId: string): Promise<EmailScanStatus> {
-        const response = await apiClient.get(`${this.baseUrl}/scan-status`)
+    async getScanStatus(_userId: string): Promise<EmailScanStatus> {
+        const response = await apiClient.get<EmailScanStatus>(`${this.baseUrl}/scan-status`)
         return response
     }
 
-    async getPerformanceMetrics(userId: string, days: number = 7): Promise<EmailScanMetrics> {
-        const response = await apiClient.get(`${this.baseUrl}/performance-metrics?days=${days}`)
+    async getPerformanceMetrics(_userId: string, days: number = 7): Promise<EmailScanMetrics> {
+        const response = await apiClient.get<EmailScanMetrics>(`${this.baseUrl}/performance-metrics?days=${days}`)
         return response
     }
 
-    async getScanHistory(userId: string, limit: number = 10): Promise<EmailScanHistory[]> {
-        const response = await apiClient.get(`${this.baseUrl}/scan-history?limit=${limit}`)
+    async getScanHistory(_userId: string, limit: number = 10): Promise<EmailScanHistory[]> {
+        const response = await apiClient.get<EmailScanHistory[]>(`${this.baseUrl}/scan-history?limit=${limit}`)
         return response
     }
 
-    async testEmailForwarding(userId: string): Promise<{ success: boolean; message: string }> {
-        const response = await apiClient.post(`${this.baseUrl}/test-forwarding`)
+    async testEmailForwarding(_userId: string): Promise<{ success: boolean; message: string }> {
+        const response = await apiClient.post<{ success: boolean; message: string }>(`${this.baseUrl}/test-forwarding`)
         return response
     }
 
-    async getSystemHealth(userId: string): Promise<{
+    async getSystemHealth(_userId: string): Promise<{
         status: 'healthy' | 'warning' | 'error'
         last_scan: string | null
         next_scan: string | null
         errors: string[]
     }> {
-        const response = await apiClient.get(`${this.baseUrl}/system-health`)
+        const response = await apiClient.get<{
+            status: 'healthy' | 'warning' | 'error'
+            last_scan: string | null
+            next_scan: string | null
+            errors: string[]
+        }>(`${this.baseUrl}/system-health`)
         return response
     }
 }

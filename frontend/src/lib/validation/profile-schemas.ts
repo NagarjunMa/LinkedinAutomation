@@ -239,7 +239,7 @@ export function validateName(name: string): string | null {
   return result.success ? null : result.error.issues[0]?.message || "Invalid name"
 }
 
-export function validateArrayInput(value: string, minItems = 0, maxItems = 20): string[] {
+export function validateArrayInput(value: string, _minItems = 0, maxItems = 20): string[] {
   if (!value.trim()) return []
 
   return value

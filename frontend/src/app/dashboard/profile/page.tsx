@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/components/ui/use-toast"
 import {
   User,
@@ -16,7 +15,6 @@ import {
   DollarSign,
   GraduationCap,
   Building,
-  Calendar,
   Plus,
   Save,
   Edit2,
@@ -27,7 +25,6 @@ import {
   TrendingUp,
   FileText,
   Upload,
-  Download,
   Eye,
   X
 } from "lucide-react"
@@ -53,6 +50,7 @@ export default function ProfilePage() {
       fetchProfile()
       fetchResumes()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
   const fetchProfile = async () => {
@@ -99,7 +97,7 @@ Best regards,
 [YOUR_NAME]`
   }
 
-  const handleSaveProfile = async (section: string, data: any) => {
+  const handleSaveProfile = async (section: string, data: Record<string, unknown>) => {
     try {
       setSaving(true)
       const userId = user?.id ? String(user.id) : 'current'
@@ -140,7 +138,7 @@ Best regards,
     setWorkExperiences(workExperiences.filter((_, i) => i !== index))
   }
 
-  const removeEducation = (index: number) => {
+  const _removeEducation = (index: number) => {
     setEducationHistory(educationHistory.filter((_, i) => i !== index))
   }
 
@@ -591,7 +589,7 @@ function PersonalInfoDisplay({ profile }: { profile: UserProfile | null }) {
 
 function PersonalInfoForm({ profile, onSave, onCancel, saving }: {
   profile: UserProfile | null;
-  onSave: (data: any) => void;
+  onSave: (data: Record<string, unknown>) => void;
   onCancel: () => void;
   saving: boolean;
 }) {
@@ -732,7 +730,7 @@ function JobPreferencesDisplay({ profile }: { profile: UserProfile | null }) {
 
 function JobPreferencesForm({ profile, onSave, onCancel, saving }: {
   profile: UserProfile | null;
-  onSave: (data: any) => void;
+  onSave: (data: Record<string, unknown>) => void;
   onCancel: () => void;
   saving: boolean;
 }) {

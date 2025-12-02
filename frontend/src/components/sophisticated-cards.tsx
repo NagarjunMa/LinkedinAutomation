@@ -8,23 +8,8 @@ import { Button } from "@/components/ui/button"
 import {
     TrendingUp,
     TrendingDown,
-    Users,
-    Briefcase,
-    Target,
-    Mail,
-    FileText,
-    BarChart3,
     ArrowUpRight,
     ArrowDownRight,
-    Clock,
-    CheckCircle,
-    AlertCircle,
-    Star,
-    Calendar,
-    DollarSign,
-    Building,
-    MapPin,
-    ExternalLink,
     ChevronDown
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -325,9 +310,9 @@ interface ActivityCalendarProps {
 }
 
 function ActivityCalendar({ activityData, userId }: ActivityCalendarProps) {
-    const { stats } = useActivity()
+    const { stats: _stats } = useActivity()
     const [realActivityData, setRealActivityData] = useState<{ [key: string]: number }>({})
-    const [loading, setLoading] = useState(false)
+    const [_loading, setLoading] = useState(false)
 
     const today = new Date()
     const currentMonth = today.getMonth()
@@ -353,7 +338,7 @@ function ActivityCalendar({ activityData, userId }: ActivityCalendarProps) {
 
                 // Transform to date -> totalTasks mapping
                 const activityMap: { [key: string]: number } = {}
-                dailyData.forEach((day: any) => {
+                dailyData.forEach((day: Record<string, unknown>) => {
                     const totalTasks = (day.job_extractions || 0) + (day.referral_emails || 0)
                     activityMap[day.date] = totalTasks
                 })
@@ -484,7 +469,7 @@ export function ProgressCard({ title, progressData }: ProgressCardProps) {
     const secondHalf = data.slice(Math.ceil(data.length / 2))
     const firstAvg = firstHalf.reduce((sum, d) => sum + d.applications, 0) / firstHalf.length
     const secondAvg = secondHalf.reduce((sum, d) => sum + d.applications, 0) / secondHalf.length
-    const isIncreasing = secondAvg > firstAvg
+    const _isIncreasing = secondAvg > firstAvg
 
     return (
         <Card className="premium-card hover:scale-105 transition-all duration-300 group h-full flex flex-col min-w-[300px] max-w-[550px] w-full">
@@ -531,7 +516,7 @@ function ProgressLineGraph({ progressData }: ProgressLineGraphProps) {
     const secondHalf = data.slice(Math.ceil(data.length / 2))
     const firstAvg = firstHalf.reduce((sum, d) => sum + d.applications, 0) / firstHalf.length
     const secondAvg = secondHalf.reduce((sum, d) => sum + d.applications, 0) / secondHalf.length
-    const isIncreasing = secondAvg > firstAvg
+    const _isIncreasing = secondAvg > firstAvg
 
     // SVG dimensions - responsive for card fit
     const width = 400

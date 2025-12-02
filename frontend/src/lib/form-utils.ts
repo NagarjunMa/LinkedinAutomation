@@ -7,6 +7,34 @@ export interface FormError {
   message: string
 }
 
+export interface ProfileFormData {
+  full_name?: string
+  email?: string
+  phone?: string
+  location?: string
+  years_of_experience?: number | string
+  career_level?: string
+  professional_summary?: string
+  programming_languages?: string[]
+  frameworks_libraries?: string[]
+  tools_platforms?: string[]
+  desired_roles?: string[]
+  preferred_locations?: string[]
+  salary_range_min?: number | string
+  salary_range_max?: number | string
+}
+
+type ProfileApiData = ProfileFormData & Record<string, unknown>
+
+interface ZodIssueLike {
+  path: (string | number)[]
+  message: string
+}
+
+interface ZodErrorLike {
+  issues?: ZodIssueLike[]
+}
+
 /**
  * Serialize array inputs for API submission
  */
@@ -60,7 +88,7 @@ export function safeNumberConversion(value: string | number, defaultValue = 0): 
 /**
  * Validate and serialize complete profile data for API submission
  */
-export function serializeProfileData(formData: any) {
+export function serializeProfileData(formData: ProfileFormData) {
   return {
     // Personal info
     full_name: formData.full_name?.trim() || '',
@@ -89,7 +117,7 @@ export function serializeProfileData(formData: any) {
 /**
  * Deserialize profile data from API for form display
  */
-export function deserializeProfileData(apiData: any) {
+export function deserializeProfileData(apiData: ProfileApiData) {
   return {
     // Personal info
     full_name: apiData.full_name || '',
@@ -139,10 +167,10 @@ export function formatFormErrors(errors: FormError[]): Record<string, string> {
 /**
  * Extract validation errors from Zod error
  */
-export function extractZodErrors(zodError: any): FormError[] {
+export function extractZodErrors(zodError: ZodErrorLike | undefined | null): FormError[] {
   if (!zodError?.issues) return []
 
-  return zodError.issues.map((issue: any) => ({
+  return zodError.issues.map((issue: ZodIssueLike) => ({
     field: issue.path.join('.'),
     message: issue.message
   }))
@@ -151,14 +179,16 @@ export function extractZodErrors(zodError: any): FormError[] {
 /**
  * Validate individual field in real-time
  */
-export function validateSingleField(field: string, value: any, validator: (data: any) => any): string | null {
+export function validateSingleField<T extends Record<string, unknown>>(
+  field: keyof T & string,
+  value: T[keyof T],
+  validator: (data: Partial<T>) => { success: boolean; error?: ZodErrorLike }
+): string | null {
   try {
-    const testData = { [field]: value }
+    const testData = { [field]: value } as Partial<T>
     const result = validator(testData)
     if (!result.success) {
-      const fieldErrors = result.error.issues.filter((issue: any) =>
-        issue.path.includes(field)
-      )
+      const fieldErrors = result.error?.issues?.filter(issue => issue.path.includes(field))
       return fieldErrors[0]?.message || null
     }
     return null
@@ -182,7 +212,7 @@ export function sanitizeInput(input: string, maxLength = 1000): string {
 /**
  * Debounce function for real-time validation
  */
-export function debounce<T extends (...args: any[]) => any>(
+export function debounce<T extends (...args: unknown[]) => unknown>(
   func: T,
   delay: number
 ): (...args: Parameters<T>) => void {
@@ -196,14 +226,14 @@ export function debounce<T extends (...args: any[]) => any>(
 /**
  * Check if form data has changed
  */
-export function hasFormChanged(current: any, original: any): boolean {
+export function hasFormChanged(current: ProfileFormData, original: ProfileFormData): boolean {
   return JSON.stringify(serializeProfileData(current)) !== JSON.stringify(serializeProfileData(original))
 }
 
 /**
  * Get form completion percentage
  */
-export function getFormCompletionPercentage(formData: any): number {
+export function getFormCompletionPercentage(formData: ProfileFormData): number {
   const requiredFields = [
     'full_name',
     'email',

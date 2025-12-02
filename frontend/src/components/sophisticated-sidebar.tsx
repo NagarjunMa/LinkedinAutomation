@@ -5,21 +5,17 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/contexts/auth-context"
 import { Logo } from "@/components/logo"
 import {
     BarChart3,
     Briefcase,
     FileText,
-    Mail,
     Search,
     TrendingUp,
-    Users,
-    Zap,
     ChevronRight,
     HelpCircle,
-    Settings,
+    Users,
     X,
     UserPlus,
     User

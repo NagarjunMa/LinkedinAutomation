@@ -9,19 +9,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { X, User, Briefcase, MapPin, DollarSign, GraduationCap, CheckCircle, AlertCircle } from "lucide-react"
+import { X, User, Briefcase, MapPin, GraduationCap, CheckCircle } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
 import { LocationAutoComplete } from "@/components/location-auto-complete"
-import { SkillsAutocomplete } from "@/components/skills-autocomplete"
 import { FormError } from "@/components/ui/form-error"
 import { useFormValidation } from "@/hooks/use-form-validation"
 import {
-  validateCompleteProfile,
-  validatePersonalInfo,
-  validateProfessionalInfo,
-  validateSkills,
-  validateJobPreferences
+  validateCompleteProfile
 } from "@/lib/validation/profile-schemas"
 import { serializeProfileData } from "@/lib/form-utils"
 
@@ -81,9 +76,10 @@ export function ProfileSetupModal({ isOpen, onClose, onComplete }: ProfileSetupM
 
         onComplete()
         router.push('/dashboard')
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Profile creation error:', error)
-        throw new Error(error.message || 'Failed to create profile. Please try again.')
+        const errorObj = error as { message?: string }
+        throw new Error(errorObj.message || 'Failed to create profile. Please try again.')
       }
     },
     validateOnChange: true,
@@ -122,34 +118,34 @@ export function ProfileSetupModal({ isOpen, onClose, onComplete }: ProfileSetupM
     if (field === 'years_of_experience') {
       const stringValue = value as string
       if (stringValue === '') {
-        form.setValue(field as any, 0)
+        form.setValue(field as keyof typeof form.values, 0)
       } else {
         const numValue = parseFloat(stringValue)
         if (!isNaN(numValue)) {
-          form.setValue(field as any, numValue)
+          form.setValue(field as keyof typeof form.values, numValue)
         }
       }
     } else if (field === 'salary_range_min' || field === 'salary_range_max') {
       const stringValue = value as string
       if (stringValue === '') {
-        form.setValue(field as any, 0)
+        form.setValue(field as keyof typeof form.values, 0)
       } else {
         const numValue = parseInt(stringValue)
         if (!isNaN(numValue)) {
-          form.setValue(field as any, numValue)
+          form.setValue(field as keyof typeof form.values, numValue)
         }
       }
     } else {
-      form.setValue(field as any, value)
+      form.setValue(field as keyof typeof form.values, value)
     }
   }
 
   const handleArrayInput = (field: string, value: string) => {
     if (value.trim()) {
       const items = value.split(',').map(item => item.trim()).filter(Boolean)
-      form.setValue(field as any, items)
+      form.setValue(field as keyof typeof form.values, items)
     } else {
-      form.setValue(field as any, [])
+      form.setValue(field as keyof typeof form.values, [])
     }
   }
 

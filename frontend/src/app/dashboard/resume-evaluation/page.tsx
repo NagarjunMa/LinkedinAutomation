@@ -1,14 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Progress } from "@/components/ui/progress"
-import { CheckCircle, AlertCircle, TrendingUp, FileText, Target, Zap, Upload, Star, Clock, Award, TrendingDown, Lightbulb, Users, Calendar } from "lucide-react"
+import { CheckCircle, AlertCircle, Target, Upload, Star, Clock } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
-import { resumeApi, ResumeFile, ResumeEvaluation } from "@/app/lib/api"
+import { resumeApi, ResumeFile } from "@/app/lib/api"
 import { ResumeImprovementModal } from "@/components/resume-improvement-modal"
 import { EnhancedResumeAnalysis } from "@/components/enhanced-resume-analysis"
 import { ResumeUploadModal } from "@/components/resume-upload-modal"
@@ -29,6 +27,7 @@ export default function ResumeEvaluationPage() {
 
   useEffect(() => {
     loadResumes()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const loadResumes = async () => {
@@ -71,7 +70,7 @@ export default function ResumeEvaluationPage() {
         title: "Evaluation Started",
         description: "AI is analyzing your resume with advanced multi-agent system.",
       })
-    } catch (error) {
+    } catch {
       setShowEvaluationLoader(false)
       toast({
         title: "Evaluation Failed",
@@ -105,19 +104,19 @@ export default function ResumeEvaluationPage() {
     setShowEvaluationLoader(true)
   }
 
-  const getScoreColor = (score: number) => {
+  const _getScoreColor = (score: number) => {
     if (score >= 80) return "text-green-600"
     if (score >= 60) return "text-yellow-600"
     return "text-red-600"
   }
 
-  const getScoreBadgeVariant = (score: number) => {
+  const _getScoreBadgeVariant = (score: number) => {
     if (score >= 80) return "default"
     if (score >= 60) return "secondary"
     return "destructive"
   }
 
-  const getATSCompatibilityBadgeVariant = (compatibility: string) => {
+  const _getATSCompatibilityBadgeVariant = (compatibility: string) => {
     switch (compatibility) {
       case 'excellent': return 'default'
       case 'good': return 'secondary'

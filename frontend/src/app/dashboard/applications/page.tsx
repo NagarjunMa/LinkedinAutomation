@@ -1,10 +1,9 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
@@ -12,7 +11,6 @@ import JobURLExtractor from "@/components/job-url-extractor"
 import {
     Search,
     Plus,
-    Filter,
     Download,
     ExternalLink,
     CheckCircle,
@@ -30,6 +28,81 @@ import { useAuth } from "@/contexts/auth-context"
 import { fetchRecentApplications } from "@/app/lib/api"
 import { useToast } from "@/components/ui/use-toast"
 
+type RecentApplicationResponse = Awaited<ReturnType<typeof fetchRecentApplications>>[number]
+
+type ApplicationStatus = 'applied' | 'interview_scheduled' | 'want_to_apply' | 'not_interested' | string
+
+interface Application {
+    id: string;
+    title: string;
+    company: string;
+    location: string;
+    salary: string;
+    status: ApplicationStatus;
+    appliedDate: string | null;
+    source: string;
+    compatibilityScore: number;
+    notes: string;
+    sourceUrl?: string;
+    extractedAt?: string;
+}
+
+interface JobDetails {
+    id?: string;
+    title?: string;
+    company?: string;
+    location?: string;
+    job_type?: string;
+    experience_level?: string;
+    salary_range?: string;
+    posted_date?: string;
+    description?: string;
+    requirements?: string;
+    skills?: string;
+    benefits?: string;
+    application_url?: string;
+}
+
+interface ExtractedJobPayload {
+    job_id?: string;
+    id?: string;
+    extracted_job?: {
+        title?: string;
+        company?: string;
+        location?: string;
+        application_url?: string;
+    };
+    title?: string;
+    company?: string;
+    location?: string;
+    original_url?: string;
+}
+
+const normalizeStatus = (status?: string): ApplicationStatus => {
+    if (!status) return 'applied'
+    return status.toLowerCase().replace(/\s+/g, '_')
+}
+
+const deriveSource = (source?: string) => {
+    if (!source) return 'Manual'
+    if (source === 'url_extraction') return 'URL Extraction'
+    return source
+}
+
+const mapRecentApplication = (app: RecentApplicationResponse): Application => ({
+    id: app.id,
+    title: app.title || 'Unknown Position',
+    company: app.company || 'Unknown Company',
+    location: app.location || 'Remote',
+    salary: app.salary || 'TBD',
+    status: normalizeStatus(app.status),
+    appliedDate: app.appliedAt ? app.appliedAt.split('T')[0] : null,
+    source: deriveSource(app.applicationSource),
+    compatibilityScore: app.compatibilityScore || 0,
+    notes: '',
+    sourceUrl: app.sourceUrl
+})
+
 // Application status configuration
 const statusConfig = {
     applied: { label: "Applied", color: "bg-blue-500", icon: CheckCircle },
@@ -41,37 +114,25 @@ const statusConfig = {
 export default function ApplicationsPage() {
     const { user } = useAuth()
     const { toast } = useToast()
-    const [applications, setApplications] = useState<any[]>([])
+    const [applications, setApplications] = useState<Application[]>([])
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState("")
     const [statusFilter, setStatusFilter] = useState("all")
     const [showJobExtractor, setShowJobExtractor] = useState(false)
-    const [selectedJob, setSelectedJob] = useState<any>(null)
+    const [selectedJob, setSelectedJob] = useState<Application | null>(null)
     const [showJobDetails, setShowJobDetails] = useState(false)
-    const [jobDetails, setJobDetails] = useState<any>(null)
+    const [jobDetails, setJobDetails] = useState<JobDetails | null>(null)
     const [loadingJobDetails, setLoadingJobDetails] = useState(false)
-    const [recentlyExtractedJob, setRecentlyExtractedJob] = useState<any>(null)
+    const [recentlyExtractedJob, setRecentlyExtractedJob] = useState<Application | null>(null)
 
     // Fetch real applications data
-    const fetchApplications = async () => {
+    const fetchApplications = useCallback(async () => {
         try {
             setLoading(true)
             const data = await fetchRecentApplications(50) // Get more applications
 
             // Map backend data to frontend format
-            const mappedApplications = data.map((app: any) => ({
-                id: app.id,
-                title: app.title || 'Unknown Position',
-                company: app.company || 'Unknown Company',
-                location: app.location || 'Remote',
-                salary: 'TBD', // Backend doesn't return salary in recent-applications
-                status: app.status?.toLowerCase().replace(' ', '_') || 'applied',
-                appliedDate: app.applied_date ? app.applied_date.split('T')[0] : null,
-                source: app.application_source === 'url_extraction' ? 'URL Extraction' : (app.application_source || 'Manual'),
-                compatibilityScore: 0, // Backend doesn't return this in recent-applications
-                notes: '',
-                sourceUrl: app.source_url
-            }))
+            const mappedApplications = data.map(mapRecentApplication)
 
             setApplications(mappedApplications)
         } catch (error) {
@@ -86,12 +147,12 @@ export default function ApplicationsPage() {
         } finally {
             setLoading(false)
         }
-    }
+    }, [toast])
 
     // Load applications on component mount
     useEffect(() => {
         fetchApplications()
-    }, [])
+    }, [fetchApplications])
 
     const filteredApplications = applications.filter(app => {
         const matchesSearch = app.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -100,16 +161,28 @@ export default function ApplicationsPage() {
         return matchesSearch && matchesStatus
     })
 
-    const handleJobExtracted = async (job: any) => {
+    const averageCompatibilityScore = applications.length
+        ? Math.round(applications.reduce((acc, app) => acc + app.compatibilityScore, 0) / applications.length)
+        : 0
+
+    const handleJobExtracted = async (job: ExtractedJobPayload) => {
+        const fallbackId = job.job_id || job.id || (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+            ? crypto.randomUUID()
+            : `${Date.now()}`)
         // Store recently extracted job for immediate feedback
-        const extractedJobData = {
-            id: job.job_id || job.id,
-            title: job.extracted_job?.title || job.title,
-            company: job.extracted_job?.company || job.company,
-            location: job.extracted_job?.location || job.location,
+        const extractedJobData: Application = {
+            id: String(fallbackId),
+            title: job.extracted_job?.title || job.title || 'Unknown Position',
+            company: job.extracted_job?.company || job.company || 'Unknown Company',
+            location: job.extracted_job?.location || job.location || 'Remote',
+            salary: 'TBD',
+            status: 'applied',
+            appliedDate: new Date().toISOString(),
+            source: 'URL Extraction',
+            compatibilityScore: 0,
+            notes: '',
             sourceUrl: job.extracted_job?.application_url || job.original_url,
-            extractedAt: new Date().toISOString(),
-            ...job
+            extractedAt: new Date().toISOString()
         }
         setRecentlyExtractedJob(extractedJobData)
 
@@ -135,7 +208,7 @@ export default function ApplicationsPage() {
                 throw new Error('Failed to fetch job details')
             }
 
-            const jobDetails = await response.json()
+            const jobDetails: JobDetails = await response.json()
             setJobDetails(jobDetails)
             setShowJobDetails(true)
         } catch (error) {
@@ -150,7 +223,7 @@ export default function ApplicationsPage() {
         }
     }
 
-    const handleViewJob = (application: any) => {
+    const handleViewJob = (application: Application) => {
         setSelectedJob(application)
         fetchJobDetails(application.id)
     }
@@ -323,7 +396,7 @@ export default function ApplicationsPage() {
                             <div>
                                 <p className="text-sm text-cream-300">Avg. Score</p>
                                 <p className="text-2xl font-bold text-cream-50">
-                                    {Math.round(applications.reduce((acc, app) => acc + app.compatibilityScore, 0) / applications.length)}%
+                                    {averageCompatibilityScore}%
                                 </p>
                             </div>
                             <TrendingUp className="w-8 h-8 text-purple-500" />
@@ -588,11 +661,12 @@ export default function ApplicationsPage() {
                             {/* Action Buttons */}
                             <div className="flex gap-3 pt-4 border-t border-primary-600">
                                 <Button
-                                    onClick={() => window.open(jobDetails.application_url, '_blank')}
-                                    className="bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600"
+                                    onClick={() => jobDetails.application_url && window.open(jobDetails.application_url, '_blank')}
+                                    disabled={!jobDetails.application_url}
+                                    className="bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <ExternalLink className="w-4 h-4 mr-2" />
-                                    Apply Now
+                                    {jobDetails.application_url ? 'Apply Now' : 'Application URL missing'}
                                 </Button>
                                 <Button
                                     variant="outline"

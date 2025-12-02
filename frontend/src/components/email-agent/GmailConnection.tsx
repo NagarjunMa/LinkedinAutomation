@@ -33,7 +33,7 @@ interface ConnectionStatus {
 
 export function GmailConnection({ userId }: GmailConnectionProps) {
     const router = useRouter()
-    const { user } = useAuth()
+    const { user: _user } = useAuth()
     const [status, setStatus] = useState<ConnectionStatus | null>(null)
     const [isConnecting, setIsConnecting] = useState(false)
     const [isProcessing, setIsProcessing] = useState(false)
@@ -45,6 +45,7 @@ export function GmailConnection({ userId }: GmailConnectionProps) {
         if (userId) {
             fetchStatus()
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [userId])
 
     // Check for OAuth callback success or error
@@ -81,9 +82,10 @@ export function GmailConnection({ userId }: GmailConnectionProps) {
             const response = await emailAgentApi.getGmailStatus(userId)
             setStatus(response)
             setError(null)
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Failed to fetch Gmail status:', err)
-            setError(err.message || 'Failed to fetch status')
+            const errorMessage = err instanceof Error ? err.message : 'Failed to fetch status'
+            setError(errorMessage)
         }
     }
 
@@ -116,9 +118,10 @@ export function GmailConnection({ userId }: GmailConnectionProps) {
                     router.push('/dashboard')
                 }, 2000)
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Failed to connect Gmail:', err)
-            setError(err.message || 'Failed to connect Gmail')
+            const errorMessage = err instanceof Error ? err.message : 'Failed to connect Gmail'
+            setError(errorMessage)
         } finally {
             setIsConnecting(false)
         }
@@ -141,9 +144,10 @@ export function GmailConnection({ userId }: GmailConnectionProps) {
                 setShowSuccess(true)
                 // You could show a success message here
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Failed to process emails:', err)
-            setError(err.message || 'Failed to process emails')
+            const errorMessage = err instanceof Error ? err.message : 'Failed to process emails'
+            setError(errorMessage)
         } finally {
             setIsProcessing(false)
         }
@@ -156,9 +160,10 @@ export function GmailConnection({ userId }: GmailConnectionProps) {
             await emailAgentApi.disconnectGmail(userId)
             await fetchStatus()
             setError(null)
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Failed to disconnect Gmail:', err)
-            setError(err.message || 'Failed to disconnect Gmail')
+            const errorMessage = err instanceof Error ? err.message : 'Failed to disconnect Gmail'
+            setError(errorMessage)
         }
     }
 

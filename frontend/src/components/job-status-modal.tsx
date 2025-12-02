@@ -9,14 +9,11 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
-  CalendarIcon,
   CheckCircle,
   Clock,
   XCircle,
-  Plus,
-  Calendar as CalendarIcon2,
   Target,
-  MessageSquare
+  Calendar as CalendarIcon2
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'

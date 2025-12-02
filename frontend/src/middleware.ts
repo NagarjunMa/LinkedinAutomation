@@ -1,53 +1,26 @@
-import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function middleware(request: NextRequest) {
-    let supabaseResponse = NextResponse.next({
-        request,
-    })
+const DASHBOARD_ROOT = '/dashboard'
+const ACCESS_COOKIE = 'sb-access-token'
 
-    const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-            cookies: {
-                get(name: string) {
-                    return request.cookies.get(name)?.value
-                },
-                set(name: string, value: string, options: any) {
-                    request.cookies.set(name, value)
-                    supabaseResponse = NextResponse.next({
-                        request,
-                    })
-                    supabaseResponse.cookies.set(name, value, options)
-                },
-                remove(name: string, options: any) {
-                    request.cookies.delete(name)
-                    supabaseResponse = NextResponse.next({
-                        request,
-                    })
-                    supabaseResponse.cookies.delete(name)
-                },
-            },
-        }
-    )
+const hasSupabaseSession = (request: NextRequest) =>
+    Boolean(request.cookies.get(ACCESS_COOKIE)?.value)
 
-    // Refresh session if expired
-    const {
-        data: { session },
-    } = await supabase.auth.getSession()
+export function middleware(request: NextRequest) {
+    const pathname = request.nextUrl.pathname
+    const loggedIn = hasSupabaseSession(request)
 
-    // If no session and trying to access protected routes, redirect to landing
-    if (!session && request.nextUrl.pathname.startsWith('/dashboard')) {
-        return NextResponse.redirect(new URL('/', request.url))
+    if (!loggedIn && pathname.startsWith(DASHBOARD_ROOT)) {
+        const redirectUrl = new URL('/', request.url)
+        return NextResponse.redirect(redirectUrl)
     }
 
-    // If session exists and trying to access landing page, redirect to dashboard
-    if (session && request.nextUrl.pathname === '/') {
-        return NextResponse.redirect(new URL('/dashboard', request.url))
+    if (loggedIn && pathname === '/') {
+        const redirectUrl = new URL(DASHBOARD_ROOT, request.url)
+        return NextResponse.redirect(redirectUrl)
     }
 
-    return supabaseResponse
+    return NextResponse.next()
 }
 
 export const config = {

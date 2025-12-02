@@ -14,7 +14,7 @@ interface JobExtractionCalendarProps {
 }
 
 export function JobExtractionCalendar({ className }: JobExtractionCalendarProps) {
-  const [currentDate, setCurrentDate] = useState(new Date())
+  const [currentDate, _setCurrentDate] = useState(new Date())
   const [extractionData, setExtractionData] = useState<JobExtractionDay[]>([])
   const [totalStats, setTotalStats] = useState({
     totalExtractions: 0,
@@ -41,7 +41,7 @@ export function JobExtractionCalendar({ className }: JobExtractionCalendarProps)
         if (response.ok) {
           const result = await response.json()
           if (result.status === 'success') {
-            const apiData = result.data.extraction_days.map((day: any) => ({
+            const apiData = result.data.extraction_days.map((day: Record<string, unknown>) => ({
               date: day.date,
               jobsExtracted: day.jobs_extracted,
               applicationsAdded: day.applications_added
@@ -55,24 +55,24 @@ export function JobExtractionCalendar({ className }: JobExtractionCalendarProps)
             })
           }
         } else {
-          // Fallback to mock data if API fails
-          console.log('API failed, using fallback data')
-          useFallbackData()
+          // Fallback to empty state if API fails
+          console.log('API failed, using empty state')
+          setExtractionData([])
+          setTotalStats({
+            totalExtractions: 0,
+            totalApplications: 0,
+            activeDays: 0
+          })
         }
       } catch (error) {
-        console.log('Error fetching calendar data, using fallback:', error)
-        useFallbackData()
+        console.log('Error fetching calendar data, using empty state:', error)
+        setExtractionData([])
+        setTotalStats({
+          totalExtractions: 0,
+          totalApplications: 0,
+          activeDays: 0
+        })
       }
-    }
-
-    const useFallbackData = () => {
-      // Show empty state when API fails
-      setExtractionData([])
-      setTotalStats({
-        totalExtractions: 0,
-        totalApplications: 0,
-        activeDays: 0
-      })
     }
 
     fetchCalendarData()

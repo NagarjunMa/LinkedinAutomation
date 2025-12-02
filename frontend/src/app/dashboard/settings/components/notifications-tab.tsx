@@ -5,13 +5,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { Bell, Settings } from "lucide-react"
+import { Bell } from "lucide-react"
 
 interface NotificationsTabProps {
     userId: string
 }
 
-function NotificationsTab({ userId }: NotificationsTabProps) {
+function NotificationsTab({ userId: _userId }: NotificationsTabProps) {
     const [settings, setSettings] = useState({
         application_updates: true,
         interview_reminders: true,

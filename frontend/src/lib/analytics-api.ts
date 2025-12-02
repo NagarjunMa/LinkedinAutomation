@@ -132,7 +132,7 @@ export class AnalyticsAPIError extends Error {
   constructor(
     message: string,
     public status: number,
-    public response?: any
+    public response?: unknown
   ) {
     super(message);
     this.name = 'AnalyticsAPIError';
@@ -184,7 +184,7 @@ export class AnalyticsAPI {
         if (session?.access_token) {
           defaultHeaders['Authorization'] = `Bearer ${session.access_token}`;
         }
-      } catch (error) {
+      } catch {
       }
     }
 
@@ -372,11 +372,11 @@ export class AnalyticsAPI {
 export const analyticsAPI = AnalyticsAPI.getInstance();
 
 // Utility functions for error handling
-export const isInsufficientDataError = (error: any): error is InsufficientDataError => {
+export const isInsufficientDataError = (error: unknown): error is InsufficientDataError => {
   return error instanceof InsufficientDataError;
 };
 
-export const isAnalyticsAPIError = (error: any): error is AnalyticsAPIError => {
+export const isAnalyticsAPIError = (error: unknown): error is AnalyticsAPIError => {
   return error instanceof AnalyticsAPIError;
 };
 

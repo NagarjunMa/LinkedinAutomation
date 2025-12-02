@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils"
 import { GmailConnection } from "@/components/gmail-connection"
 
 // Animation variants
-const fadeInVariants = {
+const _fadeInVariants = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
 }
@@ -69,7 +69,7 @@ function LoginForm() {
   const [authError, setAuthError] = useState("")
   const [authSuccess, setAuthSuccess] = useState("")
   const [showGmailConnection, setShowGmailConnection] = useState(false)
-  const [gmailConnected, setGmailConnected] = useState(false)
+  const [_gmailConnected, setGmailConnected] = useState(false)
 
   const { user, signIn, loading } = useAuth()
   const router = useRouter()
@@ -163,9 +163,10 @@ function LoginForm() {
       setIsSubmitting(true)
       setAuthError("")
       await signIn()
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Google sign in error:', error)
-      setAuthError(error.message || "Failed to sign in with Google. Please try again.")
+      const errorMessage = error instanceof Error ? error.message : "Failed to sign in with Google. Please try again."
+      setAuthError(errorMessage)
     } finally {
       setIsSubmitting(false)
     }
@@ -229,18 +230,19 @@ function LoginForm() {
           setTimeout(() => router.push(redirectTo), 1500)
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Auth error:', error)
 
       // Handle specific error cases
-      if (error.message?.includes("Invalid login credentials")) {
+      const errorObj = error as { message?: string }
+      if (errorObj.message?.includes("Invalid login credentials")) {
         setAuthError("Invalid email or password. Please check your credentials and try again.")
-      } else if (error.message?.includes("Email not confirmed")) {
+      } else if (errorObj.message?.includes("Email not confirmed")) {
         setAuthError("Please check your email and click the confirmation link before signing in.")
-      } else if (error.message?.includes("User already registered")) {
+      } else if (errorObj.message?.includes("User already registered")) {
         setAuthError("An account with this email already exists. Please sign in instead.")
       } else {
-        setAuthError(error.message || `Failed to ${isSignUp ? 'create account' : 'sign in'}. Please try again.`)
+        setAuthError(errorObj.message || `Failed to ${isSignUp ? 'create account' : 'sign in'}. Please try again.`)
       }
     } finally {
       setIsSubmitting(false)

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
@@ -51,6 +51,7 @@ export function AIJobMatches({ userId, minScore = 70, limit = 10 }: AIJobMatches
 
     useEffect(() => {
         fetchJobMatches()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [userId, minScore, limit])
 
     const fetchJobMatches = async () => {

@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Loader2, Mail, Eye, CheckCircle, AlertCircle, Calendar, Building } from 'lucide-react'
+import { Loader2, Mail, Eye, CheckCircle, AlertCircle, Calendar } from 'lucide-react'
 import { emailAgentApi } from '@/app/lib/api'
 
 interface EmailDashboardProps {
@@ -35,7 +35,7 @@ interface EmailEvent {
     needs_review: boolean
     status_updated: boolean
     matched_job_id?: number
-    ai_data: any
+    ai_data: Record<string, unknown>
 }
 
 const emailTypeColors = {
@@ -65,6 +65,7 @@ export function EmailDashboard({ userId }: EmailDashboardProps) {
 
     useEffect(() => {
         fetchData()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [userId])
 
     const fetchData = async () => {
@@ -78,9 +79,10 @@ export function EmailDashboard({ userId }: EmailDashboardProps) {
             setSummary(summaryRes)
             setEvents(eventsRes)
             setError(null)
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Failed to fetch email data:', err)
-            setError(err.message || 'Failed to fetch email data')
+            const errorMessage = err instanceof Error ? err.message : 'Failed to fetch email data'
+            setError(errorMessage)
         } finally {
             setLoading(false)
         }
@@ -92,7 +94,7 @@ export function EmailDashboard({ userId }: EmailDashboardProps) {
             // Refresh events to update the UI
             const response = await emailAgentApi.getEmailEvents(userId)
             setEvents(response)
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Failed to mark as reviewed:', err)
         }
     }

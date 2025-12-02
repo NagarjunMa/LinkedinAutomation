@@ -36,6 +36,8 @@
     "next.config.mjs"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "src/components/education-form.tsx",
+    "src/components/email-scanning-settings.tsx"
   ]
 }

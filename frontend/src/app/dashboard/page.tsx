@@ -6,49 +6,27 @@ import { useDashboard } from "@/app/contexts/dashboard-context"
 import { useAuth } from "@/contexts/auth-context"
 import {
     OverviewCard,
-    QuickActionCard,
-    RecentJobsCard
+    QuickActionCard
 } from "@/components/sophisticated-cards"
 import { EmailStatsCard } from "@/components/email-stats-card"
 import { ReferralAnalyticsCard } from "@/components/referral-analytics-card"
 // Activity calendar is now integrated into OverviewCard
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import {
     BarChart3,
     Briefcase,
-    FileText,
-    Mail,
-    Search,
-    Target,
     TrendingUp,
     TrendingDown,
-    Users,
-    Zap,
     Clock,
     CheckCircle,
-    AlertCircle,
-    Star,
-    ArrowRight,
-    Plus,
-    Filter,
-    Download,
-    Send,
-    ArrowUpRight,
-    ChevronDown,
     Link,
     Upload
 } from "lucide-react"
-import { Overview } from "@/components/overview"
-import { RecentSales } from "@/components/recent-sales"
-import JobURLExtractor from "@/components/job-url-extractor"
 import { ProfileSetupModal } from "@/components/profile-setup-modal"
 import { ProfileCompletionBanner } from "@/components/profile-completion-banner"
 import { cn } from "@/lib/utils"
 import {
-    FadeInUp,
-    FadeIn,
     StaggerContainer,
     StaggerItem
 } from "@/components/animated-wrapper"
@@ -57,14 +35,7 @@ import {
     ChartConfig,
     ChartContainer,
     ChartTooltip,
-    ChartTooltipContent,
 } from "@/components/ui/chart"
-
-// Enhanced component props interfaces
-interface SearchProgressCardProps {
-    goal: number;
-    current: number;
-}
 
 interface SuccessRateCardProps {
     rate: number;
@@ -75,37 +46,6 @@ interface TodayActivityCardProps {
     applications: number;
     profiles: number;
     messages: number;
-}
-
-// Compact metric card components
-function SearchProgressCard({ goal, current }: SearchProgressCardProps) {
-    const percentage = Math.round((current / goal) * 100);
-
-    return (
-        <Card className="premium-card hover:scale-105 transition-all duration-300 group">
-            <CardHeader className="pb-2 px-4 pt-4">
-                <div className="flex items-center space-x-2">
-                    <Target className="h-4 w-4 text-accent-500" />
-                    <CardTitle className="text-cream-50 text-sm group-hover:text-accent-400 transition-colors">
-                        Search Progress
-                    </CardTitle>
-                </div>
-            </CardHeader>
-            <CardContent className="px-4 pb-4 space-y-3">
-                <div className="flex justify-between text-xs">
-                    <span className="text-cream-300">Weekly Goal</span>
-                    <span className="text-accent-400 font-semibold">{current}/{goal}</span>
-                </div>
-                <div className="w-full bg-primary-700 rounded-full h-2">
-                    <div
-                        className="bg-gradient-warm h-2 rounded-full transition-all duration-500"
-                        style={{ width: `${percentage}%` }}
-                    />
-                </div>
-                <div className="text-xs text-cream-400 text-center">{percentage}% completed</div>
-            </CardContent>
-        </Card>
-    );
 }
 
 function SuccessRateCard({ rate, change }: SuccessRateCardProps) {
@@ -135,7 +75,7 @@ function TodayActivityCard({ applications, profiles, messages }: TodayActivityCa
                 <div className="flex items-center space-x-2">
                     <Clock className="h-4 w-4 text-blue-400" />
                     <CardTitle className="text-cream-50 text-sm group-hover:text-accent-400 transition-colors">
-                        Today's Activity
+                        Today&rsquo;s Activity
                     </CardTitle>
                 </div>
             </CardHeader>
@@ -327,15 +267,15 @@ function RecentApplicationsTable() {
     // Map recentApplications to the format expected by the component
     const applications = recentApplications.map(app => ({
         id: app.id,
-        jobTitle: app.jobTitle || 'Unknown Position',
-        companyName: app.companyName || 'Unknown Company',
-        location: app.location || 'Remote',
+        jobTitle: app.title || 'Unknown Position',
+        companyName: app.company || 'Unknown Company',
+        location: 'Remote',
         jobType: 'Full-time' as const,
-        skillsPreferred: app.skillsPreferred || [],
-        salary: app.salary || 'TBD',
+        skillsPreferred: [],
+        salary: 'TBD',
         status: app.status || 'Applied',
-        appliedDate: app.appliedDate || 'Recently',
-        method: app.method || 'Manual'
+        appliedDate: app.appliedAt || 'Recently',
+        method: app.extracted_date ? 'AI Extraction' : 'Manual'
     }));
 
     const getStatusBadge = (status: string) => {
@@ -416,91 +356,6 @@ function RecentApplicationsTable() {
     );
 }
 
-// Startup Job Boards
-const STARTUP_JOB_BOARDS = [
-    {
-        name: "Otta",
-        description: "Find your people - Only relevant roles. Choose the right job, at the right company for you.",
-        url: "https://otta.com/",
-        category: "startup",
-        requiresAuth: false
-    },
-    {
-        name: "Career Vault",
-        description: "Land a remote job. Live anywhere. Join 50,000+ job seekers discovering remote jobs.",
-        url: "https://www.careervault.io/",
-        category: "startup",
-        requiresAuth: false
-    },
-    {
-        name: "Startup Gallery",
-        description: "Discover today's top startups - A handpicked gallery of 1,028+ outstanding companies.",
-        url: "https://startups.gallery/",
-        category: "startup",
-        requiresAuth: false
-    },
-    {
-        name: "Built In",
-        description: "Better Matches. Better Jobs. Explore 106,859+ tech companies with personalized recommendations.",
-        url: "https://builtin.com/",
-        category: "startup",
-        requiresAuth: false
-    },
-    {
-        name: "Wellfound",
-        description: "Startup jobs and opportunities - Connect with innovative startups in the ecosystem.",
-        url: "https://wellfound.com/jobs",
-        category: "startup",
-        requiresAuth: false
-    },
-    {
-        name: "Remotive",
-        description: "Remote jobs and companies - The #1 remote work community for tech professionals.",
-        url: "https://remotive.com/",
-        category: "startup",
-        requiresAuth: false
-    },
-    {
-        name: "Tech Jobs for Good",
-        description: "Tech jobs that make a difference - Find meaningful roles focused on social impact.",
-        url: "https://techjobsforgood.com/",
-        category: "startup",
-        requiresAuth: false
-    },
-    {
-        name: "Simplify Jobs",
-        description: "Streamlined job application process - Apply to multiple jobs with one click.",
-        url: "https://simplify.jobs/",
-        category: "startup",
-        requiresAuth: false
-    }
-]
-
-// Tech Stack Job Boards
-const TECH_STACK_JOB_BOARDS = [
-    {
-        name: "TechStackLeads",
-        description: "Super fast job search engine. No sign in required.",
-        url: "https://techstackleads.com",
-        category: "techstack",
-        requiresAuth: false
-    },
-    {
-        name: "Theirstack",
-        description: "Create an account and search jobs based on your skills.",
-        url: "https://app.theirstack.com/home",
-        category: "techstack",
-        requiresAuth: true
-    },
-    {
-        name: "Stackjobs",
-        description: "Sign in and apply for jobs based on your tech stack.",
-        url: "https://stackjobs.dev",
-        category: "techstack",
-        requiresAuth: true
-    }
-]
-
 // Overview data will be taken from dashboard context
 
 // Activity data will be taken from backend when available
@@ -537,11 +392,8 @@ const quickActions = [
 
 export default function DashboardPage() {
     const { user } = useAuth()
-    const { stats, loading, error, refreshData } = useDashboard()
+    const { stats, error, refreshData } = useDashboard()
     const searchParams = useSearchParams()
-    const [applicationStats, setApplicationStats] = useState([])
-    const [dashboardSummary, setDashboardSummary] = useState(null)
-    const [loadingStats, setLoadingStats] = useState(false)
     const [showProfileSetup, setShowProfileSetup] = useState(false)
     const [profileSetupChecked, setProfileSetupChecked] = useState(false)
 
@@ -576,31 +428,6 @@ export default function DashboardPage() {
             setProfileSetupChecked(true)
         }
     }, [user, searchParams, profileSetupChecked])
-
-    // Fetch application extraction stats from backend
-    useEffect(() => {
-        const fetchApplicationStats = async () => {
-            setLoadingStats(true)
-            try {
-                const response = await fetch('/api/v1/stats/application-extraction-stats')
-
-                if (response.ok) {
-                    const result = await response.json()
-                    if (result.status === 'success') {
-                        setApplicationStats(result.data)
-                    }
-                } else {
-                    console.log('Using fallback data for application stats')
-                }
-            } catch (error) {
-                console.log('Error fetching application stats, using fallback data:', error)
-            } finally {
-                setLoadingStats(false)
-            }
-        }
-
-        fetchApplicationStats()
-    }, [])
 
     if (error) {
         return (
@@ -699,6 +526,11 @@ export default function DashboardPage() {
                                     messages={stats?.todayMessages || 0}
                                 />
                             </div>
+                        </StaggerItem>
+
+                        {/* Recent applications */}
+                        <StaggerItem>
+                            <RecentApplicationsTable />
                         </StaggerItem>
 
 

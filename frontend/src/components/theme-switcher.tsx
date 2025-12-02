@@ -12,7 +12,7 @@ import {
 import { useEffect, useState } from "react"
 
 export function ThemeSwitcher() {
-    const { theme, setTheme } = useTheme()
+    const { theme: _theme, setTheme } = useTheme()
     const [mounted, setMounted] = useState(false)
 
     // useEffect only runs on the client, so now we can safely show the UI

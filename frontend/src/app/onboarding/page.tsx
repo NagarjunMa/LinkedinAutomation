@@ -178,7 +178,7 @@ export default function OnboardingPage() {
                         </div>
                         <CardTitle className="text-2xl">Welcome to JobFlow Pro!</CardTitle>
                         <CardDescription>
-                            Let's set up your account and get you started
+                            Let&apos;s set up your account and get you started
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">

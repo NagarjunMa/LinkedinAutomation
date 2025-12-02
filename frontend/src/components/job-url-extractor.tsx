@@ -12,7 +12,7 @@ import {
   AlertCircle,
   Loader2
 } from 'lucide-react'
-import { JobStatusModal, JobAnalysis, StatusUpdate } from './job-status-modal'
+import { JobStatusModal, JobAnalysis } from './job-status-modal'
 import { useJobStatusModal } from '@/hooks/use-job-status-modal'
 import { updateJobApplicationStatus } from '@/app/lib/api'
 import { useToast } from '@/components/ui/use-toast'
@@ -20,7 +20,7 @@ import { useActivity } from '@/contexts/activity-context'
 
 interface JobURLExtractorProps {
   userId: string
-  onJobExtracted?: (job: any) => void
+  onJobExtracted?: (job: JobAnalysis) => void
 }
 
 export default function JobURLExtractor({ userId, onJobExtracted }: JobURLExtractorProps) {
@@ -153,9 +153,10 @@ export default function JobURLExtractor({ userId, onJobExtracted }: JobURLExtrac
       } else {
         setError(result.message || 'Failed to extract job')
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Job extraction failed:', error)
-      setError(error.message || 'Failed to extract job from URL')
+      const errorObj = error as { message?: string }
+      setError(errorObj.message || 'Failed to extract job from URL')
 
       toast({
         title: "Extraction Failed",

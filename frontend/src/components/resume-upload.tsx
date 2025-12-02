@@ -2,16 +2,14 @@
 
 import { useState, useCallback, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { useToast } from "@/components/ui/use-toast"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Upload, FileText, Trash2, Eye, Download, AlertCircle, Star, TrendingUp, Target, CheckCircle, XCircle, Sparkles, Loader2, ArrowRight, Clock, Shield } from "lucide-react"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { resumeApi, type ResumeFile, type ResumeEvaluation } from "@/app/lib/api"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Upload, FileText, Trash2, Eye, AlertCircle, Star, TrendingUp, Target, CheckCircle, XCircle, Sparkles, Loader2, Clock, Shield } from "lucide-react"
+import { resumeApi, type ResumeFile } from "@/app/lib/api"
 import Confetti from "react-confetti"
 import { LoadingFillText } from "@/components/ui/loading-fill-text"
 
@@ -223,7 +221,7 @@ export function ResumeUpload() {
       // Reset file input
       event.target.value = ''
     }
-  }, [resumes, toast, loadResumes])
+  }, [resumes, toast])
 
   const evaluateResume = async (resumeId: string) => {
     const resume = resumes.find(r => r.id === resumeId)
@@ -452,7 +450,7 @@ export function ResumeUpload() {
     }
   }
 
-  const getStatusBadge = (status: ResumeFile['evaluation_status']) => {
+  const _getStatusBadge = (status: ResumeFile['evaluation_status']) => {
     const variants = {
       pending: 'secondary',
       evaluating: 'default',
@@ -959,14 +957,14 @@ export function ResumeUpload() {
                         )}
 
                         {/* Timeline Issues */}
-                        {(resume.evaluation_result.critical_issues as any)?.timeline_issues && (resume.evaluation_result.critical_issues as any).timeline_issues.length > 0 && (
+                        {((resume.evaluation_result.critical_issues as Record<string, unknown>)?.timeline_issues as string[] | undefined) && ((resume.evaluation_result.critical_issues as Record<string, unknown>).timeline_issues as string[]).length > 0 && (
                           <div className="space-y-3">
                             <h6 className="font-medium text-yellow-400 flex items-center gap-2">
                               <Clock className="h-4 w-4" />
                               Timeline Issues
                             </h6>
                             <div className="space-y-3">
-                              {(resume.evaluation_result.critical_issues as any).timeline_issues.map((issue: string, index: number) => (
+                              {((resume.evaluation_result.critical_issues as Record<string, unknown>).timeline_issues as string[]).map((issue: string, index: number) => (
                                 <div key={index} className="p-4 bg-yellow-900/20 rounded-lg border border-yellow-500/20">
                                   <div className="flex items-start gap-3">
                                     <div className="w-6 h-6 bg-yellow-600 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -983,14 +981,14 @@ export function ResumeUpload() {
                         )}
 
                         {/* ATS Critical Fixes */}
-                        {(resume.evaluation_result.critical_issues as any)?.ats_critical_fixes && (resume.evaluation_result.critical_issues as any).ats_critical_fixes.length > 0 && (
+                        {((resume.evaluation_result.critical_issues as Record<string, unknown>)?.ats_critical_fixes as string[] | undefined) && ((resume.evaluation_result.critical_issues as Record<string, unknown>).ats_critical_fixes as string[]).length > 0 && (
                           <div className="space-y-3">
                             <h6 className="font-medium text-purple-400 flex items-center gap-2">
                               <Shield className="h-4 w-4" />
                               ATS Critical Fixes
                             </h6>
                             <div className="space-y-3">
-                              {(resume.evaluation_result.critical_issues as any).ats_critical_fixes.map((fix: string, index: number) => (
+                              {((resume.evaluation_result.critical_issues as Record<string, unknown>).ats_critical_fixes as string[]).map((fix: string, index: number) => (
                                 <div key={index} className="p-4 bg-purple-900/20 rounded-lg border border-purple-500/20">
                                   <div className="flex items-start gap-3">
                                     <div className="w-6 h-6 bg-purple-600 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">

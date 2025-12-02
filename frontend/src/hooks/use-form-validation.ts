@@ -2,20 +2,14 @@ import { useState, useCallback, useMemo } from 'react'
 import { debounce, extractZodErrors, type FormError } from '@/lib/form-utils'
 interface UseFormValidationOptions<T> {
   initialValues: T
-  validationSchema?: (data: T) => { success: boolean; error?: any; data?: T }
+  validationSchema?: (data: T) => { success: boolean; error?: unknown; data?: T }
   onSubmit?: (data: T) => Promise<void> | void
   validateOnChange?: boolean
   validateOnBlur?: boolean
   debounceMs?: number
 }
 
-interface FormField {
-  value: any
-  error: string | null
-  touched: boolean
-}
-
-export function useFormValidation<T extends Record<string, any>>({
+export function useFormValidation<T extends Record<string, unknown>>({
   initialValues,
   validationSchema,
   onSubmit,
@@ -31,7 +25,7 @@ export function useFormValidation<T extends Record<string, any>>({
 
   // Debounced validation function
   const debouncedValidate = useMemo(
-    () => debounce((fieldName: string, value: any) => {
+    () => debounce((fieldName: string, value: T[keyof T]) => {
       if (!validationSchema) return
 
       const result = validationSchema({ ...values, [fieldName]: value } as T)
@@ -86,7 +80,7 @@ export function useFormValidation<T extends Record<string, any>>({
   }, [values, validationSchema])
 
   // Set field value
-  const setValue = useCallback((name: keyof T, value: any) => {
+  const setValue = useCallback((name: keyof T, value: T[keyof T]) => {
     setValues(prev => ({ ...prev, [name]: value }))
 
     if (validateOnChange && touched[name as string]) {
@@ -148,11 +142,14 @@ export function useFormValidation<T extends Record<string, any>>({
       }
 
       return true
-    } catch (error: any) {
+    } catch (error) {
+      const message = error instanceof Error
+        ? error.message
+        : 'An error occurred while submitting the form'
       console.error('Form submission error:', error)
       setSubmitErrors([{
         field: 'form',
-        message: error.message || 'An error occurred while submitting the form'
+        message
       }])
       return false
     } finally {
@@ -172,7 +169,7 @@ export function useFormValidation<T extends Record<string, any>>({
   // Get field props for easy integration
   const getFieldProps = useCallback((name: keyof T) => ({
     value: values[name] || '',
-    onChange: (value: any) => setValue(name, value),
+    onChange: (value: T[keyof T]) => setValue(name, value),
     onBlur: () => handleBlur(name),
     error: errors[name as string] || null,
     touched: touched[name as string] || false

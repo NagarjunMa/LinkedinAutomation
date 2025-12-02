@@ -13,9 +13,7 @@ import {
   AlertCircle,
   RefreshCw,
   ExternalLink,
-  Users,
-  Send,
-  MessageCircle
+  Send
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useState, useEffect } from "react"

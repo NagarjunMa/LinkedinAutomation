@@ -221,7 +221,7 @@ export function ATSJobSearch() {
                 title: "Copied",
                 description: "URL copied to clipboard"
             })
-        } catch (error) {
+        } catch {
             toast({
                 title: "Error",
                 description: "Failed to copy URL",
@@ -316,7 +316,7 @@ export function ATSJobSearch() {
         try {
             new URL(string)
             return true
-        } catch (_) {
+        } catch {
             return false
         }
     }
@@ -521,7 +521,7 @@ export function ATSJobSearch() {
                             <div className="text-center py-8 text-cream-300">
                                 <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
                                 <p>No search queries generated yet</p>
-                                <p className="text-sm">Configure your search and click "Generate Search Queries"</p>
+                                <p className="text-sm">Configure your search and click &quot;Generate Search Queries&quot;</p>
                             </div>
                         )}
                     </CardContent>

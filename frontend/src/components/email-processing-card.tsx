@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Mail, CheckCircle, AlertCircle, TrendingUp, Clock } from 'lucide-react'
 import { emailScanningApi, EmailScanMetrics } from '@/lib/api/email-scanning-api'
 

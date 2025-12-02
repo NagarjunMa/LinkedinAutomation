@@ -5,13 +5,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { Shield, Settings } from "lucide-react"
+import { Shield } from "lucide-react"
 
 interface PrivacyTabProps {
     userId: string
 }
 
-function PrivacyTab({ userId }: PrivacyTabProps) {
+function PrivacyTab({ userId: _userId }: PrivacyTabProps) {
     const [settings, setSettings] = useState({
         data_retention_days: 365,
         analytics_enabled: true,

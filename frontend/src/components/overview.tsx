@@ -1,7 +1,6 @@
 "use client"
 
 import React from "react"
-import type { ChartDataItem } from "@/app/types/job"
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
 import { useDashboard } from "@/app/contexts/dashboard-context"
 import {
@@ -15,7 +14,6 @@ import {
     ChartConfig,
     ChartContainer,
     ChartTooltip,
-    ChartTooltipContent,
 } from "@/components/ui/chart"
 import {
     Select,
@@ -25,7 +23,7 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
-import { format, parseISO, isValid } from "date-fns"
+import { parseISO, isValid } from "date-fns"
 
 const chartConfig = {
     jobs_extracted: {

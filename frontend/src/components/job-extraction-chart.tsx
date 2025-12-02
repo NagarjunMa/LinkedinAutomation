@@ -19,8 +19,6 @@ export function JobExtractionChart({ data }: JobExtractionChartProps) {
 
     // Calculate the maximum value for scaling
     const maxJobs = Math.max(...data.map(d => d.jobs))
-    const totalJobs = data.reduce((sum, d) => sum + d.jobs, 0)
-    const avgJobs = Math.round(totalJobs / data.length)
 
     // Chart dimensions
     const width = 400

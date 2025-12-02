@@ -3,10 +3,8 @@
 import { useState, useEffect } from "react"
 import { motion, useMotionValue, useTransform } from "framer-motion"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { Logo } from "@/components/logo"
 import { cn } from "@/lib/utils"
@@ -14,37 +12,24 @@ import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
 import { ThemeToggle } from "@/components/theme-toggle"
 import {
-  Search,
-  Briefcase,
-  Mail,
-  TrendingUp,
   Zap,
   Shield,
-  Users,
   CheckCircle,
   ArrowRight,
   Star,
   Clock,
   Target,
-  Upload,
-  BookOpen,
-  BarChart3,
-  DollarSign,
-  MapPin,
-  ExternalLink,
-  Play,
   RefreshCw,
-  Award,
   Globe,
   Smartphone,
-  ChevronDown,
-  ChevronRight,
   X,
   Menu,
-  ArrowUpRight,
-  FileText,
   User,
-  Calendar
+  Play,
+  Calendar,
+  BarChart3,
+  Mail,
+  FileText
 } from "lucide-react"
 import Link from "next/link"
 
@@ -91,11 +76,11 @@ function TypewriterText({ text, speed = 100 }: { text: string; speed?: number })
 // Count up animation component
 function CountUpStat({ value, suffix = "" }: { value: number; suffix?: string }) {
   const count = useMotionValue(0)
-  const rounded = useTransform(count, Math.round)
+  const _rounded = useTransform(count, Math.round)
   const [displayValue, setDisplayValue] = useState(0)
 
   useEffect(() => {
-    const animation = count.set(value)
+    count.set(value)
     const unsubscribe = count.onChange(latest => setDisplayValue(Math.round(latest)))
     return unsubscribe
   }, [value, count])
@@ -106,7 +91,7 @@ function CountUpStat({ value, suffix = "" }: { value: number; suffix?: string })
 // Main Navigation Component
 function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const { user, signIn } = useAuth()
+  const { user } = useAuth()
   const router = useRouter()
 
   const handleAuthAction = async () => {
@@ -211,7 +196,7 @@ function Navigation() {
 
 // Hero Section Component
 function HeroSection() {
-  const { user, signIn } = useAuth()
+  const { user } = useAuth()
   const router = useRouter()
 
   const handleAuthAction = async () => {
@@ -807,7 +792,7 @@ function SocialProofSection() {
                   </div>
 
                   <blockquote className="text-lg text-cream-200 mb-6 leading-relaxed">
-                    "{testimonial.quote}"
+                    &quot;{testimonial.quote}&quot;
                   </blockquote>
 
                   <div className="flex items-center">
@@ -1031,7 +1016,7 @@ function PricingSection() {
 
 // CTA Section Component
 function CTASection() {
-  const { user, signIn } = useAuth()
+  const { user } = useAuth()
   const router = useRouter()
 
   const handleAuthAction = async () => {
@@ -1068,7 +1053,7 @@ function CTASection() {
             Ready to Transform Your Job Search?
           </h2>
           <p className="text-2xl text-accent-400 mb-8 max-w-2xl mx-auto">
-            Join thousands of students who've already streamlined their job search with JobFlow Pro.
+            Join thousands of students who&apos;ve already streamlined their job search with JobFlow Pro.
             Start free today and land your dream job faster.
           </p>
 

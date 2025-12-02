@@ -1,20 +1,22 @@
 "use client"
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react'
 import { useAuth } from './auth-context'
 import {
     trackJobExtraction,
     trackReferralEmail,
     getActivityStats,
-    ActivityStats
+    ActivityStats,
+    JobExtractionActivityInput,
+    ReferralEmailActivityInput
 } from '@/lib/activity-api'
 
 interface ActivityContextType {
     stats: ActivityStats | null
     loading: boolean
     error: string | null
-    trackJobExtractionActivity: (jobData: any) => Promise<void>
-    trackReferralEmailActivity: (referralData: any) => Promise<void>
+    trackJobExtractionActivity: (jobData: JobExtractionActivityInput) => Promise<void>
+    trackReferralEmailActivity: (referralData: ReferralEmailActivityInput) => Promise<void>
     refreshStats: () => Promise<void>
 }
 
@@ -27,8 +29,11 @@ export function ActivityProvider({ children }: { children: ReactNode }) {
     const [error, setError] = useState<string | null>(null)
 
     // Load activity stats
-    const loadStats = async () => {
-        if (!user?.id) return
+    const loadStats = useCallback(async () => {
+        if (!user?.id) {
+            setStats(null)
+            return
+        }
 
         setLoading(true)
         setError(null)
@@ -42,10 +47,10 @@ export function ActivityProvider({ children }: { children: ReactNode }) {
         } finally {
             setLoading(false)
         }
-    }
+    }, [user?.id])
 
     // Track job extraction activity
-    const trackJobExtractionActivity = async (jobData: any) => {
+    const trackJobExtractionActivity = async (jobData: JobExtractionActivityInput) => {
         if (!user?.id) return
 
         try {
@@ -59,7 +64,7 @@ export function ActivityProvider({ children }: { children: ReactNode }) {
     }
 
     // Track referral email activity
-    const trackReferralEmailActivity = async (referralData: any) => {
+    const trackReferralEmailActivity = async (referralData: ReferralEmailActivityInput) => {
         if (!user?.id) return
 
         try {
@@ -79,12 +84,8 @@ export function ActivityProvider({ children }: { children: ReactNode }) {
 
     // Load stats when user changes
     useEffect(() => {
-        if (user?.id) {
-            loadStats()
-        } else {
-            setStats(null)
-        }
-    }, [user?.id])
+        loadStats()
+    }, [loadStats])
 
     const value: ActivityContextType = {
         stats,
