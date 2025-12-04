@@ -116,7 +116,7 @@ export const verifyOtp = async (tokenHash: string, type: string) => {
   const supabase = createServerSupabaseClient()
   const { data, error } = await supabase.auth.verifyOtp({
     token_hash: tokenHash,
-    type: type as 'email' | 'phone' | 'recovery' | 'magiclink'
+    type: type as any
   })
   if (error) throw error
   return data

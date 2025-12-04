@@ -339,8 +339,8 @@ function ActivityCalendar({ activityData, userId }: ActivityCalendarProps) {
                 // Transform to date -> totalTasks mapping
                 const activityMap: { [key: string]: number } = {}
                 dailyData.forEach((day: Record<string, unknown>) => {
-                    const totalTasks = (day.job_extractions || 0) + (day.referral_emails || 0)
-                    activityMap[day.date] = totalTasks
+                    const totalTasks = (day.job_extractions as number || 0) + (day.referral_emails as number || 0)
+                    activityMap[day.date as string] = totalTasks
                 })
 
                 setRealActivityData(activityMap)
@@ -359,7 +359,7 @@ function ActivityCalendar({ activityData, userId }: ActivityCalendarProps) {
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate()
 
     // Create calendar grid - show 5 weeks (35 days max)
-    const calendarDays = []
+    const calendarDays: any[] = []
     const maxDaysToShow = 35
 
     // Previous month's trailing days
@@ -469,7 +469,7 @@ export function ProgressCard({ title, progressData }: ProgressCardProps) {
     const secondHalf = data.slice(Math.ceil(data.length / 2))
     const firstAvg = firstHalf.reduce((sum, d) => sum + d.applications, 0) / firstHalf.length
     const secondAvg = secondHalf.reduce((sum, d) => sum + d.applications, 0) / secondHalf.length
-    const _isIncreasing = secondAvg > firstAvg
+    const isIncreasing = secondAvg > firstAvg
 
     return (
         <Card className="premium-card hover:scale-105 transition-all duration-300 group h-full flex flex-col min-w-[300px] max-w-[550px] w-full">

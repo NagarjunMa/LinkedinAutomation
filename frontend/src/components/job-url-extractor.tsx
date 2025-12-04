@@ -40,7 +40,7 @@ export default function JobURLExtractor({ userId, onJobExtracted }: JobURLExtrac
   } = useJobStatusModal(async (jobId, statusUpdate) => {
     try {
       // Call the backend API to update job status
-      await updateJobApplicationStatus(jobId, statusUpdate)
+      await updateJobApplicationStatus(jobId, statusUpdate as any)
 
       // Update local state if needed
       if (extractedJob && extractedJob.id === jobId) {
@@ -55,7 +55,7 @@ export default function JobURLExtractor({ userId, onJobExtracted }: JobURLExtrac
 
       // Call the callback to refresh data
       if (onJobExtracted) {
-        onJobExtracted({ id: jobId, status: statusUpdate.status })
+        onJobExtracted({ id: jobId } as any)
       }
     } catch (error) {
       console.error('Failed to update job status:', error)
@@ -160,7 +160,7 @@ export default function JobURLExtractor({ userId, onJobExtracted }: JobURLExtrac
 
       toast({
         title: "Extraction Failed",
-        description: error.message || 'Failed to extract job from URL',
+        description: (error as Error).message || 'Failed to extract job from URL',
         variant: "destructive",
       })
     } finally {

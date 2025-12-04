@@ -97,7 +97,7 @@ export function JobExtractionCalendar({ className }: JobExtractionCalendarProps)
   const daysInPrevMonth = new Date(year, month, 0).getDate()
 
   // Create calendar grid
-  const calendarDays = []
+  const calendarDays: any[] = []
 
   // Previous month's trailing days
   for (let i = firstDayOfMonth - 1; i >= 0; i--) {

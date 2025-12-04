@@ -322,17 +322,17 @@ export async function enhancedFetchRecentApplications(limit: number = 5): Promis
 
     return data.map((app) => ({
       id: app.id,
-      title: app.title,
-      company: app.company,
-      appliedAt: app.applied_date,
-      extracted_date: app.extracted_date,
+      title: app.title as string,
+      company: app.company as string,
+      appliedAt: app.applied_date as string,
+      extracted_date: app.extracted_date as string,
       status: app.status || 'Applied',
-      companyLogo: app.company_logo,
-      location: app.location,
-      salary: app.salary_range,
-      applicationSource: app.application_source,
-      sourceUrl: app.source_url,
-      compatibilityScore: app.compatibility_score
+      companyLogo: app.company_logo as string,
+      location: app.location as string,
+      salary: app.salary_range as string,
+      applicationSource: app.application_source as string,
+      sourceUrl: app.source_url as string,
+      compatibilityScore: app.compatibility_score as number
     }));
   } catch (error) {
     if (error instanceof Error && (error as ApiError).status === 404) {
@@ -351,7 +351,7 @@ export const enhancedResumeApi = {
     if (targetRole) formData.append('target_role', targetRole);
     if (targetSeniority) formData.append('target_seniority', targetSeniority);
 
-    const data = await apiRequest.post<ResumeUploadResponse>(`${API_BASE_URL}/api/v1/resumes/upload`, formData, {
+    const data = await apiRequest.post<ResumeUploadResponse>(`${API_BASE_URL}/api/v1/resumes/upload`, formData as any, {
       headers: {}, // Let browser set Content-Type for FormData
       timeout: 60000, // 60s timeout for uploads
       retries: { maxRetries: 1 } // Limited retries for uploads
@@ -364,7 +364,7 @@ export const enhancedResumeApi = {
       file_size: data.file_size,
       file_type: data.file_type,
       uploaded_at: data.uploaded_at,
-      evaluation_status: data.evaluation_status,
+      evaluation_status: data.evaluation_status as "pending" | "completed" | "failed" | "evaluating",
     };
   },
 
@@ -414,7 +414,7 @@ export const enhancedResumeApi = {
             file_size: r.file_size || r.size || 0,
             file_type: r.file_type || r.type || 'unknown',
             uploaded_at: r.uploaded_at || r.uploadedAt || new Date().toISOString(),
-            evaluation_status: r.evaluation_status || r.evaluationStatus || 'pending',
+            evaluation_status: (r.evaluation_status || r.evaluationStatus || 'pending') as "pending" | "completed" | "failed" | "evaluating",
             evaluation_result: undefined,
           };
 

@@ -227,7 +227,7 @@ Please describe what you were doing when this error occurred:
 };
 
 // Specialized Error Fallbacks
-export const PageErrorFallback: React.FC<ErrorFallbackProps> = ({ _error, resetError, errorId }) => {
+export const PageErrorFallback: React.FC<ErrorFallbackProps> = ({ error: _error, resetError, errorId }) => {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-background">
       <Card className="w-full max-w-lg mx-auto">
@@ -261,7 +261,7 @@ export const PageErrorFallback: React.FC<ErrorFallbackProps> = ({ _error, resetE
   );
 };
 
-export const ComponentErrorFallback: React.FC<ErrorFallbackProps> = ({ _error, resetError, errorId }) => {
+export const ComponentErrorFallback: React.FC<ErrorFallbackProps> = ({ error: _error, resetError, errorId }) => {
   return (
     <Alert variant="destructive" className="my-4">
       <AlertTriangle className="h-4 w-4" />

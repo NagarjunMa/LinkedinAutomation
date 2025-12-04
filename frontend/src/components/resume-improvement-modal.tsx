@@ -92,7 +92,7 @@ export function ResumeImprovementModal({ resume, open, onOpenChange }: ResumeImp
 
   // Generate personalized recommendations based on evaluation data
   const generatePersonalizedRecommendations = () => {
-    const recommendations = []
+    const recommendations: any[] = []
 
     // Use actual critical issues if available from agentic evaluation
     if (evaluation.critical_issues?.immediate_fixes) {
@@ -195,7 +195,7 @@ export function ResumeImprovementModal({ resume, open, onOpenChange }: ResumeImp
   const recruiterRecommendations = generatePersonalizedRecommendations()
 
   const generateScoreImprovements = () => {
-    const improvements = []
+    const improvements: any[] = []
 
     // Calculate realistic improvements based on current scores
     const atsImprovement = evaluation.ats_compliance_score < 80 ? Math.min(100 - evaluation.ats_compliance_score, 20) : 0

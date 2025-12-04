@@ -24,7 +24,7 @@ interface TemplateGeneratorProps {
     onClose?: () => void
 }
 
-export function EnhancedReferralTemplateGenerator({ onTemplateGenerated, _onClose }: TemplateGeneratorProps) {
+export function EnhancedReferralTemplateGenerator({ onTemplateGenerated, onClose: _onClose }: TemplateGeneratorProps) {
     const [loading, setLoading] = useState(false)
     const [generatedTemplate, setGeneratedTemplate] = useState<Record<string, unknown> | null>(null)
     const [pastedText, setPastedText] = useState("")
@@ -189,8 +189,8 @@ export function EnhancedReferralTemplateGenerator({ onTemplateGenerated, _onClos
                 errorMessage = "Permission denied. Please ensure you have the right access."
             } else if (errorObj.message?.includes('500')) {
                 errorMessage = "Server error. Our team has been notified."
-            } else if (error.message) {
-                errorMessage = `API Error: ${error.message}`
+            } else if (errorObj.message) {
+                errorMessage = `API Error: ${errorObj.message}`
             }
 
             toast({
@@ -215,7 +215,7 @@ export function EnhancedReferralTemplateGenerator({ onTemplateGenerated, _onClos
         if (!generatedTemplate?.template_id) return
 
         try {
-            await referralTemplatesAPI.markSent(generatedTemplate.template_id)
+            await referralTemplatesAPI.markSent(generatedTemplate.template_id as string)
             toast({
                 title: "Marked as Sent",
                 description: "Template has been marked as sent for tracking.",
@@ -432,10 +432,10 @@ Email: john@techcorp.com`}
                         </CardTitle>
                         <div className="flex items-center gap-2">
                             <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-                                Confidence: {Math.round(generatedTemplate.confidence_score * 100)}%
+                                Confidence: {Math.round((generatedTemplate.confidence_score as number || 0) * 100)}%
                             </Badge>
                             <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
-                                {generatedTemplate.style}
+                                {generatedTemplate.style as string || 'default'}
                             </Badge>
                         </div>
                     </CardHeader>
@@ -446,14 +446,14 @@ Email: john@techcorp.com`}
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => copyToClipboard(generatedTemplate.subject_line)}
+                                    onClick={() => copyToClipboard(generatedTemplate.subject_line as string)}
                                     className="text-accent-400 hover:text-accent-300"
                                 >
                                     <Copy className="h-4 w-4" />
                                 </Button>
                             </div>
                             <div className="bg-primary-950 border border-primary-700 rounded-lg p-3">
-                                <p className="text-cream-50 text-sm">{generatedTemplate.subject_line}</p>
+                                <p className="text-cream-50 text-sm">{generatedTemplate.subject_line as string}</p>
                             </div>
                         </div>
 
@@ -463,7 +463,7 @@ Email: john@techcorp.com`}
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => copyToClipboard(generatedTemplate.email_body)}
+                                    onClick={() => copyToClipboard(generatedTemplate.email_body as string)}
                                     className="text-accent-400 hover:text-accent-300"
                                 >
                                     <Copy className="h-4 w-4" />
@@ -471,7 +471,7 @@ Email: john@techcorp.com`}
                             </div>
                             <div className="bg-primary-950 border border-primary-700 rounded-lg p-4">
                                 <pre className="text-cream-50 text-sm whitespace-pre-wrap font-sans">
-                                    {generatedTemplate.email_body}
+                                    {generatedTemplate.email_body as string}
                                 </pre>
                             </div>
                         </div>
@@ -486,7 +486,7 @@ Email: john@techcorp.com`}
                             </Button>
                             <Button
                                 variant="outline"
-                                onClick={() => copyToClipboard(`Subject: ${generatedTemplate.subject_line}\n\n${generatedTemplate.email_body}`)}
+                                onClick={() => copyToClipboard(`Subject: ${generatedTemplate.subject_line as string}\n\n${generatedTemplate.email_body as string}`)}
                                 className="border-primary-700 text-cream-200 hover:bg-primary-800"
                             >
                                 <Copy className="h-4 w-4 mr-2" />

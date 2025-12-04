@@ -97,7 +97,7 @@ export function serializeProfileData(formData: ProfileFormData) {
     location: formData.location?.trim() || '',
 
     // Professional info
-    years_of_experience: safeNumberConversion(formData.years_of_experience, 0),
+    years_of_experience: safeNumberConversion(formData.years_of_experience as string | number, 0),
     career_level: formData.career_level?.trim() || '',
     professional_summary: formData.professional_summary?.trim() || '',
 
@@ -109,8 +109,8 @@ export function serializeProfileData(formData: ProfileFormData) {
     // Job preferences
     desired_roles: serializeArrayField(formData.desired_roles || []),
     preferred_locations: serializeArrayField(formData.preferred_locations || []),
-    salary_range_min: safeNumberConversion(formData.salary_range_min, 0),
-    salary_range_max: safeNumberConversion(formData.salary_range_max, 0),
+    salary_range_min: safeNumberConversion(formData.salary_range_min as string | number, 0),
+    salary_range_max: safeNumberConversion(formData.salary_range_max as string | number, 0),
   }
 }
 
@@ -189,7 +189,7 @@ export function validateSingleField<T extends Record<string, unknown>>(
     const result = validator(testData)
     if (!result.success) {
       const fieldErrors = result.error?.issues?.filter(issue => issue.path.includes(field))
-      return fieldErrors[0]?.message || null
+      return fieldErrors?.[0]?.message || null
     }
     return null
   } catch {

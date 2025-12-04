@@ -108,7 +108,7 @@ class ReferralTemplatesAPI {
    * Generate a new referral email template
    */
   async generateTemplate(request: GenerateTemplateRequest): Promise<TemplateResponse> {
-    return apiRequest.post<TemplateResponse>(`${this.baseURL}/generate`, request);
+    return apiRequest.post<TemplateResponse>(`${this.baseURL}/generate`, request as unknown as Record<string, unknown>);
   }
 
   /**
@@ -141,7 +141,7 @@ class ReferralTemplatesAPI {
    * Record feedback about a template's effectiveness
    */
   async recordFeedback(templateId: string, feedback: TemplateFeedback): Promise<{ message: string }> {
-    return apiRequest.post<{ message: string }>(`${this.baseURL}/${templateId}/feedback`, feedback);
+    return apiRequest.post<{ message: string }>(`${this.baseURL}/${templateId}/feedback`, feedback as unknown as Record<string, unknown>);
   }
 
   /**

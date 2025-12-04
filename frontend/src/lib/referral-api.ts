@@ -100,7 +100,7 @@ export const referralAPI = {
   ): Promise<GeneratedEmail> => {
 
     // Convert jobId to integer if it's not null and not "sample-job-id"
-    let processedJobId = null
+    let processedJobId: number | null = null
     if (jobId && jobId !== 'sample-job-id') {
       processedJobId = parseInt(jobId)
       if (isNaN(processedJobId)) {
@@ -136,7 +136,7 @@ export const referralAPI = {
     contactInfo: ContactInfo
   ): Promise<{ draft: EmailDraft; contact: ReferralContact }> => {
     // Convert jobId to integer if it's not null and not "sample-job-id"
-    let processedJobId = null
+    let processedJobId: number | null = null
     if (jobId && jobId !== 'sample-job-id') {
       processedJobId = parseInt(jobId)
       if (isNaN(processedJobId)) {

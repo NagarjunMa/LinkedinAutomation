@@ -278,7 +278,7 @@ export function ReferralTemplateManager() {
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-sm text-cream-300">Total Templates</p>
-                                    <p className="text-2xl font-bold text-cream-50">{stats.total_templates}</p>
+                                    <p className="text-2xl font-bold text-cream-50">{stats.total_templates as number}</p>
                                 </div>
                                 <MessageSquare className="h-8 w-8 text-accent-400" />
                             </div>
@@ -290,7 +290,7 @@ export function ReferralTemplateManager() {
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-sm text-cream-300">Sent</p>
-                                    <p className="text-2xl font-bold text-cream-50">{stats.sent_count}</p>
+                                    <p className="text-2xl font-bold text-cream-50">{stats.sent_count as number}</p>
                                 </div>
                                 <Send className="h-8 w-8 text-blue-400" />
                             </div>
@@ -302,7 +302,7 @@ export function ReferralTemplateManager() {
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-sm text-cream-300">Response Rate</p>
-                                    <p className="text-2xl font-bold text-cream-50">{stats.response_rate.toFixed(1)}%</p>
+                                    <p className="text-2xl font-bold text-cream-50">{(stats.response_rate as number).toFixed(1)}%</p>
                                 </div>
                                 <BarChart3 className="h-8 w-8 text-green-400" />
                             </div>
@@ -314,7 +314,7 @@ export function ReferralTemplateManager() {
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-sm text-cream-300">Avg Effectiveness</p>
-                                    <p className="text-2xl font-bold text-cream-50">{stats.avg_effectiveness.toFixed(1)}</p>
+                                    <p className="text-2xl font-bold text-cream-50">{(stats.avg_effectiveness as number).toFixed(1)}</p>
                                 </div>
                                 <Star className="h-8 w-8 text-yellow-400" />
                             </div>
@@ -342,39 +342,39 @@ export function ReferralTemplateManager() {
                         <div className="space-y-4">
                             {templates.map((template) => (
                                 <div
-                                    key={template.id}
+                                    key={template.id as string}
                                     className="border border-primary-700 rounded-lg p-4 space-y-3"
                                 >
                                     <div className="flex items-start justify-between">
                                         <div className="space-y-1">
                                             <div className="flex items-center gap-3">
-                                                <h4 className="text-cream-50 font-medium">{template.subject_line}</h4>
+                                                <h4 className="text-cream-50 font-medium">{template.subject_line as string}</h4>
                                                 {getStatusBadge(template)}
                                                 <Badge className="bg-gray-500/20 text-gray-400 border-gray-500/30">
-                                                    {template.template_style}
+                                                    {template.template_style as string}
                                                 </Badge>
                                             </div>
                                             <div className="flex items-center gap-4 text-sm text-cream-400">
-                                                {template.contact_name && (
+                                                {(template.contact_name as string) && (
                                                     <span className="flex items-center gap-1">
                                                         <User className="h-4 w-4" />
-                                                        {template.contact_name}
+                                                        {template.contact_name as string}
                                                     </span>
                                                 )}
-                                                {template.contact_company && (
+                                                {(template.contact_company as string) && (
                                                     <span className="flex items-center gap-1">
                                                         <Building className="h-4 w-4" />
-                                                        {template.contact_company}
+                                                        {template.contact_company as string}
                                                     </span>
                                                 )}
                                                 <span className="flex items-center gap-1">
                                                     <Calendar className="h-4 w-4" />
-                                                    {formatDate(template.created_at)}
+                                                    {formatDate(template.created_at as string)}
                                                 </span>
-                                                {template.effectiveness_score && (
+                                                {(template.effectiveness_score as number) && (
                                                     <span className="flex items-center gap-1">
                                                         <Star className="h-4 w-4" />
-                                                        {(template.effectiveness_score * 100).toFixed(0)}%
+                                                        {((template.effectiveness_score as number) * 100).toFixed(0)}%
                                                     </span>
                                                 )}
                                             </div>
@@ -385,7 +385,7 @@ export function ReferralTemplateManager() {
                                                 variant="ghost"
                                                 size="sm"
                                                 onClick={() => setExpandedTemplate(
-                                                    expandedTemplate === template.id ? null : template.id
+                                                    expandedTemplate === template.id ? null : template.id as string
                                                 )}
                                                 className="text-cream-400 hover:text-cream-200"
                                             >
@@ -395,7 +395,7 @@ export function ReferralTemplateManager() {
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
-                                                onClick={() => copyToClipboard(`Subject: ${template.subject_line}\n\n${template.email_body || 'Email body not available'}`)}
+                                                onClick={() => copyToClipboard(`Subject: ${template.subject_line as string}\n\n${(template.email_body as string) || 'Email body not available'}`)}
                                                 className="text-cream-400 hover:text-cream-200"
                                             >
                                                 <Copy className="h-4 w-4" />
@@ -405,19 +405,19 @@ export function ReferralTemplateManager() {
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
-                                                    onClick={() => markAsSent(template.id)}
+                                                    onClick={() => markAsSent(template.id as string)}
                                                     className="text-blue-400 hover:text-blue-300"
                                                 >
                                                     <Send className="h-4 w-4" />
                                                 </Button>
                                             )}
 
-                                            {template.was_sent && !template.got_response && (
+                                            {(template.was_sent as boolean) && !(template.got_response as boolean) && (
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
                                                     onClick={() => setShowFeedbackForm(
-                                                        showFeedbackForm === template.id ? null : template.id
+                                                        showFeedbackForm === template.id ? null : template.id as string
                                                     )}
                                                     className="text-green-400 hover:text-green-300"
                                                 >
@@ -428,7 +428,7 @@ export function ReferralTemplateManager() {
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
-                                                onClick={() => deleteTemplate(template.id)}
+                                                onClick={() => deleteTemplate(template.id as string)}
                                                 className="text-red-400 hover:text-red-300"
                                             >
                                                 <Trash2 className="h-4 w-4" />
@@ -437,10 +437,10 @@ export function ReferralTemplateManager() {
                                     </div>
 
                                     {/* Expanded Template Content */}
-                                    {expandedTemplate === template.id && template.email_body && (
+                                    {expandedTemplate === template.id && (template.email_body as string) && (
                                         <div className="mt-3 p-3 bg-primary-950 border border-primary-700 rounded-lg">
                                             <pre className="text-cream-50 text-sm whitespace-pre-wrap font-sans">
-                                                {template.email_body}
+                                                {template.email_body as string}
                                             </pre>
                                         </div>
                                     )}
@@ -448,7 +448,7 @@ export function ReferralTemplateManager() {
                                     {/* Feedback Form */}
                                     {showFeedbackForm === template.id && (
                                         <FeedbackForm
-                                            templateId={template.id}
+                                            templateId={template.id as string}
                                             onSubmit={() => {
                                                 setShowFeedbackForm(null)
                                                 fetchData()

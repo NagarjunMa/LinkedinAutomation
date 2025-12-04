@@ -1,6 +1,5 @@
 "use client"
 
-// @ts-nocheck
 import React, { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -245,7 +244,7 @@ export function EducationForm({ value, onChange, className }: EducationFormProps
                   <div>
                     <Label htmlFor="degree_type">Degree Type *</Label>
                     <Select
-                      value={educationForm.values.degree_type}
+                      value={educationForm.values.degree_type as string}
                       onValueChange={(value) => educationForm.setValue("degree_type", value)}
                     >
                       <SelectTrigger className={educationForm.errors.degree_type ? "border-red-500" : ""}>
@@ -269,7 +268,7 @@ export function EducationForm({ value, onChange, className }: EducationFormProps
                     <Label htmlFor="field_of_study">Field of Study *</Label>
                     <Input
                       id="field_of_study"
-                      value={educationForm.values.field_of_study}
+                      value={educationForm.values.field_of_study as string}
                       onChange={(e) => educationForm.setValue("field_of_study", e.target.value)}
                       onBlur={() => educationForm.handleBlur("field_of_study")}
                       placeholder="Computer Science"
@@ -282,7 +281,7 @@ export function EducationForm({ value, onChange, className }: EducationFormProps
                     <Label htmlFor="major">Major (Optional)</Label>
                     <Input
                       id="major"
-                      value={educationForm.values.major}
+                      value={educationForm.values.major as string}
                       onChange={(e) => educationForm.setValue("major", e.target.value)}
                       onBlur={() => educationForm.handleBlur("major")}
                       placeholder="Software Engineering"
@@ -299,7 +298,7 @@ export function EducationForm({ value, onChange, className }: EducationFormProps
                       type="number"
                       step="0.01"
                       max="4.0"
-                      value={educationForm.values.gpa || ""}
+                      value={educationForm.values.gpa as number || ""}
                       onChange={(e) => educationForm.setValue("gpa", parseFloat(e.target.value) || undefined)}
                       placeholder="3.85"
                       className={educationForm.errors.gpa ? "border-red-500" : ""}
@@ -313,7 +312,7 @@ export function EducationForm({ value, onChange, className }: EducationFormProps
                     <Input
                       id="start_date"
                       type="date"
-                      value={educationForm.values.start_date}
+                      value={educationForm.values.start_date as string}
                       onChange={(e) => educationForm.setValue("start_date", e.target.value)}
                       onBlur={() => educationForm.handleBlur("start_date")}
                       className={educationForm.errors.start_date ? "border-red-500" : ""}
@@ -326,10 +325,10 @@ export function EducationForm({ value, onChange, className }: EducationFormProps
                     <Input
                       id="end_date"
                       type="date"
-                      value={educationForm.values.end_date}
+                      value={educationForm.values.end_date as string}
                       onChange={(e) => educationForm.setValue("end_date", e.target.value)}
                       onBlur={() => educationForm.handleBlur("end_date")}
-                      disabled={educationForm.values.is_current}
+                      disabled={educationForm.values.is_current as boolean}
                     />
                   </div>
                 </div>
@@ -338,7 +337,7 @@ export function EducationForm({ value, onChange, className }: EducationFormProps
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="is_current"
-                    checked={educationForm.values.is_current}
+                    checked={educationForm.values.is_current as boolean}
                     onCheckedChange={(checked) => {
                       educationForm.setValue("is_current", !!checked)
                       if (checked) {
@@ -353,7 +352,7 @@ export function EducationForm({ value, onChange, className }: EducationFormProps
                 <div>
                     <SkillsAutocomplete
                       category="programming_languages"
-                      value={educationForm.values.technical_skills_gained || []}
+                      value={educationForm.values.technical_skills_gained as string[] || []}
                       onChange={(skills) => educationForm.setValue("technical_skills_gained", skills)}
                       label="Technical Skills Gained"
                       placeholder="Skills you learned or improved..."
@@ -451,7 +450,7 @@ export function EducationForm({ value, onChange, className }: EducationFormProps
                     <Label htmlFor="cert_name">Certification Name *</Label>
                     <Input
                       id="cert_name"
-                      value={certificationForm.values.name}
+                      value={certificationForm.values.name as string}
                       onChange={(e) => certificationForm.setValue("name", e.target.value)}
                       onBlur={() => certificationForm.handleBlur("name")}
                       placeholder="AWS Solutions Architect"
@@ -464,7 +463,7 @@ export function EducationForm({ value, onChange, className }: EducationFormProps
                     <Label htmlFor="issuing_organization">Issuing Organization *</Label>
                     <Input
                       id="issuing_organization"
-                      value={certificationForm.values.issuing_organization}
+                      value={certificationForm.values.issuing_organization as string}
                       onChange={(e) => certificationForm.setValue("issuing_organization", e.target.value)}
                       onBlur={() => certificationForm.handleBlur("issuing_organization")}
                       placeholder="Amazon Web Services"
@@ -481,7 +480,7 @@ export function EducationForm({ value, onChange, className }: EducationFormProps
                     <Input
                       id="issue_date"
                       type="date"
-                      value={certificationForm.values.issue_date || ""}
+                      value={certificationForm.values.issue_date as string || ""}
                       onChange={(e) => certificationForm.setValue("issue_date", e.target.value)}
                       onBlur={() => certificationForm.handleBlur("issue_date")}
                       className={certificationForm.errors.issue_date ? "border-red-500" : ""}
@@ -494,10 +493,10 @@ export function EducationForm({ value, onChange, className }: EducationFormProps
                     <Input
                       id="expiration_date"
                       type="date"
-                      value={certificationForm.values.expiration_date || ""}
+                      value={certificationForm.values.expiration_date as string || ""}
                       onChange={(e) => certificationForm.setValue("expiration_date", e.target.value)}
                       onBlur={() => certificationForm.handleBlur("expiration_date")}
-                      disabled={certificationForm.values.never_expires}
+                      disabled={certificationForm.values.never_expires as boolean}
                     />
                   </div>
                 </div>
@@ -506,7 +505,7 @@ export function EducationForm({ value, onChange, className }: EducationFormProps
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="never_expires"
-                    checked={certificationForm.values.never_expires}
+                    checked={certificationForm.values.never_expires as boolean}
                     onCheckedChange={(checked) => {
                       certificationForm.setValue("never_expires", !!checked)
                       if (checked) {
@@ -521,7 +520,7 @@ export function EducationForm({ value, onChange, className }: EducationFormProps
                 <div>
                     <SkillsAutocomplete
                       category="programming_languages"
-                      value={certificationForm.values.skills_validated || []}
+                      value={certificationForm.values.skills_validated as string[] || []}
                       onChange={(skills) => certificationForm.setValue("skills_validated", skills)}
                       label="Skills Validated by This Certification"
                       placeholder="Skills this certification validates..."

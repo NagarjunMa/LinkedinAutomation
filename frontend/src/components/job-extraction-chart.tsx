@@ -92,7 +92,7 @@ export function JobExtractionChart({ data }: JobExtractionChartProps) {
 
     // Create Y-axis labels
     const createYAxisLabels = () => {
-        const labels = []
+        const labels: any[] = []
         const numTicks = 4
         const chartHeight = height - paddingTop - paddingBottom
         // Add some buffer to prevent clipping of highest values

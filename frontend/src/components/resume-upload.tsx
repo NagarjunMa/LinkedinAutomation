@@ -274,7 +274,7 @@ export function ResumeUpload() {
           const updatedResume = updatedResumes.resumes.find(r => r.id === resumeId)
 
           if (updatedResume?.evaluation_result) {
-            evaluationResult = updatedResume.evaluation_result
+            evaluationResult = updatedResume.evaluation_result as any
             break
           }
 
@@ -312,7 +312,7 @@ export function ResumeUpload() {
 
         toast({
           title: "🎉 Evaluation Complete!",
-          description: `Resume scored ${evaluationResult.overall_score || 0}/100 with detailed analysis.`,
+          description: `Resume scored ${(evaluationResult as any)?.overall_score || 0}/100 with detailed analysis.`,
         })
 
         // Close evaluation modal after a short delay

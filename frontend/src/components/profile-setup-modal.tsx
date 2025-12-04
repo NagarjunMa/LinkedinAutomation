@@ -181,7 +181,7 @@ export function ProfileSetupModal({ isOpen, onClose, onComplete }: ProfileSetupM
                 <Label htmlFor="full_name">Full Name *</Label>
                 <Input
                   id="full_name"
-                  value={form.values.full_name}
+                  value={form.values.full_name as string}
                   onChange={(e) => handleInputChange("full_name", e.target.value)}
                   onBlur={() => form.handleBlur("full_name")}
                   placeholder="John Doe"
@@ -195,7 +195,7 @@ export function ProfileSetupModal({ isOpen, onClose, onComplete }: ProfileSetupM
                 <Label htmlFor="email">Email *</Label>
                 <Input
                   id="email"
-                  value={form.values.email}
+                  value={form.values.email as string}
                   onChange={(e) => handleInputChange("email", e.target.value)}
                   onBlur={() => form.handleBlur("email")}
                   placeholder="john@example.com"
@@ -212,7 +212,7 @@ export function ProfileSetupModal({ isOpen, onClose, onComplete }: ProfileSetupM
                 <Label htmlFor="phone">Phone</Label>
                 <Input
                   id="phone"
-                  value={form.values.phone}
+                  value={form.values.phone as string}
                   onChange={(e) => handleInputChange("phone", e.target.value)}
                   onBlur={() => form.handleBlur("phone")}
                   placeholder="+1 (555) 123-4567"
@@ -225,7 +225,7 @@ export function ProfileSetupModal({ isOpen, onClose, onComplete }: ProfileSetupM
                 <Label htmlFor="location">Location</Label>
                 <LocationAutoComplete
                   id="location"
-                  value={form.values.location}
+                  value={form.values.location as string}
                   onChange={(value) => handleInputChange("location", value)}
                   placeholder="San Francisco, CA"
                 />
@@ -275,7 +275,7 @@ export function ProfileSetupModal({ isOpen, onClose, onComplete }: ProfileSetupM
               <Label htmlFor="professional_summary">Professional Summary</Label>
               <Textarea
                 id="professional_summary"
-                value={form.values.professional_summary}
+                value={form.values.professional_summary as string}
                 onChange={(e) => handleInputChange("professional_summary", e.target.value)}
                 onBlur={() => form.handleBlur("professional_summary")}
                 placeholder="Brief description of your background and goals..."
@@ -342,7 +342,7 @@ export function ProfileSetupModal({ isOpen, onClose, onComplete }: ProfileSetupM
                 <Label htmlFor="salary_range_min">Minimum Salary ($)</Label>
                 <Input
                   id="salary_range_min"
-                  value={form.values.salary_range_min === 0 ? '' : form.values.salary_range_min}
+                  value={(form.values.salary_range_min as number) === 0 ? '' : (form.values.salary_range_min as number)}
                   onChange={(e) => handleInputChange("salary_range_min", e.target.value)}
                   onBlur={() => form.handleBlur("salary_range_min")}
                   placeholder="80000"
@@ -356,7 +356,7 @@ export function ProfileSetupModal({ isOpen, onClose, onComplete }: ProfileSetupM
                 <Label htmlFor="salary_range_max">Maximum Salary ($)</Label>
                 <Input
                   id="salary_range_max"
-                  value={form.values.salary_range_max === 0 ? '' : form.values.salary_range_max}
+                  value={(form.values.salary_range_max as number) === 0 ? '' : (form.values.salary_range_max as number)}
                   onChange={(e) => handleInputChange("salary_range_max", e.target.value)}
                   onBlur={() => form.handleBlur("salary_range_max")}
                   placeholder="120000"
@@ -468,7 +468,7 @@ export function ProfileSetupModal({ isOpen, onClose, onComplete }: ProfileSetupM
                   {currentStep === steps.length ? (
                     <Button
                       onClick={handleFormSubmit}
-                      disabled={form.isSubmitting || !form.values.full_name || !form.values.email}
+                      disabled={form.isSubmitting || !(form.values.full_name as string) || !(form.values.email as string)}
                       className="bg-gradient-warm hover:bg-gradient-gold text-white px-8"
                     >
                       {form.isSubmitting ? "Creating Profile..." : "Complete Setup"}

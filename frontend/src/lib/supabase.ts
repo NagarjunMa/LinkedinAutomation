@@ -60,7 +60,7 @@ export const createClient = () => {
           console.warn(`Failed to set cookie ${name}:`, error)
         }
       },
-      remove(name: string, options: Record<string, string | number | boolean> = {}) {
+      remove(name: string, options?: any) {
         if (typeof window === 'undefined') return
         try {
           const removeOptions = {

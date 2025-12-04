@@ -159,7 +159,7 @@ const ChartTooltip = React.forwardRef<
 
             return (
                 <div className={cn("font-medium", labelClassName)}>
-                    {value}
+                    {value as React.ReactNode}
                 </div>
             )
         }, [

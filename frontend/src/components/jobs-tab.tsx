@@ -58,10 +58,10 @@ export function JobsTab() {
 
                 // Filter to show only unapplied jobs and limit to recent ones
                 const unappliedJobs = data
-                    .filter((job: Job) => !job.applied)
+                    .filter((job: any) => !job.applied)
                     .slice(0, 20) // Limit to 20 most recent unapplied jobs
 
-                setJobs(unappliedJobs)
+                setJobs(unappliedJobs as any)
             } catch (error) {
                 console.error('Failed to fetch jobs:', error)
             } finally {

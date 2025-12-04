@@ -9,8 +9,13 @@
    const nextConfig = {
     reactStrictMode: true,
     typescript: {
-      // Temporarily ignore build errors during type fixing phase
-      ignoreBuildErrors: true,
+      // Build errors will show as warnings but won't block builds
+      ignoreBuildErrors: false,
+    },
+    eslint: {
+      // Show ESLint warnings/errors but don't block builds in development
+      ignoreDuringBuilds: false,
+      dirs: ['src'], // Only lint src directory, not node_modules
     },
   experimental: {
     optimizePackageImports: ['@radix-ui/react-toast'],

@@ -114,7 +114,7 @@ export function ReferralRequestModal({ job, isOpen, onClose }: ReferralRequestMo
         setIsLoading(true)
         try {
             // Generate email preview
-            const draft = await referralApi.generateEmail(job.id, contactInfo)
+            const draft = await referralApi.generateEmail(job.id, contactInfo as any)
             setGeneratedEmail(draft)
             setEditedEmail({ ...draft }) // Create editable copy
             setStep('preview')
@@ -142,7 +142,7 @@ export function ReferralRequestModal({ job, isOpen, onClose }: ReferralRequestMo
         setIsLoading(true)
         try {
             // Create the referral request (saves contact and draft)
-            const result = await referralApi.createRequest(job.id, contactInfo)
+            const result = await referralApi.createRequest(job.id, contactInfo as any)
             setDraftId(result.draft.id)
 
             // Update the draft with any edits

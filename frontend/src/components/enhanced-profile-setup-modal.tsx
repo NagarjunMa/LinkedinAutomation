@@ -165,6 +165,7 @@ export function EnhancedProfileSetupModal({ isOpen, onClose, onComplete }: Enhan
                 <Input
                   id="full_name"
                   {...form.getFieldProps("full_name")}
+                  value={form.values.full_name as string}
                   placeholder="John Doe"
                   className={form.errors.full_name ? "border-red-500" : ""}
                 />
@@ -176,6 +177,7 @@ export function EnhancedProfileSetupModal({ isOpen, onClose, onComplete }: Enhan
                 <Input
                   id="email"
                   {...form.getFieldProps("email")}
+                  value={form.values.email as string}
                   placeholder="john@example.com"
                   type="email"
                   className={form.errors.email ? "border-red-500" : ""}
@@ -190,6 +192,7 @@ export function EnhancedProfileSetupModal({ isOpen, onClose, onComplete }: Enhan
                 <Input
                   id="phone"
                   {...form.getFieldProps("phone")}
+                  value={form.values.phone as string}
                   placeholder="+1 (555) 123-4567"
                   className={form.errors.phone ? "border-red-500" : ""}
                 />
@@ -200,7 +203,7 @@ export function EnhancedProfileSetupModal({ isOpen, onClose, onComplete }: Enhan
                 <Label htmlFor="location">Location *</Label>
                 <LocationAutoComplete
                   id="location"
-                  value={form.values.location}
+                  value={form.values.location as string}
                   onChange={(value) => form.setValue("location", value)}
                   placeholder="San Francisco, CA"
                   className={form.errors.location ? "border-red-500" : ""}
@@ -218,7 +221,7 @@ export function EnhancedProfileSetupModal({ isOpen, onClose, onComplete }: Enhan
               <div>
                 <Label htmlFor="years_of_experience">Years of Experience *</Label>
                 <Select
-                  value={form.values.years_of_experience.toString()}
+                  value={(form.values.years_of_experience as number).toString()}
                   onValueChange={(value) => form.setValue("years_of_experience", parseFloat(value))}
                 >
                   <SelectTrigger className={form.errors.years_of_experience ? "border-red-500" : ""}>
@@ -240,7 +243,7 @@ export function EnhancedProfileSetupModal({ isOpen, onClose, onComplete }: Enhan
               <div>
                 <Label htmlFor="career_level">Career Level *</Label>
                 <Select
-                  value={form.values.career_level}
+                  value={form.values.career_level as string}
                   onValueChange={(value) => form.setValue("career_level", value)}
                 >
                   <SelectTrigger className={form.errors.career_level ? "border-red-500" : ""}>
@@ -262,7 +265,7 @@ export function EnhancedProfileSetupModal({ isOpen, onClose, onComplete }: Enhan
               <Label htmlFor="professional_summary">Professional Summary *</Label>
               <Textarea
                 id="professional_summary"
-                value={form.values.professional_summary}
+                value={form.values.professional_summary as string}
                 onChange={(e) => form.setValue("professional_summary", e.target.value)}
                 onBlur={() => form.handleBlur("professional_summary")}
                 placeholder="Brief description of your background, key skills, and career goals..."
@@ -271,7 +274,7 @@ export function EnhancedProfileSetupModal({ isOpen, onClose, onComplete }: Enhan
               />
               <FormError message={form.errors.professional_summary} />
               <p className="text-xs text-gray-500 mt-1">
-                {form.values.professional_summary.length}/1000 characters
+                {(form.values.professional_summary as string).length}/1000 characters
               </p>
             </div>
           </div>
@@ -282,7 +285,7 @@ export function EnhancedProfileSetupModal({ isOpen, onClose, onComplete }: Enhan
           <div className="space-y-6">
             <SkillsAutocomplete
               category="programming_languages"
-              value={form.values.programming_languages}
+              value={form.values.programming_languages as string[]}
               onChange={(skills) => form.setValue("programming_languages", skills)}
               label="Programming Languages *"
               placeholder="Search for programming languages..."
@@ -292,7 +295,7 @@ export function EnhancedProfileSetupModal({ isOpen, onClose, onComplete }: Enhan
 
             <SkillsAutocomplete
               category="frameworks_libraries"
-              value={form.values.frameworks_libraries}
+              value={form.values.frameworks_libraries as string[]}
               onChange={(skills) => form.setValue("frameworks_libraries", skills)}
               label="Frameworks & Libraries"
               placeholder="Search for frameworks and libraries..."
@@ -301,7 +304,7 @@ export function EnhancedProfileSetupModal({ isOpen, onClose, onComplete }: Enhan
 
             <SkillsAutocomplete
               category="tools_platforms"
-              value={form.values.tools_platforms}
+              value={form.values.tools_platforms as string[]}
               onChange={(skills) => form.setValue("tools_platforms", skills)}
               label="Tools & Platforms"
               placeholder="Search for tools and platforms..."
@@ -317,7 +320,7 @@ export function EnhancedProfileSetupModal({ isOpen, onClose, onComplete }: Enhan
               <Label htmlFor="desired_roles">Desired Job Roles *</Label>
               <Input
                 id="desired_roles"
-                value={form.values.desired_roles.join(", ")}
+                value={(form.values.desired_roles as string[]).join(", ")}
                 onChange={(e) => {
                   const roles = e.target.value.split(",").map(role => role.trim()).filter(Boolean)
                   form.setValue("desired_roles", roles)
@@ -334,7 +337,7 @@ export function EnhancedProfileSetupModal({ isOpen, onClose, onComplete }: Enhan
               <Label htmlFor="preferred_locations">Preferred Locations *</Label>
               <Input
                 id="preferred_locations"
-                value={form.values.preferred_locations.join(", ")}
+                value={(form.values.preferred_locations as string[]).join(", ")}
                 onChange={(e) => {
                   const locations = e.target.value.split(",").map(loc => loc.trim()).filter(Boolean)
                   form.setValue("preferred_locations", locations)
@@ -353,7 +356,7 @@ export function EnhancedProfileSetupModal({ isOpen, onClose, onComplete }: Enhan
                 <Input
                   id="salary_range_min"
                   type="number"
-                  value={form.values.salary_range_min || ""}
+                  value={(form.values.salary_range_min as number) || ""}
                   onChange={(e) => form.setValue("salary_range_min", parseInt(e.target.value) || 0)}
                   onBlur={() => form.handleBlur("salary_range_min")}
                   placeholder="80000"
@@ -367,7 +370,7 @@ export function EnhancedProfileSetupModal({ isOpen, onClose, onComplete }: Enhan
                 <Input
                   id="salary_range_max"
                   type="number"
-                  value={form.values.salary_range_max || ""}
+                  value={(form.values.salary_range_max as number) || ""}
                   onChange={(e) => form.setValue("salary_range_max", parseInt(e.target.value) || 0)}
                   onBlur={() => form.handleBlur("salary_range_max")}
                   placeholder="120000"

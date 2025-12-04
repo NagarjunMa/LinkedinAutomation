@@ -167,8 +167,8 @@ export function JobListingWithReferrals({ jobs }: { jobs: Array<Record<string, u
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {jobs.map((job) => (
           <JobCardWithReferral
-            key={job.id}
-            job={job}
+            key={job.id as string}
+            job={job as any}
           />
         ))}
       </div>

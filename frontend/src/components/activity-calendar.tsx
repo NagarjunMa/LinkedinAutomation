@@ -36,7 +36,7 @@ const getActivityColor = (taskCount: number): string => {
 const getTooltipText = (data: ActivityData): string => {
     if (data.totalTasks === 0) return "No activity"
 
-    const parts = []
+    const parts: string[] = []
     if (data.jobExtractions > 0) {
         parts.push(`${data.jobExtractions} job extraction${data.jobExtractions > 1 ? 's' : ''}`)
     }

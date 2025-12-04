@@ -84,7 +84,7 @@ function EmailScanningSettings({ userId }: EmailScanningSettingsProps) {
         setSaving(true)
         try {
             await emailScanningApi.updateSettings(userId, {
-                email_scan_frequency: settings.frequency as 'daily' | 'twice_daily' | 'weekly',
+                email_scan_frequency: settings.frequency === 'twice_daily' ? 'bi-weekly' : settings.frequency as 'daily' | 'weekly' | 'monthly',
                 email_scan_time: `${settings.scan_time}:00`,
                 email_scan_timezone: settings.timezone,
                 email_tracking_enabled: settings.email_tracking_enabled

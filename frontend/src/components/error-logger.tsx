@@ -76,8 +76,8 @@ export const ErrorLogger: React.FC = () => {
   };
 
   const getErrorSeverity = (log: ErrorLog | Record<string, unknown>) => {
-    if (log.status >= 500 || log.message?.includes('Network')) return 'destructive';
-    if (log.status >= 400 || log.message?.includes('Error')) return 'secondary';
+    if ((log.status as number) >= 500 || (log.message as string)?.includes('Network')) return 'destructive';
+    if ((log.status as number) >= 400 || (log.message as string)?.includes('Error')) return 'secondary';
     return 'outline';
   };
 
@@ -140,7 +140,7 @@ export const ErrorLogger: React.FC = () => {
                           <div className="flex items-center gap-2">
                             <AlertTriangle className="h-4 w-4 text-red-500" />
                             <span className="font-semibold text-sm">
-                              {formatDate(log.timestamp)}
+                              {formatDate(log.timestamp as string)}
                             </span>
                             {log.errorId && (
                               <Badge variant="outline" className="text-xs">
@@ -205,16 +205,16 @@ export const ErrorLogger: React.FC = () => {
                           <div className="flex items-center gap-2">
                             <AlertTriangle className="h-4 w-4 text-orange-500" />
                             <span className="font-semibold text-sm">
-                              {formatDate(log.timestamp)}
+                              {formatDate(log.timestamp as string)}
                             </span>
-                            {log.requestId && (
+                            {(log.requestId as string) && (
                               <Badge variant="outline" className="text-xs">
-                                ID: {log.requestId}
+                                ID: {log.requestId as string}
                               </Badge>
                             )}
-                            {log.status && (
+                            {(log.status as number) && (
                               <Badge variant={getErrorSeverity(log)} className="text-xs">
-                                {log.status}
+                                {log.status as number}
                               </Badge>
                             )}
                           </div>
@@ -225,18 +225,18 @@ export const ErrorLogger: React.FC = () => {
                       </CardHeader>
                       <CardContent className="pt-0">
                         <div className="space-y-2">
-                          <div className="font-medium text-sm">{log.message}</div>
-                          {log.url && (
+                          <div className="font-medium text-sm">{log.message as string}</div>
+                          {(log.url as string) && (
                             <div className="text-xs text-muted-foreground">
-                              URL: {log.url}
+                              URL: {log.url as string}
                             </div>
                           )}
-                          {log.code && (
+                          {(log.code as string) && (
                             <div className="text-xs text-muted-foreground">
-                              Code: {log.code}
+                              Code: {log.code as string}
                             </div>
                           )}
-                          {log.handled && (
+                          {(log.handled as boolean) && (
                             <Badge variant="secondary" className="text-xs">
                               Handled
                             </Badge>
