@@ -70,10 +70,52 @@ alembic upgrade head
 - **Smart Job Scorer** (`smart_job_scorer.py`): AI-powered compatibility scoring based on user profiles
 - **Job Search Service**: Advanced filtering and search across extracted jobs
 
-#### 2. AI Resume Evaluation (`backend/app/services/agentic_resume_evaluator.py`)
-- **Multi-Agent System**: Specialized AI agents for different evaluation aspects
+#### 2. AI Resume Evaluation System (`backend/app/services/agentic_resume_evaluator.py`)
+- **12-Agent Parallel Architecture**: Comprehensive multi-agent system with specialized evaluation domains
+- **Harvard Career Services Compliance**: Professional language standards validation
 - **ATS Optimization**: Ensures resumes pass Applicant Tracking Systems
-- **Score Tracking**: Monitors improvement with detailed feedback
+- **Parallel Processing**: Concurrent agent execution with timeout protection and progress tracking
+- **Weighted Scoring**: Intelligent result aggregation preventing overlapping analysis
+
+##### Multi-Agent Architecture Details
+The system employs 12 specialized agents coordinated by `ResumeEvaluationOrchestrator`:
+
+**Core Evaluation Agents:**
+- **ATSCompatibilityAgent** (`ats_compatibility_agent.py`): Keyword optimization, parsing compatibility, ATS scoring
+- **ExperienceAnalysisAgent** (`experience_analysis_agent.py`): Career progression, role relevance, experience validation
+- **SkillsAssessmentAgent** (`skills_assessment_agent.py`): Technical skills depth, relevance scoring, skills gap analysis
+- **FormatStructureAgent** (`format_structure_agent.py`): Visual hierarchy, section organization, formatting compliance
+
+**Professional Standards Agents:**
+- **HarvardComplianceAgent** (`harvard_compliance_agent.py`): Language quality, grammar zero-tolerance, pronoun detection, action verb validation
+- **RedFlagDetectionAgent** (`red_flag_detection_agent.py`): Employment gaps, inconsistencies, credibility assessment
+
+**Optimization Agents:**
+- **CompanyFitAgent** (`company_fit_agent.py`): Target company alignment, industry-specific optimization
+- **AboveFoldImpactAgent** (`above_fold_impact_agent.py`): First impression analysis, recruiter attention optimization
+- **RecruiterPsychologyAgent** (`recruiter_psychology_agent.py`): Scanning flow optimization, attention management
+
+**Quality Assurance Agents:**
+- **DetailedAnalysisAgent** (`detailed_analysis_agent.py`): Comprehensive content evaluation, narrative strength
+- **FinalTouchesAgent** (`final_touches_agent.py`): Submission readiness, polish verification
+
+**Coordination Agent:**
+- **SummaryGeneratorAgent** (`summary_generator_agent.py`): Result synthesis, executive summary generation, improvement prioritization
+
+##### Parallel Processing Architecture
+- **Asyncio-Based Execution**: All 11 analysis agents run simultaneously using asyncio.gather()
+- **Timeout Protection**: Individual agent timeouts (25-90 seconds) prevent system bottlenecks
+- **Progress Tracking**: Real-time status updates with completion percentages
+- **Error Recovery**: Graceful fallback for failed agents with system continuity
+- **Weighted Scoring**: Agent-specific weights preventing double-counting and overlap
+
+##### Harvard Career Services Integration
+Based on official Harvard Career Services manual requirements:
+- **Zero-Tolerance Grammar**: Automated detection of spelling and grammar errors
+- **Personal Pronoun Elimination**: Detection and flagging of "I", "my", "me" usage
+- **Active Voice Enforcement**: Identification and correction of passive voice constructions
+- **Action Verb Categorization**: Validation against Harvard's approved action verb taxonomy
+- **Quantification Requirements**: Ensures measurable achievements and metrics inclusion
 
 #### 3. Email Automation (`backend/app/services/gmail_service.py`)
 - **Gmail OAuth Integration**: Secure email access with proper scopes

@@ -21,6 +21,7 @@ from .detailed_analysis_agent import DetailedAnalysisAgent
 from .above_fold_impact_agent import AboveFoldImpactAgent
 from .recruiter_psychology_agent import RecruiterPsychologyAgent
 from .final_touches_agent import FinalTouchesAgent
+from .harvard_compliance_agent import HarvardComplianceAgent
 
 
 class ResumeEvaluationOrchestrator:
@@ -38,6 +39,7 @@ class ResumeEvaluationOrchestrator:
             'format': FormatStructureAgent(self.ai_service),
             'red_flags': RedFlagDetectionAgent(self.ai_service),
             'company_fit': CompanyFitAgent(self.ai_service),
+            'harvard_compliance': HarvardComplianceAgent(self.ai_service),
             'detailed_analysis': DetailedAnalysisAgent(self.ai_service),
             'above_fold_impact': AboveFoldImpactAgent(self.ai_service),
             'recruiter_psychology': RecruiterPsychologyAgent(self.ai_service),
@@ -57,6 +59,7 @@ class ResumeEvaluationOrchestrator:
             'format': 25,
             'red_flags': 35,
             'company_fit': 40,
+            'harvard_compliance': 45,
             'detailed_analysis': 90,
             'above_fold_impact': 35,
             'recruiter_psychology': 40,
@@ -67,15 +70,16 @@ class ResumeEvaluationOrchestrator:
         # Agent weights for overall score calculation
         self.agent_weights = {
             'ats': 0.12,
-            'experience': 0.25,
-            'skills': 0.12,
-            'format': 0.15,  # Increased for technical formatting compliance
+            'experience': 0.22,
+            'skills': 0.10,
+            'format': 0.13,  # Technical formatting compliance
             'red_flags': -0.15,  # Negative weight for penalties
-            'company_fit': 0.08,
-            'detailed_analysis': 0.15,
-            'above_fold_impact': 0.20,  # High weight for recruiter attention
-            'recruiter_psychology': 0.18,  # High weight for scanning optimization
-            'final_touches': 0.10  # Important for submission readiness
+            'company_fit': 0.07,
+            'harvard_compliance': 0.18,  # High weight for professional standards
+            'detailed_analysis': 0.13,
+            'above_fold_impact': 0.18,  # High weight for recruiter attention
+            'recruiter_psychology': 0.15,  # Scanning optimization
+            'final_touches': 0.09  # Submission readiness
         }
     
     async def evaluate_resume(self, resume_content: str, user_context: Dict[str, Any]) -> Dict[str, Any]:
@@ -325,6 +329,7 @@ class ResumeEvaluationOrchestrator:
             'format': 'format_score',
             'red_flags': 'red_flag_score',
             'company_fit': 'company_fit_scores',
+            'harvard_compliance': 'compliance_score',
             'detailed_analysis': 'overall_score',
             'above_fold_impact': 'above_fold_score',
             'recruiter_psychology': 'psychology_score',
@@ -434,6 +439,7 @@ class ResumeEvaluationOrchestrator:
                     'format': {'status': 'pending', 'started_at': None, 'completed_at': None},
                     'red_flags': {'status': 'pending', 'started_at': None, 'completed_at': None},
                     'company_fit': {'status': 'pending', 'started_at': None, 'completed_at': None},
+                    'harvard_compliance': {'status': 'pending', 'started_at': None, 'completed_at': None},
                     'detailed_analysis': {'status': 'pending', 'started_at': None, 'completed_at': None},
                     'above_fold_impact': {'status': 'pending', 'started_at': None, 'completed_at': None},
                     'recruiter_psychology': {'status': 'pending', 'started_at': None, 'completed_at': None},
