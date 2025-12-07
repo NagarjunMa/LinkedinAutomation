@@ -279,17 +279,22 @@ class ResumeEvaluationOrchestrator:
             # Calculate weighted score from individual agent scores
             weighted_score = 0
             total_weight = 0
-            
+
             for agent_name, weight in self.agent_weights.items():
                 if agent_name in analysis_results:
                     agent_score = self._extract_agent_score(analysis_results[agent_name], agent_name)
                     if agent_score is not None:
-                        weighted_score += agent_score * weight
+                        # Normalize score to 0-100 scale if needed
+                        if agent_score <= 10:
+                            agent_score = agent_score * 10  # Convert 0-10 to 0-100
+                        weighted_score += agent_score * abs(weight)
                         total_weight += abs(weight)
-            
-            # Normalize score
+
+            # Calculate final normalized score
             if total_weight > 0:
-                normalized_score = (weighted_score / total_weight) * 100
+                normalized_score = weighted_score / total_weight
+                # Ensure score is within 0-100 range
+                normalized_score = min(100, max(0, normalized_score))
             else:
                 normalized_score = 0
             
