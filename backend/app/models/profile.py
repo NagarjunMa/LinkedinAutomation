@@ -22,10 +22,38 @@ class ProfileInfo(Base):
     email_signature = Column(Text, nullable=True)  # For referral emails
     primary_resume_id = Column(String, nullable=True)  # Reference to resume evaluation
 
-    # New fields for enhanced profile
+    # Enhanced profile fields for comprehensive user context
     referral_template = Column(Text, nullable=True)  # Editable referral email template
-    work_experiences = Column(JSON, nullable=True)  # [{"job_title": "", "company": "", "location": "", "start_date": "", "end_date": ""}]
-    education_history = Column(JSON, nullable=True)  # [{"university": "", "degree": "", "field": "", "location": "", "start_date": "", "end_date": ""}]
+
+    # Work Experience (JSON array)
+    work_experiences = Column(JSON, nullable=True)
+    # Structure: [{"job_title": str, "company": str, "location": str, "start_date": str,
+    #             "end_date": str, "description": str, "is_current": bool, "achievements": [str]}]
+
+    # Project Experience (JSON array)
+    project_experiences = Column(JSON, nullable=True)
+    # Structure: [{"name": str, "description": str, "tech_stack": [str], "url": str,
+    #             "start_date": str, "end_date": str, "role": str, "key_features": [str]}]
+
+    # Education Details (JSON array)
+    education_details = Column(JSON, nullable=True)
+    # Structure: [{"degree": str, "field_of_study": str, "school": str, "location": str,
+    #             "graduation_year": int, "gpa": str, "relevant_coursework": [str], "honors": [str]}]
+
+    # Skills categorization (enhanced from basic skills)
+    technical_skills = Column(JSON, nullable=True)  # [{"category": "Languages", "skills": ["Python", "JavaScript"]}]
+    soft_skills = Column(JSON, nullable=True)  # ["Leadership", "Communication", "Problem Solving"]
+
+    # Career preferences
+    career_goals = Column(Text, nullable=True)  # Long-term career objectives
+    preferred_work_environment = Column(JSON, nullable=True)  # ["Remote", "Hybrid", "On-site"]
+    salary_expectations = Column(JSON, nullable=True)  # {"min": 80000, "max": 120000, "currency": "USD"}
+
+    # Social/Professional links
+    linkedin_url = Column(String, nullable=True)
+    portfolio_url = Column(String, nullable=True)
+    github_url = Column(String, nullable=True)
+    personal_website = Column(String, nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

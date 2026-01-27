@@ -34,9 +34,7 @@ class JobListing(Base):
     compatibility_score = Column(Float)  # AI-generated compatibility score (0-100)
     ai_insights = Column(Text)  # AI-generated insights about the job match
 
-    # Relationships
-    referral_email_drafts = relationship("ReferralEmailDraft", back_populates="job")
-    referral_emails_sent = relationship("ReferralEmailSent", back_populates="job")
+    # Relationships (referral models currently not implemented)
 
     def __repr__(self):
         return f"<JobListing {self.title} at {self.company}>"

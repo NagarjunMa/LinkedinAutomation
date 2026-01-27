@@ -35,18 +35,8 @@ def add_database_indexes():
         "CREATE INDEX IF NOT EXISTS idx_activity_records_user_type_created ON activity_records (user_id, activity_type, created_at DESC)",
         "CREATE INDEX IF NOT EXISTS idx_activity_records_created_at_desc ON activity_records (created_at DESC)",
 
-        # EmailEvent indexes - email monitoring
-        "CREATE INDEX IF NOT EXISTS idx_email_events_user_created_at ON email_events (user_id, created_at DESC)",
-        "CREATE INDEX IF NOT EXISTS idx_email_events_type_created_at ON email_events (email_type, created_at DESC)",
-        "CREATE INDEX IF NOT EXISTS idx_email_events_matched_job_id ON email_events (matched_job_id)",
-
-        # Contact indexes - referral system
-        "CREATE INDEX IF NOT EXISTS idx_contacts_type ON contacts (type)",
-        "CREATE INDEX IF NOT EXISTS idx_contacts_company_lower ON contacts (LOWER(company))",
-        "CREATE INDEX IF NOT EXISTS idx_contacts_user_type ON contacts (user_id, type)",
-
-        # ResumeEvaluationSession indexes - AI evaluations
-        "CREATE INDEX IF NOT EXISTS idx_resume_eval_sessions_resume_created ON resume_evaluation_sessions (resume_id, created_at DESC)",
+        # Resume Evaluation indexes (simplified)
+        "CREATE INDEX IF NOT EXISTS idx_resume_evaluations_resume_evaluated ON resume_evaluations (resume_id, evaluated_at DESC)",
     ]
 
     print("🔧 Starting database optimization...")

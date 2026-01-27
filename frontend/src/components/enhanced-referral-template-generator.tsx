@@ -42,11 +42,21 @@ export function EnhancedReferralTemplateGenerator({ onTemplateGenerated, onClose
 
     const [userBackground, setUserBackground] = useState("")
 
+    // Job context state
+    const [jobContext, setJobContext] = useState({
+        jobTitle: "",
+        company: "",
+        jobDescription: "",
+        requirements: "",
+        location: ""
+    })
+
     const [preferences, setPreferences] = useState({
         preferred_tone: "professional",
         preferred_length: "medium",
         include_resume: true,
-        include_portfolio: false
+        include_portfolio: false,
+        email_style: "professional" // New field for email style
     })
 
     const handleParseContact = async () => {
@@ -140,13 +150,13 @@ export function EnhancedReferralTemplateGenerator({ onTemplateGenerated, onClose
         try {
             setLoading(true)
 
-            // Use contact's position and company as the "job" they can refer for
+            // Use job context if provided, otherwise fall back to contact's company
             const jobInfo = {
-                title: contactInfo.position || "Position at their company",
-                company: contactInfo.company,
-                industry: "",
-                level: "",
-                description: "Referral opportunity at their company",
+                title: jobContext.jobTitle || contactInfo.position || "Position at their company",
+                company: jobContext.company || contactInfo.company,
+                location: jobContext.location || "",
+                description: jobContext.jobDescription || "Referral opportunity at their company",
+                requirements: jobContext.requirements || "",
                 user_background: userBackground
             }
 
@@ -333,6 +343,73 @@ Email: john@techcorp.com`}
                 </CardContent>
             </Card>
 
+            {/* Job Context */}
+            <Card className="bg-primary-900/50 border-primary-800">
+                <CardHeader>
+                    <CardTitle className="text-cream-50 flex items-center gap-2">
+                        <Settings className="h-5 w-5 text-accent-400" />
+                        Job Context (Optional)
+                    </CardTitle>
+                    <p className="text-cream-400 text-sm mt-2">
+                        Add specific job details to create more targeted referral templates.
+                    </p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label className="text-cream-200 text-sm">Job Title</Label>
+                            <Input
+                                placeholder="e.g., Senior Software Engineer"
+                                value={jobContext.jobTitle}
+                                onChange={(e) => setJobContext({...jobContext, jobTitle: e.target.value})}
+                                className="bg-primary-950 border-primary-700 text-cream-50"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-cream-200 text-sm">Company</Label>
+                            <Input
+                                placeholder="e.g., Google, Meta, Netflix"
+                                value={jobContext.company}
+                                onChange={(e) => setJobContext({...jobContext, company: e.target.value})}
+                                className="bg-primary-950 border-primary-700 text-cream-50"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label className="text-cream-200 text-sm">Location</Label>
+                        <Input
+                            placeholder="e.g., San Francisco, CA or Remote"
+                            value={jobContext.location}
+                            onChange={(e) => setJobContext({...jobContext, location: e.target.value})}
+                            className="bg-primary-950 border-primary-700 text-cream-50"
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label className="text-cream-200 text-sm">Job Description</Label>
+                        <Textarea
+                            placeholder="Paste the job description here to create more contextual templates..."
+                            value={jobContext.jobDescription}
+                            onChange={(e) => setJobContext({...jobContext, jobDescription: e.target.value})}
+                            className="bg-primary-950 border-primary-700 text-cream-50 min-h-[100px]"
+                            rows={4}
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label className="text-cream-200 text-sm">Key Requirements</Label>
+                        <Textarea
+                            placeholder="List key requirements or skills mentioned in the job posting..."
+                            value={jobContext.requirements}
+                            onChange={(e) => setJobContext({...jobContext, requirements: e.target.value})}
+                            className="bg-primary-950 border-primary-700 text-cream-50 min-h-[80px]"
+                            rows={3}
+                        />
+                    </div>
+                </CardContent>
+            </Card>
+
             {/* Your Background */}
             <Card className="bg-primary-900/50 border-primary-800">
                 <CardHeader>
@@ -368,7 +445,21 @@ Email: john@techcorp.com`}
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                            <Label className="text-cream-200">Email Style</Label>
+                            <Select value={preferences.email_style} onValueChange={(value) => setPreferences({...preferences, email_style: value})}>
+                                <SelectTrigger className="bg-primary-950 border-primary-700 text-cream-50">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="professional">Professional</SelectItem>
+                                    <SelectItem value="casual">Casual & Friendly</SelectItem>
+                                    <SelectItem value="linkedin">LinkedIn Message</SelectItem>
+                                    <SelectItem value="cold_email">Cold Email</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
                         <div className="space-y-2">
                             <Label className="text-cream-200">Tone</Label>
                             <Select value={preferences.preferred_tone} onValueChange={(value) => setPreferences({...preferences, preferred_tone: value})}>
@@ -396,6 +487,15 @@ Email: john@techcorp.com`}
                                 </SelectContent>
                             </Select>
                         </div>
+                    </div>
+
+                    <div className="bg-primary-950 border border-primary-700 rounded-lg p-3">
+                        <p className="text-cream-400 text-xs">
+                            <strong>💡 Tip:</strong> {preferences.email_style === 'professional' && 'Best for formal networking and corporate environments.'}
+                            {preferences.email_style === 'casual' && 'Great for startups and casual work environments.'}
+                            {preferences.email_style === 'linkedin' && 'Perfect for LinkedIn connection requests (character limit optimized).'}
+                            {preferences.email_style === 'cold_email' && 'Optimized for reaching out to new contacts via email.'}
+                        </p>
                     </div>
                 </CardContent>
             </Card>

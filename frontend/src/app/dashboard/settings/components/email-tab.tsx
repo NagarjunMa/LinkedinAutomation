@@ -20,21 +20,21 @@ function EmailTab({ userId: _userId }: EmailTabProps) {
 
     return (
         <div className="space-y-6">
-            <Card className="premium-card">
+            <Card className="premium-card bg-card border-border">
                 <CardHeader>
-                    <CardTitle className="text-cream-50 flex items-center gap-2">
+                    <CardTitle className="text-foreground flex items-center gap-2">
                         <Mail className="h-5 w-5" />
                         Email Tracking
                     </CardTitle>
-                    <CardDescription className="text-cream-300">
+                    <CardDescription className="text-muted-foreground">
                         Configure Gmail integration and email forwarding
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="flex items-center justify-between">
                         <div className="space-y-1">
-                            <Label className="text-cream-50">Email Forwarding</Label>
-                            <p className="text-sm text-cream-400">Forward job-related emails for automatic processing</p>
+                            <Label className="text-foreground">Email Forwarding</Label>
+                            <p className="text-sm text-muted-foreground">Forward job-related emails for automatic processing</p>
                         </div>
                         <Switch
                             checked={settings.email_forwarding_enabled}
@@ -46,8 +46,8 @@ function EmailTab({ userId: _userId }: EmailTabProps) {
 
                     <div className="flex items-center justify-between">
                         <div className="space-y-1">
-                            <Label className="text-cream-50">Email Analytics</Label>
-                            <p className="text-sm text-cream-400">Analyze email patterns and response rates</p>
+                            <Label className="text-foreground">Email Analytics</Label>
+                            <p className="text-sm text-muted-foreground">Analyze email patterns and response rates</p>
                         </div>
                         <Switch
                             checked={settings.analytics_enabled}
@@ -58,7 +58,7 @@ function EmailTab({ userId: _userId }: EmailTabProps) {
                     </div>
 
                     <div className="pt-4">
-                        <Button className="bg-gradient-warm text-white">
+                        <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
                             Save Email Settings
                         </Button>
                     </div>

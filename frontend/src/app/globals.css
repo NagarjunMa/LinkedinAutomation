@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Inter Font - Modern Application Font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 /* Absans Font - Primary Application Font */
 @font-face {
   font-family: 'Absans';
@@ -63,111 +66,100 @@
 
 @layer base {
   :root {
-    /* Light theme - creamy warm background */
-    --background: 30 6% 98%;
-    /* Creamy white background */
-    --foreground: 15 8% 8%;
-    /* Warm dark text */
-    --card: 30 6% 98%;
-    /* Creamy white cards */
-    --card-foreground: 15 8% 8%;
-    /* Warm dark text on cards */
-    --popover: 30 6% 98%;
-    /* Creamy white popover */
-    --popover-foreground: 15 8% 8%;
-    --primary: 15 8% 8%;
-    /* Warm dark primary */
-    --primary-foreground: 30 6% 98%;
-    --secondary: 30 6% 94%;
-    /* Creamy light gray secondary */
-    --secondary-foreground: 15 8% 8%;
-    --muted: 30 6% 94%;
-    /* Creamy light gray muted */
-    --muted-foreground: 15 8% 45%;
-    --accent: 30 6% 94%;
-    /* Creamy light gray accent */
-    --accent-foreground: 15 8% 8%;
+    /* Light theme with #F0EFF2 background and #3B3B3B accent */
+    --background: 240 13% 95%;
+    /* #F0EFF2 - light grayish purple background */
+    --foreground: 0 0% 23%;
+    /* #3B3B3B - dark gray text */
+    --card: 240 13% 97%;
+    /* Slightly lighter than background for cards */
+    --card-foreground: 0 0% 23%;
+    /* #3B3B3B - dark gray text on cards */
+    --popover: 240 13% 97%;
+    /* Slightly lighter than background for popovers */
+    --popover-foreground: 0 0% 23%;
+    --primary: 0 0% 23%;
+    /* #3B3B3B - dark gray primary */
+    --primary-foreground: 240 13% 95%;
+    --secondary: 240 13% 92%;
+    /* Slightly darker than background */
+    --secondary-foreground: 0 0% 23%;
+    --muted: 240 13% 92%;
+    /* Slightly darker than background */
+    --muted-foreground: 0 0% 40%;
+    --accent: 240 13% 92%;
+    /* Slightly darker than background */
+    --accent-foreground: 0 0% 23%;
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 30 6% 90%;
-    /* Creamy light borders */
-    --input: 30 6% 90%;
-    /* Creamy light inputs */
-    --ring: 15 100% 50%;
-    /* Orange accent */
-    --chart-1: 15 100% 50%;
-    /* Orange */
-    --chart-2: 45 100% 50%;
-    /* Gold */
+    --destructive-foreground: 240 13% 95%;
+    --border: 240 13% 88%;
+    /* Light purple-gray borders */
+    --input: 240 13% 88%;
+    /* Light purple-gray inputs */
+    --ring: 0 0% 23%;
+    /* Dark ring to match primary */
+    --chart-1: 0 0% 23%;
+    /* Dark primary color */
+    --chart-2: 240 13% 80%;
+    /* Light accent */
     --chart-3: 220 70% 50%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
     --radius: 0.5rem;
 
-    /* Custom theme variables for light mode - creamy warm tones */
-    --primary-950: #fafaf9;
-    --primary-900: #f5f5f4;
-    --primary-800: #e7e5e4;
-    --primary-700: #d6d3d1;
-    --primary-600: #a8a29e;
-    --primary-500: #78716c;
-    --primary-400: #57534e;
-    --cream-50: #0a0a0a;
-    --cream-100: #171717;
-    --cream-200: #262626;
-    --cream-300: #404040;
-    --cream-400: #737373;
+    /* Unified theme variables matching landing page */
+    --app-bg: #f0eff2;
+    --app-text: #3b3b3b;
+    --app-card: rgba(255, 255, 255, 0.5);
+    --app-card-border: rgba(59, 59, 59, 0.1);
+    --app-muted: rgba(59, 59, 59, 0.6);
+    --app-accent: rgba(59, 59, 59, 0.8);
   }
 
   .dark {
-    /* Premium dark theme with dark green background and orange accents */
-    --background: 120 8% 20%;
-    /* #2c3632 - dark green background */
-    --foreground: 30 6% 98%;
-    /* #fafaf9 */
-    --card: 120 8% 25%;
-    /* Darker green for cards */
-    --card-foreground: 30 6% 98%;
-    --popover: 120 8% 25%;
-    --popover-foreground: 30 6% 98%;
-    --primary: 120 8% 20%;
-    --primary-foreground: 30 6% 98%;
-    --secondary: 120 8% 30%;
-    /* Medium green for secondary */
-    --secondary-foreground: 30 6% 98%;
-    --muted: 120 8% 30%;
-    --muted-foreground: 30 6% 70%;
-    /* #d6d3d1 */
-    --accent: 120 8% 30%;
-    --accent-foreground: 30 6% 98%;
+    /* Dark theme with #3B3B3B background and #F0EFF2 accent */
+    --background: 0 0% 23%;
+    /* #3B3B3B - dark gray background */
+    --foreground: 240 13% 95%;
+    /* #F0EFF2 - light purple-gray text */
+    --card: 0 0% 26%;
+    /* Slightly lighter than background for cards */
+    --card-foreground: 240 13% 95%;
+    --popover: 0 0% 26%;
+    --popover-foreground: 240 13% 95%;
+    --primary: 240 13% 95%;
+    /* Light text as primary in dark mode */
+    --primary-foreground: 0 0% 23%;
+    --secondary: 0 0% 30%;
+    /* Lighter gray for secondary */
+    --secondary-foreground: 240 13% 95%;
+    --muted: 0 0% 30%;
+    --muted-foreground: 240 13% 80%;
+    /* Slightly darker than foreground */
+    --accent: 0 0% 30%;
+    --accent-foreground: 240 13% 95%;
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 120 8% 35%;
-    /* Lighter green for borders */
-    --input: 120 8% 35%;
-    --ring: 15 100% 50%;
-    /* Orange accent */
-    --chart-1: 15 100% 50%;
-    /* Orange */
-    --chart-2: 45 100% 50%;
-    /* Gold */
+    --destructive-foreground: 240 13% 95%;
+    --border: 0 0% 35%;
+    /* Medium gray borders */
+    --input: 0 0% 35%;
+    --ring: 240 13% 95%;
+    /* Light ring in dark mode */
+    --chart-1: 240 13% 95%;
+    /* Light primary color */
+    --chart-2: 0 0% 40%;
+    /* Dark accent */
     --chart-3: 220 70% 50%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
 
-    /* Custom theme variables for dark mode with dark green base */
-    --primary-950: #2c3632;
-    --primary-900: #1f2a26;
-    --primary-800: #2a3a35;
-    --primary-700: #3a4a45;
-    --primary-600: #4a5a55;
-    --primary-500: #5a6a65;
-    --primary-400: #6a7a75;
-    --cream-50: #fafaf9;
-    --cream-100: #f5f5f4;
-    --cream-200: #e7e5e4;
-    --cream-300: #d6d3d1;
-    --cream-400: #a8a29e;
+    /* Unified theme variables matching landing page dark mode */
+    --app-bg: #3b3b3b;
+    --app-text: #f0eff2;
+    --app-card: rgba(0, 0, 0, 0.2);
+    --app-card-border: rgba(240, 239, 242, 0.1);
+    --app-muted: rgba(240, 239, 242, 0.6);
+    --app-accent: rgba(240, 239, 242, 0.8);
   }
 }
 
@@ -179,7 +171,8 @@
   }
 
   body {
-    @apply bg-background text-foreground font-absans;
+    @apply bg-background text-foreground;
+    font-family: 'Inter', 'Absans', sans-serif;
   }
 
   h1,
@@ -207,24 +200,44 @@
   }
 
   /* Apply Absans to common text elements */
-  p, span, div, label, input, button {
+  p,
+  span,
+  div,
+  label,
+  input,
+  button {
     font-family: 'Absans', sans-serif;
   }
 }
 
-/* Premium dark theme styles */
+/* Unified theme card styles */
 @layer components {
   .glass-card {
-    @apply bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl;
+    background: var(--app-card);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--app-card-border);
+    border-radius: 0.75rem;
   }
 
-  /* Premium card styles */
+  /* Premium card styles - now using unified theme */
   .premium-card {
-    @apply bg-primary-800 border border-primary-600 rounded-xl shadow-card-subtle hover:shadow-card-elevated transition-all duration-300;
+    background: var(--app-card);
+    border: 1px solid var(--app-card-border);
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+  }
+
+  .premium-card:hover {
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
   }
 
   .premium-card-elevated {
-    @apply bg-primary-700 border border-primary-500 rounded-xl shadow-card-elevated;
+    background: var(--app-card);
+    border: 1px solid var(--app-card-border);
+    border-radius: 0.75rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
   }
 
   /* Gradient buttons */
@@ -236,17 +249,17 @@
     @apply bg-gradient-orange text-white px-4 py-2 rounded-lg font-medium shadow-glow-orange hover:shadow-glow-gold transition-all duration-300;
   }
 
-  /* Text styles */
+  /* Text styles - unified theme */
   .text-premium {
-    @apply text-cream-50;
+    color: var(--app-text);
   }
 
   .text-premium-secondary {
-    @apply text-cream-200;
+    color: var(--app-accent);
   }
 
   .text-premium-muted {
-    @apply text-cream-300;
+    color: var(--app-muted);
   }
 
   /* Gradient text */
@@ -407,4 +420,107 @@
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Landing Page Theme System */
+:root {
+  --bg-light: #f0eff2;
+  --accent-light: #3b3b3b;
+  --bg-dark: #3b3b3b;
+  --accent-dark: #f0eff2;
+}
+
+body.landing-light {
+  background-color: var(--bg-light);
+  color: var(--accent-light);
+  font-family: 'Inter', sans-serif;
+}
+
+body.landing-dark {
+  background-color: var(--bg-dark);
+  color: var(--accent-dark);
+  font-family: 'Inter', sans-serif;
+}
+
+/* Landing Page Specific Styles */
+.noise-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+.grain-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url("https://grainy-gradients.vercel.app/noise.svg");
+  opacity: 0.03;
+  pointer-events: none;
+  z-index: 50;
+}
+
+.shimmer {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 3s infinite linear;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -100% 0;
+  }
+
+  100% {
+    background-position: 100% 0;
+  }
+}
+
+.bento-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body.landing-light .bento-card {
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(59, 59, 59, 0.1);
+}
+
+body.landing-dark .bento-card {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(240, 239, 242, 0.1);
+}
+
+/* New Profile Page Typography */
+.font-serif-italic {
+  font-family: var(--font-playfair), serif;
+  font-style: italic;
+}
+
+.font-mono {
+  font-family: var(--font-mono), monospace !important;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(59, 59, 59, 0.1);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(59, 59, 59, 0.2);
 }

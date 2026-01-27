@@ -1,1300 +1,585 @@
-'use client'
+'use client';
 
-import React, { useState, useEffect } from 'react'
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
-import { useToast } from "@/components/ui/use-toast"
+import React, { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   User,
-  Mail,
   MapPin,
-  DollarSign,
-  GraduationCap,
-  Building,
-  Plus,
-  Save,
-  Edit2,
-  Trash2,
-  MessageSquare,
+  Mail,
   Briefcase,
-  Award,
-  TrendingUp,
+  DollarSign,
+  Edit3,
+  Settings,
+  ChevronRight,
+  Code2,
+  Terminal,
+  ExternalLink,
   FileText,
-  Upload,
-  Eye,
-  X
-} from "lucide-react"
-import { profileApi, resumeApi, UserProfile, WorkExperience, Education, ResumeFile } from '@/app/lib/api'
-import { useAuth } from '@/contexts/auth-context'
+  CheckCircle2,
+  Plus,
+  Trash2,
+  AlertTriangle
+} from 'lucide-react';
+import { INITIAL_PROFILE_DATA } from './constants';
+import { JobPreferences, ProfileData } from './types';
+import { useAuth } from '@/contexts/auth-context';
+import { profileApi } from '@/app/lib/api/profile';
+import { resumeApi } from '@/app/lib/api/resume';
+import { ResumeFile } from '@/app/lib/api/types';
+import { useToast } from "@/components/ui/use-toast";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
+// Typed for Framer Motion ease prop
+const LeicaBezier: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 export default function ProfilePage() {
-  const [profile, setProfile] = useState<UserProfile | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [editingSection, setEditingSection] = useState<string | null>(null)
-  const [editingEducationId, setEditingEducationId] = useState<string | null>(null)
-  const [workExperiences, setWorkExperiences] = useState<WorkExperience[]>([])
-  const [educationHistory, setEducationHistory] = useState<Education[]>([])
-  const [referralTemplate, setReferralTemplate] = useState('')
-  const [resumes, setResumes] = useState<ResumeFile[]>([])
-  const [uploadingResume, setUploadingResume] = useState(false)
-  const { user } = useAuth()
-  const { toast } = useToast()
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [data, setData] = useState<ProfileData>(INITIAL_PROFILE_DATA);
+  const [loading, setLoading] = useState(true);
+  const [isEditingPrefs, setIsEditingPrefs] = useState(false);
+  const [editedPrefs, setEditedPrefs] = useState<JobPreferences>(INITIAL_PROFILE_DATA.preferences);
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; resumeId: string | null; fileName: string }>({
+    open: false,
+    resumeId: null,
+    fileName: ''
+  });
+
+  // Fetch Data
+  const fetchData = useCallback(async () => {
+    if (!user) return;
+    try {
+      setLoading(true);
+      const userId = user.id ? String(user.id) : 'current';
+
+      // Parallel fetch
+      const [userProfile, resumeData] = await Promise.all([
+        profileApi.getProfile(userId),
+        resumeApi.listResumes()
+      ]);
+
+      // Transform Data
+      const transformedData: ProfileData = {
+        user: {
+          name: userProfile.full_name || 'User',
+          email: userProfile.email || '',
+          location: userProfile.location || 'Remote',
+          title: userProfile.career_level || 'Professional'
+        },
+        stats: {
+          applications: userProfile.total_applications || 0,
+          experiences: userProfile.work_experiences?.length || 0
+        },
+        resumes: resumeData.resumes.map((r: ResumeFile) => ({
+          id: r.id,
+          fileName: r.filename,
+          uploadDate: new Date(r.uploaded_at).toLocaleDateString(),
+          score: r.evaluation_result?.overall_score || 0,
+          isActive: r.is_primary || false
+        })),
+        preferences: {
+          roles: userProfile.desired_roles || [],
+          locations: userProfile.preferred_locations || [],
+          salaryRange: userProfile.salary_range_min && userProfile.salary_range_max
+            ? `$${(userProfile.salary_range_min / 1000).toFixed(0)}k - $${(userProfile.salary_range_max / 1000).toFixed(0)}k`
+            : 'Not set'
+        },
+        referralBlueprint: userProfile.referral_template || 'No template defined.'
+      };
+
+      setData(transformedData);
+      setEditedPrefs(transformedData.preferences);
+
+    } catch (error) {
+      console.error('Error fetching profile data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load profile data",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [user, toast]);
 
   useEffect(() => {
-    if (user) {
-      fetchProfile()
-      fetchResumes()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user])
+    fetchData();
+  }, [fetchData]);
 
-  const fetchProfile = async () => {
+  const handleSavePrefs = async () => {
     try {
-      setLoading(true)
-      // Debug log to see what user object contains
-      console.log('User object:', user)
-      console.log('User ID:', user?.id)
+      const userId = user?.id ? String(user.id) : 'current';
 
-      const userId = user?.id ? String(user.id) : 'current'
-      console.log('Using userId:', userId)
+      // Parse salary range string back to numbers (Simple parsing logic)
+      // Expected format: "$80k - $120k" or just numbers
+      let minSalary = 0;
+      let maxSalary = 0;
 
-      const data = await profileApi.getProfile(userId)
-      setProfile(data)
-      setWorkExperiences(data.work_experiences || [])
-      setEducationHistory(data.education_history || [])
-      setReferralTemplate(data.referral_template || getDefaultReferralTemplate())
-    } catch (error) {
-      console.error('Error fetching profile:', error)
-      toast({
-        title: "Error",
-        description: "Failed to load profile data.",
-        variant: "destructive",
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const getDefaultReferralTemplate = () => {
-    return `Hi [REFEREE_NAME],
-
-I hope you're doing well! I'm reaching out because I saw an interesting opportunity at [COMPANY_NAME] for the [JOB_TITLE] position and would love to get your insights.
-
-[PERSONAL_CONNECTION] // This will be replaced with relevant connection info based on shared experiences
-
-I believe my background in [RELEVANT_SKILLS] aligns well with what they're looking for. Would you be open to having a brief chat about the role and the company culture?
-
-I'd be happy to send over my resume if you think it would be helpful.
-
-Thanks for your time, and I'd love to catch up regardless!
-
-Best regards,
-[YOUR_NAME]`
-  }
-
-  const handleSaveProfile = async (section: string, data: Record<string, unknown>) => {
-    try {
-      setSaving(true)
-      const userId = user?.id ? String(user.id) : 'current'
-      console.log('Saving with userId:', userId, 'Data:', data)
-      await profileApi.updateProfile(data, userId)
-      await fetchProfile()
-      setEditingSection(null)
-      toast({
-        title: "Success",
-        description: `${section} updated successfully!`,
-      })
-    } catch (error) {
-      console.error('Error updating profile:', error)
-      toast({
-        title: "Error",
-        description: `Failed to update ${section.toLowerCase()}.`,
-        variant: "destructive",
-      })
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const addWorkExperience = () => {
-    const newExp: WorkExperience = {
-      job_title: '',
-      company: '',
-      location: '',
-      start_date: '',
-      end_date: ''
-    }
-    setWorkExperiences([...workExperiences, newExp])
-    setEditingSection('work-experience')
-  }
-
-
-  const removeWorkExperience = (index: number) => {
-    setWorkExperiences(workExperiences.filter((_, i) => i !== index))
-  }
-
-  const _removeEducation = (index: number) => {
-    setEducationHistory(educationHistory.filter((_, i) => i !== index))
-  }
-
-  const handleSaveEducation = async (education: Education, index: number) => {
-    try {
-      setSaving(true)
-      const updatedEducation = [...educationHistory]
-      updatedEducation[index] = education
-      const userId = user?.id ? String(user.id) : 'current'
+      const salaryMatch = editedPrefs.salaryRange.match(/(\d+)/g);
+      if (salaryMatch && salaryMatch.length >= 2) {
+        minSalary = parseInt(salaryMatch[0]) * 1000;
+        maxSalary = parseInt(salaryMatch[1]) * 1000;
+      }
 
       await profileApi.updateProfile({
-        education_history: updatedEducation
-      }, userId)
+        desired_roles: editedPrefs.roles,
+        preferred_locations: editedPrefs.locations,
+        salary_range_min: minSalary,
+        salary_range_max: maxSalary
+      }, userId);
 
-      setEducationHistory(updatedEducation)
-      setEditingEducationId(null)
-
+      setData(prev => ({ ...prev, preferences: editedPrefs }));
+      setIsEditingPrefs(false);
       toast({
         title: "Success",
-        description: "Education entry saved successfully.",
-      })
+        description: "Preferences updated successfully"
+      });
     } catch (error) {
-      console.error('Error saving education:', error)
+      console.error("Error updating preferences:", error);
       toast({
         title: "Error",
-        description: "Failed to save education entry.",
-        variant: "destructive",
-      })
-    } finally {
-      setSaving(false)
+        description: "Failed to update preferences",
+        variant: "destructive"
+      });
     }
-  }
-
-  const handleDeleteEducation = async (index: number) => {
-    try {
-      setSaving(true)
-      const updatedEducation = educationHistory.filter((_, i) => i !== index)
-      const userId = user?.id ? String(user.id) : 'current'
-
-      await profileApi.updateProfile({
-        education_history: updatedEducation
-      }, userId)
-
-      setEducationHistory(updatedEducation)
-      setEditingEducationId(null)
-
-      toast({
-        title: "Success",
-        description: "Education entry deleted successfully.",
-      })
-    } catch (error) {
-      console.error('Error deleting education:', error)
-      toast({
-        title: "Error",
-        description: "Failed to delete education entry.",
-        variant: "destructive",
-      })
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const fetchResumes = async () => {
-    try {
-      const data = await resumeApi.listResumes()
-      setResumes(data.resumes)
-    } catch (error) {
-      console.error('Error fetching resumes:', error)
-    }
-  }
+  };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
+    const file = event.target.files?.[0];
+    if (!file) return;
 
     try {
-      setUploadingResume(true)
-      await resumeApi.uploadResume(file)
-      await fetchResumes()
+      await resumeApi.uploadResume(file);
+      await fetchData(); // Refresh list
       toast({
         title: "Success",
         description: "Resume uploaded successfully!",
-      })
+      });
     } catch (error) {
-      console.error('Error uploading resume:', error)
+      console.error('Error uploading resume:', error);
       toast({
         title: "Error",
         description: "Failed to upload resume.",
         variant: "destructive",
-      })
-    } finally {
-      setUploadingResume(false)
-      // Reset file input
-      event.target.value = ''
+      });
     }
-  }
+  };
 
-  const handleDeleteResume = async (resumeId: string) => {
+  const handleDeleteResume = (resumeId: string, fileName: string) => {
+    setDeleteDialog({
+      open: true,
+      resumeId,
+      fileName
+    });
+  };
+
+  const confirmDeleteResume = async () => {
+    if (!deleteDialog.resumeId) return;
+
     try {
-      await resumeApi.deleteResume(resumeId)
-      await fetchResumes()
+      await resumeApi.deleteResume(deleteDialog.resumeId);
+      setData(prev => ({
+        ...prev,
+        resumes: prev.resumes.filter(r => r.id !== deleteDialog.resumeId)
+      }));
       toast({
         title: "Success",
-        description: "Resume deleted successfully!",
-      })
+        description: "Resume deleted successfully",
+      });
     } catch (error) {
-      console.error('Error deleting resume:', error)
+      console.error('Error deleting resume:', error);
       toast({
         title: "Error",
-        description: "Failed to delete resume.",
+        description: "Failed to delete resume",
         variant: "destructive",
-      })
+      });
+    } finally {
+      setDeleteDialog({ open: false, resumeId: null, fileName: '' });
     }
-  }
+  };
+
+  const cancelDeleteResume = () => {
+    setDeleteDialog({ open: false, resumeId: null, fileName: '' });
+  };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-primary-950 p-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="animate-pulse space-y-6">
-            <div className="h-32 bg-primary-800 rounded-lg"></div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="h-96 bg-primary-800 rounded-lg"></div>
-              <div className="h-96 bg-primary-800 rounded-lg"></div>
-            </div>
-          </div>
-        </div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-pulse text-foreground/60 text-sm font-mono uppercase tracking-widest">Loading System Data...</div>
       </div>
-    )
+    );
   }
 
   return (
-    <div className="min-h-screen bg-primary-950 p-6">
-      <div className="max-w-6xl mx-auto space-y-6">
+    <div className="min-h-screen bg-background text-foreground font-sans selection:bg-foreground selection:text-background relative overflow-hidden transition-colors duration-300">
+      {/* Grain Overlay */}
+      <div className="grain-overlay fixed inset-0 w-full h-full pointer-events-none z-50 opacity-[0.04] mix-blend-overlay" style={{ backgroundImage: 'url("https://grainy-gradients.vercel.app/noise.svg")' }}></div>
 
-        {/* Header Section */}
-        <div className="bg-gradient-warm/10 backdrop-blur-sm border border-primary-700/50 rounded-lg p-6 glow-orange/20">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-cream-50 mb-2">My Profile</h1>
-              <p className="text-cream-300">Manage your professional information and preferences</p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Badge variant="secondary" className="bg-accent-500/20 text-accent-400 border-accent-500/30">
-                <TrendingUp className="w-4 h-4 mr-1" />
-                {profile?.profile_completion || 0}% Complete
-              </Badge>
-            </div>
-          </div>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="bg-primary-900/80 border-primary-700/50 backdrop-blur-sm">
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-accent-500/20 rounded-lg">
-                  <Briefcase className="w-6 h-6 text-accent-400" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-cream-50">{profile?.total_applications || 0}</p>
-                  <p className="text-sm text-cream-300">Applications</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-primary-900/80 border-primary-700/50 backdrop-blur-sm">
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-accent-500/20 rounded-lg">
-                  <FileText className="w-6 h-6 text-accent-400" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-cream-50">{resumes.length}</p>
-                  <p className="text-sm text-cream-300">Resumes</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-primary-900/80 border-primary-700/50 backdrop-blur-sm">
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-accent-500/20 rounded-lg">
-                  <Award className="w-6 h-6 text-accent-400" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-cream-50">{workExperiences.length}</p>
-                  <p className="text-sm text-cream-300">Experiences</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-          {/* Personal Information */}
-          <Card className="bg-primary-900/80 border-primary-700/50 backdrop-blur-sm">
-            <CardHeader className="pb-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <User className="w-5 h-5 text-accent-400" />
-                  <CardTitle className="text-cream-50">Personal Information</CardTitle>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setEditingSection(editingSection === 'personal' ? null : 'personal')}
-                  className="text-accent-400 hover:text-accent-300 hover:bg-accent-500/10"
-                >
-                  <Edit2 className="w-4 h-4" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {editingSection === 'personal' ? (
-                <PersonalInfoForm
-                  profile={profile}
-                  onSave={(data) => handleSaveProfile('Personal Information', data)}
-                  onCancel={() => setEditingSection(null)}
-                  saving={saving}
-                />
-              ) : (
-                <PersonalInfoDisplay profile={profile} />
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Job Preferences */}
-          <Card className="bg-primary-900/80 border-primary-700/50 backdrop-blur-sm">
-            <CardHeader className="pb-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Briefcase className="w-5 h-5 text-accent-400" />
-                  <CardTitle className="text-cream-50">Job Preferences</CardTitle>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setEditingSection(editingSection === 'preferences' ? null : 'preferences')}
-                  className="text-accent-400 hover:text-accent-300 hover:bg-accent-500/10"
-                >
-                  <Edit2 className="w-4 h-4" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {editingSection === 'preferences' ? (
-                <JobPreferencesForm
-                  profile={profile}
-                  onSave={(data) => handleSaveProfile('Job Preferences', data)}
-                  onCancel={() => setEditingSection(null)}
-                  saving={saving}
-                />
-              ) : (
-                <JobPreferencesDisplay profile={profile} />
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Referral Template */}
-        <Card className="bg-primary-900/80 border-primary-700/50 backdrop-blur-sm">
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <MessageSquare className="w-5 h-5 text-accent-400" />
-                <CardTitle className="text-cream-50">Referral Email Template</CardTitle>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setEditingSection(editingSection === 'referral' ? null : 'referral')}
-                className="text-accent-400 hover:text-accent-300 hover:bg-accent-500/10"
-              >
-                <Edit2 className="w-4 h-4" />
-              </Button>
-            </div>
-            <CardDescription className="text-cream-400">
-              Customize your referral email template. Use placeholders like [REFEREE_NAME], [COMPANY_NAME], [JOB_TITLE], and [YOUR_NAME] for personalization.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {editingSection === 'referral' ? (
-              <ReferralTemplateForm
-                template={referralTemplate}
-                setTemplate={setReferralTemplate}
-                onSave={() => handleSaveProfile('Referral Template', { referral_template: referralTemplate })}
-                onCancel={() => setEditingSection(null)}
-                saving={saving}
-              />
-            ) : (
-              <div className="bg-primary-800/50 border border-primary-600/50 rounded-lg p-4">
-                <p className="text-cream-300 text-center py-4">
-                  Click the edit button to customize your referral email template
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Work Experience */}
-        <Card className="bg-primary-900/80 border-primary-700/50 backdrop-blur-sm">
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Building className="w-5 h-5 text-accent-400" />
-                <CardTitle className="text-cream-50">Work Experience</CardTitle>
-              </div>
-              <div className="flex space-x-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setEditingSection(editingSection === 'work-experience' ? null : 'work-experience')}
-                  className="text-accent-400 hover:text-accent-300 hover:bg-accent-500/10"
-                >
-                  <Edit2 className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={addWorkExperience}
-                  className="text-accent-400 hover:text-accent-300 hover:bg-accent-500/10"
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-            <CardDescription className="text-cream-400">
-              Add your employment history to help with resume evaluation and referral matching.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <WorkExperienceSection
-              experiences={workExperiences}
-              setExperiences={setWorkExperiences}
-              editing={editingSection === 'work-experience'}
-              onSave={() => handleSaveProfile('Work Experience', { work_experiences: workExperiences })}
-              onCancel={() => setEditingSection(null)}
-              onRemove={removeWorkExperience}
-              saving={saving}
-            />
-          </CardContent>
-        </Card>
-
-        {/* Education History */}
-        <Card className="bg-primary-900/80 border-primary-700/50 backdrop-blur-sm">
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <GraduationCap className="w-5 h-5 text-accent-400" />
-                <CardTitle className="text-cream-50">Education</CardTitle>
-              </div>
-            </div>
-            <CardDescription className="text-cream-400">
-              Add your educational background for better resume analysis and alumni network matching.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <EducationSection
-              education={educationHistory}
-              setEducation={setEducationHistory}
-              editingEducationId={editingEducationId}
-              setEditingEducationId={setEditingEducationId}
-              onSaveEducation={handleSaveEducation}
-              onDeleteEducation={handleDeleteEducation}
-              saving={saving}
-            />
-          </CardContent>
-        </Card>
-
-        {/* Resume Management */}
-        <Card className="bg-primary-900/80 border-primary-700/50 backdrop-blur-sm">
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <FileText className="w-5 h-5 text-accent-400" />
-                <CardTitle className="text-cream-50">Resume Management</CardTitle>
-              </div>
-              <div className="flex space-x-2">
-                <input
-                  type="file"
-                  accept=".pdf,.doc,.docx"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                  id="resume-upload"
-                />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => document.getElementById('resume-upload')?.click()}
-                  disabled={uploadingResume}
-                  className="text-accent-400 hover:text-accent-300 hover:bg-accent-500/10"
-                >
-                  <Upload className="w-4 h-4 mr-2" />
-                  {uploadingResume ? 'Uploading...' : 'Upload'}
-                </Button>
-              </div>
-            </div>
-            <CardDescription className="text-cream-400">
-              Upload and manage your resumes for evaluation and analysis.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResumeManagementSection
-              resumes={resumes}
-              onDelete={handleDeleteResume}
-              uploading={uploadingResume}
-            />
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  )
-}
-
-
-// Personal Info Components
-function PersonalInfoDisplay({ profile }: { profile: UserProfile | null }) {
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center space-x-2">
-        <User className="w-4 h-4 text-cream-400" />
-        <span className="text-cream-200">{profile?.full_name || 'Not set'}</span>
-      </div>
-      <div className="flex items-center space-x-2">
-        <Mail className="w-4 h-4 text-cream-400" />
-        <span className="text-cream-200">{profile?.email || 'Not set'}</span>
-      </div>
-      <div className="flex items-center space-x-2">
-        <MapPin className="w-4 h-4 text-cream-400" />
-        <span className="text-cream-200">{profile?.location || 'Not set'}</span>
-      </div>
-      <div className="flex items-center space-x-2">
-        <Briefcase className="w-4 h-4 text-cream-400" />
-        <span className="text-cream-200">{profile?.years_of_experience ? `${profile.years_of_experience} years experience` : 'Not set'}</span>
-      </div>
-      {profile?.professional_summary && (
-        <div className="mt-3 p-3 bg-primary-800/50 rounded-lg">
-          <p className="text-cream-200 text-sm">{profile.professional_summary}</p>
-        </div>
-      )}
-    </div>
-  )
-}
-
-function PersonalInfoForm({ profile, onSave, onCancel, saving }: {
-  profile: UserProfile | null;
-  onSave: (data: Record<string, unknown>) => void;
-  onCancel: () => void;
-  saving: boolean;
-}) {
-  const [formData, setFormData] = useState({
-    full_name: profile?.full_name || '',
-    email: profile?.email || '',
-    phone: profile?.phone || '',
-    location: profile?.location || '',
-    years_of_experience: profile?.years_of_experience || 0,
-    professional_summary: profile?.professional_summary || ''
-  })
-
-  return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label className="text-cream-200">Full Name</Label>
-          <Input
-            value={formData.full_name}
-            onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-            className="bg-primary-800/50 border-primary-600 text-cream-50"
-          />
-        </div>
-        <div>
-          <Label className="text-cream-200">Email</Label>
-          <Input
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            className="bg-primary-800/50 border-primary-600 text-cream-50"
-          />
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label className="text-cream-200">Phone</Label>
-          <Input
-            value={formData.phone}
-            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-            className="bg-primary-800/50 border-primary-600 text-cream-50"
-            placeholder="+1 (555) 123-4567"
-          />
-        </div>
-        <div>
-          <Label className="text-cream-200">Location</Label>
-          <Input
-            value={formData.location}
-            onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-            className="bg-primary-800/50 border-primary-600 text-cream-50"
-            placeholder="San Francisco, CA"
-          />
-        </div>
-      </div>
-      <div>
-        <Label className="text-cream-200">Years of Experience</Label>
-        <Input
-          type="number"
-          step="0.5"
-          value={formData.years_of_experience === 0 ? '' : formData.years_of_experience}
-          onChange={(e) => setFormData({ ...formData, years_of_experience: parseFloat(e.target.value) || 0 })}
-          className="bg-primary-800/50 border-primary-600 text-cream-50"
-          placeholder="2.5"
-        />
-      </div>
-      <div>
-        <Label className="text-cream-200">Professional Summary</Label>
-        <Textarea
-          value={formData.professional_summary}
-          onChange={(e) => setFormData({ ...formData, professional_summary: e.target.value })}
-          className="bg-primary-800/50 border-primary-600 text-cream-50"
-          rows={4}
-          placeholder="Brief description of your background and goals..."
-        />
-      </div>
-      <div className="flex space-x-2">
-        <Button
-          onClick={() => onSave(formData)}
-          disabled={saving}
-          className="bg-gradient-warm hover:bg-gradient-warm/90"
+      <div className="max-w-5xl mx-auto px-6 py-12 md:py-24 relative z-10">
+        {/* Utility Navigation */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: LeicaBezier }}
+          className="flex justify-between items-center mb-16 border-b border-foreground/5 pb-4"
         >
-          <Save className="w-4 h-4 mr-2" />
-          {saving ? 'Saving...' : 'Save'}
-        </Button>
-        <Button variant="ghost" onClick={onCancel} className="text-cream-300 hover:text-cream-50">
-          Cancel
-        </Button>
-      </div>
-    </div>
-  )
-}
-
-
-function JobPreferencesDisplay({ profile }: { profile: UserProfile | null }) {
-  return (
-    <div className="space-y-3">
-      <div>
-        <Label className="text-cream-400">Desired Job Roles</Label>
-        <div className="flex flex-wrap gap-2 mt-1">
-          {profile?.desired_roles?.map((title, index) => (
-            <Badge key={index} variant="secondary" className="bg-accent-500/20 text-accent-400">
-              {title}
-            </Badge>
-          )) || <span className="text-cream-300">Not set</span>}
-        </div>
-      </div>
-      <div>
-        <Label className="text-cream-400">Preferred Locations</Label>
-        <div className="flex flex-wrap gap-2 mt-1">
-          {profile?.preferred_locations?.map((location, index) => (
-            <Badge key={index} variant="secondary" className="bg-accent-500/20 text-accent-400">
-              <MapPin className="w-3 h-3 mr-1" />
-              {location}
-            </Badge>
-          )) || <span className="text-cream-300">Not set</span>}
-        </div>
-      </div>
-      <div className="flex items-center space-x-2">
-        <DollarSign className="w-4 h-4 text-cream-400" />
-        <span className="text-cream-200">
-          Min Salary: ${profile?.salary_range_min?.toLocaleString() || 'Not set'}
-        </span>
-      </div>
-      <div className="flex items-center space-x-2">
-        <DollarSign className="w-4 h-4 text-cream-400" />
-        <span className="text-cream-200">
-          Max Salary: ${profile?.salary_range_max?.toLocaleString() || 'Not set'}
-        </span>
-      </div>
-      <div className="flex items-center space-x-2">
-        <TrendingUp className="w-4 h-4 text-cream-400" />
-        <span className="text-cream-200">
-          Experience: {profile?.career_level || 'Not set'}
-        </span>
-      </div>
-    </div>
-  )
-}
-
-
-function JobPreferencesForm({ profile, onSave, onCancel, saving }: {
-  profile: UserProfile | null;
-  onSave: (data: Record<string, unknown>) => void;
-  onCancel: () => void;
-  saving: boolean;
-}) {
-  const [formData, setFormData] = useState({
-    desired_roles: profile?.desired_roles || [],
-    preferred_locations: profile?.preferred_locations || [],
-    salary_range_min: profile?.salary_range_min || 0,
-    salary_range_max: profile?.salary_range_max || 0,
-    career_level: profile?.career_level || ''
-  })
-
-  return (
-    <div className="space-y-4">
-      <div>
-        <Label className="text-cream-200">Desired Job Roles (comma-separated)</Label>
-        <Input
-          value={formData.desired_roles.join(', ')}
-          onChange={(e) => setFormData({ ...formData, desired_roles: e.target.value.split(',').map(s => s.trim()) })}
-          className="bg-primary-800/50 border-primary-600 text-cream-50"
-          placeholder="Software Engineer, Frontend Developer"
-        />
-      </div>
-      <div>
-        <Label className="text-cream-200">Preferred Locations (comma-separated)</Label>
-        <Input
-          value={formData.preferred_locations.join(', ')}
-          onChange={(e) => setFormData({ ...formData, preferred_locations: e.target.value.split(',').map(s => s.trim()) })}
-          className="bg-primary-800/50 border-primary-600 text-cream-50"
-          placeholder="Boston, Remote, San Francisco"
-        />
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label className="text-cream-200">Minimum Salary</Label>
-          <Input
-            type="number"
-            value={formData.salary_range_min === 0 ? '' : formData.salary_range_min}
-            onChange={(e) => setFormData({ ...formData, salary_range_min: parseInt(e.target.value) || 0 })}
-            className="bg-primary-800/50 border-primary-600 text-cream-50"
-            placeholder="80000"
-          />
-        </div>
-        <div>
-          <Label className="text-cream-200">Maximum Salary</Label>
-          <Input
-            type="number"
-            value={formData.salary_range_max === 0 ? '' : formData.salary_range_max}
-            onChange={(e) => setFormData({ ...formData, salary_range_max: parseInt(e.target.value) || 0 })}
-            className="bg-primary-800/50 border-primary-600 text-cream-50"
-            placeholder="120000"
-          />
-        </div>
-      </div>
-      <div>
-        <Label className="text-cream-200">Career Level</Label>
-        <select
-          value={formData.career_level}
-          onChange={(e) => setFormData({ ...formData, career_level: e.target.value })}
-          className="w-full p-2 bg-primary-800/50 border border-primary-600 text-cream-50 rounded-md"
-        >
-          <option value="">Select career level</option>
-          <option value="entry">Entry Level</option>
-          <option value="mid">Mid Level</option>
-          <option value="senior">Senior Level</option>
-          <option value="lead">Lead/Principal</option>
-        </select>
-      </div>
-      <div className="flex space-x-2">
-        <Button
-          onClick={() => onSave(formData)}
-          disabled={saving}
-          className="bg-gradient-warm hover:bg-gradient-warm/90"
-        >
-          <Save className="w-4 h-4 mr-2" />
-          {saving ? 'Saving...' : 'Save'}
-        </Button>
-        <Button variant="ghost" onClick={onCancel} className="text-cream-300 hover:text-cream-50">
-          Cancel
-        </Button>
-      </div>
-    </div>
-  )
-}
-
-
-function ReferralTemplateForm({ template, setTemplate, onSave, onCancel, saving }: {
-  template: string;
-  setTemplate: (template: string) => void;
-  onSave: () => void;
-  onCancel: () => void;
-  saving: boolean;
-}) {
-  return (
-    <div className="space-y-4">
-      <Textarea
-        value={template}
-        onChange={(e) => setTemplate(e.target.value)}
-        className="bg-primary-800/50 border-primary-600 text-cream-50 font-mono"
-        rows={15}
-        placeholder="Enter your referral email template..."
-      />
-      <div className="flex space-x-2">
-        <Button
-          onClick={onSave}
-          disabled={saving}
-          className="bg-gradient-warm hover:bg-gradient-warm/90"
-        >
-          <Save className="w-4 h-4 mr-2" />
-          {saving ? 'Saving...' : 'Save Template'}
-        </Button>
-        <Button variant="ghost" onClick={onCancel} className="text-cream-300 hover:text-cream-50">
-          Cancel
-        </Button>
-      </div>
-    </div>
-  )
-}
-
-
-function WorkExperienceSection({ experiences, setExperiences, editing, onSave, onCancel, onRemove, saving }: {
-  experiences: WorkExperience[];
-  setExperiences: (exp: WorkExperience[]) => void;
-  editing: boolean;
-  onSave: () => void;
-  onCancel: () => void;
-  onRemove: (index: number) => void;
-  saving: boolean;
-}) {
-  const updateExperience = (index: number, field: keyof WorkExperience, value: string) => {
-    const updated = [...experiences]
-    updated[index] = { ...updated[index], [field]: value }
-    setExperiences(updated)
-  }
-
-  if (!editing) {
-    return (
-      <div className="space-y-4">
-        {experiences.map((exp, index) => (
-          <div key={index} className="bg-primary-800/50 border border-primary-600/50 rounded-lg p-4">
-            <div className="flex justify-between items-start">
-              <div className="flex-1">
-                <h4 className="text-cream-50 font-semibold">{exp.job_title}</h4>
-                <p className="text-accent-400">{exp.company}</p>
-                <p className="text-cream-300 text-sm">{exp.location}</p>
-                <p className="text-cream-400 text-xs mt-1">
-                  {exp.start_date} - {exp.end_date || 'Present'}
-                </p>
-              </div>
-            </div>
+          <div className="flex items-center gap-2 text-[10px] tracking-[0.2em] uppercase font-bold text-foreground/40">
+            <span>JobFlow Pro</span>
+            <ChevronRight size={10} strokeWidth={3} />
+            <span className="text-foreground">Profile_v2.5</span>
           </div>
-        ))}
-        {experiences.length === 0 && (
-          <p className="text-cream-400 text-center py-8">No work experience added yet</p>
-        )}
-      </div>
-    )
-  }
-
-  return (
-    <div className="space-y-4">
-      {experiences.map((exp, index) => (
-        <div key={index} className="bg-primary-800/50 border border-primary-600/50 rounded-lg p-4 space-y-3">
-          <div className="flex justify-between items-center">
-            <h4 className="text-cream-50 font-semibold">Experience {index + 1}</h4>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onRemove(index)}
-              className="text-red-400 hover:text-red-300"
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
+          <div className="flex gap-6">
+            <button className="text-foreground/60 hover:text-foreground transition-colors">
+              <Settings size={16} />
+            </button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <Label className="text-cream-200">Job Title</Label>
-              <Input
-                value={exp.job_title}
-                onChange={(e) => updateExperience(index, 'job_title', e.target.value)}
-                className="bg-primary-700/50 border-primary-600 text-cream-50"
-              />
-            </div>
-            <div>
-              <Label className="text-cream-200">Company</Label>
-              <Input
-                value={exp.company}
-                onChange={(e) => updateExperience(index, 'company', e.target.value)}
-                className="bg-primary-700/50 border-primary-600 text-cream-50"
-              />
-            </div>
-            <div>
-              <Label className="text-cream-200">Location</Label>
-              <Input
-                value={exp.location}
-                onChange={(e) => updateExperience(index, 'location', e.target.value)}
-                className="bg-primary-700/50 border-primary-600 text-cream-50"
-              />
-            </div>
-            <div>
-              <Label className="text-cream-200">Start Date</Label>
-              <Input
-                type="date"
-                value={exp.start_date}
-                onChange={(e) => updateExperience(index, 'start_date', e.target.value)}
-                className="bg-primary-700/50 border-primary-600 text-cream-50"
-              />
-            </div>
-            <div>
-              <Label className="text-cream-200">End Date (leave empty if current)</Label>
-              <Input
-                type="date"
-                value={exp.end_date || ''}
-                onChange={(e) => updateExperience(index, 'end_date', e.target.value)}
-                className="bg-primary-700/50 border-primary-600 text-cream-50"
-              />
-            </div>
-          </div>
-        </div>
-      ))}
+        </motion.div>
 
-      <div className="flex space-x-2">
-        <Button
-          onClick={onSave}
-          disabled={saving}
-          className="bg-gradient-warm hover:bg-gradient-warm/90"
+        {/* Identity Header */}
+        <motion.header
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 1, ease: LeicaBezier, delay: 0.1 }}
+          className="mb-20"
         >
-          <Save className="w-4 h-4 mr-2" />
-          {saving ? 'Saving...' : 'Save Experience'}
-        </Button>
-        <Button variant="ghost" onClick={onCancel} className="text-cream-300 hover:text-cream-50">
-          Cancel
-        </Button>
-      </div>
-    </div>
-  )
-}
+          <h2 className="text-[10px] tracking-[0.4em] uppercase font-bold mb-3 text-foreground/60">Identity Profile</h2>
+          <h1 className="text-6xl md:text-8xl font-serif-italic text-foreground tracking-tight">
+            {data.user.name}
+          </h1>
+        </motion.header>
 
+        {/* System Stats Section */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: LeicaBezier, delay: 0.3 }}
+          className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-24 border-y border-foreground/5 py-10"
+        >
+          <StatItem label="Active Applications" value={data.stats.applications} />
+          <StatItem label="Validated Resumes" value={data.resumes.length} />
+          <StatItem label="Professional Nodes" value={data.stats.experiences} />
+        </motion.section>
 
-function EducationSection({ education, setEducation, editingEducationId, setEditingEducationId, onSaveEducation, onDeleteEducation, saving }: {
-  education: Education[];
-  setEducation: (edu: Education[]) => void;
-  editingEducationId: string | null;
-  setEditingEducationId: (id: string | null) => void;
-  onSaveEducation: (education: Education, index: number) => void;
-  onDeleteEducation: (index: number) => void;
-  saving: boolean;
-}) {
-  const [addingNew, setAddingNew] = useState(false)
-  const [originalEducation, setOriginalEducation] = useState<Education | null>(null)
-
-  const startEditing = (index: number) => {
-    setEditingEducationId(index.toString())
-    setOriginalEducation({ ...education[index] })
-  }
-
-  const cancelEditing = () => {
-    if (originalEducation && editingEducationId !== null) {
-      const updated = [...education]
-      updated[parseInt(editingEducationId)] = originalEducation
-      setEducation(updated)
-    }
-    setEditingEducationId(null)
-    setOriginalEducation(null)
-    setAddingNew(false)
-  }
-
-  const updateEducation = (index: number, field: keyof Education, value: string) => {
-    const updated = [...education]
-    updated[index] = { ...updated[index], [field]: value }
-    setEducation(updated)
-  }
-
-  const addNewEducation = () => {
-    const newEducation: Education = {
-      university: '',
-      degree: '',
-      field_of_study: '',
-      location: '',
-      start_date: '',
-      end_date: ''
-    }
-    setEducation([...education, newEducation])
-    setEditingEducationId((education.length).toString())
-    setAddingNew(true)
-    setOriginalEducation(null)
-  }
-
-  const handleSave = (index: number) => {
-    onSaveEducation(education[index], index)
-    setEditingEducationId(null)
-    setOriginalEducation(null)
-    setAddingNew(false)
-  }
-
-  const handleDelete = (index: number) => {
-    if (window.confirm('Are you sure you want to delete this education entry?')) {
-      onDeleteEducation(index)
-      setEditingEducationId(null)
-      setOriginalEducation(null)
-      setAddingNew(false)
-    }
-  }
-
-  return (
-    <div className="space-y-4">
-      {education.map((edu, index) => {
-        const isEditing = editingEducationId === index.toString()
-
-        if (isEditing) {
-          // Edit mode for this specific entry
-          return (
-            <div key={index} className="bg-primary-800/50 border border-primary-600/50 rounded-lg p-4 space-y-3">
-              <div className="flex justify-between items-center">
-                <h4 className="text-cream-50 font-semibold">
-                  {addingNew && index === education.length - 1 ? 'Add New Education' : `Edit Education ${index + 1}`}
-                </h4>
-                <div className="flex space-x-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleSave(index)}
-                    disabled={saving}
-                    className="text-green-400 hover:text-green-300"
-                  >
-                    <Save className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={cancelEditing}
-                    className="text-gray-400 hover:text-gray-300"
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                  {!addingNew && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(index)}
-                      className="text-red-400 hover:text-red-300"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  )}
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-cream-200">University</Label>
-                  <Input
-                    value={edu.university}
-                    onChange={(e) => updateEducation(index, 'university', e.target.value)}
-                    className="bg-primary-700/50 border-primary-600 text-cream-50"
-                    placeholder="University name"
-                  />
-                </div>
-                <div>
-                  <Label className="text-cream-200">Degree</Label>
-                  <Input
-                    value={edu.degree}
-                    onChange={(e) => updateEducation(index, 'degree', e.target.value)}
-                    className="bg-primary-700/50 border-primary-600 text-cream-50"
-                    placeholder="Degree type"
-                  />
-                </div>
-                <div>
-                  <Label className="text-cream-200">Field of Study</Label>
-                  <Input
-                    value={edu.field_of_study}
-                    onChange={(e) => updateEducation(index, 'field_of_study', e.target.value)}
-                    className="bg-primary-700/50 border-primary-600 text-cream-50"
-                    placeholder="Field of study"
-                  />
-                </div>
-                <div>
-                  <Label className="text-cream-200">Location</Label>
-                  <Input
-                    value={edu.location}
-                    onChange={(e) => updateEducation(index, 'location', e.target.value)}
-                    className="bg-primary-700/50 border-primary-600 text-cream-50"
-                    placeholder="City, State"
-                  />
-                </div>
-                <div>
-                  <Label className="text-cream-200">Start Date</Label>
-                  <Input
-                    type="date"
-                    value={edu.start_date}
-                    onChange={(e) => updateEducation(index, 'start_date', e.target.value)}
-                    className="bg-primary-700/50 border-primary-600 text-cream-50"
-                  />
-                </div>
-                <div>
-                  <Label className="text-cream-200">End Date (leave empty if current)</Label>
-                  <Input
-                    type="date"
-                    value={edu.end_date}
-                    onChange={(e) => updateEducation(index, 'end_date', e.target.value)}
-                    className="bg-primary-700/50 border-primary-600 text-cream-50"
-                  />
-                </div>
-              </div>
-            </div>
-          )
-        } else {
-          // View mode for this entry
-          return (
-            <div key={index} className="bg-primary-800/50 border border-primary-600/50 rounded-lg p-4">
-              <div className="flex justify-between items-start">
-                <div className="flex-1">
-                  <h4 className="text-cream-50 font-semibold">{edu.degree || 'Degree'}</h4>
-                  <p className="text-accent-400">{edu.university || 'University'}</p>
-                  <p className="text-cream-300 text-sm">{edu.field_of_study}</p>
-                  <p className="text-cream-300 text-sm">{edu.location}</p>
-                  <p className="text-cream-400 text-xs mt-1">
-                    {edu.start_date} - {edu.end_date || 'Present'}
-                  </p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => startEditing(index)}
-                  className="text-cream-400 hover:text-cream-300 hover:bg-primary-700/50"
-                  disabled={editingEducationId !== null}
-                >
-                  <Edit2 className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          )
-        }
-      })}
-
-      {/* Empty state */}
-      {education.length === 0 && (
-        <div className="text-center py-8">
-          <p className="text-cream-400 mb-4">No education history added yet</p>
-          <Button
-            onClick={addNewEducation}
-            className="bg-accent-600 hover:bg-accent-700 text-white"
-            disabled={editingEducationId !== null}
+        {/* DNA Modules Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-24 mb-32">
+          {/* Column 1: Personal Data */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: LeicaBezier, delay: 0.4 }}
           >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Education
-          </Button>
-        </div>
-      )}
-
-      {/* Add new education button */}
-      {education.length > 0 && editingEducationId === null && (
-        <Button
-          onClick={addNewEducation}
-          variant="outline"
-          className="w-full border-primary-600 text-cream-300 hover:text-cream-50 hover:bg-primary-700/50"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add Education
-        </Button>
-      )}
-    </div>
-  )
-}
-
-function ResumeManagementSection({ resumes, onDelete, uploading }: {
-  resumes: ResumeFile[];
-  onDelete: (resumeId: string) => void;
-  uploading: boolean;
-}) {
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes'
-    const k = 1024
-    const sizes = ['Bytes', 'KB', 'MB', 'GB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'text-green-400'
-      case 'pending':
-        return 'text-yellow-400'
-      case 'processing':
-        return 'text-blue-400'
-      case 'failed':
-        return 'text-red-400'
-      default:
-        return 'text-cream-300'
-    }
-  }
-
-  if (uploading && resumes.length === 0) {
-    return (
-      <div className="text-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-400 mx-auto mb-4"></div>
-        <p className="text-cream-300">Uploading resume...</p>
-      </div>
-    )
-  }
-
-  if (resumes.length === 0) {
-    return (
-      <div className="text-center py-12">
-        <FileText className="w-16 h-16 text-cream-600 mx-auto mb-4" />
-        <h3 className="text-lg font-semibold text-cream-50 mb-2">No resumes uploaded</h3>
-        <p className="text-cream-400 mb-4">Upload your first resume to get started with AI-powered evaluation</p>
-      </div>
-    )
-  }
-
-  return (
-    <div className="space-y-4">
-      {resumes.map((resume) => (
-        <div key={resume.id} className="bg-primary-800/50 border border-primary-600/50 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3 flex-1">
-              <div className="p-2 bg-accent-500/20 rounded-lg">
-                <FileText className="w-5 h-5 text-accent-400" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h4 className="text-cream-50 font-medium truncate">{resume.original_filename}</h4>
-                <div className="flex items-center space-x-4 mt-1">
-                  <span className="text-cream-300 text-sm">{formatFileSize(resume.file_size)}</span>
-                  <span className="text-cream-400 text-xs">
-                    {new Date(resume.uploaded_at).toLocaleDateString()}
-                  </span>
-                  <Badge variant="secondary" className={`${getStatusColor(resume.evaluation_status)} text-xs`}>
-                    {resume.evaluation_status}
-                  </Badge>
-                </div>
-              </div>
+            <SectionLabel icon={<User size={14} />} label="Personal Specifications" />
+            <div className="space-y-8 mt-8">
+              <InfoRow label="Access Key" value={data.user.email} icon={<Mail size={14} />} />
+              <InfoRow label="Primary Cluster" value={data.user.location} icon={<MapPin size={14} />} />
+              <InfoRow label="Designation" value={data.user.title} icon={<Briefcase size={14} />} />
             </div>
-            <div className="flex items-center space-x-2">
-              {resume.evaluation_status === 'completed' && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => window.open(`/dashboard/resume-evaluation?resume=${resume.id}`, '_blank')}
-                  className="text-accent-400 hover:text-accent-300 hover:bg-accent-500/10"
+          </motion.div>
+
+          {/* Column 2: Job Preferences */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: LeicaBezier, delay: 0.5 }}
+            className="relative"
+          >
+            <div className="flex justify-between items-center border-b border-foreground/5 pb-4">
+              <SectionLabel icon={<Settings size={14} />} label="Preference Parameters" noBorder />
+              {!isEditingPrefs && (
+                <button
+                  onClick={() => setIsEditingPrefs(true)}
+                  className="text-foreground/40 hover:text-foreground transition-colors"
                 >
-                  <Eye className="w-4 h-4" />
-                </Button>
+                  <Edit3 size={14} />
+                </button>
               )}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onDelete(resume.id)}
-                className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
+            </div>
+
+            <AnimatePresence mode="wait">
+              {!isEditingPrefs ? (
+                <motion.div
+                  key="prefs-view"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="space-y-8 mt-8"
+                >
+                  <InfoRow
+                    label="Target Roles"
+                    value={data.preferences.roles.join(' / ')}
+                    icon={<Terminal size={14} />}
+                  />
+                  <InfoRow
+                    label="Mobility Range"
+                    value={data.preferences.locations.join(', ')}
+                    icon={<MapPin size={14} />}
+                  />
+                  <InfoRow
+                    label="Compensation Floor"
+                    value={data.preferences.salaryRange}
+                    icon={<DollarSign size={14} />}
+                  />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="prefs-edit"
+                  initial={{ opacity: 0, scale: 0.98 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.98 }}
+                  className="mt-8 bg-card/40 dark:bg-card/20 p-6 border border-foreground/5 rounded-sm backdrop-blur-sm"
+                >
+                  <div className="space-y-6">
+                    <div>
+                      <label className="text-[9px] uppercase tracking-widest font-bold text-foreground/40 mb-2 block">Roles (comma separated)</label>
+                      <input
+                        className="w-full bg-transparent border-b border-foreground/10 py-2 focus:border-foreground outline-none text-sm font-mono text-foreground"
+                        value={editedPrefs.roles.join(', ')}
+                        onChange={(e) => setEditedPrefs({ ...editedPrefs, roles: e.target.value.split(',').map(s => s.trim()) })}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[9px] uppercase tracking-widest font-bold text-foreground/40 mb-2 block">Locations (comma separated)</label>
+                      <input
+                        className="w-full bg-transparent border-b border-foreground/10 py-2 focus:border-foreground outline-none text-sm font-mono text-foreground"
+                        value={editedPrefs.locations.join(', ')}
+                        onChange={(e) => setEditedPrefs({ ...editedPrefs, locations: e.target.value.split(',').map(s => s.trim()) })}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[9px] uppercase tracking-widest font-bold text-foreground/40 mb-2 block">Salary Range (e.g. 100k - 120k)</label>
+                      <input
+                        className="w-full bg-transparent border-b border-foreground/10 py-2 focus:border-foreground outline-none text-sm font-mono text-foreground"
+                        value={editedPrefs.salaryRange}
+                        onChange={(e) => setEditedPrefs({ ...editedPrefs, salaryRange: e.target.value })}
+                      />
+                    </div>
+                    <div className="flex gap-4 pt-4">
+                      <button
+                        onClick={handleSavePrefs}
+                        className="bg-foreground text-background px-4 py-2 text-[10px] uppercase tracking-widest font-bold hover:bg-foreground/90 transition-colors"
+                      >
+                        Commit Changes
+                      </button>
+                      <button
+                        onClick={() => setIsEditingPrefs(false)}
+                        className="text-foreground/40 hover:text-foreground px-4 py-2 text-[10px] uppercase tracking-widest font-bold transition-colors"
+                      >
+                        Abort
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        </div>
+
+        {/* Resume Ledger Section */}
+        <motion.section
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: LeicaBezier, delay: 0.6 }}
+          className="mb-32"
+        >
+          <div className="flex justify-between items-end mb-8">
+            <SectionLabel icon={<FileText size={14} />} label="Resume Revision Ledger" />
+            <div className="relative">
+              <input
+                type="file"
+                accept=".pdf,.doc,.docx"
+                onChange={handleFileUpload}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                id="resume-upload"
+              />
+              <button className="flex items-center gap-2 text-[10px] tracking-widest uppercase font-bold text-foreground/60 hover:text-foreground transition-colors">
+                <Plus size={12} /> Upload Revision
+              </button>
             </div>
           </div>
-        </div>
-      ))}
 
-      {uploading && (
-        <div className="bg-primary-800/50 border border-primary-600/50 rounded-lg p-4">
-          <div className="flex items-center space-x-3">
-            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-accent-400"></div>
-            <span className="text-cream-300">Uploading new resume...</span>
+          <div className="border border-foreground/5 overflow-hidden">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-foreground/5 bg-foreground/[0.02]">
+                  <th className="py-4 px-6 text-[9px] uppercase tracking-widest font-bold text-foreground/40">Version ID</th>
+                  <th className="py-4 px-6 text-[9px] uppercase tracking-widest font-bold text-foreground/40">Asset Name</th>
+                  <th className="py-4 px-6 text-[9px] uppercase tracking-widest font-bold text-foreground/40">Timestamp</th>
+                  <th className="py-4 px-6 text-[9px] uppercase tracking-widest font-bold text-foreground/40">AI Score</th>
+                  <th className="py-4 px-6 text-[9px] uppercase tracking-widest font-bold text-foreground/40 text-right">Status</th>
+                  <th className="py-4 px-6 text-[9px] uppercase tracking-widest font-bold text-foreground/40 w-12"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.resumes.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-8 text-center text-[10px] uppercase tracking-widest text-foreground/40">No resumes found</td>
+                  </tr>
+                ) : (
+                  data.resumes.map((resume, idx) => (
+                    <tr
+                      key={resume.id}
+                      className={`border-b border-foreground/5 hover:bg-card/40 dark:hover:bg-card/20 transition-colors group ${resume.isActive ? 'bg-card/20 dark:bg-card/10' : ''}`}
+                    >
+                      <td className="py-5 px-6 font-mono text-xs text-foreground/60">{resume.id.substring(0, 8)}</td>
+                      <td className="py-5 px-6 text-sm font-medium text-foreground flex items-center gap-2">
+                        {resume.fileName}
+                        <ExternalLink size={10} className="opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer" />
+                      </td>
+                      <td className="py-5 px-6 font-mono text-xs text-foreground/40">{resume.uploadDate}</td>
+                      <td className="py-5 px-6">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-sm font-bold">{resume.score.toFixed(1)}</span>
+                          <div className="w-16 h-1 bg-foreground/5 rounded-full overflow-hidden hidden sm:block">
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${resume.score}%` }}
+                              transition={{ duration: 1, ease: LeicaBezier, delay: 0.8 + (idx * 0.1) }}
+                              className="h-full bg-foreground/40"
+                            />
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-5 px-6 text-right">
+                        {resume.isActive ? (
+                          <span className="inline-flex items-center gap-1 text-[9px] uppercase tracking-widest font-bold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-sm">
+                            <CheckCircle2 size={10} /> Active
+                          </span>
+                        ) : (
+                          <span className="text-[9px] uppercase tracking-widest font-bold text-foreground/30">
+                            Archived
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-5 px-6 text-right w-12">
+                        <button
+                          onClick={() => handleDeleteResume(resume.id, resume.fileName)}
+                          className="text-foreground/20 hover:text-red-500 transition-colors p-2"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
-        </div>
-      )}
+        </motion.section>
+
+        {/* Referral Email Blueprint */}
+        <motion.section
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, ease: LeicaBezier, delay: 0.8 }}
+          className="mb-32"
+        >
+          <div className="flex justify-between items-end mb-8">
+            <SectionLabel icon={<Code2 size={14} />} label="Communication Blueprint [RE-01]" />
+            <button className="flex items-center gap-2 text-[10px] tracking-widest uppercase font-bold text-foreground/40 hover:text-foreground transition-colors"
+              onClick={() => {
+                navigator.clipboard.writeText(data.referralBlueprint);
+                toast({ title: "Copied", description: "Referral template copied to clipboard" });
+              }}
+            >
+              Copy Syntax <ExternalLink size={10} />
+            </button>
+          </div>
+
+          <div className="relative group">
+            <div className="absolute -inset-0.5 bg-foreground/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-sm"></div>
+            <div className="relative bg-card/40 dark:bg-card/20 border border-foreground/5 p-8 md:p-12 font-mono text-sm leading-relaxed text-foreground/80 shadow-sm backdrop-blur-sm">
+              <div className="flex gap-4 mb-6 opacity-20">
+                <div className="w-2 h-2 rounded-full bg-foreground"></div>
+                <div className="w-2 h-2 rounded-full bg-foreground"></div>
+                <div className="w-2 h-2 rounded-full bg-foreground"></div>
+              </div>
+              <pre className="whitespace-pre-wrap selection:bg-foreground/10 font-mono">
+                {data.referralBlueprint}
+              </pre>
+            </div>
+          </div>
+        </motion.section>
+
+        {/* Footer Branding */}
+        <footer className="mt-32 pt-12 border-t border-foreground/5 flex flex-col md:flex-row justify-between items-center gap-8">
+          <div className="flex items-center gap-4">
+            <div className="w-8 h-8 rounded-full border border-foreground flex items-center justify-center font-bold text-[10px]">JF</div>
+            <p className="text-[10px] tracking-widest text-foreground/40 uppercase">System Integrity: Nominal</p>
+          </div>
+          <p className="text-[10px] tracking-widest text-foreground/30 uppercase">© 2026 JobFlow Command / Leica Theory Design</p>
+        </footer>
+      </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialog.open} onOpenChange={(open) => !open && cancelDeleteResume()}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Resume
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Are you sure you want to delete <strong>{deleteDialog.fileName}</strong>? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={cancelDeleteResume}
+              className="w-full sm:w-auto"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDeleteResume}
+              className="w-full sm:w-auto"
+            >
+              Delete Resume
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
-  )
-}
+  );
+};
+
+/* Sub-components */
+
+const StatItem: React.FC<{ label: string, value: number }> = ({ label, value }) => (
+  <div className="flex flex-col gap-2">
+    <div className="font-mono text-5xl font-medium tracking-tighter text-foreground">
+      {value.toString().padStart(2, '0')}
+    </div>
+    <div className="text-[9px] tracking-[0.3em] uppercase font-bold text-foreground/50">
+      {label}
+    </div>
+  </div>
+);
+
+const SectionLabel: React.FC<{ icon: React.ReactNode, label: string, noBorder?: boolean }> = ({ icon, label, noBorder }) => (
+  <div className={`flex items-center gap-3 text-foreground/60 ${!noBorder ? 'border-b border-foreground/5 pb-4' : ''}`}>
+    {icon}
+    <span className="text-[10px] tracking-[0.3em] uppercase font-bold">{label}</span>
+  </div>
+);
+
+const InfoRow: React.FC<{ label: string, value: string, icon: React.ReactNode }> = ({ label, value, icon }) => (
+  <div className="group">
+    <div className="text-[9px] tracking-widest uppercase font-bold text-foreground/30 mb-1 flex items-center gap-2">
+      {icon}
+      {label}
+    </div>
+    <div className="text-lg md:text-xl font-light tracking-tight text-foreground group-hover:pl-2 transition-all duration-300">
+      {value}
+    </div>
+  </div>
+);

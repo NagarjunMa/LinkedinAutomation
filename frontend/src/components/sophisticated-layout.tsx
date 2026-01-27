@@ -1,8 +1,9 @@
-"use client"
+"use client";
 
 import { useState } from "react"
-import { SophisticatedSidebar } from "./sophisticated-sidebar"
+import { SophisticatedSidebar, SidebarProvider, useSidebar } from "./sophisticated-sidebar"
 import { SophisticatedHeader } from "./sophisticated-header"
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface SophisticatedLayoutProps {
     children: React.ReactNode
@@ -10,21 +11,19 @@ interface SophisticatedLayoutProps {
     showHeader?: boolean
 }
 
-export function SophisticatedLayout({
-    children,
-    notificationCount = 2,
-    showHeader = true
-}: SophisticatedLayoutProps) {
-    const [sidebarOpen, setSidebarOpen] = useState(false)
+// Inner component to consume the context
+const LayoutContent = ({ children, notificationCount, showHeader }: SophisticatedLayoutProps) => {
+    const { isCollapsed } = useSidebar();
+    const [sidebarOpen, setSidebarOpen] = useState(false);
 
     return (
-        <div className="h-screen flex bg-primary-950 overflow-hidden">
-            {/* Desktop Sidebar */}
-            <div className="hidden lg:flex lg:flex-shrink-0">
+        <div className="min-h-screen bg-[#f0eff2] text-[#3b3b3b]">
+            {/* Sidebar (Desktop & Mobile) */}
+            <div className="hidden lg:block">
                 <SophisticatedSidebar />
             </div>
 
-            {/* Mobile sidebar overlay */}
+            {/* Mobile Sidebar Overlay */}
             {sidebarOpen && (
                 <div className="fixed inset-0 z-50 lg:hidden">
                     <div
@@ -32,15 +31,22 @@ export function SophisticatedLayout({
                         onClick={() => setSidebarOpen(false)}
                         aria-hidden="true"
                     />
-                    <div className="relative flex-1 flex flex-col max-w-xs w-full bg-primary-900 shadow-2xl animate-in slide-in-from-left duration-300">
+                    <div className="relative flex-1 flex flex-col max-w-xs w-full bg-[#f0eff2] shadow-2xl animate-in slide-in-from-left duration-300 h-full">
                         <SophisticatedSidebar onClose={() => setSidebarOpen(false)} />
                     </div>
                 </div>
             )}
 
-            {/* Main content */}
-            <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-                {/* Header */}
+            {/* Main Content Area */}
+            <motion.main
+                animate={{ marginLeft: isCollapsed ? 72 : 280 }}
+                transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                className="flex-1 min-h-screen flex flex-col lg:ml-[280px]" // Default margin for SSR matching, motion will override
+            >
+                {/* Header - if used, check if it needs integration with new design. 
+                    The new dashboard has its own Header, so we might hide this global header on dashboard page 
+                    or adapt it. The current prop showHeader controls this. 
+                */}
                 {showHeader && (
                     <SophisticatedHeader
                         notificationCount={notificationCount}
@@ -48,13 +54,20 @@ export function SophisticatedLayout({
                     />
                 )}
 
-                {/* Page content */}
-                <main className="flex-1 overflow-y-auto bg-primary-950">
-                    <div className="min-h-full">
+                <div className="p-8 md:p-12 overflow-y-auto w-full">
+                    <AnimatePresence mode="wait">
                         {children}
-                    </div>
-                </main>
-            </div>
+                    </AnimatePresence>
+                </div>
+            </motion.main>
         </div>
+    );
+};
+
+export function SophisticatedLayout(props: SophisticatedLayoutProps) {
+    return (
+        <SidebarProvider>
+            <LayoutContent {...props} />
+        </SidebarProvider>
     )
 }

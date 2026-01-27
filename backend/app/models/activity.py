@@ -1,21 +1,20 @@
-from sqlalchemy import Column, Integer, String, DateTime, Text, JSON
-from sqlalchemy.sql import func
+from sqlalchemy import Column, Integer, String, DateTime, Text, JSON, Boolean
+from datetime import datetime
 from app.db.base_class import Base
+
 
 class ActivityRecord(Base):
     __tablename__ = "activity_records"
-    
+
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(String, nullable=False, index=True)
-    activity_type = Column(String, nullable=False)  # 'job_extraction' or 'referral_email'
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    activity_metadata = Column(JSON, nullable=True)  # Store additional data like job title, company, etc.
-    
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "user_id": self.user_id,
-            "activity_type": self.activity_type,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-            "metadata": self.activity_metadata or {}
-        }
+    user_id = Column(String, index=True, nullable=False)
+    activity_type = Column(String, index=True, nullable=False)  # 'job_search', 'application', 'email', 'resume', etc.
+    activity_subtype = Column(String)  # More specific categorization
+    title = Column(String)
+    description = Column(Text)
+    activity_metadata = Column(JSON)  # Additional flexible data storage
+    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    duration_seconds = Column(Integer)  # For activities that have duration
+    is_automated = Column(Boolean, default=False)
+    source = Column(String)  # 'web', 'api', 'email', etc.
+    created_at = Column(DateTime, default=datetime.utcnow)

@@ -23,8 +23,8 @@ const hasSupabaseSession = (request: NextRequest) => {
             if (cookie.value &&
                 cookie.value.length > 10 &&
                 (cookie.value.includes('access_token') ||
-                 cookie.value.includes('refresh_token') ||
-                 cookie.value.startsWith('base64-'))) {
+                    cookie.value.includes('refresh_token') ||
+                    cookie.value.startsWith('base64-'))) {
                 hasValidAuthCookie = true
             }
         }
@@ -38,17 +38,7 @@ const hasSupabaseSession = (request: NextRequest) => {
         request.cookies.get(REFRESH_COOKIE)?.value
     )
 
-    // Enhanced logging for debugging
-    if (process.env.NODE_ENV === 'development' && request.nextUrl.pathname.startsWith('/dashboard')) {
-        console.log('Middleware auth check:', {
-            projectRef,
-            authCookiePattern,
-            foundCookies,
-            hasValidAuthCookie,
-            hasLegacyAuth,
-            totalCookies: request.cookies.getAll().length
-        })
-    }
+    // Logs removed
 
     return hasValidAuthCookie || hasLegacyAuth
 }
@@ -81,25 +71,10 @@ export function middleware(request: NextRequest) {
 
     const loggedIn = hasSupabaseSession(request)
 
-    // Enhanced debugging for auth issues
-    if (process.env.NODE_ENV === 'development') {
-        console.log(`Middleware: ${pathname} - Auth status: ${loggedIn}`, {
-            hasAuthCode,
-            hasTokenHash,
-            isAuthCallback
-        })
-        if (pathname.startsWith('/dashboard') && !loggedIn && !isAuthCallback) {
-            console.warn('⚠️  Dashboard access denied - no valid auth cookies found')
-        }
-    }
+    // Logs removed
 
     if (!loggedIn && pathname.startsWith(DASHBOARD_ROOT)) {
-        // Add debugging info to redirect
         const redirectUrl = new URL('/', request.url)
-        if (process.env.NODE_ENV === 'development') {
-            console.log(`🚫 Redirecting ${pathname} to ${redirectUrl.toString()} - No auth session`)
-        }
-
         const response = NextResponse.redirect(redirectUrl)
         // Prevent caching of the redirect response
         response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
@@ -110,9 +85,6 @@ export function middleware(request: NextRequest) {
 
     if (loggedIn && pathname === '/') {
         const redirectUrl = new URL(DASHBOARD_ROOT, request.url)
-        if (process.env.NODE_ENV === 'development') {
-            console.log(`✅ Redirecting authenticated user from ${pathname} to ${redirectUrl.toString()}`)
-        }
         const response = NextResponse.redirect(redirectUrl)
         response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
         return response

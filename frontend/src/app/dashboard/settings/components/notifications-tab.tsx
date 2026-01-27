@@ -21,21 +21,21 @@ function NotificationsTab({ userId: _userId }: NotificationsTabProps) {
 
     return (
         <div className="space-y-6">
-            <Card className="premium-card">
+            <Card className="premium-card bg-card border-border">
                 <CardHeader>
-                    <CardTitle className="text-cream-50 flex items-center gap-2">
+                    <CardTitle className="text-foreground flex items-center gap-2">
                         <Bell className="h-5 w-5" />
                         Notification Preferences
                     </CardTitle>
-                    <CardDescription className="text-cream-300">
+                    <CardDescription className="text-muted-foreground">
                         Configure how you receive notifications
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="flex items-center justify-between">
                         <div className="space-y-1">
-                            <Label className="text-cream-50">Application Updates</Label>
-                            <p className="text-sm text-cream-400">Get notified when application status changes</p>
+                            <Label className="text-foreground">Application Updates</Label>
+                            <p className="text-sm text-muted-foreground">Get notified when application status changes</p>
                         </div>
                         <Switch
                             checked={settings.application_updates}
@@ -47,8 +47,8 @@ function NotificationsTab({ userId: _userId }: NotificationsTabProps) {
 
                     <div className="flex items-center justify-between">
                         <div className="space-y-1">
-                            <Label className="text-cream-50">Interview Reminders</Label>
-                            <p className="text-sm text-cream-400">Reminders for upcoming interviews</p>
+                            <Label className="text-foreground">Interview Reminders</Label>
+                            <p className="text-sm text-muted-foreground">Reminders for upcoming interviews</p>
                         </div>
                         <Switch
                             checked={settings.interview_reminders}
@@ -60,8 +60,8 @@ function NotificationsTab({ userId: _userId }: NotificationsTabProps) {
 
                     <div className="flex items-center justify-between">
                         <div className="space-y-1">
-                            <Label className="text-cream-50">Weekly Digest</Label>
-                            <p className="text-sm text-cream-400">Weekly summary of your job search activity</p>
+                            <Label className="text-foreground">Weekly Digest</Label>
+                            <p className="text-sm text-muted-foreground">Weekly summary of your job search activity</p>
                         </div>
                         <Switch
                             checked={settings.weekly_digest}
@@ -73,8 +73,8 @@ function NotificationsTab({ userId: _userId }: NotificationsTabProps) {
 
                     <div className="flex items-center justify-between">
                         <div className="space-y-1">
-                            <Label className="text-cream-50">Referral Responses</Label>
-                            <p className="text-sm text-cream-400">Notifications for referral email responses</p>
+                            <Label className="text-foreground">Referral Responses</Label>
+                            <p className="text-sm text-muted-foreground">Notifications for referral email responses</p>
                         </div>
                         <Switch
                             checked={settings.referral_responses}
@@ -85,7 +85,7 @@ function NotificationsTab({ userId: _userId }: NotificationsTabProps) {
                     </div>
 
                     <div className="pt-4">
-                        <Button className="bg-gradient-warm text-white">
+                        <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
                             Save Notification Settings
                         </Button>
                     </div>

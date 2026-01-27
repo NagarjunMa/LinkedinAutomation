@@ -7,7 +7,6 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.job import JobListing, JobApplication, UserProfile
 from app.services.url_job_extractor import url_job_extractor
-from app.services.job_extraction_strategy import job_extraction_strategy
 from app.services.smart_job_scorer import smart_job_scorer
 from datetime import datetime
 
@@ -98,8 +97,8 @@ async def extract_job_from_url(
                 "locations": user_profile.preferred_locations or []
             }
         
-        # Extract job details using strategic approach with fallback
-        job_data = await job_extraction_strategy.extract_job_with_fallback(str(request.url), user_context)
+        # Extract job details using url job extractor
+        job_data = await url_job_extractor.extract_job(str(request.url), user_context=user_context)
         
         # Check for duplicate jobs (same URL or similar title+company)
         existing_job = db.query(JobListing).filter(
@@ -352,11 +351,20 @@ async def get_domain_extraction_info(url: str):
     Useful for understanding which extraction method will be used.
     """
     try:
-        domain_info = job_extraction_strategy.get_domain_info(url)
+        # Simple domain info without extraction strategy
+        from urllib.parse import urlparse
+        parsed = urlparse(url)
+        domain = parsed.netloc.lower().replace('www.', '')
+
         return {
             "success": True,
             "url": url,
-            "domain_info": domain_info
+            "domain_info": {
+                "domain": domain,
+                "extraction_method": "jina_ai_reader",
+                "reliability": "standard",
+                "notes": "Using Jina AI Reader for extraction"
+            }
         }
     except Exception as e:
         logger.error(f"Failed to get domain info for {url}: {e}")

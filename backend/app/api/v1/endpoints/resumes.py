@@ -2,21 +2,22 @@ import os
 import uuid
 import shutil
 from typing import List
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, BackgroundTasks
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from app.db.session import get_db
+from app.db.session import get_db, SessionLocal
 from app.schemas.resume import (
     ResumeUploadResponse, ResumeListResponse, ResumeDeleteResponse,
     ResumeWithEvaluation, ResumeStorageInfo, ResumeEvaluationRequest
 )
 from app.services.resume_evaluator import ResumeEvaluatorService
-from app.services.agentic_resume_evaluator import AgenticResumeEvaluatorService
+from app.services.consolidated_resume_evaluator import ConsolidatedResumeEvaluator
 from app.core.ai_service import get_ai_service
 from app.core.auth import get_authenticated_user_id
+from app.core.rate_limiter import check_ai_rate_limit
 from app.models.resume import Resume, ResumeEvaluation
-from app.models.agent_models import ResumeEvaluationSession, ResumeAgentResult
 from app.models.user import User
 from app.core.config import settings
 import logging
@@ -181,7 +182,7 @@ async def get_agent_metrics(
 ):
     """Get performance metrics for all evaluation agents"""
     try:
-        evaluator = AgenticResumeEvaluatorService(ai_service)
+        evaluator = ConsolidatedResumeEvaluator(ai_service)
         metrics = await evaluator.get_agent_performance_metrics()
         return {"agent_metrics": metrics}
     except Exception as e:
@@ -197,7 +198,7 @@ async def get_evaluation_history(
 ):
     """Get evaluation history for the current user"""
     try:
-        evaluator = AgenticResumeEvaluatorService(ai_service)
+        evaluator = ConsolidatedResumeEvaluator(ai_service)
         history = await evaluator.get_evaluation_history(user_id, limit)
         return {"evaluation_history": history}
     except Exception as e:
@@ -211,7 +212,7 @@ async def get_agent_status(
 ):
     """Get status and capabilities of all evaluation agents"""
     try:
-        evaluator = AgenticResumeEvaluatorService(ai_service)
+        evaluator = ConsolidatedResumeEvaluator(ai_service)
         status = evaluator.orchestrator.get_agent_status()
         return {"agent_status": status}
     except Exception as e:
@@ -269,39 +270,31 @@ async def get_resume(
     # Get evaluation if completed
     evaluation = None
     if resume.evaluation_status == "completed":
-        # First try to get detailed evaluation from ResumeEvaluationSession (agentic results)
-        evaluation_session = db.query(ResumeEvaluationSession).filter(
-            ResumeEvaluationSession.resume_id == resume_id
-        ).order_by(ResumeEvaluationSession.created_at.desc()).first()
+        # Get consolidated evaluation from ResumeEvaluation table
+        resume_evaluation = db.query(ResumeEvaluation).filter(
+            ResumeEvaluation.resume_id == resume_id
+        ).order_by(ResumeEvaluation.evaluated_at.desc()).first()
 
-        if evaluation_session and evaluation_session.evaluation_data:
-            # Use detailed agentic evaluation data
-            eval_data = evaluation_session.evaluation_data
+        if resume_evaluation:
+            # Use consolidated evaluation data
             evaluation = {
-                "overall_score": evaluation_session.overall_score or eval_data.get('overall_score', 0),
-                "ats_compliance_score": eval_data.get('ats_compliance_score', 0),
-                "content_quality_score": eval_data.get('content_quality_score', 0),
-                "experience_points_score": eval_data.get('experience_points_score', 0),
-                "job_relevance_score": eval_data.get('job_relevance_score', 0),
-                "quality_checks_score": eval_data.get('quality_checks_score', 0),
-                "strengths": eval_data.get('strengths', []),
-                "improvements": eval_data.get('improvements', []),
-                "detailed_feedback": eval_data.get('detailed_feedback', ''),
-                "ats_compatibility": eval_data.get('ats_compatibility', 'fair'),
-                "keyword_analysis": eval_data.get('keyword_analysis', {}),
-                "evaluated_at": evaluation_session.created_at,
-                "ai_model_version": eval_data.get('ai_model_version', ''),
-                "processing_time": evaluation_session.processing_time_seconds,
-                # Add detailed agent results
-                "agent_results": eval_data.get('agent_results', {}),
-                "critical_issues": eval_data.get('critical_issues', {}),
-                "market_positioning": eval_data.get('market_positioning', {}),
+                "overall_score": resume_evaluation.overall_score,
+                "ats_compliance_score": resume_evaluation.ats_compliance_score,
+                "content_quality_score": resume_evaluation.content_quality_score,
+                "experience_points_score": resume_evaluation.experience_points_score,
+                "job_relevance_score": resume_evaluation.job_relevance_score,
+                "quality_checks_score": resume_evaluation.quality_checks_score,
+                "strengths": resume_evaluation.strengths or [],
+                "improvements": resume_evaluation.improvements or [],
+                "detailed_feedback": resume_evaluation.detailed_feedback or '',
+                "ats_compatibility": resume_evaluation.ats_compatibility or 'fair',
+                "keyword_analysis": resume_evaluation.keyword_analysis or {},
+                "evaluated_at": resume_evaluation.evaluated_at,
+                "ai_model_version": resume_evaluation.ai_model_version or '',
+                "critical_issues": resume_evaluation.critical_issues or {},
+                "market_positioning": resume_evaluation.market_positioning or {},
                 "evaluation_metadata": {
-                    "processing_time_seconds": evaluation_session.processing_time_seconds,
-                    "successful_agents": evaluation_session.successful_agents,
-                    "total_agents": evaluation_session.total_agents,
-                    "confidence_percentage": evaluation_session.confidence_percentage,
-                    "evaluation_type": 'agentic'
+                    "evaluation_type": 'consolidated'
                 }
             }
         else:
@@ -363,25 +356,11 @@ async def delete_resume(
         raise HTTPException(status_code=404, detail="Resume not found")
     
     try:
-        # Delete agent results first (they reference evaluation sessions)
-        db.query(ResumeAgentResult).filter(
-            ResumeAgentResult.evaluation_id.in_(
-                db.query(ResumeEvaluationSession.id).filter(
-                    ResumeEvaluationSession.resume_id == resume_id
-                )
-            )
-        ).delete(synchronize_session=False)
-        
-        # Delete evaluation sessions
-        db.query(ResumeEvaluationSession).filter(
-            ResumeEvaluationSession.resume_id == resume_id
-        ).delete()
-        
         # Delete evaluation records
         db.query(ResumeEvaluation).filter(
             ResumeEvaluation.resume_id == resume_id
         ).delete()
-        
+
         # Delete resume record
         db.delete(resume)
         db.commit()
@@ -411,6 +390,9 @@ async def evaluate_resume(
     user_id: str = Depends(get_authenticated_user_id)
 ):
     """Manually trigger resume evaluation with status locking"""
+
+    # Check rate limit for resume evaluation
+    check_ai_rate_limit(user_id, "resume_evaluation")
 
     # Generate unique process identifier for this evaluation
     process_id = f"eval_{uuid.uuid4().hex[:8]}"
@@ -521,7 +503,7 @@ async def evaluate_resume_background(
     """Background task for resume evaluation using agentic workflow with proper locking"""
 
     # Create new database session for background task
-    db = next(get_db())
+    db = SessionLocal()
     ai_service = get_ai_service()
 
     try:
@@ -545,52 +527,96 @@ async def evaluate_resume_background(
 
         logger.info(f"Starting background evaluation for resume {resume_id} by process {process_id}")
 
-        # Initialize agentic evaluator service
-        evaluator = AgenticResumeEvaluatorService(ai_service)
+        # Use new consolidated evaluator (single AI call instead of 12 agents)
+        use_consolidated = True  # Feature flag for gradual rollout
 
-        # Extract text from resume
-        resume_text = await evaluator.extract_resume_text(file_path, file_type)
+        if use_consolidated:
+            # Initialize consolidated evaluator service
+            evaluator = ConsolidatedResumeEvaluator(ai_service)
 
-        # Get user_id from resume record
-        user_id = resume.user_id
+            # Extract text from resume (reuse method from agentic evaluator)
+            agentic_evaluator = ConsolidatedResumeEvaluator(ai_service)
+            resume_text = await agentic_evaluator.extract_resume_text(file_path, file_type)
 
-        # Evaluate resume using agentic workflow
-        evaluation_result = await evaluator.evaluate_resume(
-            resume_text, user_id, resume_id, target_role, target_seniority
-        )
+            # Get user_id from resume record
+            user_id = resume.user_id
 
-        # Save evaluation to database (legacy format for compatibility)
-        evaluation_record = ResumeEvaluation(
-            id=str(uuid.uuid4()),
-            resume_id=resume_id,
-            overall_score=evaluation_result.overall_score,
-            ats_compliance_score=evaluation_result.ats_compliance_score,
-            content_quality_score=evaluation_result.content_quality_score,
-            experience_points_score=evaluation_result.experience_points_score,
-            job_relevance_score=evaluation_result.job_relevance_score,
-            quality_checks_score=evaluation_result.quality_checks_score,
-            strengths=evaluation_result.strengths,
-            improvements=evaluation_result.improvements,
-            detailed_feedback=evaluation_result.detailed_feedback,
-            ats_compatibility=evaluation_result.ats_compatibility,
-            keyword_analysis=evaluation_result.keyword_analysis,
-            critical_issues=evaluation_result.critical_issues,
-            market_positioning=evaluation_result.market_positioning,
-            evaluated_at=evaluation_result.evaluated_at,
-            ai_model_version=evaluation_result.ai_model_version,
-            evaluation_prompt="Agentic multi-agent evaluation workflow"  # Store the evaluation type
-        )
+            # Evaluate resume using consolidated single-prompt approach
+            evaluation_result = await evaluator.evaluate_resume(
+                resume_text, user_id, resume_id, db, target_role, target_seniority
+            )
+
+            # Extract scores from consolidated result
+            category_scores = evaluation_result.get("category_scores", {})
+            overall_score = evaluation_result.get("overall_score", 0)
+
+            # Map consolidated scores to legacy format for compatibility
+            evaluation_record = ResumeEvaluation(
+                id=str(uuid.uuid4()),
+                resume_id=resume_id,
+                overall_score=overall_score,
+                ats_compliance_score=category_scores.get("ats_compatibility", 0) * 10,
+                content_quality_score=category_scores.get("detailed_content", 0) * 10,
+                experience_points_score=category_scores.get("experience_impact", 0) * 10,
+                job_relevance_score=category_scores.get("company_fit", 0) * 10,
+                quality_checks_score=category_scores.get("final_polish", 0) * 10,
+                strengths=evaluation_result.get("strengths", []),
+                improvements=[item.get("issue", "") for item in evaluation_result.get("critical_issues", {}).get("immediate_fixes_required", [])],
+                detailed_feedback=evaluation_result.get("executive_summary", ""),
+                ats_compatibility=evaluation_result.get("tactical_checklist", {}).get("ats_compatibility", 0),
+                keyword_analysis=evaluation_result.get("specific_recommendations", {}).get("ats_optimization", {}),
+                critical_issues=evaluation_result.get("critical_issues", {}),
+                market_positioning=evaluation_result.get("market_positioning", {}),
+                evaluated_at=datetime.now(timezone.utc),
+                ai_model_version="gpt-4o-mini-consolidated",
+                evaluation_prompt="Consolidated single-prompt evaluation"
+            )
+        else:
+            # Fallback to old agentic evaluator
+            evaluator = ConsolidatedResumeEvaluator(ai_service)
+            resume_text = await evaluator.extract_resume_text(file_path, file_type)
+            user_id = resume.user_id
+            evaluation_result = await evaluator.evaluate_resume(
+                resume_text, user_id, resume_id, target_role, target_seniority
+            )
+
+            evaluation_record = ResumeEvaluation(
+                id=str(uuid.uuid4()),
+                resume_id=resume_id,
+                overall_score=evaluation_result.overall_score,
+                ats_compliance_score=evaluation_result.ats_compliance_score,
+                content_quality_score=evaluation_result.content_quality_score,
+                experience_points_score=evaluation_result.experience_points_score,
+                job_relevance_score=evaluation_result.job_relevance_score,
+                quality_checks_score=evaluation_result.quality_checks_score,
+                strengths=evaluation_result.strengths,
+                improvements=evaluation_result.improvements,
+                detailed_feedback=evaluation_result.detailed_feedback,
+                ats_compatibility=evaluation_result.ats_compatibility,
+                keyword_analysis=evaluation_result.keyword_analysis,
+                critical_issues=evaluation_result.critical_issues,
+                market_positioning=evaluation_result.market_positioning,
+                evaluated_at=evaluation_result.evaluated_at,
+                ai_model_version=evaluation_result.ai_model_version,
+                evaluation_prompt="Agentic multi-agent evaluation workflow"
+            )
 
         db.add(evaluation_record)
 
         # Update resume status and release lock atomically
         resume.update_evaluation_status("completed", release_lock=True)
-        resume.ai_model_version = evaluation_result.ai_model_version
-        resume.processing_time = evaluation_result.processing_time
+
+        if use_consolidated:
+            resume.ai_model_version = "gpt-4o-mini-consolidated"
+            resume.processing_time = evaluation_result.get("processing_time_seconds", 0)
+        else:
+            resume.ai_model_version = evaluation_result.ai_model_version
+            resume.processing_time = evaluation_result.processing_time
 
         db.commit()
 
-        logger.info(f"Agentic resume evaluation completed for {resume_id} with score {evaluation_result.overall_score} by process {process_id}")
+        final_score = overall_score if use_consolidated else evaluation_result.overall_score
+        logger.info(f"Resume evaluation completed for {resume_id} with score {final_score} by process {process_id} using {'consolidated' if use_consolidated else 'agentic'} evaluator")
 
     except Exception as e:
         logger.error(f"Background evaluation failed for resume {resume_id}: {e}")

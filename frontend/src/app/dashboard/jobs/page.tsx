@@ -148,12 +148,12 @@ const TECH_STACK_JOB_BOARDS = [
 
 export default function JobsPage() {
     return (
-        <div className="min-h-screen bg-primary-950">
+        <div className="min-h-screen bg-background">
             {/* Constrain content width for large monitors */}
             <div className="max-w-7xl mx-auto p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
                 <div className="text-center space-y-2">
-                    <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-4xl 2xl:text-4xl font-bold text-cream-50">Job Search Interface</h1>
-                    <p className="text-cream-300 text-sm sm:text-base lg:text-lg xl:text-lg 2xl:text-lg">
+                    <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-4xl 2xl:text-4xl font-bold text-foreground">Job Search Interface</h1>
+                    <p className="text-muted-foreground text-sm sm:text-base lg:text-lg xl:text-lg 2xl:text-lg">
                         Find your next opportunity across multiple job platforms
                     </p>
                 </div>
@@ -161,33 +161,33 @@ export default function JobsPage() {
                 <div className="space-y-4 sm:space-y-6">
                     {/* Tech Stack Job Boards Section */}
                     <div className="space-y-4">
-                        <h3 className="text-lg font-semibold flex items-center gap-2 text-cream-50">
-                            <Briefcase className="h-5 w-5 text-accent-500" />
+                        <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground">
+                            <Briefcase className="h-5 w-5 text-primary" />
                             Tech Stack Job Boards
                         </h3>
                         <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4">
                             {TECH_STACK_JOB_BOARDS.map((board) => (
-                                <Card key={board.name} className="premium-card hover:scale-105 transition-all duration-300 cursor-pointer">
+                                <Card key={board.name} className="premium-card hover:scale-105 transition-all duration-300 cursor-pointer group">
                                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                        <CardTitle className="text-sm font-medium text-cream-50 flex items-center gap-2">
-                                            <Briefcase className="h-4 w-4 text-accent-500" />
+                                        <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2 group-hover:text-primary transition-colors">
+                                            <Briefcase className="h-4 w-4 text-primary" />
                                             {board.name}
                                         </CardTitle>
                                         <Button
                                             size="sm"
                                             variant="ghost"
                                             onClick={() => window.open(board.url, '_blank')}
-                                            className="h-6 w-6 p-0"
+                                            className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
                                         >
                                             <ExternalLink className="h-3 w-3" />
                                         </Button>
                                     </CardHeader>
                                     <CardContent>
-                                        <div className="text-xs text-cream-300 mb-2">
+                                        <div className="text-xs text-muted-foreground mb-2">
                                             {board.description}
                                         </div>
                                         {board.requiresAuth && (
-                                            <Badge variant="outline" className="text-xs">
+                                            <Badge variant="outline" className="text-xs border-muted-foreground/30 text-muted-foreground">
                                                 Requires Account
                                             </Badge>
                                         )}
@@ -199,33 +199,33 @@ export default function JobsPage() {
 
                     {/* Startup Job Boards Section */}
                     <div className="space-y-4">
-                        <h3 className="text-lg font-semibold flex items-center gap-2 text-cream-50">
-                            <Rocket className="h-5 w-5 text-accent-500" />
+                        <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground">
+                            <Rocket className="h-5 w-5 text-primary" />
                             Startup Job Boards
                         </h3>
                         <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4">
                             {STARTUP_JOB_BOARDS.map((board) => (
-                                <Card key={board.name} className="premium-card hover:scale-105 transition-all duration-300 cursor-pointer">
+                                <Card key={board.name} className="premium-card hover:scale-105 transition-all duration-300 cursor-pointer group">
                                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                        <CardTitle className="text-sm font-medium text-cream-50 flex items-center gap-2">
-                                            <Rocket className="h-4 w-4 text-accent-500" />
+                                        <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2 group-hover:text-primary transition-colors">
+                                            <Rocket className="h-4 w-4 text-primary" />
                                             {board.name}
                                         </CardTitle>
                                         <Button
                                             size="sm"
                                             variant="ghost"
                                             onClick={() => window.open(board.url, '_blank')}
-                                            className="h-6 w-6 p-0"
+                                            className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
                                         >
                                             <ExternalLink className="h-3 w-3" />
                                         </Button>
                                     </CardHeader>
                                     <CardContent>
-                                        <div className="text-xs text-cream-300 mb-2">
+                                        <div className="text-xs text-muted-foreground mb-2">
                                             {board.description}
                                         </div>
                                         {board.requiresAuth && (
-                                            <Badge variant="outline" className="text-xs">
+                                            <Badge variant="outline" className="text-xs border-muted-foreground/30 text-muted-foreground">
                                                 Requires Account
                                             </Badge>
                                         )}

@@ -11,6 +11,7 @@ import { Logo } from "@/components/logo"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter, useSearchParams } from "next/navigation"
 import { createClient, checkGmailConnection } from "@/lib/supabase"
+import { useTheme } from "@/contexts/theme-context"
 import Link from "next/link"
 import {
   Eye,
@@ -21,10 +22,12 @@ import {
   AlertCircle,
   CheckCircle,
   ArrowLeft,
-  Loader2
+  Loader2,
+  Sun,
+  Moon
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { GmailConnection } from "@/components/gmail-connection"
+// Gmail connection component temporarily disabled after refactoring
 
 // Animation variants
 const _fadeInVariants = {
@@ -75,6 +78,7 @@ function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get('redirectTo') || '/dashboard'
+  const { isDark, toggleTheme } = useTheme()
 
   // Handle URL error parameters
   useEffect(() => {
@@ -255,11 +259,16 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen bg-primary-950 relative overflow-hidden flex items-center justify-center">
-      {/* Background Effects */}
+    <div className="min-h-screen bg-background relative overflow-hidden flex items-center justify-center">
+      {/* Background Effects - subtle and unified */}
       <div className="absolute inset-0">
+        <div className="grain-overlay"></div>
         <motion.div
-          className="absolute top-20 left-20 w-96 h-96 bg-gradient-radial from-accent-500/20 to-transparent rounded-full blur-3xl"
+          className={`absolute top-20 left-20 w-96 h-96 rounded-full blur-3xl ${
+            isDark
+              ? 'bg-gradient-radial from-white/5 to-transparent'
+              : 'bg-gradient-radial from-black/5 to-transparent'
+          }`}
           animate={{
             x: [0, 50, 0],
             y: [0, -30, 0],
@@ -267,7 +276,11 @@ function LoginForm() {
           transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
         />
         <motion.div
-          className="absolute bottom-20 right-20 w-96 h-96 bg-gradient-radial from-gold-500/20 to-transparent rounded-full blur-3xl"
+          className={`absolute bottom-20 right-20 w-96 h-96 rounded-full blur-3xl ${
+            isDark
+              ? 'bg-gradient-radial from-white/3 to-transparent'
+              : 'bg-gradient-radial from-black/3 to-transparent'
+          }`}
           animate={{
             x: [0, -50, 0],
             y: [0, 30, 0],
@@ -286,11 +299,31 @@ function LoginForm() {
         >
           <Link
             href="/"
-            className="inline-flex items-center text-cream-300 hover:text-accent-400 transition-colors"
+            className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Home
           </Link>
+        </motion.div>
+
+        {/* Theme Toggle */}
+        <motion.div
+          className="flex justify-end mb-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-full border border-border hover:bg-muted/50 transition-colors"
+            aria-label="Toggle Theme"
+          >
+            {isDark ? (
+              <Sun className="h-5 w-5 text-foreground" />
+            ) : (
+              <Moon className="h-5 w-5 text-foreground" />
+            )}
+          </button>
         </motion.div>
 
         {/* Logo and Branding */}
@@ -305,13 +338,13 @@ function LoginForm() {
           </motion.div>
           <motion.h1
             variants={staggerItem}
-            className="text-3xl font-title text-gradient-warm mb-2"
+            className="text-3xl font-bold tracking-tight text-foreground mb-2"
           >
-            JOBFLOW PRO
+            JOBFLOW <span className="opacity-50 font-light">PRO</span>
           </motion.h1>
           <motion.p
             variants={staggerItem}
-            className="text-cream-300"
+            className="text-muted-foreground"
           >
             {isSignUp ? "Create your account to get started" : "Welcome back! Sign in to your account"}
           </motion.p>
@@ -323,12 +356,12 @@ function LoginForm() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
         >
-          <Card className="premium-card-elevated border-accent-500/20 glow-orange">
+          <Card className="premium-card border border-border">
             <CardHeader className="space-y-4">
-              <CardTitle className="text-2xl text-center text-cream-50">
+              <CardTitle className="text-2xl text-center text-foreground">
                 {isSignUp ? "Create Account" : "Sign In"}
               </CardTitle>
-              <CardDescription className="text-center text-cream-300">
+              <CardDescription className="text-center text-muted-foreground">
                 {isSignUp
                   ? "Join thousands of students who've streamlined their job search"
                   : "Continue your job search journey"
@@ -364,7 +397,7 @@ function LoginForm() {
               <Button
                 onClick={handleGoogleSignIn}
                 disabled={isSubmitting || loading}
-                className="w-full bg-primary-700 hover:bg-primary-600 text-cream-50 border border-primary-500 hover:border-accent-500/50 transition-all duration-300"
+                className="w-full bg-background border border-border hover:bg-muted/50 text-foreground transition-all duration-300"
                 size="lg"
               >
                 {isSubmitting ? (
@@ -394,10 +427,10 @@ function LoginForm() {
 
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <Separator className="w-full bg-primary-600" />
+                  <Separator className="w-full" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-primary-800 px-2 text-cream-400">Or continue with email</span>
+                  <span className="bg-card px-2 text-muted-foreground">Or continue with email</span>
                 </div>
               </div>
 
@@ -405,7 +438,7 @@ function LoginForm() {
               <form onSubmit={handleEmailAuth} className="space-y-4">
                 {isSignUp && (
                   <div className="space-y-2">
-                    <Label htmlFor="fullName" className="text-cream-200">Full Name</Label>
+                    <Label htmlFor="fullName" className="text-foreground">Full Name</Label>
                     <Input
                       id="fullName"
                       type="text"
@@ -413,20 +446,20 @@ function LoginForm() {
                       value={formData.fullName}
                       onChange={(e) => handleInputChange("fullName", e.target.value)}
                       className={cn(
-                        "bg-primary-700 border-primary-600 text-cream-50 placeholder-cream-400",
-                        "focus:border-accent-500 focus:ring-accent-500/20",
-                        formErrors.fullName && "border-red-500 focus:border-red-500"
+                        "bg-background border-border text-foreground placeholder:text-muted-foreground",
+                        "focus:border-ring focus:ring-ring/20",
+                        formErrors.fullName && "border-destructive focus:border-destructive"
                       )}
                       disabled={isSubmitting}
                     />
                     {formErrors.fullName && (
-                      <p className="text-sm text-red-400">{formErrors.fullName}</p>
+                      <p className="text-sm text-destructive">{formErrors.fullName}</p>
                     )}
                   </div>
                 )}
 
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-cream-200">Email</Label>
+                  <Label htmlFor="email" className="text-foreground">Email</Label>
                   <div className="relative">
                     <Input
                       id="email"
@@ -435,21 +468,21 @@ function LoginForm() {
                       value={formData.email}
                       onChange={(e) => handleInputChange("email", e.target.value)}
                       className={cn(
-                        "bg-primary-700 border-primary-600 text-cream-50 placeholder-cream-400 pl-10",
-                        "focus:border-accent-500 focus:ring-accent-500/20",
-                        formErrors.email && "border-red-500 focus:border-red-500"
+                        "bg-background border-border text-foreground placeholder:text-muted-foreground pl-10",
+                        "focus:border-ring focus:ring-ring/20",
+                        formErrors.email && "border-destructive focus:border-destructive"
                       )}
                       disabled={isSubmitting}
                     />
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-cream-400" />
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   </div>
                   {formErrors.email && (
-                    <p className="text-sm text-red-400">{formErrors.email}</p>
+                    <p className="text-sm text-destructive">{formErrors.email}</p>
                   )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="text-cream-200">Password</Label>
+                  <Label htmlFor="password" className="text-foreground">Password</Label>
                   <div className="relative">
                     <Input
                       id="password"
@@ -458,30 +491,30 @@ function LoginForm() {
                       value={formData.password}
                       onChange={(e) => handleInputChange("password", e.target.value)}
                       className={cn(
-                        "bg-primary-700 border-primary-600 text-cream-50 placeholder-cream-400 pl-10 pr-10",
-                        "focus:border-accent-500 focus:ring-accent-500/20",
-                        formErrors.password && "border-red-500 focus:border-red-500"
+                        "bg-background border-border text-foreground placeholder:text-muted-foreground pl-10 pr-10",
+                        "focus:border-ring focus:ring-ring/20",
+                        formErrors.password && "border-destructive focus:border-destructive"
                       )}
                       disabled={isSubmitting}
                     />
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-cream-400" />
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-cream-400 hover:text-cream-200"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
                       disabled={isSubmitting}
                     >
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                   {formErrors.password && (
-                    <p className="text-sm text-red-400">{formErrors.password}</p>
+                    <p className="text-sm text-destructive">{formErrors.password}</p>
                   )}
                 </div>
 
                 {isSignUp && (
                   <div className="space-y-2">
-                    <Label htmlFor="confirmPassword" className="text-cream-200">Confirm Password</Label>
+                    <Label htmlFor="confirmPassword" className="text-foreground">Confirm Password</Label>
                     <div className="relative">
                       <Input
                         id="confirmPassword"
@@ -490,16 +523,16 @@ function LoginForm() {
                         value={formData.confirmPassword}
                         onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
                         className={cn(
-                          "bg-primary-700 border-primary-600 text-cream-50 placeholder-cream-400 pl-10",
-                          "focus:border-accent-500 focus:ring-accent-500/20",
-                          formErrors.confirmPassword && "border-red-500 focus:border-red-500"
+                          "bg-background border-border text-foreground placeholder:text-muted-foreground pl-10",
+                          "focus:border-ring focus:ring-ring/20",
+                          formErrors.confirmPassword && "border-destructive focus:border-destructive"
                         )}
                         disabled={isSubmitting}
                       />
-                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-cream-400" />
+                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     </div>
                     {formErrors.confirmPassword && (
-                      <p className="text-sm text-red-400">{formErrors.confirmPassword}</p>
+                      <p className="text-sm text-destructive">{formErrors.confirmPassword}</p>
                     )}
                   </div>
                 )}
@@ -507,7 +540,7 @@ function LoginForm() {
                 <Button
                   type="submit"
                   disabled={isSubmitting || loading}
-                  className="w-full bg-gradient-warm hover:bg-gradient-gold text-white glow-orange hover:glow-gold transition-all duration-300"
+                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-300"
                   size="lg"
                 >
                   {isSubmitting ? (
@@ -522,8 +555,8 @@ function LoginForm() {
               </form>
 
               {/* Toggle between Sign In / Sign Up */}
-              <div className="text-center pt-4 border-t border-primary-600">
-                <p className="text-cream-300">
+              <div className="text-center pt-4 border-t border-border">
+                <p className="text-muted-foreground">
                   {isSignUp ? "Already have an account?" : "New to JobFlow Pro?"}
                   {" "}
                   <button
@@ -534,7 +567,7 @@ function LoginForm() {
                       setAuthError("")
                       setAuthSuccess("")
                     }}
-                    className="text-accent-400 hover:text-accent-300 font-medium transition-colors"
+                    className="text-primary hover:text-primary/80 font-medium transition-colors"
                     disabled={isSubmitting}
                   >
                     {isSignUp ? "Sign in here" : "Create account"}
@@ -546,7 +579,7 @@ function LoginForm() {
                 <div className="text-center">
                   <Link
                     href="/forgot-password"
-                    className="text-sm text-cream-400 hover:text-accent-400 transition-colors"
+                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
                   >
                     Forgot your password?
                   </Link>
@@ -564,17 +597,30 @@ function LoginForm() {
             transition={{ duration: 0.6 }}
             className="mt-6"
           >
-            <GmailConnection
-              showAsCard={true}
-              onConnectionChange={(connected) => {
-                setGmailConnected(connected)
-                if (connected) {
-                  setAuthSuccess("Gmail connected successfully! Redirecting to dashboard...")
-                  setTimeout(() => router.push(redirectTo), 2000)
-                }
-              }}
-              className="max-w-md mx-auto"
-            />
+            <Card className="max-w-md mx-auto">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Mail className="w-5 h-5" />
+                  Gmail Connection
+                </CardTitle>
+                <CardDescription>
+                  Gmail connection temporarily disabled during refactoring.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  onClick={() => router.push('/dashboard')}
+                  className="w-full"
+                >
+                  Continue to Dashboard
+                </Button>
+              </CardContent>
+            </Card>
+            <Card className="max-w-md mx-auto">
+              <CardContent className="p-4">
+                <p className="text-sm text-muted-foreground">Gmail connection component is temporarily disabled.</p>
+              </CardContent>
+            </Card>
 
             {/* Skip for now option */}
             <div className="text-center mt-4">
@@ -583,7 +629,7 @@ function LoginForm() {
                   setAuthSuccess("Account created successfully! Redirecting to dashboard...")
                   setTimeout(() => router.push(redirectTo), 1500)
                 }}
-                className="text-sm text-cream-400 hover:text-accent-400 transition-colors underline"
+                className="text-sm text-muted-foreground hover:text-primary transition-colors underline"
               >
                 Skip for now (you can connect Gmail later in settings)
               </button>
@@ -593,18 +639,18 @@ function LoginForm() {
 
         {/* Footer */}
         <motion.div
-          className="text-center mt-8 text-sm text-cream-400"
+          className="text-center mt-8 text-sm text-muted-foreground"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.4 }}
         >
           <p>
             By continuing, you agree to our{" "}
-            <Link href="/terms" className="text-accent-400 hover:text-accent-300">
+            <Link href="/terms" className="text-primary hover:text-primary/80">
               Terms of Service
             </Link>{" "}
             and{" "}
-            <Link href="/privacy" className="text-accent-400 hover:text-accent-300">
+            <Link href="/privacy" className="text-primary hover:text-primary/80">
               Privacy Policy
             </Link>
           </p>
@@ -617,8 +663,8 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-primary-950 flex items-center justify-center">
-        <div className="text-cream-50">Loading...</div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-foreground">Loading...</div>
       </div>
     }>
       <LoginForm />

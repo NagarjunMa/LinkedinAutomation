@@ -1,27 +1,44 @@
-from pydantic import BaseModel
-from typing import Optional, Dict, Any
+from pydantic import BaseModel, ConfigDict
+from typing import Optional, Dict, Any, List
 from datetime import datetime
 
-class ActivityRecordCreate(BaseModel):
-    user_id: str
-    activity_type: str  # 'job_extraction' or 'referral_email'
-    metadata: Optional[Dict[str, Any]] = None
 
-class ActivityRecordResponse(BaseModel):
+class ActivityRecordBase(BaseModel):
+    activity_type: str
+    activity_subtype: Optional[str] = None
+    title: Optional[str] = None
+    description: Optional[str] = None
+    activity_metadata: Optional[Dict[str, Any]] = None
+    duration_seconds: Optional[int] = None
+    is_automated: Optional[bool] = False
+    source: Optional[str] = None
+
+
+class ActivityRecordCreate(ActivityRecordBase):
+    pass
+
+
+class ActivityRecordUpdate(ActivityRecordBase):
+    activity_type: Optional[str] = None
+
+
+class ActivityRecord(ActivityRecordBase):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     user_id: str
-    activity_type: str
+    timestamp: datetime
     created_at: datetime
-    metadata: Optional[Dict[str, Any]] = None
 
-class ActivityStatsResponse(BaseModel):
-    total_tasks: int
-    active_days: int
-    max_streak: int
-    current_streak: int
 
-class DailyActivityResponse(BaseModel):
-    date: str
-    job_extractions: int
-    referral_emails: int
-    total_tasks: int
+class ActivitySummary(BaseModel):
+    total_activities: int
+    activities_today: int
+    activities_this_week: int
+    activities_this_month: int
+    activity_types: Dict[str, int]
+
+
+class ActivityCalendarResponse(BaseModel):
+    activities: List[ActivityRecord]
+    summary: ActivitySummary

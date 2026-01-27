@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { User, Session } from '@supabase/supabase-js'
-import { createClient, signInWithGoogle, signOut, getCurrentUser, getSession } from '@/lib/supabase'
+import { createClient, signInWithGoogle, signOut, getCurrentUser, getSession, clearAllAuthData } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 
 interface AuthContextType {
@@ -26,8 +26,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true
     let retryCount = 0
-    const maxRetries = 5 // Increased retries for auth-critical flows
-    const retryDelay = 300
+    const maxRetries = 3 // Reduced retries to prevent infinite loops
+    const retryDelay = 500
+    let lastErrorMessage = ''
 
     // Get initial session with comprehensive retry logic
     const getInitialSession = async (): Promise<void> => {
@@ -41,14 +42,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         const session = await getSession()
-        console.log(`AuthContext: Session attempt ${retryCount + 1}:`, {
-          hasSession: !!session,
-          hasUser: !!session?.user,
-          userId: session?.user?.id,
-          pathname: typeof window !== 'undefined' ? window.location.pathname : 'SSR',
-          retryCount,
-          timestamp: new Date().toISOString()
-        })
 
         if (!mounted) return
 
@@ -56,7 +49,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setSession(session)
           setUser(session.user)
           setLoading(false)
-          console.log(`✅ AuthContext: Session loaded successfully after ${retryCount + 1} attempts`)
           return
         }
 
@@ -68,29 +60,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if ((isProtectedRoute || fromOAuthCallback || fromEmailConfirmation) && retryCount < maxRetries) {
           retryCount++
-          console.log(`🔄 AuthContext: Retrying session retrieval (${retryCount}/${maxRetries}) - Protected route or callback detected`)
           setTimeout(() => getInitialSession(), 0)
           return
         }
 
         // No session found after retries
-        console.log(`❌ AuthContext: No session found after ${retryCount + 1} attempts`)
         setSession(null)
         setUser(null)
         setLoading(false)
-      } catch (error) {
-        console.error('❌ AuthContext: Error getting initial session:', error)
+      } catch (error: any) {
         if (!mounted) return
 
-        if (retryCount < maxRetries) {
+        // Check for refresh token errors and stop retrying if we get the same error repeatedly
+        const errorMessage = error?.message || ''
+        const isRefreshTokenError = errorMessage.includes('Invalid Refresh Token') ||
+          errorMessage.includes('refresh_token_not_found')
+
+        if (isRefreshTokenError) {
+          setSession(null)
+          setUser(null)
+          setLoading(false)
+          return
+        }
+
+        // Only retry if it's not the same error and we haven't exceeded max retries
+        if (retryCount < maxRetries && errorMessage !== lastErrorMessage) {
+          lastErrorMessage = errorMessage
           retryCount++
-          console.log(`🔄 AuthContext: Error recovery retry (${retryCount}/${maxRetries})...`)
           setTimeout(() => getInitialSession(), retryDelay * retryCount)
           return
         }
 
         // Clear any invalid session state after all retries
-        console.log(`❌ AuthContext: Giving up after ${retryCount + 1} attempts`)
         setSession(null)
         setUser(null)
         setLoading(false)
@@ -99,36 +100,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Also set up auth state change listener
     const supabase = createClient()
+    let authEventCount = 0
+    const maxAuthEvents = 10 // Prevent infinite auth event loops
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('✉️ AuthContext: Auth state change:', {
-          event,
-          hasSession: !!session,
-          hasUser: !!session?.user,
-          userId: session?.user?.id,
-          pathname: typeof window !== 'undefined' ? window.location.pathname : 'SSR',
-          timestamp: new Date().toISOString()
-        })
+        authEventCount++
+
+        // If we've had too many auth events in a short time, it might be a loop
+        if (authEventCount > maxAuthEvents) {
+          console.warn('🚨 AuthContext: Too many auth events, possible infinite loop detected. Clearing session.')
+          await clearAllAuthData()
+          setSession(null)
+          setUser(null)
+          setLoading(false)
+          return
+        }
 
         if (!mounted) return
 
         if (event === 'SIGNED_IN' && session) {
-          console.log('✅ AuthContext: User signed in via auth state change')
           setSession(session)
           setUser(session.user)
           setLoading(false)
         } else if (event === 'SIGNED_OUT') {
-          console.log('🚪 AuthContext: User signed out via auth state change')
           setSession(null)
           setUser(null)
           setLoading(false)
         } else if (event === 'TOKEN_REFRESHED' && session) {
-          console.log('🔄 AuthContext: Token refreshed via auth state change')
           setSession(session)
           setUser(session.user)
           setLoading(false)
         } else if (event === 'INITIAL_SESSION') {
-          console.log('🎯 AuthContext: Initial session event received')
           // Handle initial session event
           if (session) {
             setSession(session)
@@ -139,6 +142,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
           setLoading(false)
         }
+
+        // Reset auth event counter after a delay
+        setTimeout(() => {
+          authEventCount = Math.max(0, authEventCount - 1)
+        }, 1000)
       }
     )
 
@@ -169,7 +177,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null)
       setSession(null)
       // Clear any stored session data
-      clearSession()
+      await clearSession()
       // Sign out from Supabase
       await signOut()
       // Redirect to landing page
@@ -198,35 +206,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const clearSession = () => {
-    // Clear any stored session data
-    if (typeof window !== 'undefined') {
-      try {
-        // Clear legacy token storage
-        localStorage.removeItem('supabase.auth.token')
-        sessionStorage.removeItem('supabase.auth.token')
-
-        // Clear all Supabase-related items from localStorage
-        const keys = Object.keys(localStorage)
-        keys.forEach(key => {
-          if (key.startsWith('sb-') || key.includes('supabase')) {
-            localStorage.removeItem(key)
-          }
-        })
-
-        // Clear sessionStorage too
-        const sessionKeys = Object.keys(sessionStorage)
-        sessionKeys.forEach(key => {
-          if (key.startsWith('sb-') || key.includes('supabase')) {
-            sessionStorage.removeItem(key)
-          }
-        })
-
-        console.log('AuthContext: Session storage cleared')
-      } catch (error) {
-        console.warn('AuthContext: Failed to clear session storage:', error)
-      }
-    }
+  const clearSession = async () => {
+    await clearAllAuthData()
   }
 
   const value = {

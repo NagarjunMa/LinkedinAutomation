@@ -12,7 +12,34 @@ export const createClient = () => {
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: true,
-      debug: process.env.NODE_ENV === 'development'
+      debug: process.env.NODE_ENV === 'development',
+      storage: {
+        getItem: (key: string) => {
+          if (typeof window === 'undefined') return null
+          try {
+            return localStorage.getItem(key)
+          } catch (error) {
+            console.warn(`Failed to get storage item ${key}:`, error)
+            return null
+          }
+        },
+        setItem: (key: string, value: string) => {
+          if (typeof window === 'undefined') return
+          try {
+            localStorage.setItem(key, value)
+          } catch (error) {
+            console.warn(`Failed to set storage item ${key}:`, error)
+          }
+        },
+        removeItem: (key: string) => {
+          if (typeof window === 'undefined') return
+          try {
+            localStorage.removeItem(key)
+          } catch (error) {
+            console.warn(`Failed to remove storage item ${key}:`, error)
+          }
+        }
+      }
     },
     cookies: {
       get(name: string) {
@@ -82,21 +109,46 @@ export const createClient = () => {
   })
 }
 
+// Get the correct redirect URL based on environment
+const getRedirectUrl = () => {
+  // Use environment variable if available, otherwise fall back to production URL
+  const productionUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://linkedinautomation-production-83d0.up.railway.app'
+
+  // In production, always use the production URL
+  if (process.env.NODE_ENV === 'production') {
+    return `${productionUrl}/api/auth/callback`
+  }
+
+  // In development, use the current origin
+  if (typeof window !== 'undefined') {
+    return `${window.location.origin}/api/auth/callback`
+  }
+
+  // Fallback for SSR
+  return 'http://localhost:3000/api/auth/callback'
+}
+
 // Auth utilities for client-side use
 export const signInWithGoogle = async () => {
   const supabase = createClient()
 
   try {
+    // Clear any existing corrupted session first
+    await clearAllAuthData()
+
+    const redirectUrl = getRedirectUrl()
+    console.log('🔗 OAuth redirect URL:', redirectUrl)
+
     // Use signInWithOAuth with proper PKCE handling
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/api/auth/callback`,
+        redirectTo: redirectUrl,
         skipBrowserRedirect: false,
         queryParams: {
           access_type: 'offline',
-          prompt: 'select_account',
-          scope: 'email profile https://www.googleapis.com/auth/gmail.readonly'
+          prompt: 'consent', // Force consent to ensure fresh tokens
+          scope: 'openid email profile https://www.googleapis.com/auth/gmail.readonly'
         }
       }
     })
@@ -138,7 +190,9 @@ export const getSession = async () => {
       // Don't throw on certain recoverable errors
       if (error.message?.includes('Invalid Refresh Token') ||
           error.message?.includes('refresh_token_not_found')) {
-        console.log('Session expired or invalid, returning null')
+        console.log('Session expired or invalid, clearing all auth data')
+        // Clear corrupted session data immediately
+        await clearAllAuthData()
         return null
       }
       throw error
@@ -147,7 +201,56 @@ export const getSession = async () => {
     return session
   } catch (error) {
     console.error('getSession failed:', error)
+    // If any other error occurs, also clear auth data to prevent loops
+    if (error.message?.includes('Invalid Refresh Token') ||
+        error.message?.includes('refresh_token_not_found')) {
+      console.log('Clearing auth data due to session error')
+      await clearAllAuthData()
+    }
     throw error
+  }
+}
+
+// Utility function to clear all authentication data
+export const clearAllAuthData = async () => {
+  try {
+    const supabase = createClient()
+
+    // Force sign out from Supabase
+    await supabase.auth.signOut({ scope: 'local' })
+
+    // Clear browser storage
+    if (typeof window !== 'undefined') {
+      // Clear localStorage
+      const localKeys = Object.keys(localStorage)
+      localKeys.forEach(key => {
+        if (key.startsWith('sb-') || key.includes('supabase') || key.includes('auth')) {
+          localStorage.removeItem(key)
+        }
+      })
+
+      // Clear sessionStorage
+      const sessionKeys = Object.keys(sessionStorage)
+      sessionKeys.forEach(key => {
+        if (key.startsWith('sb-') || key.includes('supabase') || key.includes('auth')) {
+          sessionStorage.removeItem(key)
+        }
+      })
+
+      // Clear cookies
+      const cookies = document.cookie.split(';')
+      cookies.forEach(cookie => {
+        const [name] = cookie.split('=')
+        const cookieName = name?.trim()
+        if (cookieName && (cookieName.startsWith('sb-') || cookieName.includes('supabase'))) {
+          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`
+        }
+      })
+
+      console.log('✅ All authentication data cleared successfully')
+    }
+  } catch (error) {
+    console.warn('Error clearing auth data:', error)
   }
 }
 

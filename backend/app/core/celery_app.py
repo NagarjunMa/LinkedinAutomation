@@ -21,26 +21,13 @@ celery_app.conf.update(
     worker_prefetch_multiplier=1,
 )
 
-# Beat schedule for automated email scanning tasks
+# Beat schedule for automated tasks
+# Email scanning tasks disabled after refactoring
 celery_app.conf.beat_schedule = {
-    # Urgent email check every 2 hours
-    'check-urgent-emails': {
-        'task': 'app.tasks.email_scanning_tasks.check_urgent_emails',
-        'schedule': crontab(minute=0, hour='*/2'),  # Every 2 hours
-    },
-    
-    # User-scheduled full scans - check every 30 minutes
-    'process-scheduled-email-scans': {
-        'task': 'app.tasks.email_scanning_tasks.process_scheduled_scans',
-        'schedule': crontab(minute='*/30'),  # Check every 30 min
-    },
-    
-    # Health monitoring every hour
-    'monitor-email-scanning-health': {
-        'task': 'app.tasks.email_scanning_tasks.monitor_email_scanning_health',
-        'schedule': crontab(minute=0),  # Every hour
-    },
+    # Email tasks have been archived
+    # Add other scheduled tasks here as needed
 }
 
 # Import tasks
-from app.tasks import email_monitoring_tasks, email_scanning_tasks  # noqa 
+# Email tasks disabled after refactoring
+# from app.tasks import email_monitoring_tasks, email_scanning_tasks  # noqa 

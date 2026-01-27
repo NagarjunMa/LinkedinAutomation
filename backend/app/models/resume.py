@@ -35,7 +35,6 @@ class Resume(Base):
     # Relationships
     user = relationship("User", back_populates="resumes")
     evaluations = relationship("ResumeEvaluation", back_populates="resume")
-    evaluation_sessions = relationship("ResumeEvaluationSession", back_populates="resume")
     
     def __repr__(self):
         return f"<Resume(id={self.id}, filename={self.filename}, user_id={self.user_id})>"

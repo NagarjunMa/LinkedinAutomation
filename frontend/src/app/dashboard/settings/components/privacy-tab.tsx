@@ -20,31 +20,31 @@ function PrivacyTab({ userId: _userId }: PrivacyTabProps) {
 
     return (
         <div className="space-y-6">
-            <Card className="premium-card">
+            <Card className="premium-card bg-card border-border">
                 <CardHeader>
-                    <CardTitle className="text-cream-50 flex items-center gap-2">
+                    <CardTitle className="text-foreground flex items-center gap-2">
                         <Shield className="h-5 w-5" />
                         Privacy Settings
                     </CardTitle>
-                    <CardDescription className="text-cream-300">
+                    <CardDescription className="text-muted-foreground">
                         Control your data privacy and retention settings
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="flex items-center justify-between">
                         <div className="space-y-1">
-                            <Label className="text-cream-50">Data Retention</Label>
-                            <p className="text-sm text-cream-400">How long to keep your data (days)</p>
+                            <Label className="text-foreground">Data Retention</Label>
+                            <p className="text-sm text-muted-foreground">How long to keep your data (days)</p>
                         </div>
-                        <div className="text-cream-50">
+                        <div className="text-foreground">
                             {settings.data_retention_days} days
                         </div>
                     </div>
 
                     <div className="flex items-center justify-between">
                         <div className="space-y-1">
-                            <Label className="text-cream-50">Analytics</Label>
-                            <p className="text-sm text-cream-400">Allow analytics to improve the service</p>
+                            <Label className="text-foreground">Analytics</Label>
+                            <p className="text-sm text-muted-foreground">Allow analytics to improve the service</p>
                         </div>
                         <Switch
                             checked={settings.analytics_enabled}
@@ -55,7 +55,7 @@ function PrivacyTab({ userId: _userId }: PrivacyTabProps) {
                     </div>
 
                     <div className="pt-4">
-                        <Button className="bg-gradient-warm text-white">
+                        <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
                             Save Privacy Settings
                         </Button>
                     </div>

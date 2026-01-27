@@ -2,7 +2,8 @@
 
 import React, { createContext, useContext, useCallback, useEffect, useState } from 'react'
 import { JobStats, TimeRange } from '../types/stats'
-import { fetchJobStats, fetchRecentApplications, RecentApplication } from '../lib/api'
+import { fetchJobStats, fetchRecentApplications } from '../lib/api/jobs'
+import type { RecentApplication } from '../lib/api/types'
 
 interface DashboardContextType {
     stats: JobStats | null
@@ -85,10 +86,42 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         refreshData()
 
-        // Set up periodic refresh every 30 seconds
-        const interval = setInterval(refreshData, 30000)
+        // Set up intelligent refresh - only when tab is active and user is engaged
+        let interval: NodeJS.Timeout | null = null
 
-        return () => clearInterval(interval)
+        const startRefresh = () => {
+            if (interval) clearInterval(interval)
+            // Refresh every 5 minutes when active, instead of 30 seconds
+            interval = setInterval(refreshData, 300000) // 5 minutes
+        }
+
+        const stopRefresh = () => {
+            if (interval) {
+                clearInterval(interval)
+                interval = null
+            }
+        }
+
+        // Only refresh when page is visible
+        const handleVisibilityChange = () => {
+            if (document.hidden) {
+                stopRefresh()
+            } else {
+                refreshData() // Refresh immediately when tab becomes active
+                startRefresh()
+            }
+        }
+
+        // Start initial refresh cycle
+        startRefresh()
+
+        // Listen for visibility changes
+        document.addEventListener('visibilitychange', handleVisibilityChange)
+
+        return () => {
+            stopRefresh()
+            document.removeEventListener('visibilitychange', handleVisibilityChange)
+        }
     }, [refreshData])
 
     return (

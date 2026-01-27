@@ -33,31 +33,31 @@ function HistoryTab({ userId: _userId }: HistoryTabProps) {
 
     return (
         <div className="space-y-6">
-            <Card className="premium-card">
+            <Card className="premium-card bg-card border-border">
                 <CardHeader>
-                    <CardTitle className="text-cream-50 flex items-center gap-2">
+                    <CardTitle className="text-foreground flex items-center gap-2">
                         <Clock className="h-5 w-5" />
                         Change History
                     </CardTitle>
-                    <CardDescription className="text-cream-300">
+                    <CardDescription className="text-muted-foreground">
                         Track all changes made to your account
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     {history.map((item) => (
-                        <div key={item.id} className="flex items-center justify-between p-3 bg-primary-800 rounded-lg">
+                        <div key={item.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                             <div>
-                                <div className="text-cream-50 font-medium">{item.action}</div>
-                                <div className="text-sm text-cream-400">{item.details}</div>
+                                <div className="text-foreground font-medium">{item.action}</div>
+                                <div className="text-sm text-muted-foreground">{item.details}</div>
                             </div>
-                            <div className="text-sm text-cream-300">
+                            <div className="text-sm text-muted-foreground">
                                 {item.timestamp}
                             </div>
                         </div>
                     ))}
 
                     <div className="pt-4">
-                        <Button variant="outline" className="border-primary-600 text-cream-50">
+                        <Button variant="outline" className="border-border text-foreground hover:bg-muted">
                             Export History
                         </Button>
                     </div>

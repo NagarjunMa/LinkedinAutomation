@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Upload, CheckCircle, Target, Clock, FileText, Sparkles } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
-import { resumeApi, ResumeFile } from "@/app/lib/api"
+import { resumeApi } from "@/app/lib/api/resume"
+import { ResumeFile } from "@/app/lib/api/types"
 
 interface ResumeUploadModalProps {
   open: boolean
@@ -46,8 +47,8 @@ export function ResumeUploadModal({ open, onOpenChange, onUploadSuccess, onEvalu
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
     if (selectedFile) {
-      if (selectedFile.type !== "application/pdf" && selectedFile.type !== "application/msword" && 
-          selectedFile.type !== "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+      if (selectedFile.type !== "application/pdf" && selectedFile.type !== "application/msword" &&
+        selectedFile.type !== "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
         toast({
           title: "Invalid file type",
           description: "Please upload a PDF, DOC, or DOCX file.",
@@ -246,7 +247,7 @@ export function ResumeUploadModal({ open, onOpenChange, onUploadSuccess, onEvalu
                   <p className="text-sm text-muted-foreground mb-4">
                     Start AI evaluation immediately and get detailed analysis
                   </p>
-                  <Button 
+                  <Button
                     onClick={handleEvaluateNow}
                     className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
                   >
@@ -265,7 +266,7 @@ export function ResumeUploadModal({ open, onOpenChange, onUploadSuccess, onEvalu
                   <p className="text-sm text-muted-foreground mb-4">
                     Upload more resumes first, then evaluate all together
                   </p>
-                  <Button 
+                  <Button
                     onClick={handleMaybeLater}
                     variant="outline"
                     className="w-full"

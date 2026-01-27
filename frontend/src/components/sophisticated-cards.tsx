@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, memo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
@@ -28,7 +28,7 @@ interface OverviewCardProps {
     userId?: string  // User ID for activity tracking
 }
 
-export function OverviewCard({ title, period, stats, activityData, userId }: OverviewCardProps) {
+export const OverviewCard = memo(function OverviewCard({ title, period, stats, activityData, userId }: OverviewCardProps) {
     return (
         <Card className="premium-card hover:scale-105 transition-all duration-300 group h-full flex flex-col min-w-[280px] max-w-[500px] w-full">
             <CardHeader className="pb-3 flex-shrink-0">
@@ -60,7 +60,7 @@ export function OverviewCard({ title, period, stats, activityData, userId }: Ove
             </CardContent>
         </Card>
     )
-}
+});
 
 interface BalanceCardProps {
     title: string
@@ -123,7 +123,7 @@ interface QuickActionCardProps {
     }>
 }
 
-export function QuickActionCard({ title, actions }: QuickActionCardProps) {
+export const QuickActionCard = memo(function QuickActionCard({ title, actions }: QuickActionCardProps) {
     return (
         <Card className="premium-card transition-all duration-300 h-full flex flex-col w-full">
             <CardHeader className="pb-2 flex-shrink-0 px-4 pt-4">
@@ -162,7 +162,7 @@ export function QuickActionCard({ title, actions }: QuickActionCardProps) {
             </CardContent>
         </Card>
     )
-}
+});
 
 interface GoalsCardProps {
     title: string

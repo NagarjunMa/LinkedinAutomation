@@ -1,221 +1,184 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { useAuth } from "@/contexts/auth-context"
-import { Logo } from "@/components/logo"
+import React, { useState, createContext, useContext } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import {
-    BarChart3,
-    Briefcase,
     FileText,
     Search,
-    TrendingUp,
-    ChevronRight,
-    HelpCircle,
+    Briefcase,
     Users,
-    X,
-    UserPlus,
-    User
-} from "lucide-react"
+    ChevronRight,
+    PanelLeft,
+    LayoutGrid,
+    Settings,
+    LogOut,
+    ChevronDown
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from "@/contexts/auth-context";
 
-const mainNavigation = [
-    {
-        name: "Dashboard",
-        href: "/dashboard",
-        icon: BarChart3,
-        current: true,
-    },
-    {
-        name: "Applications",
-        href: "/dashboard/applications",
-        icon: Briefcase,
-        current: false,
-    },
-    {
-        name: "Job Search",
-        href: "/dashboard/jobs",
-        icon: Search,
-        current: false,
-    },
-    {
-        name: "Resume Manager",
-        href: "/dashboard/resume-evaluation",
-        icon: FileText,
-        current: false,
-    },
-    {
-        name: "Referrals",
-        href: "/dashboard/referrals",
-        icon: UserPlus,
-        current: false,
-    },
-    {
-        name: "Analytics",
-        href: "/dashboard/analytics",
-        icon: TrendingUp,
-        current: false,
-    },
-    {
-        name: "Profile",
-        href: "/dashboard/profile",
-        icon: User,
-        current: false,
-    },
-]
+// Sidebar State Management
+const SidebarContext = createContext<{
+    isCollapsed: boolean;
+    toggle: () => void;
+}>({ isCollapsed: false, toggle: () => { } });
 
+export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const [isCollapsed, setIsCollapsed] = useState(false);
+    const toggle = () => setIsCollapsed(!isCollapsed);
+    return (
+        <SidebarContext.Provider value={{ isCollapsed, toggle }}>
+            {children}
+        </SidebarContext.Provider>
+    );
+};
 
-const supportNavigation = [
-    {
-        name: "Help Center",
-        href: "/help",
-        icon: HelpCircle,
-    },
-]
+export const useSidebar = () => useContext(SidebarContext);
 
-interface SophisticatedSidebarProps {
-    className?: string
-    onClose?: () => void
-}
-
-export function SophisticatedSidebar({ className, onClose }: SophisticatedSidebarProps) {
-    const [collapsed, setCollapsed] = useState(false)
-    const pathname = usePathname()
-    const { user, loading } = useAuth()
-
-    // Get user display information
-    const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'
-    const userEmail = user?.email || ''
+const NavItem: React.FC<{
+    to: string;
+    label: string;
+    icon: React.ReactNode;
+    isCollapsed: boolean;
+}> = ({ to, label, icon, isCollapsed }) => {
+    const pathname = usePathname();
+    // Active if exact match or if it's a sub-route (e.g. /dashboard vs /dashboard/applications)
+    // For root /dashboard, exact match is needed to avoid highlighting on sub-pages if desired, 
+    // BUT usually dashboard home is overview.
+    // Let's do simple inclusion check or exact check for root.
+    const isActive = to === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(to);
 
     return (
-        <div className={cn(
-            "flex h-full flex-col bg-primary-900 border-r border-primary-600 transition-all duration-300",
-            collapsed ? "w-16" : "w-64",
-            className
-        )}>
+        <Link
+            href={to}
+            className={`
+          flex items-center gap-4 py-2 px-3 transition-all duration-500 group relative
+          ${isActive ? 'text-[#3b3b3b] bg-[#3b3b3b]/5' : 'text-[#3b3b3b]/40 hover:text-[#3b3b3b]/70 hover:bg-[#3b3b3b]/5'}
+        `}
+        >
+            <span className={`shrink-0 transition-transform duration-500 group-hover:scale-110 ${isActive ? 'opacity-100' : 'opacity-60 group-hover:opacity-100'}`}>
+                {icon}
+            </span>
+            {!isCollapsed && (
+                <motion.span
+                    initial={{ opacity: 0, x: -5 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="text-[11px] font-bold tracking-widest uppercase truncate"
+                >
+                    {label}
+                </motion.span>
+            )}
+            {isActive && !isCollapsed && (
+                <motion.div
+                    layoutId="active-nav-indicator"
+                    className="ml-auto"
+                    transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                >
+                    <div className="w-1 h-1 bg-[#3b3b3b] rounded-full" />
+                </motion.div>
+            )}
+            {isCollapsed && isActive && (
+                <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-[#3b3b3b]" />
+            )}
+        </Link>
+    );
+};
+
+export function SophisticatedSidebar({ onClose }: { onClose?: () => void }) {
+    const { isCollapsed, toggle } = useSidebar();
+    const { user } = useAuth();
+    const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
+
+    return (
+        <motion.nav
+            animate={{ width: isCollapsed ? 72 : 280 }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            className="fixed left-0 top-0 h-full border-r border-[#3b3b3b]/10 flex flex-col bg-[#f0eff2] z-50 overflow-hidden"
+        >
             {/* Header */}
-            <div className="flex h-16 items-center justify-between px-4 border-b border-primary-600">
-                {!collapsed && (
-                    <Link href="/dashboard" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
-                        <Logo size={32} showText={false} />
-                        <span className="text-lg font-semibold text-cream-50">JobFlow Pro</span>
-                    </Link>
-                )}
-                <div className="flex items-center gap-2">
-                    {/* Mobile close button */}
-                    {onClose && (
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={onClose}
-                            className="h-8 w-8 p-0 text-cream-300 hover:text-cream-50 hover:bg-primary-800 transition-all duration-200 lg:hidden"
+            <div className="p-6 flex items-center justify-between border-b border-[#3b3b3b]/5 h-20 shrink-0">
+                <Link href="/dashboard" className="flex items-center gap-3 overflow-hidden">
+                    <div className="shrink-0 w-8 h-8 border border-[#3b3b3b] flex items-center justify-center bg-white shadow-sm">
+                        <LayoutGrid className="w-4 h-4 text-[#3b3b3b]" />
+                    </div>
+                    {!isCollapsed && (
+                        <motion.h1
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="text-sm font-bold tracking-tighter text-[#3b3b3b] uppercase whitespace-nowrap"
                         >
-                            <X className="h-4 w-4" />
-                        </Button>
+                            JobFlow <span className="font-serif-italic lowercase">Pro</span>
+                        </motion.h1>
                     )}
-                    {/* Desktop collapse button */}
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setCollapsed(!collapsed)}
-                        className="h-8 w-8 p-0 text-cream-300 hover:text-cream-50 hover:bg-primary-800 transition-all duration-200 hidden lg:flex"
+                </Link>
+                {!isCollapsed && (
+                    <button
+                        onClick={() => { toggle(); if (onClose) onClose(); }}
+                        className="text-[#3b3b3b]/30 hover:text-[#3b3b3b] transition-colors p-1"
                     >
-                        <ChevronRight className={cn("h-4 w-4 transition-transform", collapsed && "rotate-180")} />
-                    </Button>
-                </div>
+                        <PanelLeft className="w-4 h-4" />
+                    </button>
+                )}
             </div>
 
-            {/* Main Navigation */}
-            <div className="flex-1 px-3 py-6">
-                <div className="space-y-1">
-                    <div className="px-3 mb-4">
-                        <h3 className="text-xs font-semibold text-cream-400 uppercase tracking-wider">
-                            {!collapsed && "MENU"}
-                        </h3>
-                    </div>
-                    {mainNavigation.map((item) => {
-                        const isActive = pathname === item.href
-                        return (
-                            <Link
-                                key={item.name}
-                                href={item.href}
-                                onClick={onClose}
-                                className={cn(
-                                    "group flex items-center px-3 py-3 text-sm md:text-base font-medium rounded-lg transition-all duration-200 min-h-[44px] touch-manipulation",
-                                    isActive
-                                        ? "bg-gradient-warm/20 text-accent-400 border-r-2 border-accent-500 glow-orange"
-                                        : "text-cream-300 hover:bg-primary-800 hover:text-cream-50"
-                                )}
-                            >
-                                <item.icon
-                                    className={cn(
-                                        "mr-3 h-5 w-5 md:h-6 md:w-6 flex-shrink-0",
-                                        isActive ? "text-accent-400" : "text-cream-300 group-hover:text-cream-50"
-                                    )}
-                                />
-                                {!collapsed && (
-                                    <span className="truncate flex-1">{item.name}</span>
-                                )}
-                                {isActive && !collapsed && (
-                                    <ChevronRight className="ml-auto h-4 w-4 text-accent-400" />
-                                )}
-                            </Link>
-                        )
-                    })}
-                </div>
-
-
-                {/* Support Section */}
-                <div className="mt-8">
-                    <div className="px-3 mb-4">
-                        <h3 className="text-xs font-semibold text-cream-400 uppercase tracking-wider">
-                            {!collapsed && "SUPPORT"}
-                        </h3>
-                    </div>
+            {/* Main Content */}
+            <div className="flex-1 px-3 py-6 space-y-8 overflow-y-auto overflow-x-hidden">
+                <div>
+                    {!isCollapsed && (
+                        <p className="px-4 mb-4 text-[9px] font-bold tracking-[0.3em] uppercase text-[#3b3b3b]/30">Platform</p>
+                    )}
                     <div className="space-y-1">
-                        {supportNavigation.map((item) => (
-                            <Link
-                                key={item.name}
-                                href={item.href}
-                                onClick={onClose}
-                                className="group flex items-center px-3 py-3 text-sm md:text-base font-medium text-cream-300 rounded-lg hover:bg-primary-800 hover:text-cream-50 transition-all duration-200 min-h-[44px] touch-manipulation"
-                            >
-                                <item.icon className="mr-3 h-5 w-5 md:h-6 md:w-6 flex-shrink-0 text-cream-300 group-hover:text-cream-50" />
-                                {!collapsed && (
-                                    <span className="truncate flex-1">{item.name}</span>
-                                )}
-                            </Link>
-                        ))}
+                        <NavItem to="/dashboard" label="Dashboard" icon={<LayoutGrid className="w-4 h-4" />} isCollapsed={isCollapsed} />
+                        <NavItem to="/dashboard/resume-evaluation" label="Resume Evaluator" icon={<FileText className="w-4 h-4" />} isCollapsed={isCollapsed} />
+                        <NavItem to="/dashboard/jobs" label="Job Search" icon={<Search className="w-4 h-4" />} isCollapsed={isCollapsed} />
+                        <NavItem to="/dashboard/applications" label="Applications" icon={<Briefcase className="w-4 h-4" />} isCollapsed={isCollapsed} />
+                        <NavItem to="/dashboard/referrals" label="Referrals" icon={<Users className="w-4 h-4" />} isCollapsed={isCollapsed} />
+                    </div>
+                </div>
+
+                <div>
+                    {!isCollapsed && (
+                        <p className="px-4 mb-4 text-[9px] font-bold tracking-[0.3em] uppercase text-[#3b3b3b]/30">Account</p>
+                    )}
+                    <div className="space-y-1">
+                        <NavItem to="/dashboard/profile" label="Profile Settings" icon={<Settings className="w-4 h-4" />} isCollapsed={isCollapsed} />
+                        <NavItem to="/logout" label="Sign Out" icon={<LogOut className="w-4 h-4" />} isCollapsed={isCollapsed} />
                     </div>
                 </div>
             </div>
 
-
-            {/* User Profile */}
-            <div className="px-4 py-4 border-t border-primary-600">
-                <div className="flex items-center">
-                    <div className="w-8 h-8 bg-gradient-warm rounded-full flex items-center justify-center glow-orange">
-                        <Users className="h-4 w-4 text-white" />
+            {/* Footer */}
+            <div className="p-4 border-t border-[#3b3b3b]/10 bg-white/30 shrink-0">
+                <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
+                    <div className="w-10 h-10 border border-[#3b3b3b]/10 flex items-center justify-center bg-white text-[12px] font-bold shrink-0">
+                        {userName.charAt(0).toUpperCase()}
                     </div>
-                    {!collapsed && (
-                        <div className="ml-3">
-                            {loading ? (
-                                <div className="space-y-1">
-                                    <div className="h-4 w-20 bg-primary-700 rounded animate-pulse"></div>
-                                    <div className="h-3 w-24 bg-primary-700 rounded animate-pulse"></div>
-                                </div>
-                            ) : (
-                                <>
-                                    <p className="text-sm font-medium text-cream-50">{userName}</p>
-                                    <p className="text-xs text-cream-300">{userEmail}</p>
-                                </>
-                            )}
-                        </div>
+                    {!isCollapsed && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="flex-1 overflow-hidden"
+                        >
+                            <p className="text-[10px] font-bold uppercase tracking-tighter truncate text-[#3b3b3b]">{userName}</p>
+                            <p className="text-[9px] text-[#3b3b3b]/40 italic truncate">Professional Account</p>
+                        </motion.div>
+                    )}
+                    {!isCollapsed && (
+                        <button onClick={toggle} className="text-[#3b3b3b]/20 hover:text-[#3b3b3b] transition-colors">
+                            <ChevronDown className="w-3 h-3" />
+                        </button>
                     )}
                 </div>
+                {isCollapsed && (
+                    <button
+                        onClick={toggle}
+                        className="mt-4 w-full flex justify-center text-[#3b3b3b]/20 hover:text-[#3b3b3b] transition-colors"
+                    >
+                        <PanelLeft className="w-4 h-4" />
+                    </button>
+                )}
             </div>
-        </div>
-    )
+        </motion.nav>
+    );
 }

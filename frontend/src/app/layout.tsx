@@ -1,14 +1,32 @@
 import type { Metadata } from "next"
-import { Urbanist } from "next/font/google"
+import { Urbanist, Inter, Playfair_Display, JetBrains_Mono } from "next/font/google"
 import "./globals.css"
 import { Providers } from "@/components/ui/providers"
 import { AuthProvider } from "@/contexts/auth-context"
+import { ThemeProvider } from "@/contexts/theme-context"
 import ErrorBoundary, { PageErrorFallback } from "@/components/error-boundary"
+
 
 const urbanist = Urbanist({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700", "800", "900"],
   variable: "--font-urbanist"
+})
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter"
+})
+
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  style: ['normal', 'italic'],
+  variable: "--font-playfair"
+})
+
+const jetbrains = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono"
 })
 
 export const metadata: Metadata = {
@@ -91,7 +109,7 @@ export default function RootLayout({
         {/* Clash Display Font - All Titles */}
         <link rel="preconnect" href="https://api.fontshare.com" />
         <link href="https://api.fontshare.com/v2/css?f[]=clash-display@200,300,400,500,600,700&display=swap" rel="stylesheet" />
-        
+
         {/* Stardom Font - Application Name "JOBFLOW PRO" */}
         <link href="https://api.fontshare.com/v2/css?f[]=stardom@400,500,600,700&display=swap" rel="stylesheet" />
         <script
@@ -124,13 +142,15 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${urbanist.className} ${urbanist.variable}`}>
+      <body className={`${urbanist.className} ${urbanist.variable} ${inter.variable} ${playfair.variable} ${jetbrains.variable}`}>
         <ErrorBoundary fallback={PageErrorFallback}>
-          <AuthProvider>
-            <Providers>
-              {children}
-            </Providers>
-          </AuthProvider>
+          <ThemeProvider>
+            <AuthProvider>
+              <Providers>
+                {children}
+              </Providers>
+            </AuthProvider>
+          </ThemeProvider>
         </ErrorBoundary>
       </body>
     </html>

@@ -44,35 +44,35 @@ interface Contact {
 
 
 interface ReferralTemplate {
-  id: string;
-  name: string;
-  content: string;
-  subject_line?: string;
-  contact_name?: string;
-  contact_company?: string;
-  created_at?: string;
-  was_sent?: boolean;
-  [key: string]: unknown;
+    id: string;
+    name: string;
+    content: string;
+    subject_line?: string;
+    contact_name?: string;
+    contact_company?: string;
+    created_at?: string;
+    was_sent?: boolean;
+    [key: string]: unknown;
 }
 
 interface SentReferral {
-  contact_name: string;
-  company: string;
-  sent_at: string;
-  contact_email: string;
-  position?: string;
-  contact_relationship?: string;
-  template_used?: string;
-  email_subject?: string;
-  email_body?: string;
-  response_received?: boolean;
-  sent_id: number;
-  [key: string]: unknown;
+    contact_name: string;
+    company: string;
+    sent_at: string;
+    contact_email: string;
+    position?: string;
+    contact_relationship?: string;
+    template_used?: string;
+    email_subject?: string;
+    email_body?: string;
+    response_received?: boolean;
+    sent_id: number;
+    [key: string]: unknown;
 }
 
 interface TemplateStats {
-  total: number;
-  [key: string]: unknown;
+    total: number;
+    [key: string]: unknown;
 }
 
 export default function ReferralsPage() {
@@ -96,9 +96,9 @@ export default function ReferralsPage() {
 
     const _getStatusBadge = (status: string) => {
         const styles = {
-            'draft': 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-            'sent': 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-            'responded': 'bg-green-500/20 text-green-400 border-green-500/30'
+            'draft': 'bg-yellow-500/20 text-yellow-600 border-yellow-500/30',
+            'sent': 'bg-blue-500/20 text-blue-600 border-blue-500/30',
+            'responded': 'bg-green-500/20 text-green-600 border-green-500/30'
         }
 
         const icons = {
@@ -220,11 +220,11 @@ export default function ReferralsPage() {
 
     const getRelationshipBadge = (relationship: string) => {
         const styles = {
-            'colleague': 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-            'alumni': 'bg-purple-500/20 text-purple-400 border-purple-500/30',
-            'linkedin_connection': 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
-            'friend': 'bg-green-500/20 text-green-400 border-green-500/30',
-            'other': 'bg-gray-500/20 text-gray-400 border-gray-500/30'
+            'colleague': 'bg-blue-500/20 text-blue-600 border-blue-500/30',
+            'alumni': 'bg-purple-500/20 text-purple-600 border-purple-500/30',
+            'linkedin_connection': 'bg-cyan-500/20 text-cyan-600 border-cyan-500/30',
+            'friend': 'bg-green-500/20 text-green-600 border-green-500/30',
+            'other': 'bg-gray-500/20 text-gray-600 border-gray-500/30'
         }
 
         const displayText = relationship.replace('_', ' ').split(' ').map(word =>
@@ -239,30 +239,30 @@ export default function ReferralsPage() {
     }
 
     return (
-        <div className="min-h-screen bg-primary-950 p-6">
+        <div className="min-h-screen bg-background p-6">
             <div className="max-w-7xl mx-auto space-y-6">
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div className="space-y-1">
-                        <h1 className="text-3xl font-bold text-cream-50 flex items-center gap-3">
-                            <UserPlus className="h-8 w-8 text-accent-400" />
+                        <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
+                            <UserPlus className="h-8 w-8 text-primary" />
                             Referral Manager
                         </h1>
-                        <p className="text-cream-300">
+                        <p className="text-muted-foreground">
                             Manage your referral network and generate email templates
                         </p>
                     </div>
                     <div className="flex gap-3">
                         <Button
                             variant="outline"
-                            className="border-accent-500/50 text-accent-400 hover:bg-accent-500/20"
+                            className="border-primary/50 text-foreground hover:bg-primary/20"
                         >
                             <Download className="h-4 w-4 mr-2" />
                             Export Data
                         </Button>
                         <Button
                             onClick={() => setShowNewReferralForm(true)}
-                            className="bg-gradient-warm hover:bg-gradient-gold text-white"
+                            className="bg-primary hover:bg-primary/90 text-primary-foreground"
                         >
                             <Plus className="h-4 w-4 mr-2" />
                             New Referral Request
@@ -272,54 +272,54 @@ export default function ReferralsPage() {
 
                 {/* Overview Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <Card className="premium-card">
+                    <Card className="premium-card bg-card border-border">
                         <CardContent className="p-6 flex items-center space-x-4">
                             <div className="p-3 rounded-full bg-blue-500/20">
-                                <Users className="h-6 w-6 text-blue-400" />
+                                <Users className="h-6 w-6 text-blue-500" />
                             </div>
                             <div>
-                                <p className="text-sm text-cream-300">Total Contacts</p>
-                                <p className="text-2xl font-bold text-cream-50">{contacts.length}</p>
+                                <p className="text-sm text-muted-foreground">Total Contacts</p>
+                                <p className="text-2xl font-bold text-foreground">{contacts.length}</p>
                             </div>
                         </CardContent>
                     </Card>
 
-                    <Card className="premium-card">
+                    <Card className="premium-card bg-card border-border">
                         <CardContent className="p-6 flex items-center space-x-4">
                             <div className="p-3 rounded-full bg-yellow-500/20">
-                                <Mail className="h-6 w-6 text-yellow-400" />
+                                <Mail className="h-6 w-6 text-yellow-500" />
                             </div>
                             <div>
-                                <p className="text-sm text-cream-300">Draft Templates</p>
-                                <p className="text-2xl font-bold text-cream-50">
+                                <p className="text-sm text-muted-foreground">Draft Templates</p>
+                                <p className="text-2xl font-bold text-foreground">
                                     {typeof templateStats?.draft_count === 'number' ? templateStats.draft_count : 0}
                                 </p>
                             </div>
                         </CardContent>
                     </Card>
 
-                    <Card className="premium-card">
+                    <Card className="premium-card bg-card border-border">
                         <CardContent className="p-6 flex items-center space-x-4">
                             <div className="p-3 rounded-full bg-green-500/20">
-                                <Mail className="h-6 w-6 text-green-400" />
+                                <Mail className="h-6 w-6 text-green-500" />
                             </div>
                             <div>
-                                <p className="text-sm text-cream-300">Templates Generated</p>
-                                <p className="text-2xl font-bold text-cream-50">
+                                <p className="text-sm text-muted-foreground">Templates Generated</p>
+                                <p className="text-2xl font-bold text-foreground">
                                     {typeof templateStats?.total_templates === 'number' ? templateStats.total_templates : 0}
                                 </p>
                             </div>
                         </CardContent>
                     </Card>
 
-                    <Card className="premium-card">
+                    <Card className="premium-card bg-card border-border">
                         <CardContent className="p-6 flex items-center space-x-4">
                             <div className="p-3 rounded-full bg-purple-500/20">
-                                <Save className="h-6 w-6 text-purple-400" />
+                                <Save className="h-6 w-6 text-purple-500" />
                             </div>
                             <div>
-                                <p className="text-sm text-cream-300">Response Rate</p>
-                                <p className="text-2xl font-bold text-cream-50">
+                                <p className="text-sm text-muted-foreground">Response Rate</p>
+                                <p className="text-2xl font-bold text-foreground">
                                     {typeof templateStats?.response_rate === 'number' ? `${templateStats.response_rate.toFixed(1)}%` : '0%'}
                                 </p>
                             </div>
@@ -328,38 +328,38 @@ export default function ReferralsPage() {
                 </div>
 
                 <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-                    <TabsList className="grid w-full grid-cols-5 bg-primary-800 border border-primary-600">
+                    <TabsList className="grid w-full grid-cols-5 bg-muted border border-border">
                         <TabsTrigger
                             value="overview"
-                            className="data-[state=active]:bg-gradient-warm data-[state=active]:text-white"
+                            className="data-[state=active]:bg-card data-[state=active]:text-foreground"
                         >
                             <BarChart3 className="h-4 w-4 mr-2" />
                             Overview
                         </TabsTrigger>
                         <TabsTrigger
                             value="generator"
-                            className="data-[state=active]:bg-gradient-warm data-[state=active]:text-white"
+                            className="data-[state=active]:bg-card data-[state=active]:text-foreground"
                         >
                             <Plus className="h-4 w-4 mr-2" />
                             Generate Template
                         </TabsTrigger>
                         <TabsTrigger
                             value="templates"
-                            className="data-[state=active]:bg-gradient-warm data-[state=active]:text-white"
+                            className="data-[state=active]:bg-card data-[state=active]:text-foreground"
                         >
                             <FileText className="h-4 w-4 mr-2" />
                             Templates
                         </TabsTrigger>
                         <TabsTrigger
                             value="contacts"
-                            className="data-[state=active]:bg-gradient-warm data-[state=active]:text-white"
+                            className="data-[state=active]:bg-card data-[state=active]:text-foreground"
                         >
                             <Users className="h-4 w-4 mr-2" />
                             Contacts
                         </TabsTrigger>
                         <TabsTrigger
                             value="analytics"
-                            className="data-[state=active]:bg-gradient-warm data-[state=active]:text-white"
+                            className="data-[state=active]:bg-card data-[state=active]:text-foreground"
                         >
                             <TrendingUp className="h-4 w-4 mr-2" />
                             Analytics
@@ -370,35 +370,35 @@ export default function ReferralsPage() {
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                             <div className="lg:col-span-2 space-y-6">
                                 {/* Recent Activity */}
-                                <Card className="premium-card">
+                                <Card className="premium-card bg-card border-border">
                                     <CardHeader>
-                                        <CardTitle className="text-cream-50 flex items-center gap-2">
-                                            <Clock className="h-5 w-5 text-accent-400" />
+                                        <CardTitle className="text-foreground flex items-center gap-2">
+                                            <Clock className="h-5 w-5 text-primary" />
                                             Recent Activity
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent>
                                         <div className="space-y-4">
                                             {templates.slice(0, 3).map((template) => (
-                                                <div key={template.id} className="flex items-center justify-between p-4 rounded-lg bg-primary-800/50 border border-primary-600">
+                                                <div key={template.id} className="flex items-center justify-between p-4 rounded-lg bg-muted/50 border border-border">
                                                     <div className="flex-1">
-                                                        <p className="text-cream-50 font-medium">{template.subject_line || 'No subject'}</p>
-                                                        <p className="text-cream-300 text-sm">To: {template.contact_name || 'Unknown'} • {template.contact_company || 'Unknown'}</p>
-                                                        <p className="text-cream-400 text-xs">Created {template.created_at ? new Date(template.created_at).toLocaleDateString() : 'Unknown date'}</p>
+                                                        <p className="text-foreground font-medium">{template.subject_line || 'No subject'}</p>
+                                                        <p className="text-muted-foreground text-sm">To: {template.contact_name || 'Unknown'} • {template.contact_company || 'Unknown'}</p>
+                                                        <p className="text-muted-foreground text-xs">Created {template.created_at ? new Date(template.created_at).toLocaleDateString() : 'Unknown date'}</p>
                                                     </div>
                                                     <div className="flex items-center gap-3">
                                                         {template.was_sent ? (
-                                                            <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+                                                            <Badge className="bg-blue-500/20 text-blue-600 border-blue-500/30">
                                                                 <Send className="h-3 w-3 mr-1" />
                                                                 Sent
                                                             </Badge>
                                                         ) : (
-                                                            <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">
+                                                            <Badge className="bg-yellow-500/20 text-yellow-600 border-yellow-500/30">
                                                                 <Clock className="h-3 w-3 mr-1" />
                                                                 Draft
                                                             </Badge>
                                                         )}
-                                                        <Button variant="ghost" size="sm" className="text-cream-300 hover:text-cream-50">
+                                                        <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
                                                             View
                                                         </Button>
                                                     </div>
@@ -406,8 +406,8 @@ export default function ReferralsPage() {
                                             ))}
                                             {templates.length === 0 && (
                                                 <div className="text-center py-8">
-                                                    <p className="text-cream-400">No templates created yet</p>
-                                                    <p className="text-cream-500 text-sm">Generate your first template to get started</p>
+                                                    <p className="text-muted-foreground">No templates created yet</p>
+                                                    <p className="text-muted-foreground/60 text-sm">Generate your first template to get started</p>
                                                 </div>
                                             )}
                                         </div>
@@ -426,20 +426,20 @@ export default function ReferralsPage() {
                     </TabsContent>
 
                     <TabsContent value="contacts" className="space-y-6">
-                        <Card className="premium-card">
+                        <Card className="premium-card bg-card border-border">
                             <CardHeader className="flex flex-row items-center justify-between">
-                                <CardTitle className="text-cream-50">My Contacts</CardTitle>
+                                <CardTitle className="text-foreground">My Contacts</CardTitle>
                                 <div className="flex gap-2">
                                     <div className="relative">
-                                        <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-cream-400" />
+                                        <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
                                         <Input
                                             placeholder="Search contacts..."
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
-                                            className="pl-10 bg-primary-800 border-primary-600 text-cream-50 w-64"
+                                            className="pl-10 bg-background border-input text-foreground w-64"
                                         />
                                     </div>
-                                    <Button variant="outline" size="sm" className="border-primary-600 text-cream-300">
+                                    <Button variant="outline" size="sm" className="border-border text-muted-foreground hover:text-foreground">
                                         <Filter className="h-4 w-4 mr-2" />
                                         Filter
                                     </Button>
@@ -449,11 +449,11 @@ export default function ReferralsPage() {
                                 <div className="space-y-4">
                                     {filteredContacts.length === 0 ? (
                                         <div className="text-center py-12">
-                                            <Users className="h-12 w-12 text-cream-400 mx-auto mb-4" />
-                                            <h3 className="text-cream-50 text-lg font-medium mb-2">
+                                            <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                                            <h3 className="text-foreground text-lg font-medium mb-2">
                                                 {searchQuery ? "No contacts found" : "No contacts yet"}
                                             </h3>
-                                            <p className="text-cream-400 mb-4">
+                                            <p className="text-muted-foreground mb-4">
                                                 {searchQuery
                                                     ? `No contacts match "${searchQuery}"`
                                                     : "Start by generating referral templates to build your contact network"
@@ -462,7 +462,7 @@ export default function ReferralsPage() {
                                             {!searchQuery && (
                                                 <Button
                                                     onClick={() => setSelectedTab("generator")}
-                                                    className="bg-accent-500 hover:bg-accent-600 text-white"
+                                                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
                                                 >
                                                     <Plus className="h-4 w-4 mr-2" />
                                                     Generate First Template
@@ -471,17 +471,17 @@ export default function ReferralsPage() {
                                         </div>
                                     ) : (
                                         filteredContacts.map((contact) => (
-                                            <div key={contact.id} className="flex items-center justify-between p-4 rounded-lg bg-primary-800/50 border border-primary-600 hover:bg-primary-800 transition-colors">
+                                            <div key={contact.id} className="flex items-center justify-between p-4 rounded-lg bg-muted/50 border border-border hover:bg-muted transition-colors">
                                                 <div className="flex-1">
                                                     <div className="flex items-center gap-3 mb-2">
-                                                        <h3 className="text-cream-50 font-medium">{contact.name}</h3>
+                                                        <h3 className="text-foreground font-medium">{contact.name}</h3>
                                                         {getRelationshipBadge(contact.relationship)}
                                                     </div>
-                                                    <p className="text-cream-300 text-sm">{contact.position} at {contact.company}</p>
-                                                    <p className="text-cream-400 text-xs">{contact.email} • Last contact: {contact.lastContact}</p>
+                                                    <p className="text-muted-foreground text-sm">{contact.position} at {contact.company}</p>
+                                                    <p className="text-muted-foreground text-xs">{contact.email} • Last contact: {contact.lastContact}</p>
                                                 </div>
                                                 <div className="flex items-center gap-2">
-                                                    <Button variant="outline" size="sm" className="border-accent-500/50 text-accent-400 hover:bg-accent-500/20">
+                                                    <Button variant="outline" size="sm" className="border-primary/50 text-primary hover:bg-primary/20">
                                                         <Mail className="h-4 w-4 mr-2" />
                                                         Request Referral
                                                     </Button>
@@ -528,15 +528,15 @@ export default function ReferralsPage() {
 
                 {/* New Referral Request Form Modal */}
                 {showNewReferralForm && (
-                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-                        <div className="bg-primary-800 rounded-lg border border-primary-600 max-w-4xl w-full max-h-[90vh] overflow-hidden">
-                            <div className="p-6 border-b border-primary-600 flex items-center justify-between">
-                                <h2 className="text-xl font-semibold text-cream-50">New Referral Request</h2>
+                    <div className="fixed inset-0 bg-background/80 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+                        <div className="bg-card rounded-lg border border-border max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
+                            <div className="p-6 border-b border-border flex items-center justify-between">
+                                <h2 className="text-xl font-semibold text-foreground">New Referral Request</h2>
                                 <Button
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => setShowNewReferralForm(false)}
-                                    className="text-cream-300 hover:text-cream-50"
+                                    className="text-muted-foreground hover:text-foreground"
                                 >
                                     ×
                                 </Button>
@@ -559,20 +559,20 @@ export default function ReferralsPage() {
 
                 {/* Detailed Referral View Modal */}
                 {selectedReferral && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                        <Card className="w-full max-w-2xl max-h-[90vh] overflow-hidden bg-primary-900 border-primary-700">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+                        <Card className="w-full max-w-2xl max-h-[90vh] overflow-hidden bg-card border-border">
                             <CardHeader className="pb-4">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <CardTitle className="text-cream-50">{selectedReferral.contact_name}</CardTitle>
-                                        <p className="text-cream-400">
+                                        <CardTitle className="text-foreground">{selectedReferral.contact_name}</CardTitle>
+                                        <p className="text-muted-foreground">
                                             {selectedReferral.company} • {formatDate(selectedReferral.sent_at)}
                                         </p>
                                     </div>
                                     <Button
                                         variant="ghost"
                                         onClick={() => setSelectedReferral(null)}
-                                        className="text-cream-400 hover:text-cream-50"
+                                        className="text-muted-foreground hover:text-foreground"
                                     >
                                         ×
                                     </Button>
@@ -581,27 +581,27 @@ export default function ReferralsPage() {
                             <CardContent className="space-y-4 overflow-y-auto">
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <p className="text-cream-400 text-sm">Email</p>
-                                        <p className="text-cream-50">{selectedReferral.contact_email}</p>
+                                        <p className="text-muted-foreground text-sm">Email</p>
+                                        <p className="text-foreground">{selectedReferral.contact_email}</p>
                                     </div>
                                     <div>
-                                        <p className="text-cream-400 text-sm">Position</p>
-                                        <p className="text-cream-50">{selectedReferral.position || 'Not specified'}</p>
+                                        <p className="text-muted-foreground text-sm">Position</p>
+                                        <p className="text-foreground">{selectedReferral.position || 'Not specified'}</p>
                                     </div>
                                     <div>
-                                        <p className="text-cream-400 text-sm">Relationship</p>
-                                        <p className="text-cream-50">{selectedReferral.contact_relationship || 'Not specified'}</p>
+                                        <p className="text-muted-foreground text-sm">Relationship</p>
+                                        <p className="text-foreground">{selectedReferral.contact_relationship || 'Not specified'}</p>
                                     </div>
                                     <div>
-                                        <p className="text-cream-400 text-sm">Template Used</p>
-                                        <p className="text-cream-50">{selectedReferral.template_used || 'Custom'}</p>
+                                        <p className="text-muted-foreground text-sm">Template Used</p>
+                                        <p className="text-foreground">{selectedReferral.template_used || 'Custom'}</p>
                                     </div>
                                 </div>
 
                                 {selectedReferral.email_subject && (
                                     <div>
-                                        <p className="text-cream-400 text-sm mb-2">Email Subject</p>
-                                        <p className="text-cream-50 p-3 bg-primary-800/50 rounded border border-primary-600">
+                                        <p className="text-muted-foreground text-sm mb-2">Email Subject</p>
+                                        <p className="text-foreground p-3 bg-muted/50 rounded border border-border">
                                             {selectedReferral.email_subject}
                                         </p>
                                     </div>
@@ -609,23 +609,23 @@ export default function ReferralsPage() {
 
                                 {selectedReferral.email_body && (
                                     <div>
-                                        <p className="text-cream-400 text-sm mb-2">Email Content</p>
-                                        <div className="p-4 bg-primary-800/50 rounded border border-primary-600 max-h-64 overflow-y-auto">
-                                            <pre className="text-cream-50 text-sm whitespace-pre-wrap font-sans">
+                                        <p className="text-muted-foreground text-sm mb-2">Email Content</p>
+                                        <div className="p-4 bg-muted/50 rounded border border-border max-h-64 overflow-y-auto">
+                                            <pre className="text-foreground text-sm whitespace-pre-wrap font-sans">
                                                 {selectedReferral.email_body}
                                             </pre>
                                         </div>
                                     </div>
                                 )}
 
-                                <div className="flex justify-end gap-2 pt-4 border-t border-primary-700">
+                                <div className="flex justify-end gap-2 pt-4 border-t border-border">
                                     {!selectedReferral.response_received && (
                                         <Button
                                             onClick={() => {
                                                 markResponseReceived(selectedReferral.sent_id)
                                                 setSelectedReferral(null)
                                             }}
-                                            className="bg-green-500/20 border border-green-500/50 text-green-400 hover:bg-green-500/30"
+                                            className="bg-green-500/20 border border-green-500/50 text-green-600 hover:bg-green-500/30"
                                         >
                                             <CheckCircle className="w-4 h-4 mr-2" />
                                             Mark Response Received
@@ -634,7 +634,7 @@ export default function ReferralsPage() {
                                     <Button
                                         variant="outline"
                                         onClick={() => setSelectedReferral(null)}
-                                        className="border-primary-600 text-cream-300"
+                                        className="border-border text-muted-foreground hover:text-foreground"
                                     >
                                         Close
                                     </Button>

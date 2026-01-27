@@ -18,39 +18,43 @@ export default {
   			'stardom': ['Stardom', 'sans-serif'],
   			'app-title': ['Stardom', 'sans-serif'], // JOBFLOW PRO application name
   			'adieu': ['Adieu', 'sans-serif'], // Backup for Adieu if files available
+  			// Resume evaluation specific fonts
+  			'inter': ['Inter', 'sans-serif'], // For resume evaluation UI
+  			'mono': ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'Monaco', 'Consolas', 'monospace'],
+            'serif': ['Playfair Display', 'serif'],
   		},
 		colors: {
-			// Premium theme colors - responsive to theme using CSS variables
-			primary: {
-				950: 'var(--primary-950)',
-				900: 'var(--primary-900)',
-				800: 'var(--primary-800)',
-				700: 'var(--primary-700)',
-				600: 'var(--primary-600)',
-				500: 'var(--primary-500)',
-				400: 'var(--primary-400)',
+			// Unified application theme colors
+			'app-bg': 'var(--app-bg)',
+			'app-text': 'var(--app-text)',
+			'app-card': 'var(--app-card)',
+			'app-card-border': 'var(--app-card-border)',
+			'app-muted': 'var(--app-muted)',
+			'app-accent': 'var(--app-accent)',
+
+			// Resume evaluation specific colors
+			'resume-primary': '#3b3b3b',
+			'resume-bg': '#f0eff2',
+			'resume-surface': '#ffffff',
+			'resume-surface-secondary': '#e5e4e9',
+			'resume-accent': '#ff7a30',
+			'resume-text': {
+				DEFAULT: '#3b3b3b',
+				secondary: 'rgb(59 59 59 / 0.7)',
+				muted: 'rgb(59 59 59 / 0.4)',
+				'xs-muted': 'rgb(59 59 59 / 0.3)',
 			},
-			// Orange accent colors - same for both themes
+			'resume-border': {
+				DEFAULT: 'rgb(59 59 59 / 0.05)',
+				hover: 'rgb(59 59 59 / 0.2)',
+			},
+
+			// Keep existing accent colors for special purposes
 			accent: {
 				600: '#e64a19', // Darker orange
 				500: '#ff5722', // Primary orange
 				400: '#ff6b3d', // Lighter orange
 				300: '#ff7f57', // Lightest orange
-			},
-			// Gold/yellow highlights - same for both themes
-			gold: {
-				600: '#d97706', // Deep gold
-				500: '#f59e0b', // Standard gold
-				400: '#fbbf24', // Bright gold
-				300: '#fcd34d', // Light gold
-			},
-			// Neutral text colors - responsive to theme using CSS variables
-			cream: {
-				50: 'var(--cream-50)',
-				100: 'var(--cream-100)',
-				200: 'var(--cream-200)',
-				300: 'var(--cream-300)',
-				400: 'var(--cream-400)',
 			},
   			// Keep existing shadcn colors for compatibility
   			background: 'hsl(var(--background))',
@@ -102,7 +106,21 @@ export default {
   		borderRadius: {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',
-  			sm: 'calc(var(--radius) - 4px)'
+  			sm: 'calc(var(--radius) - 4px)',
+  			// Resume evaluation specific radius
+  			'3xl': '1.875rem', // 30px
+  			'4xl': '2.5rem',   // 40px - for cards
+  		},
+  		letterSpacing: {
+  			'ultra-wide': '0.2em', // For ultra-wide tracking
+  		},
+  		fontSize: {
+  			'micro': '9px',
+  			'micro-sm': '10px',
+  			'11px': '11px',
+  		},
+  		backdropBlur: {
+  			'xs': '2px',
   		}
   	}
   },
