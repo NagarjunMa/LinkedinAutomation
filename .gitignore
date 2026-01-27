@@ -379,3 +379,6 @@ $RECYCLE.BIN/
 *.wmv
 *.flv
 *.webm
+.claude/
+.env.production
+
