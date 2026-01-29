@@ -119,6 +119,7 @@ class ResumeEvaluation(Base):
     # Enhanced evaluation fields
     critical_issues = Column(JSON, nullable=True)  # {immediate_fixes: [], strategic_improvements: [], nice_to_have: []}
     market_positioning = Column(JSON, nullable=True)  # {current_level: str, salary_range: str, target_roles: str, company_fit: {}}
+    wording_suggestions = Column(JSON, nullable=True)  # [{original: str, suggested: str, rationale: str}]
     
     # Evaluation metadata
     evaluated_at = Column(DateTime(timezone=True), server_default=func.now())

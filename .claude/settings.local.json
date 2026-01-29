@@ -8,7 +8,12 @@
       "Bash(uvicorn:*)",
       "Bash(npm run dev:*)",
       "Bash(npm install:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Read(//Users/nagarjunmallesh/Desktop/projects/backend/**)",
+      "Read(//Users/nagarjunmallesh/Desktop/projects/**)",
+      "Bash(find:*)",
+      "Bash(alembic:*)",
+      "mcp__supabase__execute_sql"
     ],
     "deny": [],
     "ask": []

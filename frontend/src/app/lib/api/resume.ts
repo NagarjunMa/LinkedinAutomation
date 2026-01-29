@@ -1,5 +1,5 @@
 import { ResumeFile, ResumeEvaluation, ResumeListItemResponse } from './types';
-import { makeAPIRequest } from './config';
+import { makeAPIRequest, getAuthHeaders } from './config';
 
 export const resumeApi = {
     // Upload resume
@@ -9,8 +9,15 @@ export const resumeApi = {
         if (targetRole) formData.append('target_role', targetRole);
         if (targetSeniority) formData.append('target_seniority', targetSeniority);
 
+        const authHeaders = await getAuthHeaders();
+        // Remove Content-Type to let browser set it with boundary for FormData
+        if (authHeaders['Content-Type']) {
+            delete authHeaders['Content-Type'];
+        }
+
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/resumes/upload`, {
             method: 'POST',
+            headers: authHeaders,
             body: formData,
         });
 
@@ -32,9 +39,9 @@ export const resumeApi = {
     },
 
     // Evaluate resume
-    evaluateResume: async (resumeId: string, targetRole?: string, targetSeniority?: string): Promise<{message: string, process_id: string, status: string}> => {
+    evaluateResume: async (resumeId: string, targetRole?: string, targetSeniority?: string): Promise<{ message: string, process_id: string, status: string }> => {
         const url = `/api/v1/resumes/${resumeId}/evaluate`;
-        const data = await makeAPIRequest<{message: string, process_id: string, status: string}>(url, {
+        const data = await makeAPIRequest<{ message: string, process_id: string, status: string }>(url, {
             method: 'POST',
             body: JSON.stringify({
                 resume_id: resumeId,
@@ -67,7 +74,7 @@ export const resumeApi = {
     // List resumes
     listResumes: async (): Promise<{ resumes: ResumeFile[]; totalCount: number }> => {
         const url = '/api/v1/resumes/list';
-        const data = await makeAPIRequest<{resumes: ResumeListItemResponse[], total_count: number, totalCount: number}>(url);
+        const data = await makeAPIRequest<{ resumes: ResumeListItemResponse[], total_count: number, totalCount: number }>(url);
 
         // For each resume, fetch the detailed evaluation if status is completed
         const resumesWithEvaluations = await Promise.all(
@@ -86,22 +93,30 @@ export const resumeApi = {
                 // If evaluation is completed, fetch the detailed results
                 if (baseResume.evaluation_status === 'completed') {
                     try {
-                        const detailedData = await makeAPIRequest<{evaluation: ResumeEvaluation}>(`/api/v1/resumes/${r.id}`);
+                        const detailedData = await makeAPIRequest<{ evaluation: ResumeEvaluation }>(`/api/v1/resumes/${r.id}`);
                         if (detailedData.evaluation) {
                             baseResume.evaluation_result = {
+                                id: detailedData.evaluation.id || r.id, // Fallback to resume ID if evaluation ID missing
+                                resume_id: detailedData.evaluation.resume_id || r.id,
                                 overall_score: detailedData.evaluation.overall_score,
+                                ai_score: detailedData.evaluation.ai_score,
                                 ats_compliance_score: detailedData.evaluation.ats_compliance_score,
+                                ats_score: detailedData.evaluation.ats_score,
                                 content_quality_score: detailedData.evaluation.content_quality_score,
                                 experience_points_score: detailedData.evaluation.experience_points_score,
                                 job_relevance_score: detailedData.evaluation.job_relevance_score,
                                 quality_checks_score: detailedData.evaluation.quality_checks_score,
                                 strengths: detailedData.evaluation.strengths || [],
+                                optical_strengths: detailedData.evaluation.optical_strengths || [],
                                 improvements: detailedData.evaluation.improvements || [],
+                                strategic_improvements: detailedData.evaluation.strategic_improvements || [],
                                 ats_compatibility: detailedData.evaluation.ats_compatibility,
+                                ats_compatibility_details: detailedData.evaluation.ats_compatibility_details,
                                 detailed_feedback: detailedData.evaluation.detailed_feedback,
                                 keyword_analysis: detailedData.evaluation.keyword_analysis || { relevant: [], missing: [], score: 0 },
                                 critical_issues: detailedData.evaluation.critical_issues,
                                 market_positioning: detailedData.evaluation.market_positioning,
+                                wording_suggestions: detailedData.evaluation.wording_suggestions,
                                 evaluation_metadata: detailedData.evaluation.evaluation_metadata,
                             };
                         }
@@ -123,7 +138,7 @@ export const resumeApi = {
     // Get resume with evaluation
     getResume: async (resumeId: string): Promise<ResumeFile & { evaluationResult?: ResumeEvaluation }> => {
         const url = `/api/v1/resumes/${resumeId}`;
-        const data = await makeAPIRequest<{resume: any, evaluation?: ResumeEvaluation}>(url);
+        const data = await makeAPIRequest<{ resume: any, evaluation?: ResumeEvaluation }>(url);
 
         return {
             id: data.resume.id,
@@ -134,19 +149,27 @@ export const resumeApi = {
             uploaded_at: data.resume.uploaded_at,
             evaluation_status: data.resume.evaluation_status,
             evaluation_result: data.evaluation ? {
+                id: data.evaluation.id || resumeId,
+                resume_id: data.evaluation.resume_id || resumeId,
                 overall_score: data.evaluation.overall_score,
+                ai_score: data.evaluation.ai_score,
                 ats_compliance_score: data.evaluation.ats_compliance_score,
+                ats_score: data.evaluation.ats_score,
                 content_quality_score: data.evaluation.content_quality_score,
                 experience_points_score: data.evaluation.experience_points_score,
                 job_relevance_score: data.evaluation.job_relevance_score,
                 quality_checks_score: data.evaluation.quality_checks_score,
                 strengths: data.evaluation.strengths || [],
+                optical_strengths: data.evaluation.optical_strengths || [],
                 improvements: data.evaluation.improvements || [],
+                strategic_improvements: data.evaluation.strategic_improvements || [],
                 ats_compatibility: data.evaluation.ats_compatibility,
+                ats_compatibility_details: data.evaluation.ats_compatibility_details,
                 detailed_feedback: data.evaluation.detailed_feedback,
                 keyword_analysis: data.evaluation.keyword_analysis || { relevant: [], missing: [], score: 0 },
                 critical_issues: data.evaluation.critical_issues,
                 market_positioning: data.evaluation.market_positioning,
+                wording_suggestions: data.evaluation.wording_suggestions,
                 evaluation_metadata: data.evaluation.evaluation_metadata,
             } : undefined,
         };

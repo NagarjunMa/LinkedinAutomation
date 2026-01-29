@@ -15,192 +15,58 @@ from docx import Document
 from sqlalchemy.orm import Session
 
 from app.core.ai_service import AIService
-from app.schemas.resume import ResumeEvaluationResult
+from app.schemas.resume import ResumePrecisionAnalysis, ResumeEvaluationResult
 from app.services.profile_service import ProfileService
 
 logger = logging.getLogger(__name__)
 
 # Comprehensive evaluation prompt combining all agent expertise
 COMPREHENSIVE_RESUME_EVALUATOR_PROMPT = """
-You are a senior hiring manager with 20+ years of experience who has screened 10,000+ resumes,
-hired hundreds of engineers across all levels (L3-L7), and worked at both FAANG companies and
-high-growth startups. You combine expertise in ATS systems, recruiter psychology, Harvard Career
-Services standards, and market trends.
+Role: You are a Hyper-Critical Senior Hiring Manager and ATS Architect with 20+ years of experience. You have hired for FAANG and high-growth startups.
+Current Date: {current_date}
 
-═══════════════════════════════════════════════════════════
-RESUME TO EVALUATE
-═══════════════════════════════════════════════════════════
+### OBJECTIVE
+Perform a "Precision Analysis" of the provided resume. You are certifying the candidate's market readiness. If a resume is mediocre, the score MUST be low. Do not provide generic encouragement; provide high-impact, data-driven critiques.
 
-{resume_content}
-
-═══════════════════════════════════════════════════════════
-USER CONTEXT
-═══════════════════════════════════════════════════════════
-
+### INPUT DATA
 Target Roles: {target_roles}
-Experience Level: {experience_level}
-Target Companies: {target_companies}
-Geographic Markets: {markets}
+User Context: {user_detailed_context}
 
-{user_detailed_context}
+### RESUME CONTENT
+### START_CONTENT ###
+{resume_content}
+### END_CONTENT ###
 
-═══════════════════════════════════════════════════════════
-EVALUATION FRAMEWORK (WEIGHTED SCORING)
-═══════════════════════════════════════════════════════════
+### EVALUATION LOGIC & UI BUCKETS
 
-Perform comprehensive analysis across these dimensions with specified weights:
+1. OPTICAL STRENGTHS (The 7-Second Scan):
+   - Assess visual hierarchy, branding, and "Above the Fold" impact.
+   - Does the header immediately communicate the candidate's value proposition?
 
-1. EXPERIENCE QUALITY & IMPACT (Weight: 22%)
-   Evaluate:
-   - Impact quantification: Measurable outcomes, revenue, cost savings, scale
-   - Career progression: Promotions, expanding scope, leadership growth
-   - Technical leadership: Architecture decisions, system design, mentoring
-   - Achievement depth: Specific accomplishments vs generic duties
-   - Scale credibility: Do metrics align with company size and role?
+2. STRATEGIC IMPROVEMENTS (Architecture & Seniority):
+   - Identify gaps in leadership, project ownership, and technical scope.
+   - SENIORITY ALIGNMENT: Ensure the narrative shifts from "executing tasks" to "driving business outcomes" as roles progress.
+   - PARSING PROTECTION: If the resume text appears jumbled or out of chronological order (potential PDF extraction error), suggest a "Single-Column, ATS-Optimized Layout" as the top priority.
 
-   Seniority-specific expectations:
-   - New Grad/Entry: Internships, academic projects, learning potential
-   - Mid-level (2-5 years): Increasing responsibility, measurable outcomes
-   - Senior (5-8 years): Technical leadership, mentoring, architecture
-   - Staff/Principal (8+ years): Strategic direction, org-wide impact
+3. WORDING SUGGESTIONS (The Google XYZ Audit):
+   - Identify weak, passive bullet points (e.g., "Responsible for," "Worked on").
+   - Every suggestion MUST follow the Google XYZ Formula: "Accomplished [X] as measured by [Y], by doing [Z]."
+   - Demand metrics: %, $, ms latency, number of users, or scale.
 
-   Score 0-10 and identify top achievements and gaps.
+4. ATS COMPATIBILITY (Technical Parsability):
+   - Check keyword density for {target_roles}.
+   - Identify "Parsing Blockers" (tables, columns, non-standard headers).
 
-2. ABOVE FOLD IMPACT (Weight: 18%)
-   Analyze first third of resume (recruiter's 7-second scan):
-   - Does top section immediately convey value proposition?
-   - Are strongest achievements visible without scrolling?
-   - Is contact information clear and professional?
-   - Does professional summary hook attention in first 10 words?
-   - Would recruiter continue reading or move to next candidate?
+### SCORING CALIBRATION (Strict Baseline)
+- 90-100 (Exceptional): FAANG-ready. Perfect quantification. High keyword density. Clear leadership narrative.
+- 70-89 (Strong): Competent but missing high-level metrics (the "Y" in XYZ) or specific technical leadership evidence.
+- 50-69 (Needs Work): Significant use of passive voice, generic task descriptions, or poor information hierarchy.
+- <50 (Fail): Lack of quantification, outdated tech stack, or major formatting/parsing issues.
 
-   Test: Can recruiter understand candidate's value in 7 seconds?
-   Score 0-10 for immediate impact.
-
-3. HARVARD CAREER SERVICES COMPLIANCE (Weight: 18%)
-   Check strict adherence to Harvard standards:
-   - No personal pronouns (I, me, my, we)
-   - No passive voice ("was responsible for" → "Delivered")
-   - Strong action verbs starting each bullet (Built, Led, Optimized, Designed)
-   - No abbreviations without explanation
-   - No narrative/paragraph style (bullet points only)
-   - All achievements quantified with metrics
-   - No grammar or spelling errors (zero tolerance)
-
-   Flag every violation with specific location and correction.
-   Score 0-10 for Harvard compliance.
-
-4. RECRUITER PSYCHOLOGY & SCANNING (Weight: 15%)
-   Optimize for recruiter reading behavior:
-   - F-pattern reading: Left-side keyword density and visual anchors
-   - First bullet strength: Is first bullet in each section the strongest?
-   - White space utilization: Strategic spacing for cognitive processing
-   - Bold text usage: Highlighting without overdoing (job titles only)
-   - Information hierarchy: Most important details most visible
-   - Scanning flow: Can recruiter skim efficiently?
-
-   Score 0-10 for recruiter-friendly optimization.
-
-5. FORMAT & STRUCTURE (Weight: 13%)
-   Assess visual presentation:
-   - Standard section order: Summary → Experience → Skills → Education
-   - One page for <8 years experience, strategic two-page for senior
-   - 1-inch margins, 10-12pt body text, 14-16pt headers
-   - Professional fonts: Arial, Calibri, Times New Roman
-   - Clear visual hierarchy with consistent formatting
-   - No tables, headers, footers, text boxes (ATS parsing issues)
-   - White space balance: Not cramped, not sparse
-
-   Score 0-10 for structure quality.
-
-6. DETAILED CONTENT ANALYSIS (Weight: 13%)
-   Deep dive into content quality:
-   - Bullet point effectiveness: Action verb + specific task + quantified result
-   - Each bullet 1-2 lines maximum
-   - 3-5 bullets per role (no more, no less)
-   - No repetitive language across bullets
-   - Technical specificity: Exact tools, technologies, methodologies
-   - Consistency: Tense, formatting, style throughout
-   - Storytelling: Clear career narrative and progression
-
-   Score 0-10 for content excellence.
-
-7. ATS COMPATIBILITY (Weight: 12%)
-   Technical parsing assessment:
-   - Clear section headers that ATS recognizes
-   - Keyword density for target roles (10-15 relevant keywords minimum)
-   - PDF optimization for text extraction
-   - No graphics, images, icons (ATS ignores them)
-   - Standard formatting ATS can parse
-   - File size <2MB, proper filename (Firstname_Lastname_Resume.pdf)
-
-   Score 0-10 for ATS friendliness.
-
-8. SKILLS ASSESSMENT (Weight: 10%)
-   Technical skills evaluation:
-   - 8-12 most relevant skills for target roles
-   - 2024-2025 technology currency (modern vs outdated stack)
-   - Skill categorization: Programming, Cloud, Tools, Frameworks
-   - Skills appear in experience context, not just listed
-   - No filler skills (MS Word, typing, email)
-   - Most relevant skills listed first (not alphabetical)
-
-   Score 0-10 for skills strength.
-
-9. FINAL POLISH (Weight: 9%)
-   Professional finishing touches:
-   - Zero typos or grammar errors (instant disqualification)
-   - Date consistency: "Jan 2020 – Dec 2022" format throughout
-   - Capitalization consistency
-   - Professional email address (not partyguy123@gmail.com)
-   - LinkedIn URL properly formatted
-   - No personal information (photo, age, marital status, hobbies)
-
-   Score 0-10 for polish and professionalism.
-
-10. COMPANY FIT ASSESSMENT (Weight: 7%)
-    Evaluate alignment with target company types:
-
-    FAANG/Tech Giants:
-    - Distributed systems at massive scale
-    - Cross-functional leadership and collaboration
-    - Innovation mindset and technical depth
-    - Ownership and customer obsession indicators
-
-    Startups:
-    - Full-stack versatility and wear-many-hats capability
-    - Speed of execution and scrappy problem-solving
-    - Early-stage experience and ambiguity tolerance
-    - Adaptability and rapid learning
-
-    Enterprise/Traditional:
-    - Process adherence and documentation skills
-    - Client-facing experience and business acumen
-    - Industry compliance and domain expertise
-    - Stakeholder management
-
-    Score 0-10 for each company type.
-
-11. RED FLAGS (Penalty Weight: -15%)
-    Immediate disqualifiers and major concerns:
-    - Job hopping: Multiple roles <18 months without clear progression
-    - Scale inconsistencies: "Managed 100-person team at 20-person startup"
-    - Outdated technology: Heavy Java 6, Flash, deprecated frameworks
-    - Generic template language: "Results-oriented professional seeking..."
-    - Employment gaps >6 months unexplained
-    - Typos, grammar errors, formatting inconsistencies
-    - Missing quantification: All bullets just describe tasks
-    - Passive voice throughout: "Was responsible for..."
-
-    Each red flag reduces overall score. Flag severity and specific fixes.
-
-═══════════════════════════════════════════════════════════
-OUTPUT FORMAT (RETURN AS JSON)
-═══════════════════════════════════════════════════════════
-
-Return your complete analysis as a valid JSON object with all fields populated.
-Include specific examples, line references, and actionable improvements.
-Ensure all scores are justified with evidence from the resume.
+### CRITICAL CONSTRAINTS
+- NO PERSONAL PRONOUNS: Flag "I", "me", or "my" as violations of Harvard Career Standards.
+- NO HALLUCINATION: If a section is already in the top 1%, state "Exceeds Industry Standards."
+- SENSITIVE DATA: Ignore and do not output SSNs, specific home addresses, or government ID numbers.
 """
 
 
@@ -266,6 +132,14 @@ class ConsolidatedResumeEvaluator:
             logger.warning(f"Resume content truncated to {self.max_resume_length} characters")
 
         return text.strip()
+        
+    def _truncate_text(self, text: str, max_words: int = 1500) -> str:
+        """Truncate text to max_words to prevent token overflow during API call"""
+        words = text.split()
+        if len(words) > max_words:
+            logger.info(f"Truncating resume text from {len(words)} to {max_words} words")
+            return " ".join(words[:max_words])
+        return text
 
     async def extract_resume_text(self, file_path: str, file_type: str) -> str:
         """Extract text content from resume file"""
@@ -315,25 +189,17 @@ class ConsolidatedResumeEvaluator:
         target_seniority: Optional[str] = None
     ) -> Dict[str, Any]:
         """
-        Comprehensive resume evaluation using single AI prompt.
-
-        Args:
-            resume_text: The resume content to evaluate
-            user_id: User ID for context retrieval
-            resume_id: Resume ID for tracking
-            target_role: Optional specific target role
-            target_seniority: Optional target seniority level
-
-        Returns:
-            Comprehensive evaluation results with scores and recommendations
+        Evaluate resume using single consolidated prompt with Structured Outputs.
+        Returns a dict matching the ResumePrecisionAnalysis schema structure.
         """
         try:
             start_time = datetime.now(timezone.utc)
 
-            # Preprocess resume text
+            # 1. Preprocess & Truncate
             cleaned_text = self._preprocess_resume_text(resume_text)
+            truncated_text = self._truncate_text(cleaned_text, max_words=1500)
 
-            # Fetch user profile for context (using passed db session)
+            # 2. Fetch User Profile for Context
             try:
                 profile = ProfileService.get_profile_with_stats(db, user_id)
                 if profile is None:
@@ -343,80 +209,52 @@ class ConsolidatedResumeEvaluator:
                 logger.warning(f"Could not fetch profile for user {user_id}: {e}")
                 profile = {}
 
-            # Build comprehensive user context
+            # 3. Build User Context
             user_context = self._build_user_context(profile, target_role, target_seniority)
+            
+            # Prepare formatted strings for prompt
+            target_roles_str = ", ".join(user_context.get("target_roles", ["General Tech Role"]))
+            user_context_str = json.dumps(user_context, indent=2)
+            current_date_str = datetime.now().strftime("%B %d, %Y")
 
-            # Sanitize all user-controlled inputs before prompt formatting
-            safe_target_roles = ", ".join([
-                self._sanitize_for_prompt(role, "target_role")
-                for role in user_context.get("target_roles", ["General"])
-            ])
-            safe_experience_level = self._sanitize_for_prompt(
-                user_context.get("experience_level", "mid-level"), "experience_level"
-            )
-            safe_target_companies = ", ".join([
-                self._sanitize_for_prompt(company, "target_company")
-                for company in user_context.get("target_companies", ["Tech companies"])
-            ])
-            safe_markets = ", ".join([
-                self._sanitize_for_prompt(market, "market")
-                for market in user_context.get("markets", ["United States"])
-            ])
-
-            # Sanitize context fields
-            safe_context = {
-                "background_summary": self._sanitize_for_prompt(
-                    str(user_context.get("background_summary", "")), "background_summary"
-                ),
-                "years_experience": min(50, max(0, int(user_context.get("years_experience", 0)))),
-                "preferred_locations": [
-                    self._sanitize_for_prompt(loc, "location")
-                    for loc in user_context.get("preferred_locations", [])
-                ][:5],  # Limit to 5 locations
-                "minimum_salary": min(1000000, max(0, int(user_context.get("minimum_salary", 0) or 0)))
-            }
-
-            # Format the comprehensive prompt with sanitized inputs
+            # 4. Format Prompt
             evaluation_prompt = self.comprehensive_prompt.format(
-                resume_content=cleaned_text,
-                target_roles=safe_target_roles,
-                experience_level=safe_experience_level,
-                target_companies=safe_target_companies,
-                markets=safe_markets,
-                user_detailed_context=json.dumps(safe_context, indent=2)
+                current_date=current_date_str,
+                resume_content=truncated_text,
+                target_roles=target_roles_str,
+                user_detailed_context=user_context_str
             )
 
-            # Single comprehensive AI call (replacing 12 parallel agents)
+            # 5. Call OpenAI with Structured Outputs
             logger.info(f"Starting consolidated resume evaluation for resume {resume_id}")
+            
+            # We access the client directly for beta.chat.completions.parse
+            # Assumes ai_service.client is an AsyncOpenAI instance
+            messages = [
+                {"role": "system", "content": evaluation_prompt},
+                {"role": "user", "content": "Analyze this resume."}
+            ]
 
-            response = await self.ai_service.create_completion(
-                model="gpt-4o-mini",
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "You are an expert resume evaluator. Provide your analysis as a valid JSON object."
-                    },
-                    {
-                        "role": "user",
-                        "content": evaluation_prompt
-                    }
-                ],
-                temperature=0.3,
-                max_tokens=4000,
-                response_format={"type": "json_object"}
+            completion = await self.ai_service.client.beta.chat.completions.parse(
+                model="gpt-4o-2024-08-06", # Using a model that supports Structured Outputs
+                messages=messages,
+                response_format=ResumePrecisionAnalysis,
+                temperature=0.0
             )
 
-            # Parse and validate response
-            evaluation_result = self._parse_evaluation_response(response)
-
-            # Add metadata
+            # 6. Extract Parsed Result
+            result: ResumePrecisionAnalysis = completion.choices[0].message.parsed
+            
+            # 7. Convert to Dict and Add Metadata
+            evaluation_result = result.model_dump()
+            
             evaluation_result["evaluation_id"] = resume_id
             evaluation_result["user_id"] = user_id
             evaluation_result["evaluated_at"] = datetime.now(timezone.utc).isoformat()
             evaluation_result["processing_time_seconds"] = (
                 datetime.now(timezone.utc) - start_time
             ).total_seconds()
-            evaluation_result["evaluation_method"] = "consolidated_single_prompt"
+            evaluation_result["evaluation_method"] = "structured_precision_analysis"
 
             logger.info(
                 f"Completed consolidated evaluation for resume {resume_id} "
@@ -431,7 +269,6 @@ class ConsolidatedResumeEvaluator:
                 "user_id": user_id,
                 "error_type": type(e).__name__
             })
-            # Re-raise with sanitized message to avoid information leakage
             raise RuntimeError("Resume evaluation failed. Please try again.") from e
 
     def _build_user_context(
@@ -478,97 +315,3 @@ class ConsolidatedResumeEvaluator:
             "minimum_salary": profile.get("minimum_salary"),
             "skills": profile.get("skills", [])
         }
-
-    def _parse_evaluation_response(self, response: Any) -> Dict[str, Any]:
-        """Parse and validate AI response."""
-        try:
-            # Extract JSON from response
-            content = response.choices[0].message.content
-
-            # Parse JSON response
-            evaluation_data = json.loads(content)
-
-            # Ensure all required fields are present with defaults
-            required_fields = {
-                "overall_score": 0,
-                "category_scores": {},
-                "seven_second_test": {},
-                "executive_summary": "",
-                "strengths": [],
-                "critical_issues": {},
-                "specific_recommendations": {},
-                "company_fit_assessment": {},
-                "red_flags_detected": {},
-                "market_positioning": {},
-                "tactical_checklist": {},
-                "action_plan_prioritized": [],
-                "next_version_guidance": {}
-            }
-
-            for field, default_value in required_fields.items():
-                if field not in evaluation_data:
-                    evaluation_data[field] = default_value
-                    logger.warning(f"Missing field '{field}' in AI response, using default")
-
-            # Validate score ranges
-            if "overall_score" in evaluation_data:
-                score = evaluation_data["overall_score"]
-                if not (0 <= score <= 100):
-                    evaluation_data["overall_score"] = max(0, min(100, score))
-
-            # Validate category scores
-            if "category_scores" in evaluation_data:
-                for category, score in evaluation_data["category_scores"].items():
-                    if not (0 <= score <= 10):
-                        evaluation_data["category_scores"][category] = max(0, min(10, score))
-
-            return evaluation_data
-
-        except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse AI response as JSON: {e}")
-            # Return a basic structure with error indication
-            return {
-                "overall_score": 0,
-                "error": "Failed to parse AI response",
-                "raw_response": str(content) if 'content' in locals() else None
-            }
-        except Exception as e:
-            logger.error(f"Unexpected error parsing AI response: {e}")
-            raise
-
-    def calculate_weighted_score(self, category_scores: Dict[str, float]) -> float:
-        """Calculate overall weighted score from category scores."""
-
-        # Define weights for each category
-        weights = {
-            "experience_impact": 0.22,
-            "above_fold_impact": 0.18,
-            "harvard_compliance": 0.18,
-            "recruiter_psychology": 0.15,
-            "format_structure": 0.13,
-            "detailed_content": 0.13,
-            "ats_compatibility": 0.12,
-            "skills_assessment": 0.10,
-            "final_polish": 0.09,
-            "company_fit": 0.07,
-            "red_flags": -0.15  # Negative weight for penalties
-        }
-
-        total_score = 0
-        total_weight = 0
-
-        for category, weight in weights.items():
-            if category in category_scores:
-                score = category_scores[category]
-                # Convert 0-10 scores to 0-100 for final score
-                normalized_score = score * 10 if category != "red_flags" else score
-                total_score += normalized_score * abs(weight)
-                total_weight += abs(weight)
-
-        # Calculate weighted average
-        if total_weight > 0:
-            final_score = total_score / total_weight
-        else:
-            final_score = 0
-
-        return max(0, min(100, final_score))  # Ensure score is between 0-100

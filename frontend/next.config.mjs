@@ -157,6 +157,8 @@
     config.resolve.alias = {
       ...config.resolve.alias,
       '@': actualSrcPath,
+      canvas: false,
+      encoding: false,
     };
 
     return config;

@@ -13,7 +13,6 @@ export default function DashboardLayout({
     children: React.ReactNode
 }) {
     const pathname = usePathname()
-    const isJobsPage = pathname === '/dashboard/jobs'
 
     return (
         <ProtectedRoute>
@@ -21,7 +20,7 @@ export default function DashboardLayout({
                 <DashboardProvider>
                     <ActivityProvider>
                         <ErrorBoundary fallback={ComponentErrorFallback}>
-                            <SophisticatedLayout showHeader={!isJobsPage}>
+                            <SophisticatedLayout showHeader={true}>
                                 <ErrorBoundary
                                     fallback={ComponentErrorFallback}
                                     resetKeys={[pathname]}

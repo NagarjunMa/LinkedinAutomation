@@ -1,11 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from 'react'
-import dynamic from 'next/dynamic'
-const ResumeDocumentViewer = dynamic(
-  () => import('./resume-document-viewer').then((mod) => mod.ResumeDocumentViewer),
-  { ssr: false }
-)
+import { ResumeDocumentViewer } from './resume-document-viewer'
 import { ResumeAnalysisPanel } from './resume-analysis-panel'
 import { ResumeEvaluationDashboard } from './resume-evaluation-dashboard'
 import { ResumeUploadModal } from './resume-upload-modal'
@@ -109,17 +105,32 @@ export function ResumeEvaluator({ initialView = 'DASHBOARD' }: ResumeEvaluatorPr
             onStartEvaluation={handleStartEvaluation}
             onUploadResume={handleOpenUpload}
             resumes={resumes}
+            onResumeUpdate={(updatedResume) => {
+              setResumes(prev => prev.map(r =>
+                r.id === updatedResume.id ? updatedResume : r
+              ))
+              if (selectedResume?.id === updatedResume.id) {
+                setSelectedResume(updatedResume)
+              }
+            }}
           />
         ) : (
           <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-background">
             <ResumeDocumentViewer
-              fileUrl={selectedResume?.download_url}
+              fileUrl={selectedResume?.id ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/resumes/${selectedResume.id}/download` : undefined}
               fileName={selectedResume?.filename}
               onBack={handleBackToDashboard}
             />
             <ResumeAnalysisPanel
               resume={selectedResume}
               onBack={handleBackToDashboard}
+              onResumeUpdate={(updatedResume) => {
+                setSelectedResume(updatedResume)
+                // Update the resumes list as well
+                setResumes(prev => prev.map(r =>
+                  r.id === updatedResume.id ? updatedResume : r
+                ))
+              }}
             />
           </div>
         )}

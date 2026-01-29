@@ -3,7 +3,7 @@ import { makeAPIRequest } from './config';
 
 export const profileApi = {
     // Get user profile with statistics
-    getProfile: async (userId: string = 'current'): Promise<UserProfile> => {
+    getProfile: async (userId: string): Promise<UserProfile> => {
         const url = `/api/v1/user-profiles/${userId}`;
         return makeAPIRequest<UserProfile>(url);
     },
@@ -18,7 +18,7 @@ export const profileApi = {
     },
 
     // Update user profile
-    updateProfile: async (profileData: Partial<UserProfile>, userId: string = 'current'): Promise<UserProfile> => {
+    updateProfile: async (userId: string, profileData: Partial<UserProfile>): Promise<UserProfile> => {
         const url = `/api/v1/user-profiles/${userId}`;
         return makeAPIRequest<UserProfile>(url, {
             method: 'PUT',

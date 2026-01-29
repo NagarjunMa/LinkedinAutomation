@@ -17,7 +17,7 @@ const LayoutContent = ({ children, notificationCount, showHeader }: Sophisticate
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
     return (
-        <div className="min-h-screen bg-[#f0eff2] text-[#3b3b3b]">
+        <div className="min-h-screen bg-app-bg text-app-text transition-colors duration-300">
             {/* Sidebar (Desktop & Mobile) */}
             <div className="hidden lg:block">
                 <SophisticatedSidebar />
@@ -31,7 +31,7 @@ const LayoutContent = ({ children, notificationCount, showHeader }: Sophisticate
                         onClick={() => setSidebarOpen(false)}
                         aria-hidden="true"
                     />
-                    <div className="relative flex-1 flex flex-col max-w-xs w-full bg-[#f0eff2] shadow-2xl animate-in slide-in-from-left duration-300 h-full">
+                    <div className="relative flex-1 flex flex-col max-w-xs w-full bg-app-bg shadow-2xl animate-in slide-in-from-left duration-300 h-full">
                         <SophisticatedSidebar onClose={() => setSidebarOpen(false)} />
                     </div>
                 </div>

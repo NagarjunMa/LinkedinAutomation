@@ -35,8 +35,8 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     """Current environment: development, staging, production"""
 
-    DEBUG: bool = True
-    """Enable debug mode for detailed error messages"""
+    DEBUG: bool = False
+    """Enable debug mode for detailed error messages - disabled by default to reduce SQL logging"""
 
     # ==========================================
     # Security Configuration

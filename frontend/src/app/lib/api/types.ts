@@ -193,22 +193,50 @@ export interface ResumeFile {
     is_primary?: boolean;
 }
 
+export interface AtsCompatibilityDetails {
+    status: string;
+    analysis: string;
+    missing_keywords: string[];
+}
+
+export interface WordingSuggestion {
+    original: string;
+    suggested: string;
+    rationale: string;
+}
+
 export interface ResumeEvaluation {
+    id: string;
+    resume_id: string;
+
+    // New Precision Analysis Fields
+    ai_score: number;
+    ats_score: number;
+    optical_strengths: string[];
+    strategic_improvements: string[];
+    ats_compatibility_details?: AtsCompatibilityDetails;
+
+    // Legacy/Compatibility
     overall_score: number;
+    max_score?: number;
     ats_compliance_score: number;
     content_quality_score: number;
     experience_points_score: number;
     job_relevance_score: number;
     quality_checks_score: number;
+
+    executive_summary?: string;
     strengths: string[];
     improvements: string[];
-    ats_compatibility: 'excellent' | 'good' | 'fair' | 'poor';
+    ats_compatibility: 'excellent' | 'good' | 'fair' | 'poor'; // Kept as string union for UI consistency
+    ats_checklist?: string[];
     detailed_feedback: string;
     keyword_analysis: {
         relevant: string[];
         missing: string[];
         score: number;
     };
+
     // New consolidated evaluation fields
     critical_issues?: {
         immediate_fixes: string[];
@@ -225,6 +253,8 @@ export interface ResumeEvaluation {
             enterprise: number;
         };
     };
+    wording_suggestions?: WordingSuggestion[];
+
     // Evaluation metadata
     evaluation_metadata?: {
         processing_time_seconds?: number;

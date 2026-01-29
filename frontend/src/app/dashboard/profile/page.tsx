@@ -58,7 +58,12 @@ export default function ProfilePage() {
     if (!user) return;
     try {
       setLoading(true);
-      const userId = user.id ? String(user.id) : 'current';
+      if (!user?.id) {
+        setLoading(false);
+        return;
+      }
+
+      const userId = user.id;
 
       // Parallel fetch
       const [userProfile, resumeData] = await Promise.all([
@@ -129,12 +134,12 @@ export default function ProfilePage() {
         maxSalary = parseInt(salaryMatch[1]) * 1000;
       }
 
-      await profileApi.updateProfile({
+      await profileApi.updateProfile(userId, {
         desired_roles: editedPrefs.roles,
         preferred_locations: editedPrefs.locations,
         salary_range_min: minSalary,
         salary_range_max: maxSalary
-      }, userId);
+      });
 
       setData(prev => ({ ...prev, preferences: editedPrefs }));
       setIsEditingPrefs(false);

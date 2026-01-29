@@ -25,7 +25,7 @@ import {
     TrendingUp
 } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
-import { fetchRecentApplications } from "@/app/lib/api"
+import { fetchRecentApplications } from "@/app/lib/api/jobs"
 import { useToast } from "@/components/ui/use-toast"
 import VirtualizedApplicationList from "@/components/virtualized-application-list"
 
@@ -316,24 +316,31 @@ export default function ApplicationsPage() {
     }
 
     return (
-        <div className="px-4 sm:px-6 lg:px-8 space-y-4 sm:space-y-6">
+        <div className="min-h-screen bg-background px-4 sm:px-6 lg:px-8 py-8 space-y-8 font-sans text-foreground">
+            <div className="fixed inset-0 pointer-events-none opacity-[0.015]"
+                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
+            />
+
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Job Applications</h1>
-                    <p className="text-muted-foreground mt-1 text-sm sm:text-base">
+                    <h1 className="text-4xl font-black text-foreground tracking-tight uppercase">Job Applications</h1>
+                    <p className="text-muted-foreground mt-2 text-base font-medium max-w-2xl">
                         Track and manage your job applications with AI-powered insights
                     </p>
                 </div>
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
                     <Button
                         onClick={() => setShowJobExtractor(true)}
-                        className="bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600 w-full sm:w-auto"
+                        className="px-8 py-6 bg-primary text-primary-foreground rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:bg-primary/90 transition-all active:scale-95"
                     >
                         <Plus className="w-4 h-4 mr-2" />
                         Extract Job URL
                     </Button>
-                    <Button variant="outline" className="w-full sm:w-auto border-border text-foreground hover:bg-muted">
+                    <Button
+                        variant="outline"
+                        className="px-8 py-6 bg-card/80 backdrop-blur-md border border-border shadow-sm rounded-2xl font-black text-xs uppercase tracking-widest text-foreground hover:bg-accent transition-all"
+                    >
                         <Download className="w-4 h-4 mr-2" />
                         Export
                     </Button>
@@ -342,9 +349,9 @@ export default function ApplicationsPage() {
 
             {/* Loading State */}
             {loading && (
-                <div className="flex items-center justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mr-3"></div>
-                    <span className="text-muted-foreground">Loading applications...</span>
+                <div className="flex items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mr-3"></div>
+                    <span className="text-muted-foreground font-medium">Loading applications...</span>
                 </div>
             )}
 
@@ -353,54 +360,74 @@ export default function ApplicationsPage() {
 
             {/* Stats Cards */}
             {!loading && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-                    <Card className="bg-card border-l-4 border-l-blue-500">
-                        <CardContent className="p-4 sm:p-6">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm text-muted-foreground">Total Applications</p>
-                                    <p className="text-2xl font-bold text-foreground">{applications.length}</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+                    <Card className="bg-card p-6 rounded-[32px] border border-border shadow-sm hover:shadow-xl transition-all">
+                        <CardContent className="p-0">
+                            <div className="flex flex-col justify-between h-full space-y-4">
+                                <div className="flex items-start justify-between">
+                                    <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-2xl">
+                                        <Briefcase className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                                    </div>
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground bg-muted px-2 py-1 rounded-full">Total</span>
                                 </div>
-                                <Briefcase className="w-8 h-8 text-blue-500" />
+                                <div>
+                                    <p className="text-3xl font-black text-foreground">{applications.length}</p>
+                                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mt-1">Applications</p>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="bg-card border-l-4 border-l-green-500">
-                        <CardContent className="p-4 sm:p-6">
-                            <div className="flex items-center justify-between">
+                    <Card className="bg-card p-6 rounded-[32px] border border-border shadow-sm hover:shadow-xl transition-all">
+                        <CardContent className="p-0">
+                            <div className="flex flex-col justify-between h-full space-y-4">
+                                <div className="flex items-start justify-between">
+                                    <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-2xl">
+                                        <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
+                                    </div>
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground bg-muted px-2 py-1 rounded-full">Active</span>
+                                </div>
                                 <div>
-                                    <p className="text-sm text-muted-foreground">Applied</p>
-                                    <p className="text-2xl font-bold text-foreground">
+                                    <p className="text-3xl font-black text-foreground">
                                         {applications.filter(app => app.status === 'applied').length}
                                     </p>
+                                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mt-1">Applied</p>
                                 </div>
-                                <CheckCircle className="w-8 h-8 text-green-500" />
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="bg-card border-l-4 border-l-yellow-500">
-                        <CardContent className="p-4 sm:p-6">
-                            <div className="flex items-center justify-between">
+                    <Card className="bg-card p-6 rounded-[32px] border border-border shadow-sm hover:shadow-xl transition-all">
+                        <CardContent className="p-0">
+                            <div className="flex flex-col justify-between h-full space-y-4">
+                                <div className="flex items-start justify-between">
+                                    <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-2xl">
+                                        <Clock className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+                                    </div>
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground bg-muted px-2 py-1 rounded-full">Interview</span>
+                                </div>
                                 <div>
-                                    <p className="text-sm text-muted-foreground">Interviews</p>
-                                    <p className="text-2xl font-bold text-foreground">
+                                    <p className="text-3xl font-black text-foreground">
                                         {applications.filter(app => app.status === 'interview_scheduled').length}
                                     </p>
+                                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mt-1">Scheduled</p>
                                 </div>
-                                <Clock className="w-8 h-8 text-yellow-500" />
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="bg-card border-l-4 border-l-purple-500">
-                        <CardContent className="p-4 sm:p-6">
-                            <div className="flex items-center justify-between">
+                    <Card className="bg-card p-6 rounded-[32px] border border-border shadow-sm hover:shadow-xl transition-all">
+                        <CardContent className="p-0">
+                            <div className="flex flex-col justify-between h-full space-y-4">
+                                <div className="flex items-start justify-between">
+                                    <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-2xl">
+                                        <TrendingUp className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                                    </div>
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground bg-muted px-2 py-1 rounded-full">Score</span>
+                                </div>
                                 <div>
-                                    <p className="text-sm text-muted-foreground">Avg. Score</p>
-                                    <p className="text-2xl font-bold text-foreground">
+                                    <p className="text-3xl font-black text-foreground">
                                         {averageCompatibilityScore}%
                                     </p>
+                                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mt-1">Avg Match</p>
                                 </div>
-                                <TrendingUp className="w-8 h-8 text-purple-500" />
                             </div>
                         </CardContent>
                     </Card>
@@ -433,36 +460,43 @@ export default function ApplicationsPage() {
             )}
 
             {/* Filters and Search */}
-            <Card>
-                <CardContent className="p-4 sm:p-6">
-                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+            <Card className="bg-card p-6 rounded-[32px] border border-border shadow-sm">
+                <CardContent className="p-0">
+                    <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
                         <div className="flex-1">
-                            <Label htmlFor="search" className="text-sm">Search Applications</Label>
+                            <Label htmlFor="search" className="text-xs font-bold text-foreground uppercase tracking-wider mb-2 block">Search Applications</Label>
                             <div className="relative">
-                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                                 <Input
                                     id="search"
                                     placeholder="Search by job title or company..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="pl-10 text-sm"
+                                    className="pl-11 h-12 bg-muted/50 border-input rounded-xl text-sm focus:ring-primary focus:border-primary"
                                 />
                             </div>
                         </div>
-                        <div className="sm:w-48">
-                            <Label htmlFor="status-filter" className="text-sm">Filter by Status</Label>
-                            <select
-                                id="status-filter"
-                                value={statusFilter}
-                                onChange={(e) => setStatusFilter(e.target.value)}
-                                className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground text-sm"
-                            >
-                                <option value="all">All Statuses</option>
-                                <option value="applied">Applied</option>
-                                <option value="interview_scheduled">Interview Scheduled</option>
-                                <option value="want_to_apply">Want to Apply</option>
-                                <option value="not_interested">Not Interested</option>
-                            </select>
+                        <div className="sm:w-64">
+                            <Label htmlFor="status-filter" className="text-xs font-bold text-foreground uppercase tracking-wider mb-2 block">Filter by Status</Label>
+                            <div className="relative">
+                                <select
+                                    id="status-filter"
+                                    value={statusFilter}
+                                    onChange={(e) => setStatusFilter(e.target.value)}
+                                    className="w-full h-12 px-4 bg-muted/50 border border-input rounded-xl text-sm text-foreground focus:ring-primary focus:border-primary appearance-none"
+                                >
+                                    <option value="all">All Statuses</option>
+                                    <option value="applied">Applied</option>
+                                    <option value="interview_scheduled">Interview Scheduled</option>
+                                    <option value="want_to_apply">Want to Apply</option>
+                                    <option value="not_interested">Not Interested</option>
+                                </select>
+                                <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                                    <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </CardContent>
@@ -472,7 +506,7 @@ export default function ApplicationsPage() {
             {!loading && (
                 <div className="space-y-4">
                     {filteredApplications.map((application) => (
-                        <Card key={application.id} className="hover:shadow-lg transition-shadow">
+                        <Card key={application.id} className="hover:shadow-lg transition-shadow bg-card border-border">
                             <CardContent className="p-4 sm:p-6">
                                 <div className="flex items-start justify-between">
                                     <div className="flex-1">
@@ -560,7 +594,7 @@ export default function ApplicationsPage() {
             )}
 
             {!loading && filteredApplications.length === 0 && (
-                <Card className="bg-card">
+                <Card className="bg-card border-border">
                     <CardContent className="flex flex-col items-center justify-center py-12 px-4 sm:px-6">
                         <Briefcase className="w-16 h-16 text-muted-foreground mb-4" />
                         <h3 className="text-lg font-semibold text-foreground mb-2">

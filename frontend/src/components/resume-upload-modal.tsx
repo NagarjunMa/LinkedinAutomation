@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Upload, CheckCircle, Target, Clock, FileText, Sparkles } from "lucide-react"
+import { Upload, CheckCircle, Target, Clock, FileText, Sparkles, AlertTriangle } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { resumeApi } from "@/app/lib/api/resume"
 import { ResumeFile } from "@/app/lib/api/types"
@@ -37,10 +37,25 @@ export function ResumeUploadModal({ open, onOpenChange, onUploadSuccess, onEvalu
 
   const fetchStorageInfo = async () => {
     try {
-      const info = await resumeApi.getStorageInfo()
-      setStorageInfo(info)
+      // Use listResumes for more accurate count as storage-info endpoint can be unreliable
+      const data = await resumeApi.listResumes()
+
+      // Calculate storage used from file sizes
+      const usedBytes = data.resumes.reduce((acc, resume) => acc + (resume.file_size || 0), 0)
+
+      setStorageInfo({
+        totalCount: data.totalCount,
+        storageUsed: usedBytes,
+        storageLimit: 5 // Default limit based on backend enforcement
+      })
     } catch (error) {
       console.error('Failed to fetch storage info:', error)
+      // Fallback to safe defaults if fetch fails
+      setStorageInfo({
+        totalCount: 5, // Assume full to prevent upload if we can't verify
+        storageUsed: 0,
+        storageLimit: 5
+      })
     }
   }
 
@@ -94,9 +109,16 @@ export function ResumeUploadModal({ open, onOpenChange, onUploadSuccess, onEvalu
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
 
       if (errorMessage.includes('Storage limit reached') || errorMessage.includes('Maximum 5 resumes')) {
+        // Force update storage info to trigger the full limit view
+        setStorageInfo(prev => ({
+          totalCount: 5,
+          storageUsed: prev?.storageUsed || 0,
+          storageLimit: 5
+        }));
+
         toast({
           title: "📁 Resume Limit Reached",
-          description: "You can only upload 5 resumes. Please delete an old resume before uploading a new one.",
+          description: "You have reached the maximum limit of 5 resumes.",
           variant: "destructive",
         })
       } else if (errorMessage.includes('File too large')) {
@@ -192,7 +214,11 @@ export function ResumeUploadModal({ open, onOpenChange, onUploadSuccess, onEvalu
     }
   }
 
+  // Determine if storage is full
+  const isStorageFull = (storageInfo?.totalCount ?? 0) >= 5
+
   if (uploadSuccess && uploadedResume) {
+    // ... (existing success view)
     return (
       <Dialog open={open} onOpenChange={handleClose}>
         <DialogContent className="max-w-2xl">
@@ -307,6 +333,53 @@ export function ResumeUploadModal({ open, onOpenChange, onUploadSuccess, onEvalu
                 </div>
               </CardContent>
             </Card>
+          </div>
+        </DialogContent>
+      </Dialog>
+    )
+  }
+
+  // Storage Limit View (Proactive or Reactive)
+  if (isStorageFull) {
+    return (
+      <Dialog open={open} onOpenChange={handleClose}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-orange-600">
+              <div className="p-2 bg-orange-100 rounded-full">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              Storage Limit Reached
+            </DialogTitle>
+            <DialogDescription>
+              Maximum Capacity (5/5 Resumes)
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 py-4">
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-6 flex flex-col items-center text-center gap-4">
+              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center">
+                <Target className="w-8 h-8 text-orange-600" />
+              </div>
+              <div className="space-y-2">
+                <p className="font-medium text-orange-900">Upload Limit Reached</p>
+                <p className="text-sm text-orange-700">
+                  You count currently have 5 resumes stored. Please delete or archive an existing resume to free up a slot for new uploads.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3 justify-end">
+              <Button variant="outline" onClick={handleClose}>
+                Close
+              </Button>
+              <Button
+                onClick={handleClose}
+                className="bg-orange-600 hover:bg-orange-700 text-white"
+              >
+                Manage Resumes
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

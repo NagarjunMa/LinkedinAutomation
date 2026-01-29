@@ -1,6 +1,13 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional, Dict, Any
 from datetime import datetime
+
+
+class WordingSuggestion(BaseModel):
+    """Schema for wording improvement suggestions"""
+    original: str = Field(..., description="Original text that needs improvement")
+    suggested: str = Field(..., description="Improved version of the text")
+    rationale: str = Field(..., description="Explanation of why the change improves the text")
 
 
 class ResumeUploadRequest(BaseModel):
@@ -27,24 +34,85 @@ class ResumeEvaluationRequest(BaseModel):
     target_seniority: Optional[str] = None
 
 
+class AtsCompatibilityDetails(BaseModel):
+    """Detailed ATS compatibility analysis"""
+    status: str = Field(..., description="Excellent/Good/Fair/Poor")
+    analysis: str = Field(..., description="2-3 sentences on keyword density and parsing potential")
+    missing_keywords: List[str] = Field(..., description="List of important keywords missing from the resume")
+
+
+class ResumePrecisionAnalysis(BaseModel):
+    """Structured output for Precision Analysis Resume Evaluation"""
+    ai_score: int = Field(..., description="0-100 score for content quality and impact")
+    ats_score: int = Field(..., description="0-100 score for technical parsability")
+    executive_summary: str = Field(..., description="2-3 sentence overview of market positioning")
+    optical_strengths: List[str] = Field(..., description="3-5 specific visual or branding wins")
+    strategic_improvements: List[str] = Field(..., description="3-5 high-level architectural changes")
+    wording_suggestions: List[WordingSuggestion] = Field(..., description="List of specific bullet point rewrites")
+    ats_compatibility: AtsCompatibilityDetails = Field(..., description="Technical parsing analysis")
+
+
 class ResumeEvaluationResult(BaseModel):
-    """Schema for AI evaluation results"""
+    """Schema for AI evaluation results - Updated for Precision Analysis"""
+    # Precision Analysis Fields (New)
+    ai_score: int = Field(..., ge=0, le=100)
+    ats_score: int = Field(..., ge=0, le=100)
+    optical_strengths: List[str]
+    strategic_improvements: List[str]
+    
+    # Legacy/Mapped Fields (Kept for compatibility/DB mapping)
     overall_score: int = Field(..., ge=0, le=100)
     ats_compliance_score: int = Field(..., ge=0, le=100)
-    content_quality_score: int = Field(..., ge=0, le=100)
-    experience_points_score: int = Field(..., ge=0, le=100)
-    job_relevance_score: int = Field(..., ge=0, le=100)
-    quality_checks_score: int = Field(..., ge=0, le=100)
+    content_quality_score: int = Field(0, ge=0, le=100)
+    experience_points_score: int = Field(0, ge=0, le=100)
+    job_relevance_score: int = Field(0, ge=0, le=100)
+    quality_checks_score: int = Field(0, ge=0, le=100)
     
-    strengths: List[str]
-    improvements: List[str]
+    strengths: List[str] = []
+    improvements: List[str] = []
     detailed_feedback: str
     
     ats_compatibility: str = Field(..., pattern="^(excellent|good|fair|poor)$")
+    ats_compatibility_details: Optional[AtsCompatibilityDetails] = None
+
+    @field_validator('ats_compatibility', mode='before')
+    @classmethod
+    def validate_ats_compatibility(cls, v):
+        """Convert numeric scores to categorical ratings"""
+        if isinstance(v, (int, float)):
+            # Convert score to categorical rating
+            if v >= 8:
+                return "excellent"
+            elif v >= 6:
+                return "good"
+            elif v >= 4:
+                return "fair"
+            else:
+                return "poor"
+        elif isinstance(v, str):
+            # Handle string numbers
+            try:
+                score = float(v)
+                if score >= 8:
+                    return "excellent"
+                elif score >= 6:
+                    return "good"
+                elif score >= 4:
+                    return "fair"
+                else:
+                    return "poor"
+            except ValueError:
+                # If it's already a valid categorical value, keep it
+                if v.lower() in ["excellent", "good", "fair", "poor"]:
+                    return v.lower()
+                # Default fallback
+                return "fair"
+        return "fair"
     
     keyword_analysis: Dict[str, Any] = Field(..., description="Keyword analysis results")
-    
+
     # New fields for enhanced evaluation
+    wording_suggestions: Optional[List[WordingSuggestion]] = Field(None, description="Structured wording improvement suggestions")
     critical_issues: Optional[Dict[str, List[str]]] = Field(None, description="Critical issues breakdown")
     market_positioning: Optional[Dict[str, Any]] = Field(None, description="Market positioning analysis")
     

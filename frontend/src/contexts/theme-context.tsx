@@ -56,23 +56,14 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
       // Update data attribute for shadcn components
       document.documentElement.setAttribute('data-theme', newTheme);
 
-      // Update CSS custom properties
+      // Clear manual style overrides to let CSS classes take over
       const root = document.documentElement;
-      if (newTheme === 'dark') {
-        root.style.setProperty('--app-bg', '#3b3b3b');
-        root.style.setProperty('--app-text', '#f0eff2');
-        root.style.setProperty('--app-card', 'rgba(0, 0, 0, 0.2)');
-        root.style.setProperty('--app-card-border', 'rgba(240, 239, 242, 0.1)');
-        root.style.setProperty('--app-muted', 'rgba(240, 239, 242, 0.6)');
-        root.style.setProperty('--app-accent', 'rgba(240, 239, 242, 0.8)');
-      } else {
-        root.style.setProperty('--app-bg', '#f0eff2');
-        root.style.setProperty('--app-text', '#3b3b3b');
-        root.style.setProperty('--app-card', 'rgba(255, 255, 255, 0.5)');
-        root.style.setProperty('--app-card-border', 'rgba(59, 59, 59, 0.1)');
-        root.style.setProperty('--app-muted', 'rgba(59, 59, 59, 0.6)');
-        root.style.setProperty('--app-accent', 'rgba(59, 59, 59, 0.8)');
-      }
+      root.style.removeProperty('--app-bg');
+      root.style.removeProperty('--app-text');
+      root.style.removeProperty('--app-card');
+      root.style.removeProperty('--app-card-border');
+      root.style.removeProperty('--app-muted');
+      root.style.removeProperty('--app-accent');
     }
   };
 

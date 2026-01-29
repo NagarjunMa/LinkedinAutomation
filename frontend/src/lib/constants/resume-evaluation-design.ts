@@ -179,49 +179,12 @@ export const COMPONENTS = {
   },
 } as const;
 
+import { ResumeEvaluation } from '@/app/lib/api/types';
+
 // Mock data structure for development
-export const MOCK_FEEDBACK = {
-  overallScore: 7.2,
-  maxScore: 10,
-  status: 'evaluated',
-
-  executiveSummary: "Your artifact displays high precision in cloud infrastructure notation. To reach peak efficiency, emphasize quantitative impact in the ML section.",
-
-  strengths: [
-    "Strong technical skills presentation with concrete technologies",
-    "Clear career progression and role advancement",
-    "Quantified achievements with specific metrics and impact",
-    "Professional formatting with consistent structure",
-    "Industry-relevant keywords for ATS optimization",
-  ],
-
-  wordingSuggestions: [
-    {
-      original: "Developed a RAG-based vehicle recovery system",
-      suggested: "Architected an enterprise-grade RAG vehicle recovery system"
-    },
-    {
-      original: "Automated manual verification workflows",
-      suggested: "Engineered automation pipelines for verification workflows"
-    },
-    {
-      original: "Implemented infrastructure-as-code",
-      suggested: "Orchestrated scalable infrastructure-as-code solutions"
-    },
-  ],
-
-  atsOptimization: {
-    score: 8.5, // out of 10
-    checklist: [
-      "Standard fonts and formatting detected",
-      "Proper section headers identified",
-      "Contact information clearly structured",
-      "Skills section optimized for parsing",
-      "Experience section follows best practices",
-      "Education section properly formatted",
-    ],
-  },
-} as const;
+// Mock data structure for development
+// Mock data structure for development
+// MOCK_FEEDBACK removed
 
 // File type definitions for resume uploads
 export const RESUME_FILE_TYPES = {

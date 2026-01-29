@@ -8,41 +8,77 @@ import {
 import { useDashboard } from '@/app/contexts/dashboard-context';
 
 // New Components
-import { DashboardHeader } from '@/components/dashboard/header';
+
 import { OverviewCalendar } from '@/components/dashboard/overview-calendar';
 import { QuickActions } from '@/components/dashboard/quick-actions';
 import { ChartAreaInteractive } from '@/components/dashboard/market-engagement-chart';
 import { RecentApplications } from '@/components/dashboard/recent-applications';
+import { PremiumButton } from '@/components/ui/premium-button';
+
+import { useRouter } from 'next/navigation';
 
 export default function DashboardPage() {
-    const { stats } = useDashboard();
+    const { stats, userProfile, loading } = useDashboard();
+    const router = useRouter();
+    const [isWarningIgnored, setIsWarningIgnored] = React.useState(false);
+
+    // Calculate if calibration is needed based on "missing personal information"
+    const needsCalibration = React.useMemo(() => {
+        if (!userProfile) return false;
+
+        // Essential fields check per user requirement
+        const hasEducation = (userProfile.education_history?.length ?? 0) > 0 || (userProfile.degrees?.length ?? 0) > 0;
+        const hasExperience = (userProfile.work_experiences?.length ?? 0) > 0 || (userProfile.job_titles?.length ?? 0) > 0;
+        const hasProjectInfo = !!userProfile.professional_summary; // Assuming summary covers "project information" or general context
+
+        // If any essential section is missing
+        return !hasEducation || !hasExperience || !hasProjectInfo;
+    }, [userProfile]);
+
+    const handleSynchronize = () => {
+        router.push('/dashboard/profile');
+    };
+
+    const handleIgnore = () => {
+        setIsWarningIgnored(true);
+    };
+
+    // Calculate completion percentage for display
+    const completionPercentage = userProfile?.profile_completion || 66; // Fallback to 66 purely for visual consistency if not loaded
 
     return (
-        <div className="max-w-[1500px] mx-auto pb-24 px-4 md:px-8">
-            <DashboardHeader />
+        <div className="min-h-screen bg-app-bg text-app-text max-w-[1500px] mx-auto pb-24 px-4 md:px-8 transition-colors duration-300">
+
 
             {/* Profiling State Alert */}
-            <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mb-12 p-10 border border-[#3b3b3b]/10 bg-white/40 flex flex-col md:flex-row justify-between items-center gap-8 backdrop-blur-sm rounded-lg"
-            >
-                <div className="flex gap-6 items-start">
-                    <div className="w-12 h-12 border border-[#3b3b3b]/10 flex items-center justify-center text-[#3b3b3b]/40 bg-white">
-                        <BarChart3 className="w-5 h-5" />
+            {needsCalibration && !isWarningIgnored && !loading && (
+                <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                    className="mb-8 md:mb-12 p-6 md:p-10 border border-app-text/10 bg-app-card/40 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-8 backdrop-blur-sm rounded-lg overflow-hidden"
+                >
+                    <div className="flex flex-col sm:flex-row gap-6 items-start max-w-full">
+                        <div className="w-14 h-14 border border-app-text/10 flex-shrink-0 flex items-center justify-center text-app-text/40 bg-app-bg shadow-sm">
+                            <BarChart3 className="w-6 h-6" />
+                        </div>
+                        <div className="space-y-3">
+                            <h2 className="text-2xl sm:text-3xl font-normal tracking-tight uppercase text-app-text break-words">System Calibration <span className="font-serif-italic font-medium block sm:inline text-app-accent">Required</span></h2>
+                            <p className="text-xs sm:text-sm text-app-text/60 font-medium tracking-wide max-w-2xl">{completionPercentage}% DATA ACCURACY • Complete your professional profile to refine AI matching precision.</p>
+                        </div>
                     </div>
-                    <div className="space-y-2">
-                        <h2 className="text-2xl font-light tracking-tight uppercase text-[#3b3b3b]">System Calibration <span className="font-serif-italic">Required</span></h2>
-                        <p className="text-[11px] text-[#3b3b3b]/40 font-medium tracking-wide">66% DATA ACCURACY • Complete your professional profile to refine AI matching precision.</p>
+                    <div className="flex flex-col sm:flex-row gap-4 w-full xl:w-auto">
+                        <PremiumButton onClick={handleSynchronize} className="w-full sm:w-auto text-[10px] sm:text-xs">
+                            Synchronize Identity
+                        </PremiumButton>
+                        <PremiumButton onClick={handleIgnore} className="w-full sm:w-auto text-[10px] sm:text-xs bg-transparent border-app-text/20 shadow-none hover:shadow-lg">
+                            Ignore Warnings
+                        </PremiumButton>
                     </div>
-                </div>
-                <div className="flex gap-6">
-                    <button className="px-8 py-3 bg-[#3b3b3b] text-white text-[10px] font-bold uppercase tracking-widest hover:bg-[#3b3b3b]/90 transition-all duration-700">Synchronize Identity</button>
-                    <button className="px-8 py-3 border border-[#3b3b3b]/10 text-[#3b3b3b]/40 text-[10px] font-bold uppercase tracking-widest hover:text-[#3b3b3b] hover:border-[#3b3b3b]/30 transition-all duration-700">Ignore Warnings</button>
-                </div>
-            </motion.div>
+                </motion.div>
+            )}
 
-            <div className="grid grid-cols-12 gap-10">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10">
                 {/* ROW 1: CALENDAR & QUICK ACTIONS */}
                 <OverviewCalendar />
                 <QuickActions />
@@ -54,9 +90,9 @@ export default function DashboardPage() {
                 <RecentApplications />
             </div>
 
-            <footer className="mt-32 pt-16 border-t border-[#3b3b3b]/10 flex justify-between items-center">
-                <p className="text-[10px] font-mono text-[#3b3b3b]/20 tracking-[0.5em] uppercase">SYSTEM CORE V2.4.9 — LEICA THEORY MINIMALISM</p>
-                <p className="text-[10px] font-mono text-[#3b3b3b]/20 italic">PRECISION IS THE ONLY MEASURE.</p>
+            <footer className="mt-32 pt-16 border-t border-app-text/10 flex flex-col sm:flex-row gap-4 justify-between items-center text-center sm:text-left">
+                <p className="text-xs font-mono text-app-text/40 tracking-[0.2em] uppercase font-medium">SYSTEM CORE V2.4.9 — LEICA THEORY MINIMALISM</p>
+                <p className="text-xs font-mono text-app-text/40 italic">PRECISION IS THE ONLY MEASURE.</p>
             </footer>
         </div>
     );

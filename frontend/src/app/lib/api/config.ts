@@ -2,15 +2,23 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 // Helper function to get authentication headers
-export function getAuthHeaders(): Record<string, string> {
+// Helper function to get authentication headers
+import { createClient } from '@/lib/supabase';
+
+export async function getAuthHeaders(): Promise<Record<string, string>> {
     const headers: Record<string, string> = {
         'Content-Type': 'application/json',
     };
 
-    // Add authentication if available
-    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
-    if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
+    try {
+        const supabase = createClient();
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (session?.access_token) {
+            headers['Authorization'] = `Bearer ${session.access_token}`;
+        }
+    } catch (error) {
+        console.warn('Failed to get Supabase session:', error);
     }
 
     return headers;
@@ -35,8 +43,9 @@ export async function makeAPIRequest<T>(
     options?: RequestInit
 ): Promise<T> {
     try {
+        const headers = await getAuthHeaders();
         const response = await fetch(`${API_BASE_URL}${url}`, {
-            headers: getAuthHeaders(),
+            headers,
             ...options,
         });
 

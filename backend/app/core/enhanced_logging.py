@@ -198,7 +198,14 @@ class EnhancedLogger:
         # Reduce noise from external libraries
         logging.getLogger('uvicorn.access').setLevel(logging.WARNING)
         logging.getLogger('sqlalchemy.engine').setLevel(logging.WARNING)
+        logging.getLogger('sqlalchemy.pool').setLevel(logging.WARNING)
+        logging.getLogger('sqlalchemy.dialects').setLevel(logging.WARNING)
         logging.getLogger('httpx').setLevel(logging.WARNING)
+
+        # Completely silence SQLAlchemy info logs in development
+        if os.getenv('ENVIRONMENT', 'development') == 'development':
+            logging.getLogger('sqlalchemy.engine').setLevel(logging.ERROR)
+            logging.getLogger('sqlalchemy.pool').setLevel(logging.ERROR)
 
         # Keep our application logs detailed
         logging.getLogger('app').setLevel(logging.INFO)

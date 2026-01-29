@@ -43,28 +43,24 @@ const NavItem: React.FC<{
     isCollapsed: boolean;
 }> = ({ to, label, icon, isCollapsed }) => {
     const pathname = usePathname();
-    // Active if exact match or if it's a sub-route (e.g. /dashboard vs /dashboard/applications)
-    // For root /dashboard, exact match is needed to avoid highlighting on sub-pages if desired, 
-    // BUT usually dashboard home is overview.
-    // Let's do simple inclusion check or exact check for root.
     const isActive = to === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(to);
 
     return (
         <Link
             href={to}
             className={`
-          flex items-center gap-4 py-2 px-3 transition-all duration-500 group relative
-          ${isActive ? 'text-[#3b3b3b] bg-[#3b3b3b]/5' : 'text-[#3b3b3b]/40 hover:text-[#3b3b3b]/70 hover:bg-[#3b3b3b]/5'}
+          flex items-center gap-4 py-3 px-4 transition-all duration-500 group relative rounded-md mx-2
+          ${isActive ? 'text-app-text bg-app-text/5 font-extrabold shadow-sm' : 'text-app-text opacity-60 hover:opacity-100 hover:bg-app-text/5 font-bold'}
         `}
         >
-            <span className={`shrink-0 transition-transform duration-500 group-hover:scale-110 ${isActive ? 'opacity-100' : 'opacity-60 group-hover:opacity-100'}`}>
+            <span className={`shrink-0 transition-transform duration-500 group-hover:scale-110 ${isActive ? 'opacity-100' : 'opacity-70 group-hover:opacity-100'}`}>
                 {icon}
             </span>
             {!isCollapsed && (
                 <motion.span
                     initial={{ opacity: 0, x: -5 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className="text-[11px] font-bold tracking-widest uppercase truncate"
+                    className="text-xs tracking-wider uppercase truncate"
                 >
                     {label}
                 </motion.span>
@@ -75,11 +71,11 @@ const NavItem: React.FC<{
                     className="ml-auto"
                     transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                 >
-                    <div className="w-1 h-1 bg-[#3b3b3b] rounded-full" />
+                    <div className="w-1.5 h-1.5 bg-app-accent rounded-full" />
                 </motion.div>
             )}
             {isCollapsed && isActive && (
-                <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-[#3b3b3b]" />
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-app-accent rounded-r-full" />
             )}
         </Link>
     );
@@ -92,66 +88,65 @@ export function SophisticatedSidebar({ onClose }: { onClose?: () => void }) {
 
     return (
         <motion.nav
-            animate={{ width: isCollapsed ? 72 : 280 }}
+            animate={{ width: isCollapsed ? 80 : 280 }}
             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed left-0 top-0 h-full border-r border-[#3b3b3b]/10 flex flex-col bg-[#f0eff2] z-50 overflow-hidden"
+            className="fixed left-0 top-0 h-full border-r border-app-text/5 flex flex-col bg-app-bg z-50 overflow-hidden shadow-2xl shadow-black/5"
         >
             {/* Header */}
-            <div className="p-6 flex items-center justify-between border-b border-[#3b3b3b]/5 h-20 shrink-0">
-                <Link href="/dashboard" className="flex items-center gap-3 overflow-hidden">
-                    <div className="shrink-0 w-8 h-8 border border-[#3b3b3b] flex items-center justify-center bg-white shadow-sm">
-                        <LayoutGrid className="w-4 h-4 text-[#3b3b3b]" />
+            <div className="p-6 flex items-center justify-between border-b border-app-text border-opacity-5 h-24 shrink-0 bg-app-bg bg-opacity-50 backdrop-blur-sm">
+                <Link href="/dashboard" className="flex items-center gap-4 overflow-hidden">
+                    <div className="shrink-0 w-10 h-10 border border-app-text border-opacity-20 flex items-center justify-center bg-app-card shadow-sm rounded-sm">
+                        <LayoutGrid className="w-5 h-5 text-app-text" />
                     </div>
                     {!isCollapsed && (
                         <motion.h1
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
-                            className="text-sm font-bold tracking-tighter text-[#3b3b3b] uppercase whitespace-nowrap"
+                            className="text-base font-extrabold tracking-tight text-app-text uppercase whitespace-nowrap"
                         >
-                            JobFlow <span className="font-serif-italic lowercase">Pro</span>
+                            JobFlow <span className="font-serif-italic lowercase font-medium text-app-accent">Pro</span>
                         </motion.h1>
                     )}
                 </Link>
                 {!isCollapsed && (
                     <button
                         onClick={() => { toggle(); if (onClose) onClose(); }}
-                        className="text-[#3b3b3b]/30 hover:text-[#3b3b3b] transition-colors p-1"
+                        className="text-app-text opacity-40 hover:opacity-100 transition-colors p-2 hover:bg-app-text hover:bg-opacity-5 rounded-full"
                     >
-                        <PanelLeft className="w-4 h-4" />
+                        <PanelLeft className="w-5 h-5" />
                     </button>
                 )}
             </div>
 
             {/* Main Content */}
-            <div className="flex-1 px-3 py-6 space-y-8 overflow-y-auto overflow-x-hidden">
+            <div className="flex-1 px-2 py-8 space-y-10 overflow-y-auto overflow-x-hidden custom-scrollbar">
                 <div>
                     {!isCollapsed && (
-                        <p className="px-4 mb-4 text-[9px] font-bold tracking-[0.3em] uppercase text-[#3b3b3b]/30">Platform</p>
+                        <p className="px-6 mb-4 text-[10px] font-extrabold tracking-[0.2em] uppercase text-app-text opacity-40">Platform</p>
                     )}
                     <div className="space-y-1">
-                        <NavItem to="/dashboard" label="Dashboard" icon={<LayoutGrid className="w-4 h-4" />} isCollapsed={isCollapsed} />
-                        <NavItem to="/dashboard/resume-evaluation" label="Resume Evaluator" icon={<FileText className="w-4 h-4" />} isCollapsed={isCollapsed} />
-                        <NavItem to="/dashboard/jobs" label="Job Search" icon={<Search className="w-4 h-4" />} isCollapsed={isCollapsed} />
-                        <NavItem to="/dashboard/applications" label="Applications" icon={<Briefcase className="w-4 h-4" />} isCollapsed={isCollapsed} />
-                        <NavItem to="/dashboard/referrals" label="Referrals" icon={<Users className="w-4 h-4" />} isCollapsed={isCollapsed} />
+                        <NavItem to="/dashboard" label="Dashboard" icon={<LayoutGrid className="w-5 h-5" />} isCollapsed={isCollapsed} />
+                        <NavItem to="/dashboard/resume-evaluation" label="Resume Evaluator" icon={<FileText className="w-5 h-5" />} isCollapsed={isCollapsed} />
+                        <NavItem to="/dashboard/jobs" label="Job Search" icon={<Search className="w-5 h-5" />} isCollapsed={isCollapsed} />
+                        <NavItem to="/dashboard/applications" label="Applications" icon={<Briefcase className="w-5 h-5" />} isCollapsed={isCollapsed} />
+                        <NavItem to="/dashboard/referrals" label="Referrals" icon={<Users className="w-5 h-5" />} isCollapsed={isCollapsed} />
                     </div>
                 </div>
 
                 <div>
                     {!isCollapsed && (
-                        <p className="px-4 mb-4 text-[9px] font-bold tracking-[0.3em] uppercase text-[#3b3b3b]/30">Account</p>
+                        <p className="px-6 mb-4 text-[10px] font-extrabold tracking-[0.2em] uppercase text-app-text opacity-40">Account</p>
                     )}
                     <div className="space-y-1">
-                        <NavItem to="/dashboard/profile" label="Profile Settings" icon={<Settings className="w-4 h-4" />} isCollapsed={isCollapsed} />
-                        <NavItem to="/logout" label="Sign Out" icon={<LogOut className="w-4 h-4" />} isCollapsed={isCollapsed} />
+                        <NavItem to="/dashboard/profile" label="Profile Settings" icon={<Settings className="w-5 h-5" />} isCollapsed={isCollapsed} />
+                        <NavItem to="/logout" label="Sign Out" icon={<LogOut className="w-5 h-5" />} isCollapsed={isCollapsed} />
                     </div>
                 </div>
             </div>
-
             {/* Footer */}
-            <div className="p-4 border-t border-[#3b3b3b]/10 bg-white/30 shrink-0">
-                <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
-                    <div className="w-10 h-10 border border-[#3b3b3b]/10 flex items-center justify-center bg-white text-[12px] font-bold shrink-0">
+            <div className="p-5 border-t border-app-text border-opacity-5 bg-app-card bg-opacity-30 shrink-0 backdrop-blur-md">
+                <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-4'}`}>
+                    <div className="w-12 h-12 border border-app-text border-opacity-10 flex items-center justify-center bg-app-bg text-sm font-bold shrink-0 rounded-full shadow-sm text-app-text">
                         {userName.charAt(0).toUpperCase()}
                     </div>
                     {!isCollapsed && (
@@ -160,22 +155,22 @@ export function SophisticatedSidebar({ onClose }: { onClose?: () => void }) {
                             animate={{ opacity: 1 }}
                             className="flex-1 overflow-hidden"
                         >
-                            <p className="text-[10px] font-bold uppercase tracking-tighter truncate text-[#3b3b3b]">{userName}</p>
-                            <p className="text-[9px] text-[#3b3b3b]/40 italic truncate">Professional Account</p>
+                            <p className="text-xs font-extrabold uppercase tracking-tight truncate text-app-text">{userName}</p>
+                            <p className="text-[10px] text-app-text opacity-50 italic truncate font-medium">Professional Account</p>
                         </motion.div>
                     )}
                     {!isCollapsed && (
-                        <button onClick={toggle} className="text-[#3b3b3b]/20 hover:text-[#3b3b3b] transition-colors">
-                            <ChevronDown className="w-3 h-3" />
+                        <button onClick={toggle} className="text-app-text opacity-30 hover:opacity-100 transition-opacity">
+                            <ChevronDown className="w-4 h-4" />
                         </button>
                     )}
                 </div>
                 {isCollapsed && (
                     <button
                         onClick={toggle}
-                        className="mt-4 w-full flex justify-center text-[#3b3b3b]/20 hover:text-[#3b3b3b] transition-colors"
+                        className="mt-6 w-full flex justify-center text-app-text opacity-30 hover:opacity-100 transition-opacity"
                     >
-                        <PanelLeft className="w-4 h-4" />
+                        <PanelLeft className="w-5 h-5" />
                     </button>
                 )}
             </div>

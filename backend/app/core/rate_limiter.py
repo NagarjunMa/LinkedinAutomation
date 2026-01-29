@@ -100,8 +100,8 @@ rate_limiter = RateLimiter()
 # Rate limit configurations for different AI operations
 RATE_LIMITS = {
     "resume_evaluation": {
-        "max_requests": 5,
-        "window_seconds": 3600,  # 5 evaluations per hour
+        "max_requests": 50,
+        "window_seconds": 3600,  # 50 evaluations per hour
         "error_message": "Resume evaluation limit exceeded. Maximum 5 evaluations per hour."
     },
     "question_answering": {

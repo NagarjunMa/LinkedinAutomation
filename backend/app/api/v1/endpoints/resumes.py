@@ -26,6 +26,35 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+
+def _convert_ats_score_to_category(value):
+    """Convert ATS compatibility score/value to categorical rating"""
+    if isinstance(value, (int, float)):
+        if value >= 8:
+            return "excellent"
+        elif value >= 6:
+            return "good"
+        elif value >= 4:
+            return "fair"
+        else:
+            return "poor"
+    elif isinstance(value, str):
+        try:
+            score = float(value)
+            if score >= 8:
+                return "excellent"
+            elif score >= 6:
+                return "good"
+            elif score >= 4:
+                return "fair"
+            else:
+                return "poor"
+        except ValueError:
+            if value.lower() in ["excellent", "good", "fair", "poor"]:
+                return value.lower()
+            return "fair"
+    return "fair"
+
 # Configure resume storage
 RESUME_UPLOAD_DIR = os.path.join(settings.UPLOAD_DIR, "resumes")
 os.makedirs(RESUME_UPLOAD_DIR, exist_ok=True)
@@ -280,6 +309,13 @@ async def get_resume(
             evaluation = {
                 "overall_score": resume_evaluation.overall_score,
                 "ats_compliance_score": resume_evaluation.ats_compliance_score,
+                
+                # Use aliases/mapping for new frontend schema
+                "ai_score": resume_evaluation.overall_score,
+                "ats_score": resume_evaluation.ats_compliance_score,
+                "optical_strengths": resume_evaluation.strengths or [],
+                "strategic_improvements": resume_evaluation.improvements or [],
+                
                 "content_quality_score": resume_evaluation.content_quality_score,
                 "experience_points_score": resume_evaluation.experience_points_score,
                 "job_relevance_score": resume_evaluation.job_relevance_score,
@@ -288,11 +324,20 @@ async def get_resume(
                 "improvements": resume_evaluation.improvements or [],
                 "detailed_feedback": resume_evaluation.detailed_feedback or '',
                 "ats_compatibility": resume_evaluation.ats_compatibility or 'fair',
+                
+                # Parse detail object if stored in keyword_analysis
+                "ats_compatibility_details": {
+                    "status": resume_evaluation.ats_compatibility or 'fair',
+                    "analysis": resume_evaluation.keyword_analysis.get("analysis", "") if resume_evaluation.keyword_analysis else "",
+                    "missing_keywords": resume_evaluation.keyword_analysis.get("missing_keywords", []) if resume_evaluation.keyword_analysis else []
+                },
+                
                 "keyword_analysis": resume_evaluation.keyword_analysis or {},
                 "evaluated_at": resume_evaluation.evaluated_at,
                 "ai_model_version": resume_evaluation.ai_model_version or '',
                 "critical_issues": resume_evaluation.critical_issues or {},
                 "market_positioning": resume_evaluation.market_positioning or {},
+                "wording_suggestions": resume_evaluation.wording_suggestions or [],
                 "evaluation_metadata": {
                     "evaluation_type": 'consolidated'
                 }
@@ -319,6 +364,7 @@ async def get_resume(
                     "evaluated_at": evaluation_record.evaluated_at,
                     "ai_model_version": evaluation_record.ai_model_version,
                     "processing_time": resume.processing_time,
+                    "wording_suggestions": getattr(evaluation_record, 'wording_suggestions', None) or [],
                     "evaluation_metadata": {
                         "evaluation_type": 'legacy'
                     }
@@ -500,11 +546,44 @@ async def evaluate_resume_background(
     target_seniority: str,
     process_id: str
 ):
-    """Background task for resume evaluation using agentic workflow with proper locking"""
+    """
+    Background task for resume evaluation using consolidated evaluator.
+
+    FIXED ISSUES:
+    - Single ConsolidatedResumeEvaluator instance (was creating duplicate instances)
+    - Proper extract_resume_text method call on correct instance
+    - Comprehensive error handling with transparent user messaging
+    - No mock data fallbacks - clear failure communication
+    - Structured logging for production debugging
+
+    Args:
+        resume_id: Unique resume identifier
+        file_path: Path to resume file for text extraction
+        file_type: MIME type of resume file
+        target_role: Optional target role for evaluation context
+        target_seniority: Optional target seniority for evaluation context
+        process_id: Unique process identifier for lock management
+    """
 
     # Create new database session for background task
     db = SessionLocal()
-    ai_service = get_ai_service()
+
+    # Initialize AI service for background task
+    try:
+        ai_service = get_ai_service()
+    except Exception as ai_init_error:
+        logger.error(f"Failed to initialize AI service for resume {resume_id}: {ai_init_error}")
+        # Mark resume as failed immediately if AI service can't be initialized
+        try:
+            resume = db.query(Resume).filter(Resume.id == resume_id).first()
+            if resume and resume.locked_by == process_id:
+                resume.update_evaluation_status("failed", release_lock=True)
+                db.commit()
+        except:
+            pass
+        finally:
+            db.close()
+        return
 
     try:
         # Get resume record with current lock info
@@ -531,54 +610,97 @@ async def evaluate_resume_background(
         use_consolidated = True  # Feature flag for gradual rollout
 
         if use_consolidated:
-            # Initialize consolidated evaluator service
+            # Initialize single consolidated evaluator service
             evaluator = ConsolidatedResumeEvaluator(ai_service)
 
-            # Extract text from resume (reuse method from agentic evaluator)
-            agentic_evaluator = ConsolidatedResumeEvaluator(ai_service)
-            resume_text = await agentic_evaluator.extract_resume_text(file_path, file_type)
+            # Extract text from resume using the evaluator instance
+            try:
+                resume_text = await evaluator.extract_resume_text(file_path, file_type)
+                if not resume_text or not resume_text.strip():
+                    logger.error(f"Failed to extract text from resume {resume_id} at {file_path}")
+                    raise ValueError("Resume text extraction failed - empty or no content extracted")
+            except Exception as text_error:
+                logger.error(f"Resume text extraction failed for {resume_id}: {text_error}")
+                raise RuntimeError(f"Could not extract text from resume file. Please ensure the file is not corrupted and try uploading again.") from text_error
 
             # Get user_id from resume record
             user_id = resume.user_id
 
             # Evaluate resume using consolidated single-prompt approach
-            evaluation_result = await evaluator.evaluate_resume(
-                resume_text, user_id, resume_id, db, target_role, target_seniority
-            )
+            try:
+                evaluation_result = await evaluator.evaluate_resume(
+                    resume_text, user_id, resume_id, db, target_role, target_seniority
+                )
+            except Exception as eval_error:
+                logger.error(f"Resume evaluation failed for {resume_id}: {eval_error}")
+                raise RuntimeError(f"AI evaluation failed. Please try again or contact support if the issue persists.") from eval_error
 
             # Extract scores from consolidated result
-            category_scores = evaluation_result.get("category_scores", {})
-            overall_score = evaluation_result.get("overall_score", 0)
-
+            overall_score = evaluation_result.get("ai_score", 0)
+            ats_score = evaluation_result.get("ats_score", 0)
+            
+            # Extract ATS details
+            ats_data = evaluation_result.get("ats_compatibility", {})
+            ats_status = ats_data.get("status", "fair") if isinstance(ats_data, dict) else "fair"
+            
             # Map consolidated scores to legacy format for compatibility
             evaluation_record = ResumeEvaluation(
                 id=str(uuid.uuid4()),
                 resume_id=resume_id,
                 overall_score=overall_score,
-                ats_compliance_score=category_scores.get("ats_compatibility", 0) * 10,
-                content_quality_score=category_scores.get("detailed_content", 0) * 10,
-                experience_points_score=category_scores.get("experience_impact", 0) * 10,
-                job_relevance_score=category_scores.get("company_fit", 0) * 10,
-                quality_checks_score=category_scores.get("final_polish", 0) * 10,
-                strengths=evaluation_result.get("strengths", []),
-                improvements=[item.get("issue", "") for item in evaluation_result.get("critical_issues", {}).get("immediate_fixes_required", [])],
+                ats_compliance_score=ats_score,
+                
+                # Zero out separate category scores as they are removed in Precision Analysis
+                content_quality_score=overall_score, # Mirror overall score
+                experience_points_score=overall_score, 
+                job_relevance_score=overall_score,
+                quality_checks_score=overall_score,
+                
+                # Map lists
+                strengths=evaluation_result.get("optical_strengths", []),
+                improvements=evaluation_result.get("strategic_improvements", []),
+                
                 detailed_feedback=evaluation_result.get("executive_summary", ""),
-                ats_compatibility=evaluation_result.get("tactical_checklist", {}).get("ats_compatibility", 0),
-                keyword_analysis=evaluation_result.get("specific_recommendations", {}).get("ats_optimization", {}),
-                critical_issues=evaluation_result.get("critical_issues", {}),
-                market_positioning=evaluation_result.get("market_positioning", {}),
+                
+                ats_compatibility=ats_status.lower(),
+                
+                # Store complex objects
+                keyword_analysis={
+                    "missing_keywords": ats_data.get("missing_keywords", []) if isinstance(ats_data, dict) else [],
+                    "analysis": ats_data.get("analysis", "") if isinstance(ats_data, dict) else ""
+                },
+                
+                critical_issues={}, # Deprecated in new model but kept for schema
+                market_positioning={}, 
+                
+                wording_suggestions=evaluation_result.get("wording_suggestions", []),
+                
                 evaluated_at=datetime.now(timezone.utc),
-                ai_model_version="gpt-4o-mini-consolidated",
-                evaluation_prompt="Consolidated single-prompt evaluation"
+                ai_model_version="gpt-4o-structured-precision",
+                evaluation_prompt="Precision Analysis"
             )
         else:
-            # Fallback to old agentic evaluator
+            # Fallback to old agentic evaluator with proper error handling
             evaluator = ConsolidatedResumeEvaluator(ai_service)
-            resume_text = await evaluator.extract_resume_text(file_path, file_type)
+
+            try:
+                resume_text = await evaluator.extract_resume_text(file_path, file_type)
+                if not resume_text or not resume_text.strip():
+                    logger.error(f"Failed to extract text from resume {resume_id} at {file_path}")
+                    raise ValueError("Resume text extraction failed - empty or no content extracted")
+            except Exception as text_error:
+                logger.error(f"Resume text extraction failed for {resume_id}: {text_error}")
+                raise RuntimeError(f"Could not extract text from resume file. Please ensure the file is not corrupted and try uploading again.") from text_error
+
             user_id = resume.user_id
-            evaluation_result = await evaluator.evaluate_resume(
-                resume_text, user_id, resume_id, target_role, target_seniority
-            )
+
+            try:
+                evaluation_result = await evaluator.evaluate_resume(
+                    resume_text, user_id, resume_id, db, target_role, target_seniority
+                )
+            except Exception as eval_error:
+                logger.error(f"Resume evaluation failed for {resume_id}: {eval_error}")
+                raise RuntimeError(f"AI evaluation failed. Please try again or contact support if the issue persists.") from eval_error
 
             evaluation_record = ResumeEvaluation(
                 id=str(uuid.uuid4()),
@@ -619,19 +741,51 @@ async def evaluate_resume_background(
         logger.info(f"Resume evaluation completed for {resume_id} with score {final_score} by process {process_id} using {'consolidated' if use_consolidated else 'agentic'} evaluator")
 
     except Exception as e:
-        logger.error(f"Background evaluation failed for resume {resume_id}: {e}")
+        error_message = str(e)
+        error_type = type(e).__name__
+        logger.error(
+            f"Background evaluation failed for resume {resume_id}: {error_message}",
+            extra={
+                "resume_id": resume_id,
+                "process_id": process_id,
+                "error_type": error_type,
+                "file_path": file_path,
+                "file_type": file_type
+            }
+        )
         db.rollback()
 
         try:
-            # Get fresh resume record and mark as failed, release lock
+            # Get fresh resume record and mark as failed with specific error details
             resume = db.query(Resume).filter(Resume.id == resume_id).first()
             if resume and resume.locked_by == process_id:
+                # Provide transparent error messaging based on error type
+                if "text extraction failed" in error_message.lower():
+                    failure_reason = "Failed to extract text from resume file. Please ensure the file is not corrupted and try uploading a new version."
+                elif "ai evaluation failed" in error_message.lower():
+                    failure_reason = "AI evaluation service encountered an error. Please try again in a few minutes."
+                elif "connection" in error_message.lower() or "timeout" in error_message.lower():
+                    failure_reason = "Network connectivity issue during evaluation. Please try again."
+                elif "rate limit" in error_message.lower():
+                    failure_reason = "AI service rate limit exceeded. Please wait a few minutes before trying again."
+                else:
+                    failure_reason = f"Evaluation failed: {error_message[:100]}{'...' if len(error_message) > 100 else ''}"
+
+                # Update status to failed and release lock
                 resume.update_evaluation_status("failed", release_lock=True)
+                # TODO: Consider adding failure_reason field to Resume model for better user feedback
+
                 db.commit()
-                logger.info(f"Marked resume {resume_id} as failed and released lock")
+                logger.info(
+                    f"Marked resume {resume_id} as failed with reason: {failure_reason}",
+                    extra={"process_id": process_id}
+                )
 
         except Exception as cleanup_error:
-            logger.error(f"Failed to cleanup after evaluation error for resume {resume_id}: {cleanup_error}")
+            logger.error(
+                f"Failed to cleanup after evaluation error for resume {resume_id}: {cleanup_error}",
+                extra={"process_id": process_id, "original_error": error_message}
+            )
             db.rollback()
 
     finally:

@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { CheckCircle, AlertTriangle, Target, Zap, ArrowRight } from "lucide-react"
-import { ResumeFile, ResumeEvaluation } from "@/app/lib/api"
+import { ResumeFile, ResumeEvaluation } from "@/app/lib/api/types"
 
 interface EnhancedResumeAnalysisProps {
   resume: ResumeFile | null
@@ -518,22 +518,4 @@ export function EnhancedResumeAnalysis({ resume, open, onOpenChange }: EnhancedR
 }
 
 // Mock evaluation generator for demonstration
-function _generateMockEvaluation(): ResumeEvaluation {
-  return {
-    overall_score: 72,
-    ats_compliance_score: 65,
-    content_quality_score: 68,
-    experience_points_score: 78,
-    job_relevance_score: 75,
-    quality_checks_score: 58,
-    strengths: [],
-    improvements: [],
-    ats_compatibility: 'fair',
-    detailed_feedback: '',
-    keyword_analysis: {
-      relevant: ['JavaScript', 'Python', 'AWS'],
-      missing: ['DevOps', 'Agile', 'Docker'],
-      score: 70
-    }
-  }
-}
+// Mock generation removed

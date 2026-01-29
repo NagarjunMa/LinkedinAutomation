@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/components/ui/use-toast"
-import { referralTemplatesAPI } from '@/app/lib/api'
+import { referralTemplatesAPI } from '@/app/lib/api/referral'
 import {
     MessageSquare,
     Send,
@@ -62,26 +62,26 @@ function FeedbackForm({ templateId, onSubmit, onCancel }: FeedbackFormProps) {
     }
 
     return (
-        <div className="space-y-4 p-4 bg-primary-950 border border-primary-700 rounded-lg">
-            <h4 className="text-cream-50 font-medium">Provide Feedback</h4>
+        <div className="space-y-4 p-6 bg-white dark:bg-[#1c1c1c] border border-[#3b3b3b]/10 dark:border-[#f0eff2]/10 rounded-2xl shadow-sm">
+            <h4 className="text-[#3b3b3b] dark:text-[#f0eff2] font-bold uppercase tracking-wide text-sm">Provide Feedback</h4>
 
-            <div className="space-y-3">
+            <div className="space-y-4">
                 <div className="flex items-center gap-4">
-                    <label className="text-cream-200 text-sm">Did you get a response?</label>
+                    <label className="text-[#3b3b3b]/70 dark:text-[#f0eff2]/70 text-sm font-medium">Did you get a response?</label>
                     <div className="flex gap-2">
                         <Button
                             variant={feedback.got_response ? "default" : "outline"}
                             size="sm"
-                            onClick={() => setFeedback({...feedback, got_response: true})}
-                            className={feedback.got_response ? "bg-green-600" : "border-primary-700"}
+                            onClick={() => setFeedback({ ...feedback, got_response: true })}
+                            className={feedback.got_response ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "border-[#3b3b3b]/20 dark:border-[#f0eff2]/20 text-[#3b3b3b] dark:text-[#f0eff2]"}
                         >
                             Yes
                         </Button>
                         <Button
                             variant={!feedback.got_response ? "default" : "outline"}
                             size="sm"
-                            onClick={() => setFeedback({...feedback, got_response: false})}
-                            className={!feedback.got_response ? "bg-red-600" : "border-primary-700"}
+                            onClick={() => setFeedback({ ...feedback, got_response: false })}
+                            className={!feedback.got_response ? "bg-rose-600 hover:bg-rose-700 text-white" : "border-[#3b3b3b]/20 dark:border-[#f0eff2]/20 text-[#3b3b3b] dark:text-[#f0eff2]"}
                         >
                             No
                         </Button>
@@ -90,54 +90,54 @@ function FeedbackForm({ templateId, onSubmit, onCancel }: FeedbackFormProps) {
 
                 {feedback.got_response && (
                     <div className="space-y-2">
-                        <label className="text-cream-200 text-sm">Response Type</label>
+                        <label className="text-[#3b3b3b]/70 dark:text-[#f0eff2]/70 text-sm font-medium">Response Type</label>
                         <Input
                             placeholder="e.g., positive_reply, interview_scheduled, referred"
                             value={feedback.response_type}
-                            onChange={(e) => setFeedback({...feedback, response_type: e.target.value})}
-                            className="bg-primary-950 border-primary-700 text-cream-50"
+                            onChange={(e) => setFeedback({ ...feedback, response_type: e.target.value })}
+                            className="bg-[#f0eff2]/50 dark:bg-[#0a0a0a]/50 border-transparent focus:bg-white dark:focus:bg-[#1c1c1c] focus:border-[#3b3b3b]/10 dark:focus:border-[#f0eff2]/10 rounded-xl text-[#3b3b3b] dark:text-[#f0eff2]"
                         />
                     </div>
                 )}
 
                 <div className="space-y-2">
-                    <label className="text-cream-200 text-sm">Template Satisfaction (1-5)</label>
+                    <label className="text-[#3b3b3b]/70 dark:text-[#f0eff2]/70 text-sm font-medium">Template Satisfaction (1-5)</label>
                     <Input
                         type="number"
                         min={1}
                         max={5}
                         value={feedback.user_satisfaction_score}
-                        onChange={(e) => setFeedback({...feedback, user_satisfaction_score: parseInt(e.target.value)})}
-                        className="bg-primary-950 border-primary-700 text-cream-50"
+                        onChange={(e) => setFeedback({ ...feedback, user_satisfaction_score: parseInt(e.target.value) })}
+                        className="bg-[#f0eff2]/50 dark:bg-[#0a0a0a]/50 border-transparent focus:bg-white dark:focus:bg-[#1c1c1c] focus:border-[#3b3b3b]/10 dark:focus:border-[#f0eff2]/10 rounded-xl text-[#3b3b3b] dark:text-[#f0eff2]"
                     />
                 </div>
 
                 <div className="space-y-2">
-                    <label className="text-cream-200 text-sm">Additional Notes</label>
+                    <label className="text-[#3b3b3b]/70 dark:text-[#f0eff2]/70 text-sm font-medium">Additional Notes</label>
                     <Textarea
                         placeholder="Any additional feedback..."
                         value={feedback.feedback_notes}
-                        onChange={(e) => setFeedback({...feedback, feedback_notes: e.target.value})}
-                        className="bg-primary-950 border-primary-700 text-cream-50"
+                        onChange={(e) => setFeedback({ ...feedback, feedback_notes: e.target.value })}
+                        className="bg-[#f0eff2]/50 dark:bg-[#0a0a0a]/50 border-transparent focus:bg-white dark:focus:bg-[#1c1c1c] focus:border-[#3b3b3b]/10 dark:focus:border-[#f0eff2]/10 rounded-xl text-[#3b3b3b] dark:text-[#f0eff2]"
                         rows={3}
                     />
                 </div>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 pt-2">
                 <Button
                     onClick={submitFeedback}
                     disabled={submitting}
-                    className="bg-accent-500 hover:bg-accent-600"
+                    className="bg-[#3b3b3b] dark:bg-white hover:bg-black dark:hover:bg-[#e5e5e5] text-white dark:text-black px-6 rounded-xl font-bold text-xs uppercase tracking-widest"
                     size="sm"
                 >
                     {submitting ? "Submitting..." : "Submit Feedback"}
                 </Button>
                 <Button
-                    variant="outline"
+                    variant="ghost"
                     onClick={onCancel}
                     size="sm"
-                    className="border-primary-700"
+                    className="text-[#3b3b3b]/60 dark:text-[#f0eff2]/60 hover:text-[#3b3b3b] dark:hover:text-[#f0eff2]"
                 >
                     Cancel
                 </Button>
@@ -165,8 +165,8 @@ export function ReferralTemplateManager() {
                 referralTemplatesAPI.getTemplates(50),
                 referralTemplatesAPI.getStats()
             ])
-            setTemplates(templatesData)
-            setStats(statsData)
+            setTemplates(templatesData as unknown as Array<Record<string, unknown>>)
+            setStats(statsData as unknown as Record<string, unknown>)
         } catch (error) {
             console.error('Error fetching data:', error)
             toast({
@@ -228,21 +228,21 @@ export function ReferralTemplateManager() {
     const getStatusBadge = (template: Record<string, unknown>) => {
         if (template.got_response) {
             return (
-                <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                <Badge className="bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-200 border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">
                     <CheckCircle className="h-3 w-3 mr-1" />
                     Responded
                 </Badge>
             )
         } else if (template.was_sent) {
             return (
-                <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+                <Badge className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-200 border-blue-200 dark:border-blue-800 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">
                     <Send className="h-3 w-3 mr-1" />
                     Sent
                 </Badge>
             )
         } else {
             return (
-                <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">
+                <Badge className="bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-200 border-amber-200 dark:border-amber-800 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">
                     <Clock className="h-3 w-3 mr-1" />
                     Draft
                 </Badge>
@@ -263,7 +263,7 @@ export function ReferralTemplateManager() {
     if (loading) {
         return (
             <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-500"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#3b3b3b] dark:border-[#f0eff2]"></div>
             </div>
         )
     }
@@ -273,108 +273,114 @@ export function ReferralTemplateManager() {
             {/* Statistics Cards */}
             {stats && (
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <Card className="bg-primary-900/50 border-primary-800">
-                        <CardContent className="pt-6">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm text-cream-300">Total Templates</p>
-                                    <p className="text-2xl font-bold text-cream-50">{stats.total_templates as number}</p>
-                                </div>
-                                <MessageSquare className="h-8 w-8 text-accent-400" />
+                    <div className="bg-white dark:bg-[#1c1c1c] p-6 rounded-[24px] border border-[#3b3b3b]/5 dark:border-[#f0eff2]/10 shadow-sm">
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="p-2 rounded-xl bg-[#3b3b3b]/5 dark:bg-[#f0eff2]/10 text-[#3b3b3b] dark:text-[#f0eff2]">
+                                <MessageSquare className="h-5 w-5" />
                             </div>
-                        </CardContent>
-                    </Card>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-[#3b3b3b]/40 dark:text-[#f0eff2]/40">Total</span>
+                        </div>
+                        <div>
+                            <p className="text-3xl font-black text-[#3b3b3b] dark:text-[#f0eff2] tracking-tighter">{stats.total_templates as number}</p>
+                            <p className="text-xs font-bold uppercase tracking-widest text-[#3b3b3b]/60 dark:text-[#f0eff2]/60 mt-1">Templates</p>
+                        </div>
+                    </div>
 
-                    <Card className="bg-primary-900/50 border-primary-800">
-                        <CardContent className="pt-6">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm text-cream-300">Sent</p>
-                                    <p className="text-2xl font-bold text-cream-50">{stats.sent_count as number}</p>
-                                </div>
-                                <Send className="h-8 w-8 text-blue-400" />
+                    <div className="bg-white dark:bg-[#1c1c1c] p-6 rounded-[24px] border border-[#3b3b3b]/5 dark:border-[#f0eff2]/10 shadow-sm">
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="p-2 rounded-xl bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400">
+                                <Send className="h-5 w-5" />
                             </div>
-                        </CardContent>
-                    </Card>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-[#3b3b3b]/40 dark:text-[#f0eff2]/40">Active</span>
+                        </div>
+                        <div>
+                            <p className="text-3xl font-black text-[#3b3b3b] dark:text-[#f0eff2] tracking-tighter">{stats.sent_count as number}</p>
+                            <p className="text-xs font-bold uppercase tracking-widest text-[#3b3b3b]/60 dark:text-[#f0eff2]/60 mt-1">Sent Requests</p>
+                        </div>
+                    </div>
 
-                    <Card className="bg-primary-900/50 border-primary-800">
-                        <CardContent className="pt-6">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm text-cream-300">Response Rate</p>
-                                    <p className="text-2xl font-bold text-cream-50">{(stats.response_rate as number).toFixed(1)}%</p>
-                                </div>
-                                <BarChart3 className="h-8 w-8 text-green-400" />
+                    <div className="bg-white dark:bg-[#1c1c1c] p-6 rounded-[24px] border border-[#3b3b3b]/5 dark:border-[#f0eff2]/10 shadow-sm">
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="p-2 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+                                <BarChart3 className="h-5 w-5" />
                             </div>
-                        </CardContent>
-                    </Card>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-[#3b3b3b]/40 dark:text-[#f0eff2]/40">Success</span>
+                        </div>
+                        <div>
+                            <p className="text-3xl font-black text-[#3b3b3b] dark:text-[#f0eff2] tracking-tighter">{(stats.response_rate as number).toFixed(1)}%</p>
+                            <p className="text-xs font-bold uppercase tracking-widest text-[#3b3b3b]/60 dark:text-[#f0eff2]/60 mt-1">Response Rate</p>
+                        </div>
+                    </div>
 
-                    <Card className="bg-primary-900/50 border-primary-800">
-                        <CardContent className="pt-6">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm text-cream-300">Avg Effectiveness</p>
-                                    <p className="text-2xl font-bold text-cream-50">{(stats.avg_effectiveness as number).toFixed(1)}</p>
-                                </div>
-                                <Star className="h-8 w-8 text-yellow-400" />
+                    <div className="bg-white dark:bg-[#1c1c1c] p-6 rounded-[24px] border border-[#3b3b3b]/5 dark:border-[#f0eff2]/10 shadow-sm">
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="p-2 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400">
+                                <Star className="h-5 w-5" />
                             </div>
-                        </CardContent>
-                    </Card>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-[#3b3b3b]/40 dark:text-[#f0eff2]/40">Quality</span>
+                        </div>
+                        <div>
+                            <p className="text-3xl font-black text-[#3b3b3b] dark:text-[#f0eff2] tracking-tighter">{(stats.avg_effectiveness as number).toFixed(1)}</p>
+                            <p className="text-xs font-bold uppercase tracking-widest text-[#3b3b3b]/60 dark:text-[#f0eff2]/60 mt-1">Avg Effectiveness</p>
+                        </div>
+                    </div>
                 </div>
             )}
 
             {/* Templates List */}
-            <Card className="bg-primary-900/50 border-primary-800">
-                <CardHeader>
-                    <CardTitle className="text-cream-50 flex items-center gap-2">
-                        <MessageSquare className="h-5 w-5 text-accent-400" />
-                        Your Templates ({templates.length})
+            <Card className="bg-white dark:bg-[#1c1c1c] border-[#3b3b3b]/5 dark:border-[#f0eff2]/10 rounded-[32px] shadow-sm overflow-hidden">
+                <CardHeader className="border-b border-[#3b3b3b]/5 dark:border-[#f0eff2]/10 p-8">
+                    <CardTitle className="text-[#3b3b3b] dark:text-[#f0eff2] flex items-center gap-3 text-2xl font-black uppercase tracking-tight">
+                        <MessageSquare className="h-6 w-6 text-[#3b3b3b]/40 dark:text-[#f0eff2]/40" />
+                        Your Templates <span className="text-[#3b3b3b]/40 dark:text-[#f0eff2]/40 ml-2">({templates.length})</span>
                     </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-8">
                     {templates.length === 0 ? (
-                        <div className="text-center py-8">
-                            <MessageSquare className="h-12 w-12 text-cream-400 mx-auto mb-4" />
-                            <p className="text-cream-300">No templates created yet</p>
-                            <p className="text-cream-400 text-sm">Generate your first referral template to get started</p>
+                        <div className="text-center py-16 bg-[#f0eff2]/30 dark:bg-[#0a0a0a]/30 rounded-3xl border border-dashed border-[#3b3b3b]/10 dark:border-[#f0eff2]/10">
+                            <div className="w-16 h-16 rounded-full bg-[#3b3b3b]/5 dark:bg-[#f0eff2]/5 flex items-center justify-center mx-auto mb-4">
+                                <MessageSquare className="h-8 w-8 text-[#3b3b3b]/40 dark:text-[#f0eff2]/40" />
+                            </div>
+                            <h3 className="text-lg font-black text-[#3b3b3b] dark:text-[#f0eff2] mb-2 uppercase tracking-tight">No templates created yet</h3>
+                            <p className="text-[#3b3b3b]/60 dark:text-[#f0eff2]/60 text-sm max-w-sm mx-auto">Generate your first referral template to get started</p>
                         </div>
                     ) : (
                         <div className="space-y-4">
                             {templates.map((template) => (
                                 <div
                                     key={template.id as string}
-                                    className="border border-primary-700 rounded-lg p-4 space-y-3"
+                                    className="border border-[#3b3b3b]/5 dark:border-[#f0eff2]/10 bg-[#f0eff2]/30 dark:bg-[#0a0a0a]/30 rounded-3xl p-6 transition-all hover:bg-white dark:hover:bg-[#1c1c1c] hover:shadow-lg hover:border-[#3b3b3b]/10 dark:hover:border-[#f0eff2]/20 group"
                                 >
-                                    <div className="flex items-start justify-between">
-                                        <div className="space-y-1">
-                                            <div className="flex items-center gap-3">
-                                                <h4 className="text-cream-50 font-medium">{template.subject_line as string}</h4>
+                                    <div className="flex flex-col md:flex-row items-start justify-between gap-4">
+                                        <div className="space-y-2 flex-1">
+                                            <div className="flex flex-wrap items-center gap-3">
+                                                <h4 className="text-[#3b3b3b] dark:text-[#f0eff2] font-bold text-lg">{template.subject_line as string}</h4>
                                                 {getStatusBadge(template)}
-                                                <Badge className="bg-gray-500/20 text-gray-400 border-gray-500/30">
+                                                <Badge className="bg-[#3b3b3b]/5 dark:bg-[#f0eff2]/5 text-[#3b3b3b] dark:text-[#f0eff2] border-[#3b3b3b]/10 dark:border-[#f0eff2]/10 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">
                                                     {template.template_style as string}
                                                 </Badge>
                                             </div>
-                                            <div className="flex items-center gap-4 text-sm text-cream-400">
+                                            <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-[#3b3b3b]/60 dark:text-[#f0eff2]/60">
                                                 {(template.contact_name as string) && (
-                                                    <span className="flex items-center gap-1">
-                                                        <User className="h-4 w-4" />
+                                                    <span className="flex items-center gap-1.5 bg-white dark:bg-[#1c1c1c] px-2 py-1 rounded-md border border-[#3b3b3b]/5 dark:border-[#f0eff2]/10">
+                                                        <User className="h-3.5 w-3.5" />
                                                         {template.contact_name as string}
                                                     </span>
                                                 )}
                                                 {(template.contact_company as string) && (
-                                                    <span className="flex items-center gap-1">
-                                                        <Building className="h-4 w-4" />
+                                                    <span className="flex items-center gap-1.5 bg-white dark:bg-[#1c1c1c] px-2 py-1 rounded-md border border-[#3b3b3b]/5 dark:border-[#f0eff2]/10">
+                                                        <Building className="h-3.5 w-3.5" />
                                                         {template.contact_company as string}
                                                     </span>
                                                 )}
-                                                <span className="flex items-center gap-1">
-                                                    <Calendar className="h-4 w-4" />
+                                                <span className="flex items-center gap-1.5">
+                                                    <Calendar className="h-3.5 w-3.5" />
                                                     {formatDate(template.created_at as string)}
                                                 </span>
                                                 {(template.effectiveness_score as number) && (
-                                                    <span className="flex items-center gap-1">
-                                                        <Star className="h-4 w-4" />
-                                                        {((template.effectiveness_score as number) * 100).toFixed(0)}%
+                                                    <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
+                                                        <Star className="h-3.5 w-3.5 fill-current" />
+                                                        {((template.effectiveness_score as number) * 100).toFixed(0)}% Score
                                                     </span>
                                                 )}
                                             </div>
@@ -387,7 +393,8 @@ export function ReferralTemplateManager() {
                                                 onClick={() => setExpandedTemplate(
                                                     expandedTemplate === template.id ? null : template.id as string
                                                 )}
-                                                className="text-cream-400 hover:text-cream-200"
+                                                className="text-[#3b3b3b]/60 dark:text-[#f0eff2]/60 hover:text-[#3b3b3b] dark:hover:text-[#f0eff2] hover:bg-[#3b3b3b]/5 dark:hover:bg-[#f0eff2]/10 h-9 w-9 p-0 rounded-xl"
+                                                title="View Content"
                                             >
                                                 <Eye className="h-4 w-4" />
                                             </Button>
@@ -396,7 +403,8 @@ export function ReferralTemplateManager() {
                                                 variant="ghost"
                                                 size="sm"
                                                 onClick={() => copyToClipboard(`Subject: ${template.subject_line as string}\n\n${(template.email_body as string) || 'Email body not available'}`)}
-                                                className="text-cream-400 hover:text-cream-200"
+                                                className="text-[#3b3b3b]/60 dark:text-[#f0eff2]/60 hover:text-[#3b3b3b] dark:hover:text-[#f0eff2] hover:bg-[#3b3b3b]/5 dark:hover:bg-[#f0eff2]/10 h-9 w-9 p-0 rounded-xl"
+                                                title="Copy to Clipboard"
                                             >
                                                 <Copy className="h-4 w-4" />
                                             </Button>
@@ -406,7 +414,8 @@ export function ReferralTemplateManager() {
                                                     variant="ghost"
                                                     size="sm"
                                                     onClick={() => markAsSent(template.id as string)}
-                                                    className="text-blue-400 hover:text-blue-300"
+                                                    className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 h-9 w-9 p-0 rounded-xl"
+                                                    title="Mark as Sent"
                                                 >
                                                     <Send className="h-4 w-4" />
                                                 </Button>
@@ -419,7 +428,8 @@ export function ReferralTemplateManager() {
                                                     onClick={() => setShowFeedbackForm(
                                                         showFeedbackForm === template.id ? null : template.id as string
                                                     )}
-                                                    className="text-green-400 hover:text-green-300"
+                                                    className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 h-9 w-9 p-0 rounded-xl"
+                                                    title="Record Feedback"
                                                 >
                                                     <Star className="h-4 w-4" />
                                                 </Button>
@@ -429,7 +439,8 @@ export function ReferralTemplateManager() {
                                                 variant="ghost"
                                                 size="sm"
                                                 onClick={() => deleteTemplate(template.id as string)}
-                                                className="text-red-400 hover:text-red-300"
+                                                className="text-[#3b3b3b]/40 dark:text-[#f0eff2]/40 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 h-9 w-9 p-0 rounded-xl"
+                                                title="Delete Template"
                                             >
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
@@ -438,8 +449,9 @@ export function ReferralTemplateManager() {
 
                                     {/* Expanded Template Content */}
                                     {expandedTemplate === template.id && (template.email_body as string) && (
-                                        <div className="mt-3 p-3 bg-primary-950 border border-primary-700 rounded-lg">
-                                            <pre className="text-cream-50 text-sm whitespace-pre-wrap font-sans">
+                                        <div className="mt-6 p-6 bg-white dark:bg-[#1c1c1c] border border-[#3b3b3b]/10 dark:border-[#f0eff2]/10 rounded-2xl shadow-inner">
+                                            <p className="text-xs font-black uppercase tracking-widest text-[#3b3b3b]/40 dark:text-[#f0eff2]/40 mb-3">Template Content</p>
+                                            <pre className="text-[#3b3b3b] dark:text-[#f0eff2] text-sm whitespace-pre-wrap font-sans leading-relaxed">
                                                 {template.email_body as string}
                                             </pre>
                                         </div>
@@ -447,14 +459,16 @@ export function ReferralTemplateManager() {
 
                                     {/* Feedback Form */}
                                     {showFeedbackForm === template.id && (
-                                        <FeedbackForm
-                                            templateId={template.id as string}
-                                            onSubmit={() => {
-                                                setShowFeedbackForm(null)
-                                                fetchData()
-                                            }}
-                                            onCancel={() => setShowFeedbackForm(null)}
-                                        />
+                                        <div className="mt-6">
+                                            <FeedbackForm
+                                                templateId={template.id as string}
+                                                onSubmit={() => {
+                                                    setShowFeedbackForm(null)
+                                                    fetchData()
+                                                }}
+                                                onCancel={() => setShowFeedbackForm(null)}
+                                            />
+                                        </div>
                                     )}
                                 </div>
                             ))}

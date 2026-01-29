@@ -1,7 +1,7 @@
 "use client"
 
 import { memo, forwardRef } from 'react'
-import { FixedSizeList as List } from 'react-window'
+import { FixedSizeList } from 'react-window'
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -48,17 +48,19 @@ interface ApplicationItemProps {
 }
 
 const getStatusBadge = (status: ApplicationStatus) => {
+    const baseClasses = "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm";
+
     switch (status) {
         case 'applied':
-            return <Badge className="bg-green-500 text-white"><CheckCircle className="w-3 h-3 mr-1" />Applied</Badge>
+            return <Badge className={`${baseClasses} bg-green-50 text-green-600 border-green-200`}><CheckCircle className="w-3 h-3 mr-1" />Applied</Badge>
         case 'interview_scheduled':
-            return <Badge className="bg-blue-500 text-white"><Calendar className="w-3 h-3 mr-1" />Interview</Badge>
+            return <Badge className={`${baseClasses} bg-blue-50 text-blue-600 border-blue-200`}><Calendar className="w-3 h-3 mr-1" />Interview</Badge>
         case 'want_to_apply':
-            return <Badge className="bg-yellow-500 text-black"><Target className="w-3 h-3 mr-1" />Want to Apply</Badge>
+            return <Badge className={`${baseClasses} bg-yellow-50 text-yellow-600 border-yellow-200`}><Target className="w-3 h-3 mr-1" />Want to Apply</Badge>
         case 'not_interested':
-            return <Badge className="bg-gray-500 text-white"><X className="w-3 h-3 mr-1" />Not Interested</Badge>
+            return <Badge className={`${baseClasses} bg-red-50 text-red-600 border-red-200`}><X className="w-3 h-3 mr-1" />Not Interested</Badge>
         default:
-            return <Badge className="bg-orange-500 text-white"><Clock className="w-3 h-3 mr-1" />Pending</Badge>
+            return <Badge className={`${baseClasses} bg-gray-50 text-gray-600 border-gray-200`}><Clock className="w-3 h-3 mr-1" />Pending</Badge>
     }
 }
 
@@ -71,9 +73,9 @@ const ApplicationItem = memo(forwardRef<HTMLDivElement, ApplicationItemProps>(
         if (!application) {
             return (
                 <div ref={ref} style={style} className="p-2">
-                    <Card className="hover:shadow-lg transition-shadow animate-pulse">
-                        <CardContent className="p-4">
-                            <div className="h-20 bg-gray-300 rounded"></div>
+                    <Card className="hover:shadow-lg transition-shadow animate-pulse bg-white rounded-[32px] border border-[#3b3b3b]/5">
+                        <CardContent className="p-6">
+                            <div className="h-20 bg-[#f0eff2] rounded-xl"></div>
                         </CardContent>
                     </Card>
                 </div>
@@ -82,18 +84,18 @@ const ApplicationItem = memo(forwardRef<HTMLDivElement, ApplicationItemProps>(
 
         return (
             <div ref={ref} style={style} className="p-2">
-                <Card className="hover:shadow-lg transition-shadow">
-                    <CardContent className="p-4 sm:p-6">
+                <Card className="group bg-white rounded-[32px] border border-[#3b3b3b]/5 shadow-sm hover:shadow-xl transition-all hover:border-[#3b3b3b]/20">
+                    <CardContent className="p-6">
                         <div className="flex items-start justify-between">
                             <div className="flex-1">
                                 <div className="flex items-center gap-3 mb-2">
-                                    <h3 className="text-xl font-semibold text-cream-50">
+                                    <h3 className="text-lg font-bold text-[#3b3b3b]">
                                         {application.title}
                                     </h3>
                                     {getStatusBadge(application.status)}
                                 </div>
 
-                                <div className="flex items-center gap-4 text-sm text-cream-300 mb-3">
+                                <div className="flex items-center gap-4 text-sm text-[#3b3b3b]/60 mb-3 font-medium">
                                     <div className="flex items-center gap-1">
                                         <Briefcase className="w-4 h-4" />
                                         <span>{application.company}</span>
@@ -108,29 +110,29 @@ const ApplicationItem = memo(forwardRef<HTMLDivElement, ApplicationItemProps>(
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-4 text-sm text-cream-400 mb-3">
+                                <div className="flex items-center gap-4 text-xs font-bold uppercase tracking-wider text-[#3b3b3b]/40 mb-3">
                                     <div className="flex items-center gap-1">
-                                        <Calendar className="w-4 h-4" />
+                                        <Calendar className="w-3 h-3" />
                                         <span>Applied: {application.appliedDate || 'Not applied'}</span>
                                     </div>
                                     <div className="flex items-center gap-1">
-                                        <TrendingUp className="w-4 h-4" />
+                                        <TrendingUp className="w-3 h-3" />
                                         <span>{application.compatibilityScore}% match</span>
                                     </div>
                                     <div className="flex items-center gap-1">
-                                        <Users className="w-4 h-4" />
+                                        <Users className="w-3 h-3" />
                                         <span>Source: {application.source}</span>
                                     </div>
                                 </div>
 
                                 {application.extractedAt && (
-                                    <div className="text-xs text-cream-500 mb-2">
+                                    <div className="text-[10px] uppercase tracking-widest text-[#3b3b3b]/30 mb-2 font-black">
                                         Extracted: {new Date(application.extractedAt).toLocaleDateString()}
                                     </div>
                                 )}
 
                                 {application.notes && (
-                                    <div className="text-sm text-cream-300 bg-cream-900 p-2 rounded mt-2">
+                                    <div className="text-sm text-[#3b3b3b]/70 bg-[#f0eff2] p-3 rounded-xl mt-2 border border-[#3b3b3b]/5">
                                         <strong>Notes:</strong> {application.notes}
                                     </div>
                                 )}
@@ -141,7 +143,7 @@ const ApplicationItem = memo(forwardRef<HTMLDivElement, ApplicationItemProps>(
                                     variant="outline"
                                     size="sm"
                                     onClick={() => onViewDetails(application)}
-                                    className="text-cream-300 border-cream-600 hover:bg-cream-800"
+                                    className="px-4 py-2 bg-white border border-[#3b3b3b]/10 rounded-xl font-bold text-xs uppercase tracking-wider text-[#3b3b3b] hover:bg-[#f0eff2] transition-all"
                                 >
                                     View Details
                                 </Button>
@@ -150,9 +152,9 @@ const ApplicationItem = memo(forwardRef<HTMLDivElement, ApplicationItemProps>(
                                         variant="outline"
                                         size="sm"
                                         onClick={() => onViewJob(application.sourceUrl!)}
-                                        className="text-blue-400 border-blue-600 hover:bg-blue-900"
+                                        className="px-4 py-2 bg-white border border-blue-200 rounded-xl font-bold text-xs uppercase tracking-wider text-blue-600 hover:bg-blue-50 transition-all"
                                     >
-                                        <ExternalLink className="w-4 h-4 mr-1" />
+                                        <ExternalLink className="w-3 h-3 mr-1" />
                                         View Job
                                     </Button>
                                 )}
@@ -190,7 +192,7 @@ export const VirtualizedApplicationList = memo(function VirtualizedApplicationLi
 
     return (
         <div className="border rounded-lg overflow-hidden">
-            <List
+            <FixedSizeList
                 height={height}
                 itemCount={applications.length}
                 itemSize={itemHeight}
@@ -198,7 +200,7 @@ export const VirtualizedApplicationList = memo(function VirtualizedApplicationLi
                 overscanCount={5} // Render 5 extra items for smooth scrolling
             >
                 {ApplicationItem}
-            </List>
+            </FixedSizeList>
         </div>
     );
 });

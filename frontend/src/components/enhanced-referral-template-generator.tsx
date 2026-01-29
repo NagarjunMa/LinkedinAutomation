@@ -9,14 +9,15 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/components/ui/use-toast"
-import { referralTemplatesAPI } from '@/app/lib/api'
+import { referralTemplatesAPI } from '@/app/lib/api/referral'
 import {
     MessageSquare,
     User,
     Sparkles,
     Send,
     Copy,
-    Settings
+    Settings,
+    Edit3
 } from "lucide-react"
 
 interface TemplateGeneratorProps {
@@ -167,7 +168,6 @@ export function EnhancedReferralTemplateGenerator({ onTemplateGenerated, onClose
             }
 
             console.log('Sending referral template request:', requestData)
-            console.log('API endpoint:', `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/referral-templates/generate`)
 
             const response = await referralTemplatesAPI.generate(requestData)
 
@@ -243,19 +243,19 @@ export function EnhancedReferralTemplateGenerator({ onTemplateGenerated, onClose
     return (
         <div className="space-y-6">
             {/* Contact Information - Paste and Parse */}
-            <Card className="bg-primary-900/50 border-primary-800">
+            <Card className="bg-white dark:bg-[#1c1c1c] border-[#3b3b3b]/5 dark:border-[#f0eff2]/10 shadow-sm rounded-[32px]">
                 <CardHeader>
-                    <CardTitle className="text-cream-50 flex items-center gap-2">
-                        <User className="h-5 w-5 text-accent-400" />
+                    <CardTitle className="text-[#3b3b3b] dark:text-[#f0eff2] font-black tracking-tight text-xl flex items-center gap-2">
+                        <User className="h-5 w-5" />
                         Contact Information
                     </CardTitle>
-                    <p className="text-cream-400 text-sm mt-2">
+                    <p className="text-[#3b3b3b]/60 dark:text-[#f0eff2]/60 text-sm mt-2 font-medium">
                         Copy contact info from LinkedIn and paste below. We&apos;ll extract the details automatically.
                     </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="space-y-2">
-                        <Label htmlFor="pastedText" className="text-cream-200 text-sm md:text-base">
+                        <Label htmlFor="pastedText" className="text-[#3b3b3b] dark:text-[#f0eff2] font-bold text-sm md:text-base">
                             Paste LinkedIn Profile Info
                         </Label>
                         <Textarea
@@ -275,67 +275,68 @@ Email: john@techcorp.com`}
                             value={pastedText}
                             onChange={(e) => setPastedText(e.target.value)}
                             onBlur={handleParseContact}
-                            className="bg-primary-950 border-primary-700 text-cream-50 text-sm md:text-base min-h-[120px] md:min-h-[150px] touch-manipulation"
+                            className="bg-[#f0eff2]/50 dark:bg-[#0a0a0a]/50 border-[#3b3b3b]/10 dark:border-[#f0eff2]/10 text-[#3b3b3b] dark:text-[#f0eff2] focus:border-[#3b3b3b] dark:focus:border-[#f0eff2] focus:ring-[#3b3b3b]/5 dark:focus:ring-[#f0eff2]/5 placeholder:text-[#3b3b3b]/30 dark:placeholder:text-[#f0eff2]/30 rounded-2xl text-sm md:text-base min-h-[120px] md:min-h-[150px] touch-manipulation transition-all"
                             rows={6}
                         />
                     </div>
 
                     {/* Parsed Contact Preview */}
                     {contactInfo.name && (
-                        <div className="bg-primary-950 border border-primary-700 rounded-lg p-4">
+                        <div className="bg-[#f0eff2] dark:bg-[#0a0a0a] border border-[#3b3b3b]/10 dark:border-[#f0eff2]/10 rounded-2xl p-6">
                             <div className="flex items-center justify-between mb-3">
-                                <div className="text-sm text-cream-400">Detected Contact:</div>
+                                <div className="text-sm font-black uppercase tracking-widest text-[#3b3b3b]/40 dark:text-[#f0eff2]/40">Detected Contact</div>
                                 <Button
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => setShowManualEdit(!showManualEdit)}
-                                    className="text-accent-400 hover:text-accent-300 text-xs"
+                                    className="text-[#3b3b3b] dark:text-[#f0eff2] hover:bg-[#3b3b3b]/5 dark:hover:bg-[#f0eff2]/10 text-xs font-bold uppercase tracking-wide"
                                 >
+                                    <Edit3 className="w-3 h-3 mr-1" />
                                     {showManualEdit ? "Hide" : "Edit"} Details
                                 </Button>
                             </div>
-                            <div className="text-cream-50 space-y-1">
-                                <div className="font-medium">{contactInfo.name}</div>
-                                {contactInfo.position && <div className="text-sm">{contactInfo.position}</div>}
-                                {contactInfo.company && <div className="text-sm">{contactInfo.company}</div>}
-                                {contactInfo.email && <div className="text-sm">{contactInfo.email}</div>}
+                            <div className="text-[#3b3b3b] dark:text-[#f0eff2] space-y-1">
+                                <div className="font-bold text-lg">{contactInfo.name}</div>
+                                {contactInfo.position && <div className="text-sm text-[#3b3b3b]/80 dark:text-[#f0eff2]/80">{contactInfo.position}</div>}
+                                {contactInfo.company && <div className="text-sm text-[#3b3b3b]/80 dark:text-[#f0eff2]/80">{contactInfo.company}</div>}
+                                {contactInfo.email && <div className="text-sm text-[#3b3b3b]/60 dark:text-[#f0eff2]/60 font-mono">{contactInfo.email}</div>}
                             </div>
                         </div>
                     )}
 
                     {/* Manual Edit Fields (Hidden by default) */}
                     {showManualEdit && contactInfo.name && (
-                        <div className="grid grid-cols-2 gap-4 p-4 bg-primary-950 border border-primary-700 rounded-lg">
+                        <div className="grid grid-cols-2 gap-4 p-6 bg-[#f0eff2]/50 border border-[#3b3b3b]/10 rounded-2xl">
                             <div className="space-y-2">
-                                <Label className="text-cream-200 text-sm">Name *</Label>
+                                <Label className="text-[#3b3b3b] font-bold text-xs uppercase tracking-wide">Name *</Label>
                                 <Input
                                     value={contactInfo.name}
-                                    onChange={(e) => setContactInfo({...contactInfo, name: e.target.value})}
-                                    className="bg-primary-900 border-primary-600 text-cream-50"
+                                    onChange={(e) => setContactInfo({ ...contactInfo, name: e.target.value })}
+                                    className="bg-white border-[#3b3b3b]/10 text-[#3b3b3b] rounded-xl focus:border-[#3b3b3b]"
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label className="text-cream-200 text-sm">Email</Label>
+                                <Label className="text-[#3b3b3b] font-bold text-xs uppercase tracking-wide">Email</Label>
                                 <Input
                                     value={contactInfo.email}
-                                    onChange={(e) => setContactInfo({...contactInfo, email: e.target.value})}
-                                    className="bg-primary-900 border-primary-600 text-cream-50"
+                                    onChange={(e) => setContactInfo({ ...contactInfo, email: e.target.value })}
+                                    className="bg-white border-[#3b3b3b]/10 text-[#3b3b3b] rounded-xl focus:border-[#3b3b3b]"
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label className="text-cream-200 text-sm">Company *</Label>
+                                <Label className="text-[#3b3b3b] font-bold text-xs uppercase tracking-wide">Company *</Label>
                                 <Input
                                     value={contactInfo.company}
-                                    onChange={(e) => setContactInfo({...contactInfo, company: e.target.value})}
-                                    className="bg-primary-900 border-primary-600 text-cream-50"
+                                    onChange={(e) => setContactInfo({ ...contactInfo, company: e.target.value })}
+                                    className="bg-white border-[#3b3b3b]/10 text-[#3b3b3b] rounded-xl focus:border-[#3b3b3b]"
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label className="text-cream-200 text-sm">Position</Label>
+                                <Label className="text-[#3b3b3b] font-bold text-xs uppercase tracking-wide">Position</Label>
                                 <Input
                                     value={contactInfo.position}
-                                    onChange={(e) => setContactInfo({...contactInfo, position: e.target.value})}
-                                    className="bg-primary-900 border-primary-600 text-cream-50"
+                                    onChange={(e) => setContactInfo({ ...contactInfo, position: e.target.value })}
+                                    className="bg-white border-[#3b3b3b]/10 text-[#3b3b3b] rounded-xl focus:border-[#3b3b3b]"
                                 />
                             </div>
                         </div>
@@ -344,66 +345,66 @@ Email: john@techcorp.com`}
             </Card>
 
             {/* Job Context */}
-            <Card className="bg-primary-900/50 border-primary-800">
+            <Card className="bg-white dark:bg-[#1c1c1c] border-[#3b3b3b]/5 dark:border-[#f0eff2]/10 shadow-sm rounded-[32px]">
                 <CardHeader>
-                    <CardTitle className="text-cream-50 flex items-center gap-2">
-                        <Settings className="h-5 w-5 text-accent-400" />
+                    <CardTitle className="text-[#3b3b3b] dark:text-[#f0eff2] font-black tracking-tight text-xl flex items-center gap-2">
+                        <Settings className="h-5 w-5" />
                         Job Context (Optional)
                     </CardTitle>
-                    <p className="text-cream-400 text-sm mt-2">
+                    <p className="text-[#3b3b3b]/60 dark:text-[#f0eff2]/60 text-sm mt-2 font-medium">
                         Add specific job details to create more targeted referral templates.
                     </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label className="text-cream-200 text-sm">Job Title</Label>
+                            <Label className="text-[#3b3b3b] dark:text-[#f0eff2] font-bold text-sm">Job Title</Label>
                             <Input
                                 placeholder="e.g., Senior Software Engineer"
                                 value={jobContext.jobTitle}
-                                onChange={(e) => setJobContext({...jobContext, jobTitle: e.target.value})}
-                                className="bg-primary-950 border-primary-700 text-cream-50"
+                                onChange={(e) => setJobContext({ ...jobContext, jobTitle: e.target.value })}
+                                className="bg-[#f0eff2]/50 dark:bg-[#0a0a0a]/50 border-[#3b3b3b]/10 dark:border-[#f0eff2]/10 text-[#3b3b3b] dark:text-[#f0eff2] rounded-xl"
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label className="text-cream-200 text-sm">Company</Label>
+                            <Label className="text-[#3b3b3b] dark:text-[#f0eff2] font-bold text-sm">Company</Label>
                             <Input
                                 placeholder="e.g., Google, Meta, Netflix"
                                 value={jobContext.company}
-                                onChange={(e) => setJobContext({...jobContext, company: e.target.value})}
-                                className="bg-primary-950 border-primary-700 text-cream-50"
+                                onChange={(e) => setJobContext({ ...jobContext, company: e.target.value })}
+                                className="bg-[#f0eff2]/50 dark:bg-[#0a0a0a]/50 border-[#3b3b3b]/10 dark:border-[#f0eff2]/10 text-[#3b3b3b] dark:text-[#f0eff2] rounded-xl"
                             />
                         </div>
                     </div>
 
                     <div className="space-y-2">
-                        <Label className="text-cream-200 text-sm">Location</Label>
+                        <Label className="text-[#3b3b3b] dark:text-[#f0eff2] font-bold text-sm">Location</Label>
                         <Input
                             placeholder="e.g., San Francisco, CA or Remote"
                             value={jobContext.location}
-                            onChange={(e) => setJobContext({...jobContext, location: e.target.value})}
-                            className="bg-primary-950 border-primary-700 text-cream-50"
+                            onChange={(e) => setJobContext({ ...jobContext, location: e.target.value })}
+                            className="bg-[#f0eff2]/50 dark:bg-[#0a0a0a]/50 border-[#3b3b3b]/10 dark:border-[#f0eff2]/10 text-[#3b3b3b] dark:text-[#f0eff2] rounded-xl"
                         />
                     </div>
 
                     <div className="space-y-2">
-                        <Label className="text-cream-200 text-sm">Job Description</Label>
+                        <Label className="text-[#3b3b3b] dark:text-[#f0eff2] font-bold text-sm">Job Description</Label>
                         <Textarea
                             placeholder="Paste the job description here to create more contextual templates..."
                             value={jobContext.jobDescription}
-                            onChange={(e) => setJobContext({...jobContext, jobDescription: e.target.value})}
-                            className="bg-primary-950 border-primary-700 text-cream-50 min-h-[100px]"
+                            onChange={(e) => setJobContext({ ...jobContext, jobDescription: e.target.value })}
+                            className="bg-[#f0eff2]/50 dark:bg-[#0a0a0a]/50 border-[#3b3b3b]/10 dark:border-[#f0eff2]/10 text-[#3b3b3b] dark:text-[#f0eff2] min-h-[100px] rounded-xl"
                             rows={4}
                         />
                     </div>
 
                     <div className="space-y-2">
-                        <Label className="text-cream-200 text-sm">Key Requirements</Label>
+                        <Label className="text-[#3b3b3b] dark:text-[#f0eff2] font-bold text-sm">Key Requirements</Label>
                         <Textarea
                             placeholder="List key requirements or skills mentioned in the job posting..."
                             value={jobContext.requirements}
-                            onChange={(e) => setJobContext({...jobContext, requirements: e.target.value})}
-                            className="bg-primary-950 border-primary-700 text-cream-50 min-h-[80px]"
+                            onChange={(e) => setJobContext({ ...jobContext, requirements: e.target.value })}
+                            className="bg-[#f0eff2]/50 dark:bg-[#0a0a0a]/50 border-[#3b3b3b]/10 dark:border-[#f0eff2]/10 text-[#3b3b3b] dark:text-[#f0eff2] min-h-[80px] rounded-xl"
                             rows={3}
                         />
                     </div>
@@ -411,25 +412,25 @@ Email: john@techcorp.com`}
             </Card>
 
             {/* Your Background */}
-            <Card className="bg-primary-900/50 border-primary-800">
+            <Card className="bg-white dark:bg-[#1c1c1c] border-[#3b3b3b]/5 dark:border-[#f0eff2]/10 shadow-sm rounded-[32px]">
                 <CardHeader>
-                    <CardTitle className="text-cream-50 flex items-center gap-2">
-                        <User className="h-5 w-5 text-accent-400" />
+                    <CardTitle className="text-[#3b3b3b] dark:text-[#f0eff2] font-black tracking-tight text-xl flex items-center gap-2">
+                        <User className="h-5 w-5" />
                         Your Background
                     </CardTitle>
-                    <p className="text-cream-400 text-sm mt-2">
+                    <p className="text-[#3b3b3b]/60 dark:text-[#f0eff2]/60 text-sm mt-2 font-medium">
                         Brief summary of your relevant experience and why you&apos;re interested in their company.
                     </p>
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-2">
-                        <Label htmlFor="userBackground" className="text-cream-200">Your Relevant Background</Label>
+                        <Label htmlFor="userBackground" className="text-[#3b3b3b] dark:text-[#f0eff2] font-bold text-sm">Your Relevant Background</Label>
                         <Textarea
                             id="userBackground"
                             placeholder="Brief summary of your experience and skills that would be relevant to their company..."
                             value={userBackground}
                             onChange={(e) => setUserBackground(e.target.value)}
-                            className="bg-primary-950 border-primary-700 text-cream-50"
+                            className="bg-[#f0eff2]/50 dark:bg-[#0a0a0a]/50 border-[#3b3b3b]/10 dark:border-[#f0eff2]/10 text-[#3b3b3b] dark:text-[#f0eff2] rounded-xl"
                             rows={4}
                         />
                     </div>
@@ -437,19 +438,19 @@ Email: john@techcorp.com`}
             </Card>
 
             {/* Preferences */}
-            <Card className="bg-primary-900/50 border-primary-800">
+            <Card className="bg-white dark:bg-[#1c1c1c] border-[#3b3b3b]/5 dark:border-[#f0eff2]/10 shadow-sm rounded-[32px]">
                 <CardHeader>
-                    <CardTitle className="text-cream-50 flex items-center gap-2">
-                        <Settings className="h-5 w-5 text-accent-400" />
+                    <CardTitle className="text-[#3b3b3b] dark:text-[#f0eff2] font-black tracking-tight text-xl flex items-center gap-2">
+                        <Settings className="h-5 w-5" />
                         Template Preferences
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="space-y-2">
-                            <Label className="text-cream-200">Email Style</Label>
-                            <Select value={preferences.email_style} onValueChange={(value) => setPreferences({...preferences, email_style: value})}>
-                                <SelectTrigger className="bg-primary-950 border-primary-700 text-cream-50">
+                            <Label className="text-[#3b3b3b] dark:text-[#f0eff2] font-bold text-sm">Email Style</Label>
+                            <Select value={preferences.email_style} onValueChange={(value) => setPreferences({ ...preferences, email_style: value })}>
+                                <SelectTrigger className="bg-[#f0eff2]/50 dark:bg-[#0a0a0a]/50 border-[#3b3b3b]/10 dark:border-[#f0eff2]/10 text-[#3b3b3b] dark:text-[#f0eff2] rounded-xl">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -461,9 +462,9 @@ Email: john@techcorp.com`}
                             </Select>
                         </div>
                         <div className="space-y-2">
-                            <Label className="text-cream-200">Tone</Label>
-                            <Select value={preferences.preferred_tone} onValueChange={(value) => setPreferences({...preferences, preferred_tone: value})}>
-                                <SelectTrigger className="bg-primary-950 border-primary-700 text-cream-50">
+                            <Label className="text-[#3b3b3b] dark:text-[#f0eff2] font-bold text-sm">Tone</Label>
+                            <Select value={preferences.preferred_tone} onValueChange={(value) => setPreferences({ ...preferences, preferred_tone: value })}>
+                                <SelectTrigger className="bg-[#f0eff2]/50 dark:bg-[#0a0a0a]/50 border-[#3b3b3b]/10 dark:border-[#f0eff2]/10 text-[#3b3b3b] dark:text-[#f0eff2] rounded-xl">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -475,9 +476,9 @@ Email: john@techcorp.com`}
                             </Select>
                         </div>
                         <div className="space-y-2">
-                            <Label className="text-cream-200">Length</Label>
-                            <Select value={preferences.preferred_length} onValueChange={(value) => setPreferences({...preferences, preferred_length: value})}>
-                                <SelectTrigger className="bg-primary-950 border-primary-700 text-cream-50">
+                            <Label className="text-[#3b3b3b] dark:text-[#f0eff2] font-bold text-sm">Length</Label>
+                            <Select value={preferences.preferred_length} onValueChange={(value) => setPreferences({ ...preferences, preferred_length: value })}>
+                                <SelectTrigger className="bg-[#f0eff2]/50 dark:bg-[#0a0a0a]/50 border-[#3b3b3b]/10 dark:border-[#f0eff2]/10 text-[#3b3b3b] dark:text-[#f0eff2] rounded-xl">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -489,8 +490,8 @@ Email: john@techcorp.com`}
                         </div>
                     </div>
 
-                    <div className="bg-primary-950 border border-primary-700 rounded-lg p-3">
-                        <p className="text-cream-400 text-xs">
+                    <div className="bg-[#f0eff2] dark:bg-[#0a0a0a] border border-[#3b3b3b]/10 dark:border-[#f0eff2]/10 rounded-2xl p-4">
+                        <p className="text-[#3b3b3b]/60 dark:text-[#f0eff2]/60 text-xs font-medium">
                             <strong>💡 Tip:</strong> {preferences.email_style === 'professional' && 'Best for formal networking and corporate environments.'}
                             {preferences.email_style === 'casual' && 'Great for startups and casual work environments.'}
                             {preferences.email_style === 'linkedin' && 'Perfect for LinkedIn connection requests (character limit optimized).'}
@@ -504,37 +505,35 @@ Email: john@techcorp.com`}
             <Button
                 onClick={generateTemplate}
                 disabled={loading}
-                className="w-full bg-accent-500 hover:bg-accent-600 text-white min-h-[48px] md:min-h-[52px] text-sm md:text-base touch-manipulation"
+                className="w-full bg-[#3b3b3b] dark:bg-white hover:bg-black dark:hover:bg-[#e5e5e5] text-white dark:text-black font-black text-sm uppercase tracking-widest min-h-[52px] rounded-2xl shadow-xl hover:shadow-2xl hover:scale-[1.02] active:scale-95 transition-all"
                 size="lg"
             >
                 {loading ? (
                     <>
                         <Sparkles className="h-5 w-5 mr-2 animate-spin" />
-                        <span className="hidden sm:inline">Generating Template...</span>
-                        <span className="sm:hidden">Generating...</span>
+                        Generating Template...
                     </>
                 ) : (
                     <>
                         <Sparkles className="h-5 w-5 mr-2" />
-                        <span className="hidden sm:inline">Generate Referral Template</span>
-                        <span className="sm:hidden">Generate Template</span>
+                        Generate Referral Template
                     </>
                 )}
             </Button>
 
             {/* Generated Template */}
             {generatedTemplate && (
-                <Card className="bg-primary-900/50 border-primary-800">
+                <Card className="bg-white dark:bg-[#1c1c1c] border-[#3b3b3b]/5 dark:border-[#f0eff2]/10 shadow-xl rounded-[32px]">
                     <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle className="text-cream-50 flex items-center gap-2">
-                            <MessageSquare className="h-5 w-5 text-accent-400" />
+                        <CardTitle className="text-[#3b3b3b] dark:text-[#f0eff2] font-black tracking-tight text-xl flex items-center gap-2">
+                            <MessageSquare className="h-5 w-5" />
                             Generated Template
                         </CardTitle>
                         <div className="flex items-center gap-2">
-                            <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                            <Badge className="bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">
                                 Confidence: {Math.round((generatedTemplate.confidence_score as number || 0) * 100)}%
                             </Badge>
-                            <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+                            <Badge className="bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 border-blue-500/20">
                                 {generatedTemplate.style as string || 'default'}
                             </Badge>
                         </div>
@@ -542,35 +541,35 @@ Email: john@techcorp.com`}
                     <CardContent className="space-y-4">
                         <div className="space-y-2">
                             <div className="flex items-center justify-between">
-                                <Label className="text-cream-200">Subject Line</Label>
+                                <Label className="text-[#3b3b3b] dark:text-[#f0eff2] font-bold text-sm">Subject Line</Label>
                                 <Button
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => copyToClipboard(generatedTemplate.subject_line as string)}
-                                    className="text-accent-400 hover:text-accent-300"
+                                    className="text-[#3b3b3b]/60 dark:text-[#f0eff2]/60 hover:text-[#3b3b3b] dark:hover:text-[#f0eff2] hover:bg-[#3b3b3b]/5 dark:hover:bg-[#f0eff2]/10"
                                 >
                                     <Copy className="h-4 w-4" />
                                 </Button>
                             </div>
-                            <div className="bg-primary-950 border border-primary-700 rounded-lg p-3">
-                                <p className="text-cream-50 text-sm">{generatedTemplate.subject_line as string}</p>
+                            <div className="bg-[#f0eff2]/50 dark:bg-[#0a0a0a]/50 border border-[#3b3b3b]/10 dark:border-[#f0eff2]/10 rounded-2xl p-4">
+                                <p className="text-[#3b3b3b] dark:text-[#f0eff2] font-medium text-sm">{generatedTemplate.subject_line as string}</p>
                             </div>
                         </div>
 
                         <div className="space-y-2">
                             <div className="flex items-center justify-between">
-                                <Label className="text-cream-200">Email Body</Label>
+                                <Label className="text-[#3b3b3b] dark:text-[#f0eff2] font-bold text-sm">Email Body</Label>
                                 <Button
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => copyToClipboard(generatedTemplate.email_body as string)}
-                                    className="text-accent-400 hover:text-accent-300"
+                                    className="text-[#3b3b3b]/60 dark:text-[#f0eff2]/60 hover:text-[#3b3b3b] dark:hover:text-[#f0eff2] hover:bg-[#3b3b3b]/5 dark:hover:bg-[#f0eff2]/10"
                                 >
                                     <Copy className="h-4 w-4" />
                                 </Button>
                             </div>
-                            <div className="bg-primary-950 border border-primary-700 rounded-lg p-4">
-                                <pre className="text-cream-50 text-sm whitespace-pre-wrap font-sans">
+                            <div className="bg-[#f0eff2]/50 dark:bg-[#0a0a0a]/50 border border-[#3b3b3b]/10 dark:border-[#f0eff2]/10 rounded-2xl p-6">
+                                <pre className="text-[#3b3b3b] dark:text-[#f0eff2] text-sm whitespace-pre-wrap font-sans leading-relaxed">
                                     {generatedTemplate.email_body as string}
                                 </pre>
                             </div>
@@ -579,7 +578,7 @@ Email: john@techcorp.com`}
                         <div className="flex items-center gap-3 pt-4">
                             <Button
                                 onClick={markAsSent}
-                                className="bg-blue-600 hover:bg-blue-700 text-white"
+                                className="bg-[#3b3b3b] dark:bg-white hover:bg-black dark:hover:bg-[#e5e5e5] text-white dark:text-black font-bold text-xs uppercase tracking-widest rounded-xl hover:scale-105 transition-all"
                             >
                                 <Send className="h-4 w-4 mr-2" />
                                 Mark as Sent
@@ -587,7 +586,7 @@ Email: john@techcorp.com`}
                             <Button
                                 variant="outline"
                                 onClick={() => copyToClipboard(`Subject: ${generatedTemplate.subject_line as string}\n\n${generatedTemplate.email_body as string}`)}
-                                className="border-primary-700 text-cream-200 hover:bg-primary-800"
+                                className="border-[#3b3b3b]/10 dark:border-[#f0eff2]/10 text-[#3b3b3b] dark:text-[#f0eff2] hover:bg-[#3b3b3b]/5 dark:hover:bg-[#f0eff2]/10 font-bold text-xs uppercase tracking-widest rounded-xl"
                             >
                                 <Copy className="h-4 w-4 mr-2" />
                                 Copy Full Template

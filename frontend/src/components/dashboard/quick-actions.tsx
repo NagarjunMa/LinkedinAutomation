@@ -10,26 +10,26 @@ import {
 import Link from 'next/link';
 
 export const QuickActions = () => (
-    <BentoCard title="Quick Actions" action={<span className="text-[10px] text-[#3b3b3b]/40 uppercase cursor-pointer hover:text-[#3b3b3b] transition-colors">Manage</span>} className="col-span-12 lg:col-span-4">
+    <BentoCard title="Quick Actions" action={<span className="text-[10px] sm:text-xs text-app-text/60 font-bold uppercase cursor-pointer hover:text-app-text transition-colors">Manage</span>} className="col-span-12 xl:col-span-4">
         <div className="space-y-4">
             {[
-                { icon: <LinkIcon className="w-4 h-4" />, label: 'Job Intelligence', sub: 'Extract details from URL', shortcut: 'E', href: '/dashboard/applications' },
-                { icon: <FileSearch className="w-4 h-4" />, label: 'Resume Review', sub: 'AI-powered matching', shortcut: 'R', href: '/dashboard/resume-evaluation' },
-                { icon: <BarChart3 className="w-4 h-4" />, label: 'Performance', sub: 'Track systemic progress', shortcut: 'A', href: '/dashboard/analytics' },
+                { icon: <LinkIcon className="w-5 h-5" />, label: 'Job Intelligence', sub: 'Extract details from URL', shortcut: 'E', href: '/dashboard/applications' },
+                { icon: <FileSearch className="w-5 h-5" />, label: 'Resume Review', sub: 'AI-powered matching', shortcut: 'R', href: '/dashboard/resume-evaluation' },
+                { icon: <BarChart3 className="w-5 h-5" />, label: 'Performance', sub: 'Track systemic progress', shortcut: 'A', href: '/dashboard/analytics' },
             ].map((action, i) => (
                 <Link
                     key={i}
                     href={action.href}
-                    className="group border border-[#3b3b3b]/5 bg-white/20 p-5 flex items-center gap-4 hover:border-[#3b3b3b]/20 transition-all duration-700 cursor-pointer block"
+                    className="group border border-app-text/5 bg-app-bg/40 hover:bg-app-bg p-4 sm:p-5 flex items-center gap-5 hover:border-app-text/20 transition-all duration-500 cursor-pointer block hover:shadow-sm"
                 >
-                    <div className="w-12 h-12 border border-[#3b3b3b]/10 flex items-center justify-center bg-white group-hover:bg-[#3b3b3b] group-hover:text-white transition-all duration-700 bg-white">
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 border border-app-text/10 flex items-center justify-center bg-app-surface group-hover:bg-app-text group-hover:text-app-bg transition-all duration-500 rounded-sm text-app-text">
                         {action.icon}
                     </div>
                     <div className="flex-1">
-                        <p className="text-[11px] font-bold uppercase tracking-tight text-[#3b3b3b]">{action.label}</p>
-                        <p className="text-[10px] text-[#3b3b3b]/40 italic">{action.sub}</p>
+                        <p className="text-xs sm:text-sm font-extrabold uppercase tracking-tight text-app-text group-hover:translate-x-1 transition-transform duration-500">{action.label}</p>
+                        <p className="text-[10px] sm:text-xs text-app-text/60 italic mt-0.5">{action.sub}</p>
                     </div>
-                    <span className="text-[9px] font-mono text-[#3b3b3b]/20 px-2 border border-[#3b3b3b]/10">{action.shortcut}</span>
+                    <span className="text-[10px] font-mono text-app-text/40 font-bold px-2.5 py-1 border border-app-text/10 bg-app-surface/50 rounded-sm">{action.shortcut}</span>
                 </Link>
             ))}
         </div>

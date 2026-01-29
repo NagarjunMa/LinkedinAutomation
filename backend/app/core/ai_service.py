@@ -24,6 +24,92 @@ class AIService:
 
         logger.info(f"AIService initialized with model: {self.model}")
     
+    async def create_completion(
+        self,
+        model: str,
+        messages: List[Dict[str, str]],
+        temperature: float = 0.3,
+        max_tokens: int = None,
+        response_format: Optional[Dict[str, str]] = None
+    ) -> Any:
+        """
+        Create a chat completion and return the raw OpenAI response object.
+
+        This method provides a direct interface to OpenAI's chat.completions.create
+        API and is used by services that need access to the full response object
+        (e.g., ConsolidatedResumeEvaluator, SimpleReferralService).
+
+        Args:
+            model: The model to use (e.g., "gpt-4o-mini")
+            messages: List of message dictionaries with "role" and "content" keys
+            temperature: Sampling temperature (0.0 to 1.0)
+            max_tokens: Maximum tokens to generate (uses instance default if None)
+            response_format: Optional response format specification (e.g., {"type": "json_object"})
+
+        Returns:
+            Raw OpenAI response object with choices[0].message.content accessible
+
+        Raises:
+            ValueError: If required parameters are invalid
+            Exception: For API errors or network issues
+        """
+        # Input validation
+        if not model:
+            raise ValueError("Model parameter is required")
+        if not messages or not isinstance(messages, list):
+            raise ValueError("Messages must be a non-empty list")
+        if not all(isinstance(msg, dict) and "role" in msg and "content" in msg for msg in messages):
+            raise ValueError("Each message must be a dict with 'role' and 'content' keys")
+        if not 0.0 <= temperature <= 2.0:
+            raise ValueError("Temperature must be between 0.0 and 2.0")
+        if max_tokens is not None and max_tokens <= 0:
+            raise ValueError("max_tokens must be positive if specified")
+
+        try:
+            # Log the request
+            log_openai_request("create_completion", model)
+
+            # Prepare API call parameters
+            api_params = {
+                "model": model,
+                "messages": messages,
+                "temperature": temperature,
+                "max_tokens": max_tokens or self.max_tokens
+            }
+
+            # Add response_format if specified (for JSON mode)
+            if response_format:
+                api_params["response_format"] = response_format
+
+            # Make the API call
+            response = await self.client.chat.completions.create(**api_params)
+
+            # Validate response structure
+            if not response or not hasattr(response, 'choices') or not response.choices:
+                logger.error("Invalid response structure from OpenAI API")
+                raise ValueError("Invalid response structure from OpenAI API")
+
+            if not response.choices[0].message or response.choices[0].message.content is None:
+                logger.warning("OpenAI returned empty content in response")
+                # Don't raise here - let the calling service handle empty content
+
+            # Log successful completion with usage metrics
+            if hasattr(response, 'usage') and response.usage:
+                log_openai_request(
+                    "create_completion_success",
+                    model,
+                    tokens_used=response.usage.total_tokens,
+                    cost_estimate=self._estimate_cost(response.usage.total_tokens)
+                )
+
+            return response
+
+        except Exception as e:
+            # Log the error
+            log_openai_error("create_completion", e)
+            logger.error(f"Error in create_completion with model {model}: {e}")
+            raise
+
     async def get_completion(self, prompt: str, max_tokens: int = None, temperature: float = 0.3) -> str:
         """
         Generic method to get completion from OpenAI API

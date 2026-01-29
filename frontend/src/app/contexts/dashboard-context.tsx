@@ -3,11 +3,14 @@
 import React, { createContext, useContext, useCallback, useEffect, useState } from 'react'
 import { JobStats, TimeRange } from '../types/stats'
 import { fetchJobStats, fetchRecentApplications } from '../lib/api/jobs'
-import type { RecentApplication } from '../lib/api/types'
+import { profileApi } from '../lib/api/profile'
+import type { RecentApplication, UserProfile } from '../lib/api/types'
+import { useAuth } from '../../contexts/auth-context'
 
 interface DashboardContextType {
     stats: JobStats | null
     recentApplications: RecentApplication[]
+    userProfile: UserProfile | null
     loading: boolean
     error: string | null
     timeRange: TimeRange
@@ -21,37 +24,47 @@ interface DashboardContextType {
 const DashboardContext = createContext<DashboardContextType | undefined>(undefined)
 
 export function DashboardProvider({ children }: { children: React.ReactNode }) {
+    const { user } = useAuth()
     const [stats, setStats] = useState<JobStats | null>(null)
     const [recentApplications, setRecentApplications] = useState<RecentApplication[]>([])
+    const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [timeRange, setTimeRange] = useState<TimeRange>('last_30_days')
     const [refreshAppliedJobsKey, setRefreshAppliedJobsKey] = useState(0)
 
     const refreshData = useCallback(async () => {
+        if (!user?.id) {
+            setLoading(false)
+            return
+        }
+
         try {
             setError(null)
             setLoading(true)
 
-            console.log('Fetching data for time range:', timeRange)
+            console.log('Fetching data for time range:', timeRange, 'for user:', user.id)
 
-            const [statsData, applicationsData] = await Promise.all([
+            const [statsData, applicationsData, profileData] = await Promise.all([
                 fetchJobStats(timeRange),
-                fetchRecentApplications()
+                fetchRecentApplications(),
+                profileApi.getProfile(user.id)
             ])
 
             console.log('Stats data received:', statsData)
             console.log('Applications data received:', applicationsData)
+            console.log('Profile data received:', profileData)
 
             setStats(statsData)
             setRecentApplications(applicationsData)
+            setUserProfile(profileData)
         } catch (err) {
             console.error('Error fetching dashboard data:', err)
             setError(err instanceof Error ? err.message : 'Failed to fetch data')
         } finally {
             setLoading(false)
         }
-    }, [timeRange])
+    }, [timeRange, user?.id])
 
     const updateJobApplication = useCallback((jobId: string, applied: boolean) => {
         // Update stats optimistically
@@ -128,6 +141,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         <DashboardContext.Provider value={{
             stats,
             recentApplications,
+            userProfile,
             loading,
             error,
             timeRange,
