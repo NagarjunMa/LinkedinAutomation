@@ -18,13 +18,15 @@ export function Logo({
     <div className={`flex items-center space-x-3 ${className}`}>
       <Image
         src="/logo.jpg"
-        alt="JobFlow Pro Logo"
+        alt="Prism Pro Logo"
         width={size}
         height={size}
         className="rounded-lg"
       />
       {showText && (
-        <span className="text-xl font-bold text-foreground">JobFlow Pro</span>
+        <span className="text-xl font-extrabold text-foreground tracking-tight">
+          PRISM <span className="font-serif italic lowercase font-medium text-muted-foreground">pro</span>
+        </span>
       )}
     </div>
   )

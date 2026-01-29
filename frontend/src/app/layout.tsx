@@ -31,10 +31,10 @@ const jetbrains = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "JobFlow Pro - AI-Powered LinkedIn Job Automation for Students",
-    template: "%s | JobFlow Pro"
+    default: "Prism Pro - AI-Powered LinkedIn Job Automation for Students",
+    template: "%s | Prism Pro"
   },
-  description: "Streamline your job search with AI-powered LinkedIn automation. Extract jobs from URLs, track applications, and get smart job matching. Perfect for students and recent graduates.",
+  description: "Streamline your job search with Prism Pro. Extract jobs from URLs, track applications, and get smart job matching. Perfect for students and recent graduates.",
   keywords: [
     "LinkedIn automation",
     "job search automation",
@@ -47,9 +47,9 @@ export const metadata: Metadata = {
     "graduate job search",
     "LinkedIn tools"
   ],
-  authors: [{ name: "JobFlow Pro Team" }],
-  creator: "JobFlow Pro",
-  publisher: "JobFlow Pro",
+  authors: [{ name: "Prism Pro Team" }],
+  creator: "Prism Pro",
+  publisher: "Prism Pro",
   formatDetection: {
     email: false,
     address: false,
@@ -63,24 +63,24 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_US',
     url: 'https://jobflowpro.com',
-    title: 'JobFlow Pro - AI-Powered LinkedIn Job Automation',
-    description: 'Streamline your job search with AI-powered LinkedIn automation. Perfect for students and recent graduates.',
-    siteName: 'JobFlow Pro',
+    title: 'Prism Pro - AI-Powered LinkedIn Job Automation',
+    description: 'Streamline your job search with Prism Pro. Perfect for students and recent graduates.',
+    siteName: 'Prism Pro',
     images: [
       {
         url: '/og-image.jpg',
         width: 1200,
         height: 630,
-        alt: 'JobFlow Pro - AI-Powered Job Search Automation',
+        alt: 'Prism Pro - AI-Powered Job Search Automation',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'JobFlow Pro - AI-Powered LinkedIn Job Automation',
-    description: 'Streamline your job search with AI-powered LinkedIn automation.',
+    title: 'Prism Pro - AI-Powered LinkedIn Job Automation',
+    description: 'Streamline your job search with Prism Pro.',
     images: ['/og-image.jpg'],
-    creator: '@jobflowpro',
+    creator: '@prismpro',
   },
   robots: {
     index: true,
@@ -110,7 +110,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://api.fontshare.com" />
         <link href="https://api.fontshare.com/v2/css?f[]=clash-display@200,300,400,500,600,700&display=swap" rel="stylesheet" />
 
-        {/* Stardom Font - Application Name "JOBFLOW PRO" */}
+        {/* Stardom Font - Application Name "PRISM PRO" */}
         <link href="https://api.fontshare.com/v2/css?f[]=stardom@400,500,600,700&display=swap" rel="stylesheet" />
         <script
           type="application/ld+json"
@@ -118,9 +118,9 @@ export default function RootLayout({
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "SoftwareApplication",
-              "name": "JobFlow Pro",
+              "name": "Prism Pro",
               "description": "AI-powered LinkedIn job search automation for students and recent graduates",
-              "url": "https://jobflowpro.com",
+              "url": "https://prismpro.live",
               "applicationCategory": "BusinessApplication",
               "operatingSystem": "Web Browser",
               "offers": {
@@ -136,7 +136,7 @@ export default function RootLayout({
               },
               "author": {
                 "@type": "Organization",
-                "name": "JobFlow Pro"
+                "name": "Prism Pro"
               }
             })
           }}

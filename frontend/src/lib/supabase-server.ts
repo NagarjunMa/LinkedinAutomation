@@ -90,7 +90,7 @@ export const getServerSession = async () => {
       console.warn('getServerSession error:', error.message)
       // Don't throw on certain recoverable errors
       if (error.message?.includes('Invalid Refresh Token') ||
-          error.message?.includes('refresh_token_not_found')) {
+        error.message?.includes('refresh_token_not_found')) {
         console.log('Server session expired or invalid, returning null')
         return null
       }
@@ -116,6 +116,7 @@ export const verifyOtp = async (tokenHash: string, type: string) => {
   const supabase = createServerSupabaseClient()
   const { data, error } = await supabase.auth.verifyOtp({
     token_hash: tokenHash,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     type: type as any
   })
   if (error) throw error

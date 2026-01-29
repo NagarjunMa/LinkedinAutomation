@@ -5,7 +5,7 @@ import { BentoCard } from './bento-card';
 import {
     Link as LinkIcon,
     FileSearch,
-    BarChart3
+    Briefcase
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -15,7 +15,7 @@ export const QuickActions = () => (
             {[
                 { icon: <LinkIcon className="w-5 h-5" />, label: 'Job Intelligence', sub: 'Extract details from URL', shortcut: 'E', href: '/dashboard/applications' },
                 { icon: <FileSearch className="w-5 h-5" />, label: 'Resume Review', sub: 'AI-powered matching', shortcut: 'R', href: '/dashboard/resume-evaluation' },
-                { icon: <BarChart3 className="w-5 h-5" />, label: 'Performance', sub: 'Track systemic progress', shortcut: 'A', href: '/dashboard/analytics' },
+                { icon: <Briefcase className="w-5 h-5" />, label: 'Job Search', sub: 'Startup job portals', shortcut: 'J', href: '/dashboard/jobs' },
             ].map((action, i) => (
                 <Link
                     key={i}

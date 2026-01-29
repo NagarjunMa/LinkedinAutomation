@@ -88,7 +88,7 @@ export function SophisticatedHeader({
                         <LayoutGrid className="w-5 h-5 text-app-text" />
                     </div>
                     <Link href="/dashboard" className="hidden sm:block">
-                        <h1 className="text-xl font-light tracking-tight text-app-text">JobFlow <span className="font-serif-italic font-medium text-app-accent">Pro</span></h1>
+                        <h1 className="text-xl font-light tracking-tight text-app-text">Prism <span className="font-serif-italic font-medium text-app-accent">Pro</span></h1>
                     </Link>
                 </div>
 

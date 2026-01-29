@@ -5,7 +5,7 @@ test.describe('Landing Page UI/UX Tests', () => {
     await page.goto('/');
 
     // Check for page title
-    await expect(page).toHaveTitle(/JobFlow Pro/);
+    await expect(page).toHaveTitle(/Prism Pro/);
 
     // Check for main content visibility
     await expect(page.locator('body')).toBeVisible();

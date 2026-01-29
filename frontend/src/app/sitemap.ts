@@ -1,8 +1,8 @@
 import { MetadataRoute } from 'next'
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://jobflowpro.com'
-  
+  const baseUrl = 'https://prismpro.live'
+
   return [
     {
       url: baseUrl,

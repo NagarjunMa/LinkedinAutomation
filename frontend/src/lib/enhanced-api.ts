@@ -14,7 +14,7 @@ import {
   RecentApplicationResponse,
   ResumeListItemResponse,
   JobApplicationStatusUpdate
-} from '../app/lib/api';
+} from '../app/lib/api/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -351,7 +351,7 @@ export const enhancedResumeApi = {
     if (targetRole) formData.append('target_role', targetRole);
     if (targetSeniority) formData.append('target_seniority', targetSeniority);
 
-    const data = await apiRequest.post<ResumeUploadResponse>(`${API_BASE_URL}/api/v1/resumes/upload`, formData as any, {
+    const data = await apiRequest.post<ResumeUploadResponse>(`${API_BASE_URL}/api/v1/resumes/upload`, formData as unknown as any, {
       headers: {}, // Let browser set Content-Type for FormData
       timeout: 60000, // 60s timeout for uploads
       retries: { maxRetries: 1 } // Limited retries for uploads
@@ -369,7 +369,7 @@ export const enhancedResumeApi = {
   },
 
   // Evaluate resume with specialized error handling
-  evaluateResume: async (resumeId: string, targetRole?: string, targetSeniority?: string): Promise<{message: string, process_id: string, status: string}> => {
+  evaluateResume: async (resumeId: string, targetRole?: string, targetSeniority?: string): Promise<{ message: string, process_id: string, status: string }> => {
     try {
       return await apiRequest.post(`${API_BASE_URL}/api/v1/resumes/${resumeId}/evaluate`, {
         resume_id: resumeId,
@@ -428,6 +428,12 @@ export const enhancedResumeApi = {
 
               if (detailedData.evaluation) {
                 baseResume.evaluation_result = {
+                  id: detailedData.evaluation.id,
+                  resume_id: detailedData.evaluation.resume_id,
+                  ai_score: detailedData.evaluation.ai_score,
+                  ats_score: detailedData.evaluation.ats_score,
+                  optical_strengths: detailedData.evaluation.optical_strengths,
+                  strategic_improvements: detailedData.evaluation.strategic_improvements,
                   overall_score: detailedData.evaluation.overall_score,
                   ats_compliance_score: detailedData.evaluation.ats_compliance_score,
                   content_quality_score: detailedData.evaluation.content_quality_score,
@@ -482,6 +488,12 @@ export const enhancedResumeApi = {
       uploaded_at: data.resume.uploaded_at,
       evaluation_status: data.resume.evaluation_status,
       evaluation_result: data.evaluation ? {
+        id: data.evaluation.id,
+        resume_id: data.evaluation.resume_id,
+        ai_score: data.evaluation.ai_score,
+        ats_score: data.evaluation.ats_score,
+        optical_strengths: data.evaluation.optical_strengths,
+        strategic_improvements: data.evaluation.strategic_improvements,
         overall_score: data.evaluation.overall_score,
         ats_compliance_score: data.evaluation.ats_compliance_score,
         content_quality_score: data.evaluation.content_quality_score,

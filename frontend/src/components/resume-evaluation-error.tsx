@@ -126,7 +126,7 @@ export function ResumeEvaluationError({
             variant="outline"
             size="sm"
             className="w-full sm:w-auto"
-            onClick={() => window.open('mailto:support@jobflowpro.com?subject=Resume Evaluation Error&body=Error details: ' + encodeURIComponent(errorMessage || config.description))}
+            onClick={() => window.open('mailto:support@prismpro.live?subject=Resume Evaluation Error&body=Error details: ' + encodeURIComponent(errorMessage || config.description))}
           >
             <Mail className="w-4 h-4 mr-2" />
             Contact Support
@@ -205,7 +205,7 @@ export function ResumeEvaluationErrorBanner({
           <Button
             size="sm"
             variant="outline"
-            onClick={() => window.open('mailto:support@jobflowpro.com?subject=Resume Evaluation Error')}
+            onClick={() => window.open('mailto:support@prismpro.live?subject=Resume Evaluation Error')}
             className="h-8 text-xs"
           >
             <Mail className="w-3 h-3 mr-1" />

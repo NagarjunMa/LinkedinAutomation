@@ -113,39 +113,51 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
     }, 100);
   };
 
-  private logErrorToService = (error: Error, errorInfo: ErrorInfo, errorId: string) => {
+  private logErrorToService = async (error: Error, errorInfo: ErrorInfo, errorId: string) => {
     try {
-      // In production, send to error reporting service
-      if (process.env.NODE_ENV === 'production') {
-        // Example: Sentry, LogRocket, or custom service
-        // errorReportingService.captureException(error, {
-        //   tags: { errorBoundary: true, errorId },
-        //   extra: { errorInfo, userAgent: navigator.userAgent }
-        // });
-      }
+      // Import remote logger dynamically to avoid SSR issues
+      const { remoteLogger } = await import('@/lib/logger');
 
-      // Log to local storage for debugging
-      const errorLog = {
-        timestamp: new Date().toISOString(),
+      // Send to centralized logging system
+      await remoteLogger.logError(
+        error,
         errorId,
-        message: error.message,
-        stack: error.stack,
-        componentStack: errorInfo.componentStack,
-        url: window.location.href,
-        userAgent: navigator.userAgent,
-      };
+        errorInfo.componentStack,
+        undefined, // userId - can be extracted from context if available
+        {
+          errorBoundary: true,
+          errorBoundaryStack: errorInfo.errorBoundaryStack,
+          timestamp_client: Date.now()
+        }
+      );
+    } catch (remoteLogError) {
+      // Fallback to localStorage logging if remote fails
+      console.warn('Remote logging failed, using localStorage fallback:', remoteLogError);
 
-      const logs = JSON.parse(localStorage.getItem('error_logs') || '[]');
-      logs.push(errorLog);
+      try {
+        const errorLog = {
+          timestamp: new Date().toISOString(),
+          errorId,
+          message: error.message,
+          stack: error.stack,
+          componentStack: errorInfo.componentStack,
+          url: window.location.href,
+          userAgent: navigator.userAgent,
+          remoteLogError: remoteLogError instanceof Error ? remoteLogError.message : 'Unknown error'
+        };
 
-      // Keep only last 10 errors
-      if (logs.length > 10) {
-        logs.splice(0, logs.length - 10);
+        const logs = JSON.parse(localStorage.getItem('error_logs') || '[]');
+        logs.push(errorLog);
+
+        // Keep only last 10 errors
+        if (logs.length > 10) {
+          logs.splice(0, logs.length - 10);
+        }
+
+        localStorage.setItem('error_logs', JSON.stringify(logs));
+      } catch (localLogError) {
+        console.error('Failed to log error to localStorage:', localLogError);
       }
-
-      localStorage.setItem('error_logs', JSON.stringify(logs));
-    } catch (logError) {
-      console.error('Failed to log error:', logError);
     }
   };
 
@@ -180,7 +192,7 @@ User Agent: ${navigator.userAgent}
 
 Please describe what you were doing when this error occurred:
 `);
-    window.open(`mailto:support@jobflowpro.com?subject=${subject}&body=${body}`);
+    window.open(`mailto:support@prismpro.live?subject=${subject}&body=${body}`);
   };
 
   return (
@@ -278,32 +290,54 @@ export const ComponentErrorFallback: React.FC<ErrorFallbackProps> = ({ error: _e
 
 // Hook for programmatic error handling
 export const useErrorHandler = () => {
-  return (error: Error, errorInfo?: unknown) => {
+  return async (error: Error, errorInfo?: unknown) => {
     if (process.env.NODE_ENV === 'development') {
       console.error('Handled Error:', error, errorInfo);
     }
 
-    // Log to the same service as ErrorBoundary
     const errorId = `err_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const errorLog = {
-      timestamp: new Date().toISOString(),
-      errorId,
-      message: error.message,
-      stack: error.stack,
-      url: window.location.href,
-      userAgent: navigator.userAgent,
-      handled: true,
-    };
 
     try {
-      const logs = JSON.parse(localStorage.getItem('error_logs') || '[]');
-      logs.push(errorLog);
-      if (logs.length > 10) {
-        logs.splice(0, logs.length - 10);
+      // Use remote logger for handled errors too
+      const { remoteLogger } = await import('@/lib/logger');
+
+      await remoteLogger.logError(
+        error,
+        errorId,
+        undefined, // No component stack for manual errors
+        undefined, // userId - can be extracted from context if available
+        {
+          handled: true,
+          errorInfo: errorInfo ? String(errorInfo) : undefined,
+          timestamp_client: Date.now()
+        }
+      );
+    } catch (remoteLogError) {
+      // Fallback to localStorage
+      console.warn('Remote logging failed for handled error:', remoteLogError);
+
+      try {
+        const errorLog = {
+          timestamp: new Date().toISOString(),
+          errorId,
+          message: error.message,
+          stack: error.stack,
+          url: window.location.href,
+          userAgent: navigator.userAgent,
+          handled: true,
+          errorInfo: errorInfo ? String(errorInfo) : undefined,
+          remoteLogError: remoteLogError instanceof Error ? remoteLogError.message : 'Unknown error'
+        };
+
+        const logs = JSON.parse(localStorage.getItem('error_logs') || '[]');
+        logs.push(errorLog);
+        if (logs.length > 10) {
+          logs.splice(0, logs.length - 10);
+        }
+        localStorage.setItem('error_logs', JSON.stringify(logs));
+      } catch (localLogError) {
+        console.error('Failed to log handled error to localStorage:', localLogError);
       }
-      localStorage.setItem('error_logs', JSON.stringify(logs));
-    } catch (logError) {
-      console.error('Failed to log handled error:', logError);
     }
   };
 };

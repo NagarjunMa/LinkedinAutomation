@@ -21,7 +21,7 @@ export const DashboardHeader = () => {
                     <div className="w-10 h-10 border border-[#3b3b3b]/10 flex items-center justify-center bg-white">
                         <LayoutGrid className="w-5 h-5 text-[#3b3b3b]" />
                     </div>
-                    <h1 className="text-xl font-light tracking-tight text-[#3b3b3b]">JobFlow <span className="font-serif-italic">Pro</span></h1>
+                    <h1 className="text-xl font-extrabold tracking-tight text-[#3b3b3b] uppercase">PRISM <span className="font-serif italic lowercase font-medium text-[#3b3b3b]/60">pro</span></h1>
                 </div>
                 <div className="h-8 w-px bg-[#3b3b3b]/10" />
                 <div className="relative group hidden md:block">

@@ -53,7 +53,7 @@ function LandingPageCTAContent({
   const getButtonText = () => {
     if (user) return "Go to Dashboard"
     if (isSigningIn) return "Signing In..."
-    return "Try JobFlow Pro"
+    return "Try Prism Pro"
   }
 
   return (

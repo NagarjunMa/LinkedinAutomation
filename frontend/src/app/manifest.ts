@@ -2,8 +2,8 @@ import { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'JobFlow Pro - AI-Powered LinkedIn Job Automation',
-    short_name: 'JobFlow Pro',
+    name: 'Prism Pro - AI-Powered LinkedIn Job Automation',
+    short_name: 'Prism Pro',
     description: 'AI-powered LinkedIn job search automation for students and recent graduates',
     start_url: '/',
     display: 'standalone',

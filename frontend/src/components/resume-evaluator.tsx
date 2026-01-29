@@ -138,7 +138,7 @@ export function ResumeEvaluator({ initialView = 'DASHBOARD' }: ResumeEvaluatorPr
 
       {/* Footer */}
       <footer className="py-8 px-6 text-center text-muted-foreground text-xs bg-transparent">
-        &copy; {new Date().getFullYear()} JobFlow Pro • Premium Resume Intelligence
+        &copy; {new Date().getFullYear()} Prism Pro • Premium Resume Intelligence
       </footer>
 
       {/* Upload Modal */}

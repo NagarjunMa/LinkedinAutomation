@@ -264,11 +264,10 @@ function LoginForm() {
       <div className="absolute inset-0">
         <div className="grain-overlay"></div>
         <motion.div
-          className={`absolute top-20 left-20 w-96 h-96 rounded-full blur-3xl ${
-            isDark
+          className={`absolute top-20 left-20 w-96 h-96 rounded-full blur-3xl ${isDark
               ? 'bg-gradient-radial from-white/5 to-transparent'
               : 'bg-gradient-radial from-black/5 to-transparent'
-          }`}
+            }`}
           animate={{
             x: [0, 50, 0],
             y: [0, -30, 0],
@@ -276,11 +275,10 @@ function LoginForm() {
           transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
         />
         <motion.div
-          className={`absolute bottom-20 right-20 w-96 h-96 rounded-full blur-3xl ${
-            isDark
+          className={`absolute bottom-20 right-20 w-96 h-96 rounded-full blur-3xl ${isDark
               ? 'bg-gradient-radial from-white/3 to-transparent'
               : 'bg-gradient-radial from-black/3 to-transparent'
-          }`}
+            }`}
           animate={{
             x: [0, -50, 0],
             y: [0, 30, 0],
@@ -340,7 +338,7 @@ function LoginForm() {
             variants={staggerItem}
             className="text-3xl font-bold tracking-tight text-foreground mb-2"
           >
-            JOBFLOW <span className="opacity-50 font-light">PRO</span>
+            PRISM <span className="opacity-50 font-light">PRO</span>
           </motion.h1>
           <motion.p
             variants={staggerItem}
@@ -557,7 +555,7 @@ function LoginForm() {
               {/* Toggle between Sign In / Sign Up */}
               <div className="text-center pt-4 border-t border-border">
                 <p className="text-muted-foreground">
-                  {isSignUp ? "Already have an account?" : "New to JobFlow Pro?"}
+                  {isSignUp ? "Already have an account?" : "New to Prism Pro?"}
                   {" "}
                   <button
                     onClick={() => {

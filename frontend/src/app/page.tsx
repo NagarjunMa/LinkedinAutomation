@@ -26,7 +26,7 @@ const fadeInUp = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] }
+    transition: { duration: 0.6, ease: [0.17, 0.55, 0.55, 1] as any }
   }
 };
 
@@ -111,7 +111,7 @@ export default function LandingPage() {
               ></div>
               <img
                 src="/landingpage.jpg"
-                alt="JobFlow Pro Engineering Dashboard"
+                alt="Prism Pro Engineering Dashboard"
                 className={`w-full h-full object-cover transition-all duration-1000 group-hover:scale-105 ${isDark ? 'opacity-80' : 'opacity-100'
                   }`}
               />
@@ -153,8 +153,8 @@ export default function LandingPage() {
               >
                 <div
                   className={`shrink-0 w-12 h-12 flex items-center justify-center border ${isDark
-                      ? 'border-red-400/30 bg-red-400/10 text-red-400'
-                      : 'border-red-600/30 bg-red-600/10 text-red-600'
+                    ? 'border-red-400/30 bg-red-400/10 text-red-400'
+                    : 'border-red-600/30 bg-red-600/10 text-red-600'
                     } rounded-sm`}
                 >
                   <FileSearch size={20} />
@@ -193,7 +193,7 @@ export default function LandingPage() {
           <SectionHeader
             label="Commitment Required"
             title="Stop wasting your seniority on volume."
-            subtitle="JobFlow Pro is an exclusive system for engineers who treat their career like an engineering problem."
+            subtitle="Prism Pro is an exclusive system for engineers who treat their career like an engineering problem."
           />
           <div className="mt-8">
             <Link href="/login">
@@ -220,7 +220,7 @@ export default function LandingPage() {
                 <Cpu size={18} />
               </div>
               <span className="font-bold tracking-tighter text-xl">
-                JOBFLOW<span className="opacity-40 font-light text-sm">PRO</span>
+                PRISM<span className="opacity-40 font-light text-sm">PRO</span>
               </span>
             </div>
             <p className="opacity-50 text-sm leading-relaxed mb-8">
@@ -244,7 +244,7 @@ export default function LandingPage() {
             } flex flex-col md:flex-row justify-between items-center gap-4`}
         >
           <p className="text-[10px] opacity-40 tracking-widest uppercase">
-            © 2024 JobFlow Pro Engineering. All rights reserved.
+            © 2026 Prism Pro Engineering. All rights reserved.
           </p>
         </div>
       </footer>

@@ -179,7 +179,7 @@ export const COMPONENTS = {
   },
 } as const;
 
-import { ResumeEvaluation } from '@/app/lib/api/types';
+import { } from '@/app/lib/api/types';
 
 // Mock data structure for development
 // Mock data structure for development

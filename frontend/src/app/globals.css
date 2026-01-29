@@ -186,7 +186,7 @@
     @apply font-title font-semibold tracking-tight;
   }
 
-  /* Application title styling - Stardom for JOBFLOW PRO */
+  /* Application title styling - Stardom for PRISM PRO */
   .app-title {
     @apply font-app-title font-semibold tracking-wide;
   }

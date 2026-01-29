@@ -206,8 +206,8 @@ export class ApiErrorHandler {
 
           // Check if we should retry
           if (attempt < retryConfig.maxRetries &&
-              retryConfig.retryCondition &&
-              retryConfig.retryCondition(apiError)) {
+            retryConfig.retryCondition &&
+            retryConfig.retryCondition(apiError)) {
             lastError = apiError;
 
             // Calculate delay with exponential backoff
@@ -248,8 +248,8 @@ export class ApiErrorHandler {
 
         // Check if we should retry
         if (attempt < retryConfig.maxRetries &&
-            retryConfig.retryCondition &&
-            retryConfig.retryCondition(lastError)) {
+          retryConfig.retryCondition &&
+          retryConfig.retryCondition(lastError)) {
 
           const delay = Math.min(
             retryConfig.initialDelay * Math.pow(retryConfig.backoffFactor, attempt),
@@ -343,39 +343,45 @@ export const apiRequest = {
   get: <T>(url: string, config?: RequestConfig) =>
     apiErrorHandler.fetchWithRetry<T>(url, { ...config, method: 'GET' }),
 
-  post: <T>(url: string, data?: Record<string, unknown>, config?: RequestConfig) =>
-    apiErrorHandler.fetchWithRetry<T>(url, {
+  post: <T>(url: string, data?: Record<string, unknown> | any, config?: RequestConfig) => {
+    const isFormData = typeof FormData !== 'undefined' && data instanceof FormData;
+    return apiErrorHandler.fetchWithRetry<T>(url, {
       ...config,
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
         ...config?.headers,
       },
-      body: data ? JSON.stringify(data) : undefined,
-    }),
+      body: isFormData ? (data as any) : (data ? JSON.stringify(data) : undefined),
+    });
+  },
 
-  put: <T>(url: string, data?: Record<string, unknown>, config?: RequestConfig) =>
-    apiErrorHandler.fetchWithRetry<T>(url, {
+  put: <T>(url: string, data?: Record<string, unknown> | any, config?: RequestConfig) => {
+    const isFormData = typeof FormData !== 'undefined' && data instanceof FormData;
+    return apiErrorHandler.fetchWithRetry<T>(url, {
       ...config,
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json',
+        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
         ...config?.headers,
       },
-      body: data ? JSON.stringify(data) : undefined,
-    }),
+      body: isFormData ? (data as any) : (data ? JSON.stringify(data) : undefined),
+    });
+  },
 
   delete: <T>(url: string, config?: RequestConfig) =>
     apiErrorHandler.fetchWithRetry<T>(url, { ...config, method: 'DELETE' }),
 
-  patch: <T>(url: string, data?: Record<string, unknown>, config?: RequestConfig) =>
-    apiErrorHandler.fetchWithRetry<T>(url, {
+  patch: <T>(url: string, data?: Record<string, unknown> | any, config?: RequestConfig) => {
+    const isFormData = typeof FormData !== 'undefined' && data instanceof FormData;
+    return apiErrorHandler.fetchWithRetry<T>(url, {
       ...config,
       method: 'PATCH',
       headers: {
-        'Content-Type': 'application/json',
+        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
         ...config?.headers,
       },
-      body: data ? JSON.stringify(data) : undefined,
-    }),
+      body: isFormData ? (data as any) : (data ? JSON.stringify(data) : undefined),
+    });
+  },
 };

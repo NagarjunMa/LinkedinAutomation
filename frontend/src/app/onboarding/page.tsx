@@ -176,7 +176,7 @@ export default function OnboardingPage() {
                         <div className="mx-auto mb-4 w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
                             <User className="w-8 h-8 text-primary" />
                         </div>
-                        <CardTitle className="text-2xl">Welcome to JobFlow Pro!</CardTitle>
+                        <CardTitle className="text-2xl">Welcome to Prism Pro!</CardTitle>
                         <CardDescription>
                             Let&apos;s set up your account and get you started
                         </CardDescription>
@@ -261,7 +261,7 @@ export default function OnboardingPage() {
                                                 <span>Gmail Access</span>
                                             </Label>
                                             <p className="text-sm text-muted-foreground">
-                                                Allow JobFlow Pro to access your Gmail to automatically track job application emails
+                                                Allow Prism Pro to access your Gmail to automatically track job application emails
                                             </p>
                                         </div>
                                     </div>

@@ -26,7 +26,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     // Initialize theme on client side only
     if (typeof window !== 'undefined') {
       // Check for saved theme preference first
-      const savedTheme = localStorage.getItem('jobflow-theme') as Theme | null;
+      const savedTheme = localStorage.getItem('prism-theme') as Theme | null;
 
       if (savedTheme) {
         setThemeState(savedTheme);
@@ -36,7 +36,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
         const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         setThemeState(systemTheme);
         applyTheme(systemTheme);
-        localStorage.setItem('jobflow-theme', systemTheme);
+        localStorage.setItem('prism-theme', systemTheme);
       }
 
       setIsInitialized(true);
@@ -71,7 +71,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     setThemeState(newTheme);
     applyTheme(newTheme);
     if (typeof window !== 'undefined') {
-      localStorage.setItem('jobflow-theme', newTheme);
+      localStorage.setItem('prism-theme', newTheme);
     }
   };
 

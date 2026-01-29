@@ -237,7 +237,7 @@ export default function ProfilePage() {
           className="flex justify-between items-center mb-16 border-b border-foreground/5 pb-4"
         >
           <div className="flex items-center gap-2 text-[10px] tracking-[0.2em] uppercase font-bold text-foreground/40">
-            <span>JobFlow Pro</span>
+            <span>Prism Pro</span>
             <ChevronRight size={10} strokeWidth={3} />
             <span className="text-foreground">Profile_v2.5</span>
           </div>
@@ -519,7 +519,7 @@ export default function ProfilePage() {
             <div className="w-8 h-8 rounded-full border border-foreground flex items-center justify-center font-bold text-[10px]">JF</div>
             <p className="text-[10px] tracking-widest text-foreground/40 uppercase">System Integrity: Nominal</p>
           </div>
-          <p className="text-[10px] tracking-widest text-foreground/30 uppercase">© 2026 JobFlow Command / Leica Theory Design</p>
+          <p className="text-[10px] tracking-widest text-foreground/30 uppercase">© 2026 Prism Pro Command / Leica Theory Design</p>
         </footer>
       </div>
 

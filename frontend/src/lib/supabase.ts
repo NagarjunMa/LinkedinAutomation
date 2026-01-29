@@ -87,7 +87,7 @@ export const createClient = () => {
           console.warn(`Failed to set cookie ${name}:`, error)
         }
       },
-      remove(name: string, options?: any) {
+      remove(name: string, options?: Record<string, unknown>) {
         if (typeof window === 'undefined') return
         try {
           const removeOptions = {
@@ -189,7 +189,7 @@ export const getSession = async () => {
       console.warn('getSession error:', error.message)
       // Don't throw on certain recoverable errors
       if (error.message?.includes('Invalid Refresh Token') ||
-          error.message?.includes('refresh_token_not_found')) {
+        error.message?.includes('refresh_token_not_found')) {
         console.log('Session expired or invalid, clearing all auth data')
         // Clear corrupted session data immediately
         await clearAllAuthData()
@@ -203,7 +203,7 @@ export const getSession = async () => {
     console.error('getSession failed:', error)
     // If any other error occurs, also clear auth data to prevent loops
     if (error.message?.includes('Invalid Refresh Token') ||
-        error.message?.includes('refresh_token_not_found')) {
+      error.message?.includes('refresh_token_not_found')) {
       console.log('Clearing auth data due to session error')
       await clearAllAuthData()
     }

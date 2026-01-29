@@ -24,7 +24,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
                 attribute="class"
                 defaultTheme="system"
                 enableSystem={true}
-                storageKey="jobflow-theme"
+                storageKey="prism-theme"
             >
                 {children}
             </ThemeProvider>

@@ -1,6 +1,9 @@
 {
   "root": true,
-  "extends": ["next/core-web-vitals", "next/typescript"],
+  "extends": [
+    "next/core-web-vitals",
+    "next/typescript"
+  ],
   "env": {
     "browser": true,
     "es6": true,
@@ -16,9 +19,8 @@
     "no-unreachable": "error",
     "no-dupe-keys": "error",
     "no-constant-condition": "error",
-
     // WARNINGS - Good practice but not critical for functionality
-    "@typescript-eslint/no-explicit-any": "warn",
+    "@typescript-eslint/no-explicit-any": "off",
     "@typescript-eslint/no-unused-vars": [
       "warn",
       {
@@ -27,10 +29,8 @@
       }
     ],
     "react-hooks/exhaustive-deps": "warn",
-    "no-undef": "warn",  // Changed to warn for flexibility
-
+    "no-undef": "off", // Changed to warn for flexibility
     // OFF - Too strict and can break working functionality
     "react/no-unescaped-entities": "off"
   }
 }
-

@@ -18,9 +18,14 @@ logger = logging.getLogger(__name__)
 class RateLimiter:
     """Custom rate limiter for AI endpoints with per-user and per-endpoint limits."""
 
-    def __init__(self):
+    def __init__(self, max_requests: int = 100, window_seconds: int = 60):
         # Store request timestamps per user and endpoint
         self.requests = defaultdict(lambda: defaultdict(deque))
+        # Store request timestamps per IP for simple rate limiting
+        self.ip_requests = defaultdict(deque)
+        # Default rate limits
+        self.max_requests = max_requests
+        self.window_seconds = window_seconds
         # Store last cleanup time
         self.last_cleanup = time.time()
         # Cleanup interval (1 hour)
@@ -31,10 +36,15 @@ class RateLimiter:
         current_time = time.time()
         if current_time - self.last_cleanup > self.cleanup_interval:
             cutoff_time = current_time - 86400  # Keep only last 24 hours
+            # Cleanup user-endpoint requests
             for user_requests in self.requests.values():
                 for endpoint_requests in user_requests.values():
                     while endpoint_requests and endpoint_requests[0] < cutoff_time:
                         endpoint_requests.popleft()
+            # Cleanup IP requests
+            for ip_requests in self.ip_requests.values():
+                while ip_requests and ip_requests[0] < cutoff_time:
+                    ip_requests.popleft()
             self.last_cleanup = current_time
 
     def check_rate_limit(
@@ -91,6 +101,45 @@ class RateLimiter:
         current_time = time.time()
 
         return max(0, int(reset_time - current_time))
+
+    def check_rate_limit(self, identifier: str, cost: int = 1) -> bool:
+        """
+        Simple rate limiting by identifier (IP address or user ID).
+
+        Args:
+            identifier: IP address or user identifier
+            cost: Request cost (for batch operations)
+
+        Returns:
+            True if within limit, False if exceeded
+
+        Raises:
+            Exception: If rate limit is exceeded
+        """
+        self._cleanup_old_requests()
+
+        current_time = time.time()
+        cutoff_time = current_time - self.window_seconds
+
+        # Get request history for this identifier
+        request_times = self.ip_requests[identifier]
+
+        # Remove old requests outside the window
+        while request_times and request_times[0] < cutoff_time:
+            request_times.popleft()
+
+        # Calculate current request count (considering cost)
+        current_count = len(request_times)
+
+        # Check if adding this request would exceed limit
+        if current_count + cost > self.max_requests:
+            raise Exception(f"Rate limit exceeded for {identifier}")
+
+        # Add request(s) to history
+        for _ in range(cost):
+            request_times.append(current_time)
+
+        return True
 
 
 # Global rate limiter instance

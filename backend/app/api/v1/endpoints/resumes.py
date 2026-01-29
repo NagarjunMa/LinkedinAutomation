@@ -12,7 +12,7 @@ from app.schemas.resume import (
     ResumeUploadResponse, ResumeListResponse, ResumeDeleteResponse,
     ResumeWithEvaluation, ResumeStorageInfo, ResumeEvaluationRequest
 )
-from app.services.resume_evaluator import ResumeEvaluatorService
+
 from app.services.consolidated_resume_evaluator import ConsolidatedResumeEvaluator
 from app.core.ai_service import get_ai_service
 from app.core.auth import get_authenticated_user_id

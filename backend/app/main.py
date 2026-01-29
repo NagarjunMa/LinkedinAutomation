@@ -24,7 +24,8 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    logger.info("Starting up JobFlow Pro application...")
+    logger.info("Starting up Prism Pro application...")
+
 
     # Validate Railway configuration if deployed
     if "RAILWAY_DEPLOYMENT_ID" in os.environ:

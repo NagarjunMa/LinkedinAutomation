@@ -14,4 +14,3 @@ export { referralApi, referralTemplatesAPI } from './referral';
 export { emailAgentApi } from './email';
 
 // Explicitly export missing functions for components
-export { fetchRecentApplications, updateJobApplicationStatus } from './jobs';

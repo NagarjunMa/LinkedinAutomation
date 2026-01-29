@@ -255,6 +255,8 @@ export interface ResumeEvaluation {
     };
     wording_suggestions?: WordingSuggestion[];
 
+    agent_results?: Record<string, unknown>;
+
     // Evaluation metadata
     evaluation_metadata?: {
         processing_time_seconds?: number;

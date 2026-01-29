@@ -104,7 +104,7 @@ export function SophisticatedSidebar({ onClose }: { onClose?: () => void }) {
                             animate={{ opacity: 1 }}
                             className="text-base font-extrabold tracking-tight text-app-text uppercase whitespace-nowrap"
                         >
-                            JobFlow <span className="font-serif-italic lowercase font-medium text-app-accent">Pro</span>
+                            PRISM <span className="font-serif italic lowercase font-medium text-app-accent">pro</span>
                         </motion.h1>
                     )}
                 </Link>

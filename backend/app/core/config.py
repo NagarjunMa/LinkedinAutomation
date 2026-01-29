@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     # Application Metadata
     # ==========================================
 
-    PROJECT_NAME: str = "JobFlow Pro - Job Extraction & Management"
+    PROJECT_NAME: str = "Prism Pro - Job Extraction & Management"
     """The display name of the application"""
 
     API_V1_STR: str = "/api/v1"
@@ -167,10 +167,10 @@ class Settings(BaseSettings):
     Alternative to SMTP for better deliverability.
     """
 
-    MAIL_FROM: str = "noreply@jobflow.com"
+    MAIL_FROM: str = "noreply@prismpro.live"
     """Default from email address for transactional emails"""
 
-    MAIL_FROM_NAME: str = "JobFlow Pro"
+    MAIL_FROM_NAME: str = "Prism Pro"
     """Display name for email sender"""
 
     # ==========================================
