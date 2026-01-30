@@ -4,10 +4,13 @@ import { createServerSupabaseClientWithResponse } from '@/lib/supabase-server'
 export const runtime = 'nodejs'
 
 export async function GET(request: NextRequest) {
-  const { searchParams, origin } = new URL(request.url)
-  const code = searchParams.get('code')
-  const error_param = searchParams.get('error')
-  const next = searchParams.get('next') ?? '/dashboard'
+  const requestUrl = new URL(request.url)
+  const code = requestUrl.searchParams.get('code')
+  const error_param = requestUrl.searchParams.get('error')
+  const next = requestUrl.searchParams.get('next') ?? '/dashboard'
+
+  // Use configured frontend URL in production, fallback to request origin in dev
+  const origin = process.env.NEXT_PUBLIC_FRONTEND_URL || process.env.NEXT_PUBLIC_SITE_URL || requestUrl.origin
 
   console.log('Auth callback received:', { code: !!code, error_param, origin })
 
