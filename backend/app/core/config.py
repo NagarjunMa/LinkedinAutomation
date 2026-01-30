@@ -9,7 +9,8 @@ Configuration is loaded from environment variables with sensible defaults for de
 For production deployment, ensure all required environment variables are set.
 """
 
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Any
+import json
 from pydantic_settings import BaseSettings
 from pydantic import AnyHttpUrl, validator
 
@@ -55,7 +56,7 @@ class Settings(BaseSettings):
     # CORS Configuration
     # ==========================================
 
-    CORS_ORIGINS: List[str] = []
+    CORS_ORIGINS: Union[str, List[str]] = []
     """
     List of allowed origins for CORS requests.
     Example: ["https://frontend.example.com", "https://app.example.com"]
@@ -67,9 +68,16 @@ class Settings(BaseSettings):
         Parse CORS origins from environment variable.
         Accepts comma-separated string or list format.
         """
-        if isinstance(v, str) and not v.startswith("["):
-            return [i.strip() for i in v.split(",")]
-        elif isinstance(v, (list, str)):
+        if isinstance(v, str):
+            if not v.startswith("["):
+                return [i.strip() for i in v.split(",")]
+            else:
+                try:
+                    return json.loads(v)
+                except json.JSONDecodeError:
+                    # Fallback to comma split if JSON parse fails
+                    return [i.strip() for i in v.split(",")]
+        elif isinstance(v, list):
             return v
         raise ValueError(f"Invalid CORS_ORIGINS format: {v}")
 
