@@ -381,4 +381,5 @@ $RECYCLE.BIN/
 *.webm
 .claude/
 .env.production
+.DS_Store
 
