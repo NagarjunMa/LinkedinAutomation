@@ -13,7 +13,12 @@
       "Read(//Users/nagarjunmallesh/Desktop/projects/**)",
       "Bash(find:*)",
       "Bash(alembic:*)",
-      "mcp__supabase__execute_sql"
+      "mcp__supabase__execute_sql",
+      "mcp__supabase__apply_migration",
+      "Bash(awk:*)",
+      "Bash(cat:*)",
+      "Bash(npx madge:*)",
+      "Bash(npm run lint)"
     ],
     "deny": [],
     "ask": []

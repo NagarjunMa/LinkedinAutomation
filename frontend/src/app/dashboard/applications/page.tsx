@@ -27,7 +27,6 @@ import {
 import { useAuth } from "@/contexts/auth-context"
 import { fetchRecentApplications } from "@/app/lib/api/jobs"
 import { useToast } from "@/components/ui/use-toast"
-import VirtualizedApplicationList from "@/components/virtualized-application-list"
 
 type RecentApplicationResponse = Awaited<ReturnType<typeof fetchRecentApplications>>[number]
 

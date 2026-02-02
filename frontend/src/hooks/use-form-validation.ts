@@ -180,9 +180,17 @@ export function useFormValidation<T extends Record<string, unknown>>({
     return Object.keys(errors).length === 0 && submitErrors.length === 0
   }, [errors, submitErrors])
 
-  // Check if form has been modified
+  // Check if form has been modified (optimized with shallow comparison)
   const isDirty = useMemo(() => {
-    return JSON.stringify(values) !== JSON.stringify(initialValues)
+    // Fast shallow comparison for better performance
+    const valueKeys = Object.keys(values)
+    const initialKeys = Object.keys(initialValues)
+
+    // Quick check for different number of keys
+    if (valueKeys.length !== initialKeys.length) return true
+
+    // Check if any value has changed
+    return valueKeys.some(key => values[key] !== initialValues[key])
   }, [values, initialValues])
 
   return {

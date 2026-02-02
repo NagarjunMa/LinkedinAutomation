@@ -3,10 +3,11 @@ import uuid
 import shutil
 from typing import List
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
+from celery.result import AsyncResult
 from app.db.session import get_db, SessionLocal
 from app.schemas.resume import (
     ResumeUploadResponse, ResumeListResponse, ResumeDeleteResponse,
@@ -20,6 +21,7 @@ from app.core.rate_limiter import check_ai_rate_limit
 from app.models.resume import Resume, ResumeEvaluation
 from app.models.user import User
 from app.core.config import settings
+from app.tasks.resume_tasks import evaluate_resume_task
 import logging
 
 logger = logging.getLogger(__name__)
@@ -430,12 +432,10 @@ async def delete_resume(
 async def evaluate_resume(
     resume_id: str,
     evaluation_request: ResumeEvaluationRequest,
-    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    ai_service = Depends(get_ai_service),
     user_id: str = Depends(get_authenticated_user_id)
 ):
-    """Manually trigger resume evaluation with status locking"""
+    """Trigger resume evaluation using optimized Celery background task"""
 
     # Check rate limit for resume evaluation
     check_ai_rate_limit(user_id, "resume_evaluation")
@@ -472,9 +472,8 @@ async def evaluate_resume(
 
         logger.info(f"Evaluation lock acquired for resume {resume_id} by process {process_id}")
 
-        # Start evaluation in background
-        background_tasks.add_task(
-            evaluate_resume_background,
+        # Start evaluation with Celery background task
+        task = evaluate_resume_task.delay(
             resume_id,
             resume.file_path,
             resume.file_type,
@@ -483,10 +482,14 @@ async def evaluate_resume(
             process_id
         )
 
+        logger.info(f"Started Celery task {task.id} for resume {resume_id}")
+
         return {
             "message": "Resume evaluation started",
+            "task_id": task.id,
             "process_id": process_id,
-            "status": "evaluating"
+            "status": "evaluating",
+            "status_endpoint": f"/api/v1/resumes/{resume_id}/evaluation-status"
         }
 
     except IntegrityError as e:
@@ -510,6 +513,87 @@ async def evaluate_resume(
         except:
             pass
         raise HTTPException(status_code=500, detail="Failed to start evaluation")
+
+
+@router.get("/{resume_id}/evaluation-status")
+async def get_evaluation_status(
+    resume_id: str,
+    task_id: str = None,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_authenticated_user_id)
+):
+    """Get the status of a resume evaluation task"""
+
+    # Verify resume belongs to user
+    resume = db.query(Resume).filter(
+        Resume.id == resume_id,
+        Resume.user_id == user_id
+    ).first()
+
+    if not resume:
+        raise HTTPException(status_code=404, detail="Resume not found")
+
+    # If task_id provided, check Celery task status
+    if task_id:
+        try:
+            result = AsyncResult(task_id)
+
+            if result.state == 'PENDING':
+                response = {
+                    'status': 'pending',
+                    'progress': 0,
+                    'stage': 'queued',
+                    'message': 'Task is waiting to be processed'
+                }
+            elif result.state == 'PROGRESS':
+                response = {
+                    'status': 'in_progress',
+                    'progress': result.info.get('progress', 0),
+                    'stage': result.info.get('stage', 'processing'),
+                    'message': f"Currently {result.info.get('stage', 'processing')}"
+                }
+            elif result.state == 'SUCCESS':
+                response = {
+                    'status': 'completed',
+                    'progress': 100,
+                    'stage': 'completed',
+                    'message': 'Evaluation completed successfully',
+                    'result': result.result
+                }
+            elif result.state == 'FAILURE':
+                response = {
+                    'status': 'failed',
+                    'progress': 0,
+                    'stage': 'failed',
+                    'message': 'Evaluation failed',
+                    'error': str(result.info)
+                }
+            else:
+                response = {
+                    'status': result.state.lower(),
+                    'progress': result.info.get('progress', 0) if result.info else 0,
+                    'stage': result.info.get('stage', 'unknown') if result.info else 'unknown',
+                    'message': f"Task state: {result.state}"
+                }
+
+        except Exception as e:
+            logger.error(f"Error checking task status {task_id}: {e}")
+            response = {
+                'status': 'error',
+                'progress': 0,
+                'stage': 'error',
+                'message': 'Unable to check task status'
+            }
+    else:
+        # Fallback to resume status from database
+        response = {
+            'status': resume.evaluation_status or 'unknown',
+            'progress': 100 if resume.evaluation_status == 'completed' else 0,
+            'stage': resume.evaluation_status or 'unknown',
+            'message': f"Resume evaluation status: {resume.evaluation_status or 'unknown'}"
+        }
+
+    return response
 
 
 @router.get("/{resume_id}/download")

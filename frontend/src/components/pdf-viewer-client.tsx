@@ -7,13 +7,11 @@ import { Button } from '@/components/ui/button'
 
 interface PDFViewerClientProps {
   fileUrl?: string
-  fileName?: string
   onBack?: () => void
 }
 
-export function PDFViewerClient({ fileUrl, fileName, onBack }: PDFViewerClientProps) {
-  const [numPages, setNumPages] = useState<number>(0)
-  const [pageNumber, setPageNumber] = useState<number>(1)
+export function PDFViewerClient({ fileUrl, onBack }: PDFViewerClientProps) {
+  const [pageNumber] = useState<number>(1)
   const [scale, setScale] = useState<number>(1.0)
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
@@ -23,7 +21,7 @@ export function PDFViewerClient({ fileUrl, fileName, onBack }: PDFViewerClientPr
     // Polyfill Promise.withResolvers if needed (required for pdfjs-dist v4+)
     if (typeof Promise.withResolvers === 'undefined') {
       if (typeof window !== 'undefined') {
-        // @ts-ignore
+        // @ts-expect-error - Polyfill for older browsers/environments
         window.Promise.withResolvers = function () {
           let resolve, reject;
           const promise = new Promise((res, rej) => {
@@ -42,8 +40,7 @@ export function PDFViewerClient({ fileUrl, fileName, onBack }: PDFViewerClientPr
     }
   }, [])
 
-  function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
-    setNumPages(numPages)
+  function onDocumentLoadSuccess() {
     setLoading(false)
     setError(null)
   }

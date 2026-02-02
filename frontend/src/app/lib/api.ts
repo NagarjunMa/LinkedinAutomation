@@ -3,4 +3,4 @@
 // This file now re-exports everything for backwards compatibility
 
 // Re-export all functionality from the new modular API structure
-export * from './api';
+export * from './api/index';

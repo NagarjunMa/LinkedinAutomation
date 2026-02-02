@@ -7,10 +7,6 @@ import Link from 'next/link';
 import { StyledButton } from './StyledButton';
 import { useTheme } from '@/contexts/theme-context';
 
-interface NavigationProps {
-  // Remove props since we'll use global theme
-}
-
 const smoothScrollToSection = (sectionId: string) => {
   const element = document.getElementById(sectionId);
   if (element) {
@@ -25,7 +21,7 @@ const smoothScrollToSection = (sectionId: string) => {
   }
 };
 
-export const Navigation: React.FC<NavigationProps> = () => {
+export const Navigation: React.FC = () => {
   const { isDark, toggleTheme } = useTheme();
 
   return (

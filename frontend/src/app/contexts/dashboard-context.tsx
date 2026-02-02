@@ -43,23 +43,42 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
             setError(null)
             setLoading(true)
 
-            console.log('Fetching data for time range:', timeRange, 'for user:', user.id)
+            console.log('Fetching data progressively for time range:', timeRange, 'for user:', user.id)
 
-            const [statsData, applicationsData, profileData] = await Promise.all([
-                fetchJobStats(timeRange),
-                fetchRecentApplications(),
-                profileApi.getProfile(user.id)
-            ])
+            // Progressive loading - fetch critical data first, then secondary data
 
-            console.log('Stats data received:', statsData)
+            // 1. Fetch stats first (most critical for dashboard)
+            try {
+                const statsData = await fetchJobStats(timeRange)
+                console.log('Stats data received:', statsData)
+                setStats(statsData)
+            } catch (statsError) {
+                console.warn('Stats fetch failed, continuing with other data:', statsError)
+                setStats(null)
+            }
+
+            // 2. Fetch applications and profile in parallel (less critical)
+            const secondaryPromises = [
+                fetchRecentApplications().catch(error => {
+                    console.warn('Applications fetch failed:', error)
+                    return []
+                }),
+                profileApi.getProfile(user.id).catch(error => {
+                    console.warn('Profile fetch failed:', error)
+                    return null
+                })
+            ]
+
+            const [applicationsData, profileData] = await Promise.all(secondaryPromises)
+
             console.log('Applications data received:', applicationsData)
             console.log('Profile data received:', profileData)
 
-            setStats(statsData)
-            setRecentApplications(applicationsData)
+            setRecentApplications(applicationsData || [])
             setUserProfile(profileData)
+
         } catch (err) {
-            console.error('Error fetching dashboard data:', err)
+            console.error('Error during progressive data fetch:', err)
             setError(err instanceof Error ? err.message : 'Failed to fetch data')
         } finally {
             setLoading(false)
