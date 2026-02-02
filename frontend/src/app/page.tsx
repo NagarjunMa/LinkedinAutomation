@@ -91,12 +91,14 @@ export default function LandingPage() {
                   Initialize System <ArrowRight size={16} />
                 </StyledButton>
               </Link>
-              <button
-                className={`text-xs font-bold tracking-widest uppercase py-4 px-8 border ${isDark ? 'border-[#f0eff2]/10 hover:bg-white/5' : 'border-[#3b3b3b]/10 hover:bg-black/5'
-                  } transition-colors rounded-full`}
-              >
-                View Documentation
-              </button>
+              <Link href="/docs">
+                <StyledButton variant="secondary" className="min-w-[160px]">
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="w-5 h-5" />
+                    <span>View Documentation</span>
+                  </div>
+                </StyledButton>
+              </Link>
             </motion.div>
 
             <motion.div
