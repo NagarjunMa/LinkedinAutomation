@@ -1,8 +1,4 @@
-"""
-Celery tasks for AI-powered resume evaluation and processing.
-Optimized for heavy AI workloads with proper error handling and progress tracking.
-"""
-
+import asyncio
 import logging
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any
@@ -140,18 +136,29 @@ def evaluate_resume_task(
         # Initialize consolidated evaluator service
         evaluator = ConsolidatedResumeEvaluator(ai_service)
 
+        # Define async function to handle async operations
+        async def process_resume_async():
+            # Extract text
+            r_text = await evaluator.extract_resume_text(file_path, file_type)
+            if not r_text or not r_text.strip():
+                raise ValueError("Resume text extraction failed - empty or no content extracted")
+            
+            # Evaluate
+            eval_res = await evaluator.evaluate_resume(
+                r_text, user_id, resume_id, db, target_role, target_seniority
+            )
+            return r_text, eval_res
+
         # Extract text from resume using the evaluator instance
         try:
-            resume_text = await evaluator.extract_resume_text(file_path, file_type)
-            if not resume_text or not resume_text.strip():
-                logger.error(f"Failed to extract text from resume {resume_id} at {file_path}")
-                raise ValueError("Resume text extraction failed - empty or no content extracted")
-
+            # Execute async code synchronously
+            resume_text, evaluation_result = asyncio.run(process_resume_async())
             logger.info(f"Successfully extracted {len(resume_text)} characters from resume {resume_id}")
+            
         except Exception as text_error:
-            logger.error(f"Resume text extraction failed for {resume_id}: {text_error}")
+            logger.error(f"Resume processing failed for {resume_id}: {text_error}")
             _update_resume_status(db, resume_id, "failed", process_id, release_lock=True)
-            raise Exception(f"Could not extract text from resume file: {text_error}")
+            raise Exception(f"Resume processing failed: {text_error}")
 
         # Update task progress - Text extracted, starting AI evaluation
         current_task.update_state(
@@ -161,17 +168,6 @@ def evaluate_resume_task(
 
         # Get user_id from resume record
         user_id = resume.user_id
-
-        # Evaluate resume using consolidated single-prompt approach
-        try:
-            evaluation_result = await evaluator.evaluate_resume(
-                resume_text, user_id, resume_id, db, target_role, target_seniority
-            )
-            logger.info(f"AI evaluation completed for resume {resume_id}")
-        except Exception as eval_error:
-            logger.error(f"Resume evaluation failed for {resume_id}: {eval_error}")
-            _update_resume_status(db, resume_id, "failed", process_id, release_lock=True)
-            raise Exception(f"AI evaluation failed: {eval_error}")
 
         # Update task progress - Processing evaluation results
         current_task.update_state(
@@ -296,7 +292,7 @@ def extract_resume_text_task(self, file_path: str, file_type: str) -> Dict[str, 
         )
 
         # Extract text
-        resume_text = await evaluator.extract_resume_text(file_path, file_type)
+        resume_text = asyncio.run(evaluator.extract_resume_text(file_path, file_type))
 
         if not resume_text or not resume_text.strip():
             raise ValueError("Text extraction failed - empty or no content")

@@ -4,6 +4,8 @@
  * Optimized for Next.js 14 App Router streaming patterns.
  */
 
+"use client";
+
 import React from 'react'
 import { motion } from 'framer-motion'
 import { BarChart3, Calendar, TrendingUp, Briefcase } from 'lucide-react'

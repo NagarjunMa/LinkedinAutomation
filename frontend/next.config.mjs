@@ -33,7 +33,7 @@
       '@tanstack/react-query',
     ],
     // Enable React Compiler for better performance (if available)
-    reactCompiler: true,
+    // reactCompiler: true,
     // Enable partial prerendering for better performance (disabled for stability)
     // ppr: true,
   },
