@@ -235,8 +235,8 @@ export default function LandingPage() {
               <ul className="text-sm opacity-50 space-y-4">
                 <li className="hover:opacity-100 transition-opacity cursor-pointer">Protocol</li>
                 <li className="hover:opacity-100 transition-opacity cursor-pointer">Security</li>
-                <li><Link href="/privacy" className="hover:opacity-100 transition-opacity cursor-pointer">Privacy Policy</Link></li>
-                <li><Link href="/terms" className="hover:opacity-100 transition-opacity cursor-pointer">Terms of Service</Link></li>
+                <li><Link href="https://www.prismpro.live/privacy" className="opacity-100 hover:text-primary transition-colors cursor-pointer">Privacy Policy</Link></li>
+                <li><Link href="https://www.prismpro.live/terms" className="opacity-100 hover:text-primary transition-colors cursor-pointer">Terms of Service</Link></li>
               </ul>
             </div>
           </div>
