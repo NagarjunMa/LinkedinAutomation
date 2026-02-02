@@ -7,7 +7,8 @@ import {
   Zap,
   LayoutGrid,
   FileSearch,
-  Cpu
+  Cpu,
+  BookOpen
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -92,7 +93,7 @@ export default function LandingPage() {
                 </StyledButton>
               </Link>
               <Link href="/docs">
-                <StyledButton variant="secondary" className="min-w-[160px]">
+                <StyledButton variant="secondary" isDark={isDark} className="min-w-[160px]">
                   <div className="flex items-center gap-2">
                     <BookOpen className="w-5 h-5" />
                     <span>View Documentation</span>
