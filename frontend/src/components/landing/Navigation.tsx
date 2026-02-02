@@ -55,6 +55,12 @@ export const Navigation: React.FC = () => {
           >
             Accountability
           </button>
+          <Link
+            href="https://www.prismpro.live/privacy"
+            className="hover:opacity-100 transition-opacity"
+          >
+            Privacy Policy
+          </Link>
         </div>
 
         <div className="flex items-center gap-4">
