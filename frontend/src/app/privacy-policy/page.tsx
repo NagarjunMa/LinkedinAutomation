@@ -70,10 +70,19 @@ export default function PrivacyPolicy() {
                         <li><strong>Personalize recommendations:</strong> Tailor job and candidate recommendations match results.</li>
                     </ul>
 
-                    <h2 className="text-2xl font-bold mt-16 mb-6 uppercase tracking-widest">3. Google API Services User Data Policy</h2>
-                    <p>
-                        Our use of information received from Google APIs will adhere to the <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-500">Google API Services User Data Policy</a>, including the Limited Use requirements.
-                    </p>
+                    <h2 className="text-2xl font-bold mt-16 mb-6 uppercase tracking-widest">3. Google User Data & Restricted Scopes</h2>
+                    <div className="bg-black/5 dark:bg-white/5 p-6 rounded-lg border border-black/10 dark:border-white/10">
+                        <p className="mb-4">
+                            Prism Pro's use and transfer to any other app of information received from Google APIs will adhere to the <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-500 font-medium">Google API Services User Data Policy</a>, including the <strong>Limited Use</strong> requirements.
+                        </p>
+                        <p className="mb-2 font-medium">For optional features that require restricted scopes (e.g., Gmail integration):</p>
+                        <ul className="list-disc pl-6 space-y-2 mb-4">
+                            <li><strong>https://www.googleapis.com/auth/gmail.readonly</strong>: We request this scope <strong>only</strong> if you explicitly choose to connect your Gmail account. We use it solely to identify job application confirmation emails and status updates (e.g., "Interview Request", "Rejection") to automatically update your job application tracker dashboard. We do not read your personal emails, modify your data, or share your email content with third parties for marketing or advertising purposes.</li>
+                        </ul>
+                        <p className="text-sm opacity-80 italic">
+                            We do not use Google User Data for training generalized AI models.
+                        </p>
+                    </div>
 
                     <h2 className="text-2xl font-bold mt-16 mb-6 uppercase tracking-widest">4. Do We Offer Artificial Intelligence-Based Products?</h2>
                     <p>As part of our Services, we offer products, features, or tools powered by artificial intelligence, machine learning, or similar technologies (collectively, "AI Products").</p>

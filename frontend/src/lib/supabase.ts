@@ -148,7 +148,7 @@ export const signInWithGoogle = async () => {
         queryParams: {
           access_type: 'offline',
           prompt: 'consent', // Force consent to ensure fresh tokens
-          scope: 'openid email profile https://www.googleapis.com/auth/gmail.readonly'
+          scope: 'openid email profile'
         }
       }
     })
