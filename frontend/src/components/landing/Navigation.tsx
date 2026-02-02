@@ -56,7 +56,7 @@ export const Navigation: React.FC = () => {
             Accountability
           </button>
           <Link
-            href="https://www.prismpro.live/privacy"
+            href="https://www.prismpro.live/privacy-policy"
             className="hover:opacity-100 transition-opacity"
           >
             Privacy Policy
