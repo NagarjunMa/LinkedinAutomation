@@ -232,11 +232,9 @@ async def create_version(
 
     if body.parent_version_id:
         parent = db.get(ResumeVersion, body.parent_version_id)
-        base = (
-            ResumeDocumentJSON.model_validate(parent.parsed_json)
-            if parent
-            else ResumeDocumentJSON.model_validate(doc_row.parsed_json)
-        )
+        if parent is None or parent.resume_document_id != resume_document_id:
+            raise HTTPException(status_code=404, detail="Parent version not found")
+        base = ResumeDocumentJSON.model_validate(parent.parsed_json)
     else:
         base = ResumeDocumentJSON.model_validate(doc_row.parsed_json)
 

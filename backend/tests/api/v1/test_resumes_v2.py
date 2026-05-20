@@ -229,3 +229,48 @@ def test_apply_changes_creates_version(client: TestClient, auth_headers):
     )
     assert resp.status_code == 201, resp.text
     assert resp.json()["version_id"]
+
+
+def test_versions_rejects_foreign_parent_version(client: TestClient, auth_headers):
+    """parent_version_id that belongs to a different resume document returns 404."""
+    # Upload two separate resume documents
+    with FIXTURE.open("rb") as f:
+        up1 = client.post(
+            "/api/v1/resumes/upload",
+            files={"file": ("simple.pdf", f, "application/pdf")},
+            headers=auth_headers,
+        )
+    assert up1.status_code == 201, up1.text
+    doc_id_1 = up1.json()["resume_document_id"]
+
+    with FIXTURE.open("rb") as f:
+        up2 = client.post(
+            "/api/v1/resumes/upload",
+            files={"file": ("simple.pdf", f, "application/pdf")},
+            headers=auth_headers,
+        )
+    assert up2.status_code == 201, up2.text
+    doc_id_2 = up2.json()["resume_document_id"]
+
+    # Create a version on doc_id_1
+    v_resp = client.post(
+        f"/api/v1/resumes/{doc_id_1}/versions",
+        json={
+            "parent_version_id": None,
+            "change_set": [{"type": "summary_update", "new_summary": "Updated summary."}],
+        },
+        headers=auth_headers,
+    )
+    assert v_resp.status_code == 201, v_resp.text
+    version_id_from_doc1 = v_resp.json()["version_id"]
+
+    # Attempt to use version from doc_id_1 as parent for doc_id_2 — must return 404
+    bad_resp = client.post(
+        f"/api/v1/resumes/{doc_id_2}/versions",
+        json={
+            "parent_version_id": version_id_from_doc1,
+            "change_set": [{"type": "summary_update", "new_summary": "Should be rejected."}],
+        },
+        headers=auth_headers,
+    )
+    assert bad_resp.status_code == 404, bad_resp.text
