@@ -4,13 +4,14 @@ import { useCallback, useRef, useState } from 'react';
 import { Upload, FileText, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useUploadResume } from '@/hooks/use-resume';
+import type { UploadResponse } from '@/app/lib/api';
 import { useToast } from '@/components/ui/use-toast';
 
 const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
 const ALLOWED = ['.pdf', '.docx'];
 
 export interface ResumeUploadDropzoneProps {
-  onUploaded: (resumeDocumentId: string) => void;
+  onUploaded: (res: UploadResponse) => void;
 }
 
 export function ResumeUploadDropzone({ onUploaded }: ResumeUploadDropzoneProps) {
@@ -40,7 +41,7 @@ export function ResumeUploadDropzone({ onUploaded }: ResumeUploadDropzoneProps) 
     if (!file) return;
     try {
       const res = await upload.mutateAsync(file);
-      onUploaded(res.resume_document_id);
+      onUploaded(res);
     } catch (e: any) {
       toast({
         title: 'Upload failed',

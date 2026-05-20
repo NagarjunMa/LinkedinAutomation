@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ResumeUploadDropzone } from '@/components/resume/resume-upload-dropzone';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import type { UploadResponse } from '@/app/lib/api';
 
 interface RecentItem {
   id: string;
@@ -34,14 +35,15 @@ export default function ResumeLibraryPage() {
 
   useEffect(() => { setRecent(loadRecent()); }, []);
 
-  const onUploaded = (resumeDocumentId: string) => {
+  const onUploaded = (res: UploadResponse) => {
     const item: RecentItem = {
-      id: resumeDocumentId,
-      name: 'Resume',
+      id: res.resume_document_id,
+      name: res.contact.name || 'Resume',
       uploaded_at: new Date().toISOString(),
     };
     pushRecent(item);
-    router.push(`/dashboard/resume/${resumeDocumentId}/edit`);
+    sessionStorage.setItem(`resumeDoc:${res.resume_document_id}`, JSON.stringify(res));
+    router.push(`/dashboard/resume/${res.resume_document_id}/edit`);
   };
 
   return (
