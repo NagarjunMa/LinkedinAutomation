@@ -1,9 +1,9 @@
 """Phase-1 resume endpoints.
 
 Task 14: POST /api/v1/resumes/upload
-Task 15: POST /api/v1/resumes/{id}/evaluate
-Task 16: POST /api/v1/resumes/{id}/rewrite/{bullet_id}
-Task 17: POST /api/v1/resumes/{id}/versions
+Task 15: POST /api/v1/resumes/{id}/evaluate  — ATS + credit debit
+Task 16: POST /api/v1/resumes/{id}/rewrite/{bullet_id}  — hallucination-guarded, zero-credit
+Task 17: POST /api/v1/resumes/{id}/versions  — apply_changes + persist ResumeVersion
 """
 import uuid
 import os
