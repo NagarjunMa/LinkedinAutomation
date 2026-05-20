@@ -18,7 +18,12 @@
       "Bash(awk:*)",
       "Bash(cat:*)",
       "Bash(npx madge:*)",
-      "Bash(npm run lint)"
+      "Bash(npm run lint)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(xargs ls *)",
+      "Bash(git rm *)",
+      "Bash(git commit *)"
     ],
     "deny": [],
     "ask": []

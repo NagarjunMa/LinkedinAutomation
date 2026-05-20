@@ -4,11 +4,8 @@ import React, { useState, createContext, useContext } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-    FileText,
     Search,
     Briefcase,
-    Users,
-    ChevronRight,
     PanelLeft,
     LayoutGrid,
     Settings,
@@ -126,10 +123,8 @@ export function SophisticatedSidebar({ onClose }: { onClose?: () => void }) {
                     )}
                     <div className="space-y-1">
                         <NavItem to="/dashboard" label="Dashboard" icon={<LayoutGrid className="w-5 h-5" />} isCollapsed={isCollapsed} />
-                        <NavItem to="/dashboard/resume-evaluation" label="Resume Evaluator" icon={<FileText className="w-5 h-5" />} isCollapsed={isCollapsed} />
                         <NavItem to="/dashboard/jobs" label="Job Search" icon={<Search className="w-5 h-5" />} isCollapsed={isCollapsed} />
                         <NavItem to="/dashboard/applications" label="Applications" icon={<Briefcase className="w-5 h-5" />} isCollapsed={isCollapsed} />
-                        <NavItem to="/dashboard/referrals" label="Referrals" icon={<Users className="w-5 h-5" />} isCollapsed={isCollapsed} />
                     </div>
                 </div>
 
