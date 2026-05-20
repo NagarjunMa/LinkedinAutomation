@@ -9,7 +9,7 @@ interface PremiumButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 }
 
 export const PremiumButton = React.forwardRef<HTMLButtonElement, PremiumButtonProps>(
-    ({ className, children, variant = "primary", ...props }, ref) => {
+    ({ className, children, variant: _variant = "primary", ...props }, ref) => {
         return (
             <button
                 ref={ref}

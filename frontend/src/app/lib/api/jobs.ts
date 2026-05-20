@@ -7,7 +7,7 @@ import {
     RecentApplication,
     JobApplicationStatusUpdate
 } from './types';
-import { API_BASE_URL, makeAPIRequest } from './config';
+import { makeAPIRequest } from './config';
 
 export async function fetchJobs(filters?: JobFilters & {
     page?: number;

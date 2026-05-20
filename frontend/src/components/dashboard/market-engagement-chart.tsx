@@ -2,7 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { BentoCard } from './bento-card';
-import { Area, AreaChart, CartesianGrid, XAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { Area, AreaChart, XAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { useDashboard } from '@/app/contexts/dashboard-context';
 
 // Generate dynamic data for the last 90 days ending today
@@ -32,7 +32,7 @@ const generateChartData = () => {
 };
 
 export function ChartAreaInteractive() {
-    const { recentApplications } = useDashboard();
+    const { recentApplications: _recentApplications } = useDashboard();
     const [timeRange, setTimeRange] = React.useState("90d");
 
     // In a real app with full backend, we would aggregate 'recentApplications' here.

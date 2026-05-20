@@ -1,145 +1,103 @@
-# JobFlow Pro - AI-Powered Job Search Automation Platform
+# Prism Pro - AI-Powered Resume Polish & JD Tailoring
 
-A comprehensive full-stack application that transforms job searching from a chaotic process into an organized, AI-powered system. Built for students, new graduates, and job seekers who want to maximize their application success rate while saving 15+ hours weekly.
+A focused, AI-powered career toolkit that helps job seekers polish resumes and tailor them to specific job descriptions. Built for SWE, Data Science, and PM candidates targeting roles in the USA and India.
 
-**✨ New Design**: Featuring the "Leica Theory Minimalism" aesthetic with Bento Grid layouts, premium typography, and seamless animations.
+## What Prism Pro does (current pivot)
 
-## 🚀 Core Features
+Prism Pro is being refocused around two primary capabilities, with job tracking demoted to a supporting role.
 
-### **🎨 Modern "Leica Theory" UX/UI**
-- **Bento Grid Dashboard** - Modular, data-dense, yet clean visualization of your job search progress.
-- **Micro-Interactions** - Polish and responsiveness with Framer Motion animations.
-- **Premium Aesthetics** - "Leica Theory" inspired minimalism with *Playfair Display* & *JetBrains Mono* typography, glassmorphism, and subtle noise textures.
-- **Sidebar Navigation** - Collapsible, context-aware sidebar for seamless navigation.
+### Primary features
 
-### **Job Management & Extraction**
-- 🔍 **Smart Job Extraction** - Extract job details from any job posting URL (LinkedIn, Indeed, company sites)
-- 📊 **Activity Heatmap** - "Overview Calendar" visualizing your systemic consistency.
-- 📈 **Market Engagement** - Interactive charts tracking daily applications and engagement.
-- 🤖 **AI-Powered Job Matching** - Smart compatibility scoring based on your profile and skills
-- 📤 **Export Functionality** - CSV, Excel, and Google Sheets export for all job data
+- **Resume Polish** - Upload a resume; receive a structured, evidence-based critique covering ATS compatibility, bullet quality (XYZ formula), 7-second scan rule, and section ordering. Specialized passes for SWE / DS / PM templates.
+- **JD-Driven Tailoring** - Paste a job description; Prism Pro generates targeted rewrites of your bullets, keyword recommendations, and a coverage report against the JD.
 
-### **Resume Optimization & Evaluation**
-- 📄 **AI Resume Evaluation V2** - Multi-agent system providing recruiter-validated feedback
-- 🎯 **ATS Optimization** - Ensure your resume passes Applicant Tracking Systems
-- 🔧 **Actionable Feedback** - Specific, line-by-line recommendations for improvement
-- 📊 **Market Positioning** - Understand your competitive level and salary range
+### Supporting feature (demoted, kept)
 
-### **Referral & Networking**
-- 📧 **AI Referral Email Generator** - Generate personalized referral requests
-- 👥 **Contact Management** - Organize and track your professional network
-- 📝 **Email Templates** - Multiple templates for different relationship types
-- 📊 **Referral Analytics** - Track response rates and success metrics
+- **Job Tracking** - Lightweight applications board (`/dashboard/applications` + `/dashboard/jobs`) for tracking saved roles. URL-based job extraction retained.
 
-### **Email & Application Tracking**
-- 📧 **Gmail Integration** - Automatic job application email tracking with OAuth
-- 📊 **Email Analytics** - Classify and analyze job-related communications
-- 🔔 **Smart Notifications** - Get alerts for interview invitations and responses
+### Deferred / out of scope (Phase 1)
 
-## 🛠️ Tech Stack
+- Voice interview prep
+- Browser extension
+- Email automation, Gmail scanning, referrals, contact discovery, analytics dashboards
 
-### **Frontend**
-- **Next.js 14** (App Router) - Modern React framework with server-side rendering
-- **TypeScript** - Type-safe development
-- **Tailwind CSS** - Utility-first styling with custom "Leica Theory" theme configuration
-- **Framer Motion** - Advanced animations and gesture handling
-- **Recharts** - Composable charting library for data visualization
-- **Radix UI** - Accessible component primitives
-- **React Context** - Global state management (Auth, Dashboard, Theme)
-- **Custom Fonts** - *Inter*, *Playfair Display* (Serif), *JetBrains Mono* (Code)
+## Phase 1 backend API surface
 
-### **Backend**
-- **Python FastAPI** - High-performance async web framework
-- **SQLAlchemy** - Advanced ORM with database migrations
-- **PostgreSQL** - Robust relational database for complex queries
-- **Redis** - Caching and background task queue management
-- **Celery** - Distributed task queue for background processing
-- **Pydantic** - Data validation and serialization
+Phase 1 (resume backend) exposes 6 endpoints under `/api/v1/resumes/`. See the umbrella spec at `docs/superpowers/specs/2026-05-19-prism-pro-pivot-design.md` for the full contract.
 
-### **AI & Machine Learning**
-- **OpenAI GPT-4o-mini** - Advanced language model for job analysis and resume evaluation
-- **Multi-Agent System** - Specialized AI agents for different evaluation aspects
-- **Jina AI Reader** - Intelligent web scraping and content extraction
+## Tech stack
+
+### Frontend
+- **Next.js 14** (App Router), **TypeScript**, **Tailwind CSS**
+- **Framer Motion** for animations
+- **Radix UI** primitives + custom design system
+
+### Backend
+- **FastAPI** (Python) - async, high-performance
+- **Supabase** (PostgreSQL) + Row Level Security
+- **Manual JWT handling** for stateless auth
+- **Redis + Celery** for background AI tasks
+
+### AI
+- **OpenAI GPT-4o / GPT-4o-mini** with Pydantic-validated structured outputs
+- Single-agent architecture with specialized passes (refactored away from the prior 12-agent system)
 
 ## Prerequisites
 
 - Node.js 18+
 - Python 3.9+
-- PostgreSQL
+- PostgreSQL (Supabase)
 - Redis
-- Docker & Docker Compose
-- Google Cloud Account (for Gmail OAuth)
-- OpenAI API Key (for AI features)
+- OpenAI API key
 
-## Quick Start
+## Quick start
 
-1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/linkedin-automation.git
-cd linkedin-automation
-```
-
-2. Set up environment variables:
-```bash
-cp .env.example .env
-# Edit .env with your configuration
-```
-
-3. Configure Google OAuth (for Gmail integration):
-   - Follow the [Google OAuth Setup Guide](docs/GOOGLE_OAUTH_SETUP.md)
-   - Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in your `.env` file
-
-4. Configure OpenAI API (for AI features):
-   - Get your API key from [OpenAI](https://platform.openai.com/)
-   - Set `OPENAPI_KEY` in your `.env` file
-
-5. Start the development environment:
-```bash
+git clone https://github.com/yourusername/prism-pro.git
+cd prism-pro
+cp .env.example .env  # edit with your credentials
 docker-compose up -d
 ```
 
-6. Access the application:
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:8000
-- API Documentation: http://localhost:8000/docs
-- Email Agent: http://localhost:3000/email-agent
+- API docs: http://localhost:8000/docs
 
-## Project Structure
+## Project structure
 
 ```
-linkedin-automation/
-├── frontend/                 # Next.js frontend application
-│   ├── app/                 # App router pages and layouts
-│   │   ├── dashboard/       # Main dashboard views (Bento Grid)
-│   │   ├── layout.tsx       # Root layout with fonts & providers
-│   │   └── globals.css      # "Leica Theory" theme styles
-│   ├── components/          # Reusable React components
-│   │   ├── dashboard/       # Dashboard specific components
-│   │   └── ui/              # Shared UI primitives
-│   ├── lib/                 # Utility functions and hooks
-│   └── types/              # TypeScript type definitions
-├── backend/                 # FastAPI backend application
-│   ├── app/                # Main application code
-│   │   ├── api/           # API routes
-│   │   ├── core/          # Core functionality
-│   │   ├── models/        # Database models
-│   │   ├── services/      # Business logic
-│   │   └── utils/         # Utility functions
-│   └── migrations/        # Database migrations
-└── docs/                  # Comprehensive documentation
+prism-pro/
+├── frontend/                  # Next.js app
+│   └── src/app/dashboard/     # Dashboard, jobs, applications, settings, profile
+├── backend/                   # FastAPI app
+│   └── app/
+│       ├── api/v1/endpoints/  # jobs, profiles, resumes, user_profiles, logs, job_extraction
+│       ├── services/          # job_scorer, url_job_extractor, ai_service, resume services
+│       └── tasks/             # resume_tasks, job_extraction_tasks (Celery)
+└── docs/superpowers/          # Specs and execution plans
 ```
 
-## 📚 Documentation
+## Documentation
 
-For detailed documentation, guides, and setup instructions, see the **[docs/](docs/README.md)** folder.
+- Pivot spec: `docs/superpowers/specs/2026-05-19-prism-pro-pivot-design.md`
+- Phase 0 cleanup plan: `docs/superpowers/plans/2026-05-19-prism-pro-phase-0-cleanup.md`
+- Phase 1 backend plan: `docs/superpowers/plans/2026-05-19-prism-pro-resume-backend-phase-1.md`
+
+## Phase 1 — Resume + JD Backend (in progress)
+
+New REST endpoints (v1):
+- `POST /api/v1/resumes/upload` — upload PDF/DOCX, returns parsed JSON
+- `POST /api/v1/resumes/{id}/evaluate` — single-agent eval + ATS sim (costs 1 credit)
+- `POST /api/v1/resumes/{id}/rewrite/{bullet_id}` — hallucination-guarded bullet rewrite (free)
+- `POST /api/v1/resumes/{id}/versions` — apply accepted changes, save new version
+- `POST /api/v1/jd/analyze` — extract JD requirements + tailor diff plan (costs 2 credits)
+- `GET /api/v1/credits/balance`
+
+Architecture: see `docs/superpowers/specs/2026-05-19-prism-pro-pivot-design.md`.
 
 ## Security
 
-- All API keys and sensitive data should be stored in environment variables
-- Rate limiting is implemented to prevent abuse
-- Input validation is enforced on all endpoints
-- Regular security audits are performed
-
-## Support
-
-For support, please open an issue in the GitHub repository or contact the maintainers. 
+- All secrets in env vars (never committed)
+- Supabase RLS isolates user data
+- Rate limiting on all endpoints
+- Pydantic validation on every request

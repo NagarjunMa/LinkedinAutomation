@@ -5,8 +5,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/components/ui/use-toast"
 import {
   Settings as SettingsIcon,
-  Bell,
-  Mail,
   Shield,
   Clock,
 } from "lucide-react"
@@ -14,14 +12,6 @@ import { useAuth } from "@/contexts/auth-context"
 import dynamic from 'next/dynamic'
 
 // Lazy load heavy components
-const NotificationsTab = dynamic(() => import('./components/notifications-tab'), {
-  loading: () => <div className="animate-pulse bg-muted rounded-lg h-64" />
-})
-
-const EmailTab = dynamic(() => import('./components/email-tab'), {
-  loading: () => <div className="animate-pulse bg-muted rounded-lg h-64" />
-})
-
 const PrivacyTab = dynamic(() => import('./components/privacy-tab'), {
   loading: () => <div className="animate-pulse bg-muted rounded-lg h-64" />
 })
@@ -30,18 +20,16 @@ const HistoryTab = dynamic(() => import('./components/history-tab'), {
   loading: () => <div className="animate-pulse bg-muted rounded-lg h-64" />
 })
 
-// EmailScanningTab component is archived
-
 export default function SettingsPage() {
   const { user } = useAuth()
   const { toast: _toast } = useToast()
-  const [activeTab, setActiveTab] = useState("notifications")
+  const [activeTab, setActiveTab] = useState("privacy")
 
   // Handle URL tab parameter
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search)
     const tab = urlParams.get('tab')
-    if (tab && ['notifications', 'email', 'privacy', 'history'].includes(tab)) {
+    if (tab && ['privacy', 'history'].includes(tab)) {
       setActiveTab(tab)
     }
   }, [])
@@ -73,15 +61,7 @@ export default function SettingsPage() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 bg-muted border border-border">
-            <TabsTrigger value="notifications" className="data-[state=active]:bg-card data-[state=active]:text-foreground text-muted-foreground">
-              <Bell className="mr-2 h-4 w-4" />
-              Notifications
-            </TabsTrigger>
-            <TabsTrigger value="email" className="data-[state=active]:bg-card data-[state=active]:text-foreground text-muted-foreground">
-              <Mail className="mr-2 h-4 w-4" />
-              Email Tracking
-            </TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 bg-muted border border-border">
             <TabsTrigger value="privacy" className="data-[state=active]:bg-card data-[state=active]:text-foreground text-muted-foreground">
               <Shield className="mr-2 h-4 w-4" />
               Privacy
@@ -93,19 +73,6 @@ export default function SettingsPage() {
           </TabsList>
 
           {/* Lazy loaded tab content */}
-          <Suspense fallback={<div className="animate-pulse bg-muted rounded-lg h-64" />}>
-            <TabsContent value="notifications" className="space-y-6">
-              <NotificationsTab userId={user.id} />
-            </TabsContent>
-          </Suspense>
-
-          <Suspense fallback={<div className="animate-pulse bg-muted rounded-lg h-64" />}>
-            <TabsContent value="email" className="space-y-6">
-              <EmailTab userId={user.id} />
-            </TabsContent>
-          </Suspense>
-
-
           <Suspense fallback={<div className="animate-pulse bg-muted rounded-lg h-64" />}>
             <TabsContent value="privacy" className="space-y-6">
               <PrivacyTab userId={user.id} />

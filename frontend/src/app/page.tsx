@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { motion, useInView } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   ArrowRight,
   Zap,
@@ -43,7 +43,7 @@ const staggerContainer = {
 };
 
 export default function LandingPage() {
-  const { isDark, toggleTheme } = useTheme();
+  const { isDark, toggleTheme: _toggleTheme } = useTheme();
 
   return (
     <div className="relative min-h-screen selection:bg-current selection:text-transparent transition-colors duration-300 scroll-smooth">

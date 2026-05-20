@@ -7,8 +7,6 @@ celery_app = Celery(
     broker=settings.CELERY_BROKER_URL,
     backend=settings.CELERY_RESULT_BACKEND,
     include=[
-        "app.tasks.email_monitoring_tasks",
-        "app.tasks.email_scanning_tasks",
         "app.tasks.resume_tasks",  # New AI tasks
         "app.tasks.job_extraction_tasks"  # Future AI tasks
     ]
@@ -49,8 +47,6 @@ celery_app.conf.update(
         'app.tasks.resume_tasks.evaluate_resume_task': {'queue': 'ai_heavy'},
         'app.tasks.resume_tasks.extract_resume_text': {'queue': 'ai_light'},
         'app.tasks.job_extraction_tasks.*': {'queue': 'ai_light'},
-        'app.tasks.email_monitoring_tasks.*': {'queue': 'background'},
-        'app.tasks.email_scanning_tasks.*': {'queue': 'background'},
     },
 
     # Retry configuration for AI tasks
@@ -66,12 +62,6 @@ celery_app.conf.update(
 )
 
 # Beat schedule for automated tasks
-# Email scanning tasks disabled after refactoring
 celery_app.conf.beat_schedule = {
-    # Email tasks have been archived
-    # Add other scheduled tasks here as needed
+    # Add scheduled tasks here as needed
 }
-
-# Import tasks
-# Email tasks disabled after refactoring
-# from app.tasks import email_monitoring_tasks, email_scanning_tasks  # noqa 

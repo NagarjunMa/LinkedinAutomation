@@ -153,6 +153,15 @@
     ]
   },
 
+  // Redirects for retired routes
+  async redirects() {
+    return [
+      { source: '/dashboard/activity', destination: '/dashboard', permanent: false },
+      { source: '/dashboard/referrals', destination: '/dashboard', permanent: false },
+      { source: '/dashboard/resume-evaluation', destination: '/dashboard', permanent: false },
+    ];
+  },
+
   // Security-focused environment variables
   env: {
     // Ensure we don't expose sensitive variables

@@ -5,11 +5,8 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Logo } from "@/components/logo"
 import {
-  BarChart3,
   Briefcase,
-  FileText,
   Home,
-  MessageSquare,
 } from "lucide-react"
 
 const navigation = [
@@ -22,21 +19,6 @@ const navigation = [
     name: "Jobs",
     href: "/dashboard/jobs",
     icon: Briefcase,
-  },
-  {
-    name: "Resume",
-    href: "/dashboard/resume-evaluation",
-    icon: FileText,
-  },
-  {
-    name: "Questions",
-    href: "/dashboard/question-answering",
-    icon: MessageSquare,
-  },
-  {
-    name: "Analytics",
-    href: "/dashboard/analytics",
-    icon: BarChart3,
   },
 ]
 

@@ -104,7 +104,7 @@ export function ChartSkeleton({ height = "h-64" }: { height?: string }) {
 export function TableSkeleton({
   rows = 5,
   columns = 4,
-  title = "Recent Activity"
+  title: _title = "Recent Activity"
 }: {
   rows?: number
   columns?: number

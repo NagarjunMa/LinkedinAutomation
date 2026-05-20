@@ -1,12 +1,11 @@
 "use client"
 
 import React, { useState } from 'react'
-import { Upload, ArrowRight, FileText, Calendar, Shield, Trash2 } from 'lucide-react'
+import { Upload, ArrowRight, FileText, Calendar } from 'lucide-react'
 import type { ResumeFile } from '@/app/lib/api/types'
 import {
   Dialog,
   DialogContent,
-  DialogTrigger,
 } from "@/components/ui/dialog"
 import { ResumeAnalysisPanel } from './resume-analysis-panel'
 import { Button } from '@/components/ui/button'
@@ -19,7 +18,7 @@ interface ResumeEvaluationDashboardProps {
 }
 
 export function ResumeEvaluationDashboard({
-  onStartEvaluation,
+  onStartEvaluation: _onStartEvaluation,
   onUploadResume,
   resumes,
   onResumeUpdate

@@ -4,11 +4,8 @@ import React from 'react';
 import { Navigation } from '@/components/landing/Navigation';
 import { useTheme } from '@/contexts/theme-context';
 import {
-    BookOpen,
-    LayoutDashboard,
     FileText,
     Briefcase,
-    Settings,
     Share2,
     Zap
 } from 'lucide-react';
@@ -27,7 +24,7 @@ export default function Documentation() {
                     <ol className="list-decimal pl-5 space-y-2">
                         <li><strong>Install the Extension:</strong> Download our Chrome Extension to enable one-click job saving from LinkedIn.</li>
                         <li><strong>Create an Account:</strong> Sign up using your Google account or email address.</li>
-                        <li><strong>Complete Your Profile:</strong> Go to Settings > Profile to upload your resume and set your job preferences.</li>
+                        <li><strong>Complete Your Profile:</strong> Go to Settings &gt; Profile to upload your resume and set your job preferences.</li>
                     </ol>
                 </div>
             )
@@ -41,7 +38,7 @@ export default function Documentation() {
                     <p>Track your job search progress with our powerful application tracker.</p>
                     <ul className="list-disc pl-5 space-y-2">
                         <li><strong>Dashboard View:</strong> See all your applications in a Kanban board or List view.</li>
-                        <li><strong>Status Updates:</strong> Drag and drop applications to change their status (e.g., Applied -> Interview).</li>
+                        <li><strong>Status Updates:</strong> Drag and drop applications to change their status (e.g., Applied -&gt; Interview).</li>
                         <li><strong>Smart Extraction:</strong> Use the extension on any LinkedIn job post to automatically extract details like Salary, Location, and Recruiter info.</li>
                     </ul>
                 </div>

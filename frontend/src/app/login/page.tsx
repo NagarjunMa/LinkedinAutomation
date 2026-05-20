@@ -72,7 +72,7 @@ function LoginForm() {
   const [authError, setAuthError] = useState("")
   const [authSuccess, setAuthSuccess] = useState("")
   const [showGmailConnection, setShowGmailConnection] = useState(false)
-  const [_gmailConnected, setGmailConnected] = useState(false)
+  const [_gmailConnected, _setGmailConnected] = useState(false)
 
   const { user, signIn, loading } = useAuth()
   const router = useRouter()
