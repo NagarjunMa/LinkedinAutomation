@@ -123,6 +123,27 @@ class Settings(BaseSettings):
     Keep this secret and never expose in frontend code.
     """
 
+    SUPABASE_SERVICE_ROLE_KEY: str = ""
+    """
+    Supabase service role key for server-side operations.
+    This is a privileged secret key — only use on the backend.
+    """
+
+    SUPABASE_STORAGE_BUCKET: str = "resume-exports"
+    """
+    Supabase storage bucket name for PDF exports.
+    """
+
+    SUPABASE_SIGNED_URL_TTL_SECONDS: int = 60 * 60 * 24 * 7  # 7 days
+    """
+    TTL in seconds for signed download URLs generated for stored PDFs.
+    """
+
+    PDF_RENDER_TIMEOUT_S: int = 15
+    """
+    Timeout in seconds for Playwright PDF rendering operations.
+    """
+
     # ==========================================
     # AI Service Configuration
     # ==========================================
