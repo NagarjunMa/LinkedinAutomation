@@ -12,6 +12,7 @@ import pytest
 import sqlalchemy as sa
 from sqlalchemy import create_engine, JSON
 from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.pool import StaticPool
 from app.db.base_class import Base
 
 
@@ -100,9 +101,13 @@ def _create_sqlite_tables(engine) -> None:
 
 @pytest.fixture(scope="function")
 def db_session() -> Session:
+    # StaticPool ensures all connections reuse the same underlying SQLite
+    # connection, so in-memory tables created at setup are visible throughout
+    # the test (even after session.commit() releases the connection).
     engine = create_engine(
         "sqlite:///:memory:",
         connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
     )
     _create_sqlite_tables(engine)
     SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
@@ -124,10 +129,11 @@ def test_user_id(db_session: Session) -> str:
 
 
 def _make_sqlite_engine():
-    """Return a SQLite in-memory engine (no pool options)."""
+    """Return a SQLite in-memory engine using StaticPool for connection reuse."""
     return create_engine(
         "sqlite:///:memory:",
         connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
     )
 
 
