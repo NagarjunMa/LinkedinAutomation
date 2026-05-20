@@ -1,7 +1,7 @@
 import os
 import json
 import logging
-from openai import AsyncOpenAI
+from openai import AsyncOpenAI, RateLimitError, APIConnectionError, APITimeoutError
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from app.schemas.resume import ResumeDocumentJSON, EvaluationReport
 from app.core.llm_logging import measure, estimate_cost
@@ -44,7 +44,7 @@ _client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 @retry(stop=stop_after_attempt(3),
        wait=wait_exponential(multiplier=1, min=1, max=10),
-       retry=retry_if_exception_type((TimeoutError,)))
+       retry=retry_if_exception_type((RateLimitError, APIConnectionError, APITimeoutError)))
 async def evaluate_resume(doc: ResumeDocumentJSON, target_role: str) -> EvaluationReport:
     payload = doc.model_dump_json(exclude={"raw_text"})
     user_msg = USER_PROMPT_TEMPLATE.format(target_role=target_role, resume_json=payload)

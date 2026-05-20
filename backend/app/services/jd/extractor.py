@@ -1,7 +1,8 @@
 import os
 import json
 import logging
-from openai import AsyncOpenAI
+from openai import AsyncOpenAI, RateLimitError, APIConnectionError, APITimeoutError
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from app.schemas.jd import JDExtraction
 from app.core.llm_logging import measure, estimate_cost
 
@@ -20,6 +21,9 @@ EXTRACTOR_SYSTEM = """You parse job descriptions for hiring intelligence. Distin
 Output strict JSON per schema."""
 
 
+@retry(stop=stop_after_attempt(3),
+       wait=wait_exponential(multiplier=1, min=1, max=10),
+       retry=retry_if_exception_type((RateLimitError, APIConnectionError, APITimeoutError)))
 async def extract_jd_requirements(jd_text: str) -> JDExtraction:
     async with measure("extractor"):
         resp = await _client.chat.completions.create(

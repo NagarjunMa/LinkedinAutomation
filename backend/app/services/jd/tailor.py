@@ -1,7 +1,8 @@
 import os
 import json
 import logging
-from openai import AsyncOpenAI
+from openai import AsyncOpenAI, RateLimitError, APIConnectionError, APITimeoutError
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from app.schemas.resume import ResumeDocumentJSON
 from app.schemas.jd import JDExtraction, DiffPlan
 from app.services.resume.hallucination_guard import check_no_unprompted_numbers, HallucinationError
@@ -34,6 +35,9 @@ JD Requirements JSON:
 Produce the DiffPlan."""
 
 
+@retry(stop=stop_after_attempt(3),
+       wait=wait_exponential(multiplier=1, min=1, max=10),
+       retry=retry_if_exception_type((RateLimitError, APIConnectionError, APITimeoutError)))
 async def tailor_resume_to_jd(doc: ResumeDocumentJSON, jd: JDExtraction) -> DiffPlan:
     user = TAILOR_USER.format(
         resume_json=doc.model_dump_json(exclude={"raw_text"}),
