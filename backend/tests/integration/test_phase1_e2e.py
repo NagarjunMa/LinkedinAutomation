@@ -125,7 +125,7 @@ def user_with_credits(db_session, test_user_id):
 # ---------------------------------------------------------------------------
 
 @respx.mock
-def test_full_happy_path(client: TestClient, auth_headers, user_with_credits):
+def test_full_happy_path(client: TestClient, auth_headers, user_with_credits, db_session):
     """
     Full phase-1 user journey:
       1. Upload resume
@@ -204,9 +204,10 @@ def test_full_happy_path(client: TestClient, auth_headers, user_with_credits):
             {"type": "bullet_update", "bullet_id": bullet_id,
              "new_text": "Architected distributed system serving [N] requests/day"}
         ]
+    SUMMARY_NEW = "Experienced SWE targeting Python roles."
     if not change_set:
-        # No bullets in fixture — minimal change set
-        change_set = [{"type": "summary_update", "new_text": "Experienced SWE targeting Python roles."}]
+        # No bullets in fixture — minimal change set using correct field name
+        change_set = [{"type": "summary_update", "new_summary": SUMMARY_NEW}]
 
     v = client.post(
         f"/api/v1/resumes/{doc_id}/versions",
@@ -214,7 +215,17 @@ def test_full_happy_path(client: TestClient, auth_headers, user_with_credits):
         headers=auth_headers,
     )
     assert v.status_code == 201, f"Version create failed: {v.text}"
-    assert v.json().get("version_id"), "version_id missing from response"
+    version_id = v.json().get("version_id")
+    assert version_id, "version_id missing from response"
+
+    # Assert summary was persisted correctly when summary_update was applied
+    if len(change_set) == 1 and change_set[0]["type"] == "summary_update":
+        from app.models.resume_document import ResumeVersion
+        ver_row = db_session.get(ResumeVersion, version_id)
+        assert ver_row is not None, "Version row not found in DB"
+        assert ver_row.parsed_json["summary"] == SUMMARY_NEW, (
+            f"Expected summary '{SUMMARY_NEW}', got '{ver_row.parsed_json['summary']}'"
+        )
 
     # -----------------------------------------------------------------------
     # 5. Balance should be 20 - 1 (evaluate) - 2 (tailor) = 17
