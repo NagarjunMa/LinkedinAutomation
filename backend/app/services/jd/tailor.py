@@ -1,0 +1,59 @@
+import os
+import json
+from openai import AsyncOpenAI
+from app.schemas.resume import ResumeDocumentJSON
+from app.schemas.jd import JDExtraction, DiffPlan
+from app.services.resume.hallucination_guard import check_no_unprompted_numbers, HallucinationError
+
+
+_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+TAILOR_SYSTEM = """You tailor a candidate's resume to a specific JD as a senior recruiter would.
+
+Produce a DIFF PLAN:
+- Match score (0-100) based on must_have/good_to_have coverage.
+- For each bullet, decide whether it should be rewritten for this JD. If so, propose the new bullet.
+- Reorder skills list to lead with JD-matched ones. Provide rationale.
+- Optionally rewrite the summary for the target role.
+- Suggest additions ONLY if the candidate has evidence (in projects/experience) but the skill is not surfaced.
+
+RULES:
+- NEVER fabricate numbers/metrics. Use placeholders like [X%], [N users].
+- NEVER add a skill the candidate has no evidence of. If JD requires Kubernetes and resume has zero K8s evidence, add to must_have_coverage_missing, NOT suggested_additions.
+- Country-aware tone."""
+
+TAILOR_USER = """Resume JSON:
+{resume_json}
+
+JD Requirements JSON:
+{jd_json}
+
+Produce the DiffPlan."""
+
+
+async def tailor_resume_to_jd(doc: ResumeDocumentJSON, jd: JDExtraction) -> DiffPlan:
+    user = TAILOR_USER.format(
+        resume_json=doc.model_dump_json(exclude={"raw_text"}),
+        jd_json=jd.model_dump_json(),
+    )
+    resp = await _client.chat.completions.create(
+        model="gpt-4o-2024-08-06",
+        response_format={"type": "json_object"},
+        messages=[{"role": "system", "content": TAILOR_SYSTEM},
+                  {"role": "user", "content": user}],
+        temperature=0.3,
+    )
+    plan = DiffPlan.model_validate_json(resp.choices[0].message.content or "{}")
+    # Hallucination guard on each bullet rewrite
+    bullet_lookup = {b.id: b.text for exp in doc.experience for b in exp.bullets}
+    for diff in plan.bullets:
+        original = bullet_lookup.get(diff.bullet_id, diff.old)
+        try:
+            check_no_unprompted_numbers(
+                original=original,
+                rewritten=diff.new,
+                placeholders=diff.placeholders,
+            )
+        except HallucinationError as e:
+            raise HallucinationError(f"Bullet {diff.bullet_id}: {e}")
+    return plan
