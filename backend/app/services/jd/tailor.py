@@ -1,12 +1,15 @@
 import os
 import json
+import logging
 from openai import AsyncOpenAI
 from app.schemas.resume import ResumeDocumentJSON
 from app.schemas.jd import JDExtraction, DiffPlan
 from app.services.resume.hallucination_guard import check_no_unprompted_numbers, HallucinationError
+from app.core.llm_logging import measure, estimate_cost
 
 
 _client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+logger = logging.getLogger("llm")
 
 TAILOR_SYSTEM = """You tailor a candidate's resume to a specific JD as a senior recruiter would.
 
@@ -36,12 +39,16 @@ async def tailor_resume_to_jd(doc: ResumeDocumentJSON, jd: JDExtraction) -> Diff
         resume_json=doc.model_dump_json(exclude={"raw_text"}),
         jd_json=jd.model_dump_json(),
     )
-    resp = await _client.chat.completions.create(
-        model="gpt-4o-2024-08-06",
-        response_format={"type": "json_object"},
-        messages=[{"role": "system", "content": TAILOR_SYSTEM},
-                  {"role": "user", "content": user}],
-        temperature=0.3,
+    async with measure("tailor"):
+        resp = await _client.chat.completions.create(
+            model="gpt-4o-2024-08-06",
+            response_format={"type": "json_object"},
+            messages=[{"role": "system", "content": TAILOR_SYSTEM},
+                      {"role": "user", "content": user}],
+            temperature=0.3,
+        )
+    logger.info(
+        {"event": "llm_cost", "label": "tailor", "cost_usd": estimate_cost(resp.usage)}
     )
     plan = DiffPlan.model_validate_json(resp.choices[0].message.content or "{}")
     # Hallucination guard on each bullet rewrite

@@ -1,9 +1,12 @@
 import os
 import json
+import logging
 from openai import AsyncOpenAI
 from app.schemas.jd import JDExtraction
+from app.core.llm_logging import measure, estimate_cost
 
 _client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+logger = logging.getLogger("llm")
 
 EXTRACTOR_SYSTEM = """You parse job descriptions for hiring intelligence. Distinguish:
 - must_have: explicitly required (years, hard skills, credentials)
@@ -18,13 +21,17 @@ Output strict JSON per schema."""
 
 
 async def extract_jd_requirements(jd_text: str) -> JDExtraction:
-    resp = await _client.chat.completions.create(
-        model="gpt-4o-2024-08-06",
-        response_format={"type": "json_object"},
-        messages=[
-            {"role": "system", "content": EXTRACTOR_SYSTEM},
-            {"role": "user", "content": f"Job description:\n\n{jd_text}\n\nExtract requirements."},
-        ],
-        temperature=0.1,
+    async with measure("extractor"):
+        resp = await _client.chat.completions.create(
+            model="gpt-4o-2024-08-06",
+            response_format={"type": "json_object"},
+            messages=[
+                {"role": "system", "content": EXTRACTOR_SYSTEM},
+                {"role": "user", "content": f"Job description:\n\n{jd_text}\n\nExtract requirements."},
+            ],
+            temperature=0.1,
+        )
+    logger.info(
+        {"event": "llm_cost", "label": "extractor", "cost_usd": estimate_cost(resp.usage)}
     )
     return JDExtraction.model_validate_json(resp.choices[0].message.content or "{}")

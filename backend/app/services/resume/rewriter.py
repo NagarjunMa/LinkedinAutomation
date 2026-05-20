@@ -1,10 +1,14 @@
 import os
 import json
+import logging
 from typing import Optional
 from openai import AsyncOpenAI
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_not_exception_type
 from app.schemas.resume import RewriteResult, Placeholder
 from app.services.resume.hallucination_guard import check_no_unprompted_numbers, HallucinationError
+from app.core.llm_logging import measure, estimate_cost
+
+logger = logging.getLogger("llm")
 
 
 REWRITER_SYSTEM = """You are a Senior Recruiter rewriting resume bullets at recruiter-grade quality.
@@ -54,12 +58,16 @@ async def rewrite_bullet(
         original=original, target_role=target_role,
         country=country, jd_context=jd_context or "",
     )
-    resp = await _client.chat.completions.create(
-        model="gpt-4o-2024-08-06",
-        response_format={"type": "json_object"},
-        messages=[{"role": "system", "content": REWRITER_SYSTEM},
-                  {"role": "user", "content": user}],
-        temperature=0.4,
+    async with measure("rewriter"):
+        resp = await _client.chat.completions.create(
+            model="gpt-4o-2024-08-06",
+            response_format={"type": "json_object"},
+            messages=[{"role": "system", "content": REWRITER_SYSTEM},
+                      {"role": "user", "content": user}],
+            temperature=0.4,
+        )
+    logger.info(
+        {"event": "llm_cost", "label": "rewriter", "cost_usd": estimate_cost(resp.usage)}
     )
     data = json.loads(resp.choices[0].message.content or "{}")
     result = RewriteResult.model_validate(data)

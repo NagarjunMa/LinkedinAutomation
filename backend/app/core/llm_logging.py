@@ -1,0 +1,42 @@
+"""Structured LLM latency + cost telemetry.
+
+Usage in services:
+    from app.core.llm_logging import measure, estimate_cost
+
+    async with measure("evaluator"):
+        resp = await _client.chat.completions.create(...)
+    logger.info({"event": "llm_cost", "label": "evaluator",
+                 "cost_usd": estimate_cost(resp.usage)})
+"""
+import logging
+import time
+from contextlib import asynccontextmanager
+
+logger = logging.getLogger("llm")
+
+# Cost per token for gpt-4o-2024-08-06
+# (placeholder values for observability; verify against current OpenAI pricing)
+PRICE_PROMPT = 0.0025 / 1000   # $0.0025 per 1K prompt tokens
+PRICE_OUTPUT = 0.01 / 1000     # $0.01 per 1K output tokens
+
+
+def estimate_cost(usage) -> float:
+    """Estimate USD cost from an OpenAI usage object.
+
+    Expects usage.prompt_tokens and usage.completion_tokens.
+    Returns 0.0 if usage is None.
+    """
+    if usage is None:
+        return 0.0
+    return usage.prompt_tokens * PRICE_PROMPT + usage.completion_tokens * PRICE_OUTPUT
+
+
+@asynccontextmanager
+async def measure(label: str, user_id: str | None = None):
+    """Async context manager that logs LLM call latency on exit."""
+    start = time.perf_counter()
+    yield
+    elapsed = (time.perf_counter() - start) * 1000
+    logger.info(
+        {"event": "llm_call", "label": label, "user_id": user_id, "latency_ms": int(elapsed)}
+    )

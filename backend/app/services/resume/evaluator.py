@@ -1,8 +1,12 @@
 import os
 import json
+import logging
 from openai import AsyncOpenAI
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from app.schemas.resume import ResumeDocumentJSON, EvaluationReport
+from app.core.llm_logging import measure, estimate_cost
+
+logger = logging.getLogger("llm")
 
 
 SYSTEM_PROMPT = """You are a Senior Recruiter with 15+ years of experience hiring at FAANG and high-growth startups in both US and Indian markets. You evaluate resumes the way you would in a real screening: brutally honest, specific, and actionable. You apply:
@@ -44,14 +48,18 @@ _client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 async def evaluate_resume(doc: ResumeDocumentJSON, target_role: str) -> EvaluationReport:
     payload = doc.model_dump_json(exclude={"raw_text"})
     user_msg = USER_PROMPT_TEMPLATE.format(target_role=target_role, resume_json=payload)
-    resp = await _client.chat.completions.create(
-        model="gpt-4o-2024-08-06",
-        response_format={"type": "json_object"},
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": user_msg},
-        ],
-        temperature=0.2,
+    async with measure("evaluator"):
+        resp = await _client.chat.completions.create(
+            model="gpt-4o-2024-08-06",
+            response_format={"type": "json_object"},
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": user_msg},
+            ],
+            temperature=0.2,
+        )
+    logger.info(
+        {"event": "llm_cost", "label": "evaluator", "cost_usd": estimate_cost(resp.usage)}
     )
     content = resp.choices[0].message.content or "{}"
     data = json.loads(content)

@@ -54,6 +54,37 @@ async def test_evaluator_returns_report():
 
 @pytest.mark.asyncio
 @respx.mock
+async def test_evaluator_logs_cost(caplog):
+    """Verify that cost logging event is emitted after a successful evaluate call."""
+    import logging
+    mock_payload = {
+        "id": "x", "object": "chat.completion", "created": 0, "model": "gpt-4o-2024-08-06",
+        "choices": [{
+            "index": 0, "finish_reason": "stop",
+            "message": {"role": "assistant",
+                "content": json.dumps({
+                    "overall_score": 70,
+                    "bullet_flags": [],
+                    "format_issues": [],
+                    "summary_critique": None,
+                    "skill_gaps": [],
+                })}
+        }],
+        "usage": {"prompt_tokens": 100, "completion_tokens": 50, "total_tokens": 150},
+    }
+    respx.route(url=OPENAI_URL).mock(
+        return_value=httpx.Response(200, json=mock_payload)
+    )
+    with caplog.at_level(logging.INFO, logger="llm"):
+        await evaluate_resume(make_doc(), target_role="SWE")
+    messages = [r.message for r in caplog.records]
+    assert any("llm_cost" in str(m) for m in messages), (
+        f"Expected 'llm_cost' log record from llm logger; got: {messages}"
+    )
+
+
+@pytest.mark.asyncio
+@respx.mock
 async def test_evaluator_invalid_schema_raises():
     bad = {"id": "x", "object": "chat.completion", "created": 0, "model": "gpt-4o",
            "choices": [{"index": 0, "finish_reason": "stop",
