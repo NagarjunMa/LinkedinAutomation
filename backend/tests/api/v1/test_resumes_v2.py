@@ -231,6 +231,16 @@ def test_apply_changes_creates_version(client: TestClient, auth_headers):
     assert resp.json()["version_id"]
 
 
+def test_evaluate_rejects_short_target_role(client: TestClient, auth_headers):
+    """target_role shorter than 2 chars returns 422 before any credit debit."""
+    resp = client.post(
+        "/api/v1/resumes/some-doc-id/evaluate",
+        json={"target_role": "X"},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 422, resp.text
+
+
 def test_versions_rejects_foreign_parent_version(client: TestClient, auth_headers):
     """parent_version_id that belongs to a different resume document returns 404."""
     # Upload two separate resume documents

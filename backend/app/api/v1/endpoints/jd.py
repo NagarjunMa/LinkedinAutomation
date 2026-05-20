@@ -1,7 +1,7 @@
 """JD analyze endpoint — extract requirements + tailor resume diff plan."""
 import uuid
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -19,7 +19,7 @@ router = APIRouter(prefix="/jd", tags=["jd"])
 
 class AnalyzeRequest(BaseModel):
     resume_document_id: str
-    jd_text: str
+    jd_text: str = Field(..., min_length=50)
 
 
 @router.post("/analyze")

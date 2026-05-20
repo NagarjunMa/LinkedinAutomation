@@ -103,7 +103,7 @@ def test_jd_analyze_returns_extraction_and_diff(
 
     resp = client.post(
         "/api/v1/jd/analyze",
-        json={"resume_document_id": doc_id, "jd_text": "Senior Python role at Acme..."},
+        json={"resume_document_id": doc_id, "jd_text": "Senior Python role at Acme. Must have 5+ years of Python and FastAPI experience."},
         headers=auth_headers,
     )
     assert resp.status_code == 200, resp.text
@@ -133,9 +133,10 @@ def test_jd_analyze_returns_402_when_no_credits(
     doc_id = up.json()["resume_document_id"]
 
     # No LLM mocks needed — should 402 before any LLM call
+    JD_LONG = "Senior Python engineer required. Must have 5+ years of experience with Python, FastAPI, and Postgres."
     resp = client.post(
         "/api/v1/jd/analyze",
-        json={"resume_document_id": doc_id, "jd_text": "Any JD"},
+        json={"resume_document_id": doc_id, "jd_text": JD_LONG},
         headers=auth_headers,
     )
     assert resp.status_code == 402, resp.text
@@ -145,9 +146,20 @@ def test_jd_analyze_returns_404_for_unknown_document(
     client: TestClient, auth_headers
 ):
     """Non-existent resume_document_id returns 404."""
+    JD_LONG = "Senior Python engineer required. Must have 5+ years of experience with Python, FastAPI, and Postgres."
     resp = client.post(
         "/api/v1/jd/analyze",
-        json={"resume_document_id": "nonexistent-id", "jd_text": "Any JD"},
+        json={"resume_document_id": "nonexistent-id", "jd_text": JD_LONG},
         headers=auth_headers,
     )
     assert resp.status_code == 404, resp.text
+
+
+def test_jd_analyze_rejects_short_jd_text(client: TestClient, auth_headers):
+    """jd_text shorter than 50 chars returns 422 before any credit debit."""
+    resp = client.post(
+        "/api/v1/jd/analyze",
+        json={"resume_document_id": "any-id", "jd_text": "Too short"},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 422, resp.text

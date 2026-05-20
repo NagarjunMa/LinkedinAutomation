@@ -179,7 +179,7 @@ def test_full_happy_path(client: TestClient, auth_headers, user_with_credits):
     # -----------------------------------------------------------------------
     jd = client.post(
         "/api/v1/jd/analyze",
-        json={"resume_document_id": doc_id, "jd_text": "Senior Python engineer at Acme..."},
+        json={"resume_document_id": doc_id, "jd_text": "Senior Python engineer at Acme Corp. Must have 5+ years of Python, FastAPI, and PostgreSQL experience."},
         headers=auth_headers,
     )
     assert jd.status_code == 200, f"JD analyze failed: {jd.text}"

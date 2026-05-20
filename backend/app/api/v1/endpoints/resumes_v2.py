@@ -10,7 +10,7 @@ import os
 from typing import Optional
 
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -81,7 +81,7 @@ async def upload_resume(
 # ---------------------------------------------------------------------------
 
 class EvalRequest(BaseModel):
-    target_role: str
+    target_role: str = Field(..., min_length=2, max_length=200)
 
 
 @router.post("/{resume_document_id}/evaluate")
