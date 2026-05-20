@@ -2,6 +2,10 @@ from .job import JobListing, UserProfile as JobUserProfile, JobApplication
 from .user import User
 from .resume import Resume, ResumeEvaluation
 from .profile import ProfileInfo, UserSettings, ProfileChangeHistory
+from app.models.resume_document import ResumeDocument, ResumeVersion
+from app.models.resume_evaluation_v2 import ResumeEvaluationV2
+from app.models.jd_evaluation import JDEvaluation
+from app.models.credit_ledger import CreditLedger
 
 __all__ = [
     "JobListing",
@@ -13,4 +17,9 @@ __all__ = [
     "ProfileInfo",
     "UserSettings",
     "ProfileChangeHistory",
-] 
+    "ResumeDocument",
+    "ResumeVersion",
+    "ResumeEvaluationV2",
+    "JDEvaluation",
+    "CreditLedger",
+]
