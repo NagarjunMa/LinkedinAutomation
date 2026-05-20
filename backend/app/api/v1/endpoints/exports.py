@@ -94,3 +94,25 @@ async def create_export(
         )
     db.commit()
     return response_payload
+
+
+@router.get("/{export_id}", response_model=ExportResponse)
+async def get_export(
+    export_id: str,
+    db: Session = Depends(get_db),
+    current_user_id: str = Depends(get_current_user_id),
+):
+    row = db.get(ResumeExport, export_id)
+    if not row or row.user_id != current_user_id or row.status != "succeeded":
+        raise HTTPException(status_code=404, detail="Export not found")
+    url = signed_url(row.storage_path)
+    expires_at = datetime.now(timezone.utc) + timedelta(
+        seconds=settings.SUPABASE_SIGNED_URL_TTL_SECONDS
+    )
+    return ExportResponse(
+        export_id=row.id,
+        download_url=url,
+        expires_at=expires_at,
+        country=row.country,
+        role_template=row.role_template,
+    )
