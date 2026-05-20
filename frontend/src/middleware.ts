@@ -48,7 +48,11 @@ export function middleware(request: NextRequest) {
 
     // Test bypass: allow Playwright e2e to access protected routes without auth.
     // Cookie-based because Next.js Edge runtime does not expose runtime env vars.
-    if (request.cookies.get('test-bypass-auth')?.value === '1') {
+    // Gated to non-production environments so the bypass is never live on prod.
+    if (
+        process.env.NODE_ENV !== 'production' &&
+        request.cookies.get('test-bypass-auth')?.value === '1'
+    ) {
         return NextResponse.next()
     }
 

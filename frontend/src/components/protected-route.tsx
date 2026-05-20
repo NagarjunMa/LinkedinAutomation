@@ -13,12 +13,17 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, fallback }: ProtectedRouteProps) {
-  if (typeof document !== 'undefined' && document.cookie.includes('test-bypass-auth=1')) {
-    return <>{children}</>
-  }
+  const isTestBypass =
+    process.env.NODE_ENV !== 'production' &&
+    typeof document !== 'undefined' &&
+    document.cookie.includes('test-bypass-auth=1')
   const { user, loading } = useAuth()
   const router = useRouter()
   const [showAuthRequired, setShowAuthRequired] = useState(false)
+
+  if (isTestBypass) {
+    return <>{children}</>
+  }
 
   useEffect(() => {
     if (!loading && !user) {

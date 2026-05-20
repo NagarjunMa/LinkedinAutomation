@@ -60,6 +60,7 @@ export default function TailorPage() {
             plan={result.diff_plan}
           />
           <DiffView
+            key={result.jd_evaluation_id}
             resumeId={resumeId}
             plan={result.diff_plan}
             onApplied={(versionId) => {

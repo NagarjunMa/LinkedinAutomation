@@ -43,7 +43,12 @@ const NavItem: React.FC<{
     isCollapsed: boolean;
 }> = ({ to, label, icon, isCollapsed }) => {
     const pathname = usePathname();
-    const isActive = to === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(to);
+    const isActive =
+        to === '/dashboard'
+            ? pathname === '/dashboard'
+            : to === '/dashboard/resume'
+                ? pathname === '/dashboard/resume' || /^\/dashboard\/resume\/[^/]+\/edit/.test(pathname)
+                : pathname === to || pathname.startsWith(to + '/');
 
     return (
         <Link
