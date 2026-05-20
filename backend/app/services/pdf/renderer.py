@@ -3,7 +3,9 @@
 Public API: render_pdf_from_doc(doc, country, role) -> bytes
 
 Behavior:
-- Single shared Playwright + browser instance (lazy, process-global).
+- Per-thread Playwright + browser cache (lazy). Sync Playwright is bound to
+  the OS thread that started it (greenlet-affinity), so we cannot share one
+  browser instance across threads. Each thread gets its own.
 - 15s timeout per render (configurable via settings.PDF_RENDER_TIMEOUT_S).
 - One retry on Playwright TimeoutError.
 - If the template engine raises, fall back to us/swe and try again.
@@ -18,7 +20,6 @@ from typing import Optional
 
 from playwright.sync_api import (
     Browser,
-    Playwright,
     TimeoutError as PWTimeout,
     sync_playwright,
 )
@@ -34,18 +35,18 @@ class PdfRenderTimeout(Exception):
     pass
 
 
-_lock = threading.Lock()
-_pw: Optional[Playwright] = None
-_browser: Optional[Browser] = None
+_thread_local = threading.local()
 
 
 def _get_browser() -> Browser:
-    global _pw, _browser
-    with _lock:
-        if _browser is None or not _browser.is_connected():
-            _pw = sync_playwright().start()
-            _browser = _pw.chromium.launch(args=["--no-sandbox"])
-        return _browser
+    browser = getattr(_thread_local, "browser", None)
+    if browser is not None and browser.is_connected():
+        return browser
+    pw = sync_playwright().start()
+    browser = pw.chromium.launch(args=["--no-sandbox"])
+    _thread_local.pw = pw
+    _thread_local.browser = browser
+    return browser
 
 
 def _render_html_to_pdf_bytes(html: str, timeout_s: int) -> bytes:
