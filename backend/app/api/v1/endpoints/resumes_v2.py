@@ -99,6 +99,7 @@ async def evaluate(
     if not doc_row or doc_row.user_id != current_user_id:
         raise HTTPException(status_code=404, detail="Not found")
 
+    result_payload = None
     with credit_transaction(db, current_user_id, amount=1, reason="evaluate"):
         doc_json = ResumeDocumentJSON.model_validate(doc_row.parsed_json)
         report = await evaluate_resume(doc_json, target_role=body.target_role)
@@ -120,9 +121,7 @@ async def evaluate(
             model_version="gpt-4o-2024-08-06",
         )
         db.add(eval_row)
-        db.commit()
-
-        return {
+        result_payload = {
             "evaluation_id": eval_row.id,
             "overall_score": report.overall_score,
             "bullet_flags": [f.model_dump() for f in report.bullet_flags],
@@ -131,6 +130,8 @@ async def evaluate(
             "ats_parseability": ats.parseability_score,
             "ats_raw_text": ats.raw_text,
         }
+    db.commit()
+    return result_payload
 
 
 # ---------------------------------------------------------------------------

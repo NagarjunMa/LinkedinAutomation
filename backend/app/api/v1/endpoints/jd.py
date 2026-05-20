@@ -36,6 +36,7 @@ async def analyze(
     if not doc_row or doc_row.user_id != current_user_id:
         raise HTTPException(status_code=404, detail="Resume document not found")
 
+    result_payload = None
     with credit_transaction(db, current_user_id, amount=2, reason="tailor"):
         jd_ext = await extract_jd_requirements(body.jd_text)
         doc = ResumeDocumentJSON.model_validate(doc_row.parsed_json)
@@ -54,9 +55,10 @@ async def analyze(
             match_score=plan.match_score,
         )
         db.add(row)
-        db.commit()
-        return {
+        result_payload = {
             "jd_evaluation_id": row.id,
             "extracted_requirements": jd_ext.model_dump(),
             "diff_plan": plan.model_dump(),
         }
+    db.commit()
+    return result_payload
