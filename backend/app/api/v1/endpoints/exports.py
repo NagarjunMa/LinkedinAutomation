@@ -2,6 +2,8 @@
 
 POST /api/v1/exports  — render a resume to PDF, store, return signed URL. Costs 1 credit.
 """
+import asyncio
+import functools
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -49,10 +51,17 @@ async def create_export(
     response_payload: ExportResponse | None = None
     with credit_transaction(db, current_user_id, amount=1, reason="export"):
         try:
-            pdf_bytes = render_pdf_from_doc(
-                doc_json,
-                country=body.country.value,
-                role=body.role_template.value,
+            # Run sync Playwright renderer in a thread pool to avoid
+            # "sync_playwright inside asyncio loop" error in async endpoints.
+            loop = asyncio.get_event_loop()
+            pdf_bytes = await loop.run_in_executor(
+                None,
+                functools.partial(
+                    render_pdf_from_doc,
+                    doc_json,
+                    country=body.country.value,
+                    role=body.role_template.value,
+                ),
             )
         except PdfRenderTimeout as exc:
             db.add(ResumeExport(
