@@ -1,0 +1,30 @@
+Senior Product Manager - Enterprise SaaS
+Company: ClarityHR is a fast-growing Indian B2B SaaS company (Bengaluru, Karnataka) offering an AI-powered HR and workforce management platform to mid-market and enterprise customers across India, Southeast Asia, and the Middle East, with 500+ paying customers.
+
+Location: Bengaluru, Karnataka (Hybrid)
+Compensation: INR 28-40 LPA + ESOPs (4-year vesting with 1-year cliff)
+
+About the Role:
+We are looking for a Senior Product Manager to own the Core Platform product area, covering onboarding, integrations, and admin workflows. You will define the product strategy for our fastest-growing segment, collaborate with a cross-functional team of 15+, and drive outcomes that directly impact NRR and expansion revenue.
+
+Responsibilities:
+- Define and communicate a clear multi-quarter product roadmap for the Core Platform, grounded in customer insight and business strategy
+- Lead continuous discovery through customer interviews, NPS analysis, support ticket triage, and market research
+- Partner with engineering, design, and sales to prioritise, scope, and ship features on a regular cadence
+- Own go-to-market planning for major feature launches in collaboration with marketing and customer success
+- Define and track success metrics; present product reviews to the leadership team monthly
+- Build strong relationships with 20+ enterprise customer stakeholders to maintain a reliable customer feedback loop
+
+Requirements:
+- 5+ years of product management experience, with at least 2 years at a B2B SaaS company (required)
+- Proven track record of shipping customer-facing features that moved business metrics (required)
+- Strong written communication and PRD-writing skills (required)
+- Experience managing cross-functional teams across engineering, design, and GTM functions (required)
+- Proficiency with product analytics tools (Mixpanel, Amplitude, or similar) and SQL for ad-hoc analysis (required)
+
+Nice to have:
+- Experience in HR tech, workforce management, or enterprise productivity software
+- Understanding of integration patterns (webhooks, REST APIs, iPaaS tools) from a product perspective
+- MBA from a top-tier Indian institution (IIM, ISB) or equivalent international program
+- Exposure to PLG (product-led growth) motions within a B2B SaaS context
+- Experience working with customers in Southeast Asia or Middle East markets

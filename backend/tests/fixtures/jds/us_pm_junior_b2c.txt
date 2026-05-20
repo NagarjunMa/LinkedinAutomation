@@ -1,0 +1,30 @@
+Associate Product Manager
+Company: DayBright is a consumer wellness app (Series A, 60 employees) with 2M+ monthly active users, headquartered in Los Angeles, CA.
+
+Location: Los Angeles, CA (In-office, 4 days/week)
+Compensation: $95,000 - $115,000 + equity
+
+About the Role:
+DayBright is hiring its first Associate Product Manager to support our two senior PMs across the mobile app and growth teams. This is an excellent opportunity for someone early in their PM career who is passionate about consumer products and wants hands-on experience across discovery, delivery, and experimentation.
+
+Responsibilities:
+- Support senior PMs in defining requirements, writing user stories, and maintaining the product backlog
+- Conduct user research activities including surveys, interviews, and usability tests
+- Assist in designing and analyzing A/B tests to evaluate feature changes
+- Track and report on key product metrics using Mixpanel and internal dashboards
+- Collaborate with engineers and designers during sprint ceremonies and grooming sessions
+- Prepare competitive analysis and market research summaries for leadership reviews
+
+Requirements:
+- 1+ year of experience in a product management, product operations, or UX research role (required)
+- Familiarity with user research methods (surveys, interviews, usability testing) (required)
+- Understanding of A/B testing concepts (hypothesis formation, statistical significance) (required)
+- Strong written communication skills and ability to synthesize information concisely (required)
+- Proficiency with product management tools such as JIRA, Notion, or Linear (required)
+
+Nice to have:
+- Experience with Figma for light wireframing or mockup annotation
+- Exposure to mobile app analytics (Firebase, Mixpanel, Amplitude)
+- Understanding of iOS and Android app store optimization (ASO) fundamentals
+- Personal experience as a wellness, fitness, or mental health app user
+- Prior internship at a consumer tech company

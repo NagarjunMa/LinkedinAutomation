@@ -1,0 +1,31 @@
+Staff / Principal Software Engineer
+Company: Meridian Cloud is a cloud infrastructure company (public, 5,000+ employees) providing data storage and compute services to enterprise customers globally, headquartered in San Jose, CA.
+
+Location: San Jose, CA or Remote (US)
+Compensation: $280,000 - $360,000 base + RSUs + bonus
+
+About the Role:
+We are seeking a Staff or Principal Software Engineer to be a technical anchor for our Storage Platform organization. This is an individual contributor role with outsized influence - you will set technical direction for a portfolio of systems, drive architectural decisions, and amplify the effectiveness of 30+ engineers across multiple teams.
+
+Responsibilities:
+- Own the long-term technical vision and architecture for our distributed object storage platform
+- Author and review technical design documents (TDDs) for major initiatives spanning multiple quarters
+- Lead the resolution of critical cross-team technical blockers and ambiguous engineering problems
+- Mentor senior engineers and serve as a technical bar-raiser in the hiring process
+- Represent engineering in strategic planning discussions with VP-level leadership
+- Identify systemic reliability and scalability risks before they become production incidents
+
+Requirements:
+- 10+ years of professional software engineering experience, with at least 3 years in a staff or principal IC role (required)
+- Proven track record of designing and shipping production distributed systems at internet scale (required)
+- Deep expertise in at least one systems language (C++, Go, Rust, Java) (required)
+- Strong written communication skills: ability to produce clear architecture documents and RFCs (required)
+- Demonstrated experience mentoring and leveling up senior engineers (required)
+- History of driving multi-team or org-wide technical initiatives to completion (required)
+
+Nice to have:
+- Experience with storage systems, file systems, or database internals
+- Familiarity with consensus protocols (Raft, Paxos) or distributed transaction systems
+- Open-source contributions in systems or infrastructure projects
+- Experience presenting technical work at major industry conferences
+- Prior experience as a technical lead or engineering manager (with return to IC)

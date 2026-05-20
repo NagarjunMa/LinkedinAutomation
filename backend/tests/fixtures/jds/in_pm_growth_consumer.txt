@@ -1,0 +1,30 @@
+Growth Product Manager - Consumer
+Company: KharchaApp is a fast-growing Indian personal finance and cashback app (Bengaluru, Karnataka) with 8M+ downloads and 3M MAUs, targeting Tier 1 and Tier 2 Indian cities and backed by a leading consumer-focused VC.
+
+Location: Bengaluru, Karnataka (Hybrid)
+Compensation: INR 22-32 LPA + ESOPs
+
+About the Role:
+We are looking for a Growth PM to accelerate user acquisition, activation, and retention across our Android and iOS apps. You will own the full funnel with a specific focus on organic growth channels (App Store Optimisation, referral) and engagement loops. A strong understanding of India's digital consumer - including Tier 2 users and Hindi-language audiences - is highly valued.
+
+Responsibilities:
+- Own the growth roadmap spanning acquisition (ASO, referral programs, performance marketing integration) and retention (push notifications, gamification, re-engagement)
+- Design and run A/B tests across onboarding, activation, and core engagement loops to improve funnel conversion
+- Conduct cohort analysis and retention modeling to identify behavioural signals that predict long-term user value
+- Partner with the marketing team on channel attribution and integrate insights into product decisions
+- Localise product experiences for Hindi-speaking and regional language users; champion inclusive design for Bharat users
+- Present growth metrics, experiment results, and strategic proposals to the founding team weekly
+
+Requirements:
+- 3+ years of product management experience, with at least 1 year in a growth or lifecycle role (required)
+- Strong analytical skills and proficiency with SQL for funnel and cohort analysis (required)
+- Hands-on experience with A/B testing and statistical analysis of experiment results (required)
+- Understanding of App Store Optimisation (ASO) principles for Google Play and App Store (required)
+- Familiarity with the Indian digital consumer market, including Tier 2/3 user behaviour and regional language considerations (required)
+
+Nice to have:
+- Experience with push notification and in-app messaging tools (CleverTap, MoEngage, or Braze)
+- Knowledge of mobile attribution platforms (AppsFlyer, Adjust)
+- Understanding of UPI-linked financial products and how cashback mechanics drive engagement
+- Fluency in Hindi or a major Indian regional language
+- Prior experience at an Indian consumer fintech or super-app

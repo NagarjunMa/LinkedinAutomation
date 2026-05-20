@@ -1,0 +1,30 @@
+Data Scientist - Personalisation & Recommendations
+Company: ShopFast is one of India's leading horizontal e-commerce platforms (Bengaluru, Karnataka) with 80M+ registered users and growing 40% year-over-year, operating across fashion, electronics, and home categories.
+
+Location: Bengaluru, Karnataka (Hybrid)
+Compensation: INR 18-28 LPA + ESOPs
+
+About the Role:
+We are looking for a Data Scientist to join our Personalisation team, which is responsible for recommendation systems, search ranking, and homepage feed algorithms. You will develop ML models that directly impact the browsing and purchase experience of millions of users every day.
+
+Responsibilities:
+- Build, evaluate, and deploy recommendation and ranking models (collaborative filtering, matrix factorisation, two-tower models) for homepage, search, and email channels
+- Design and analyse online experiments (A/B tests, interleaving) to measure the impact of algorithm changes
+- Develop features for ML models using Python and Spark from large-scale clickstream and transaction data
+- Monitor model performance in production using dashboards and automated alerting; re-train models as needed
+- Partner with engineering to ensure scalable and low-latency model serving
+- Present findings and model updates to senior data science leadership and product stakeholders
+
+Requirements:
+- 3+ years of data science or ML engineering experience in a product-led company (required)
+- Strong Python skills for data manipulation and model building (Pandas, NumPy, scikit-learn) (required)
+- Hands-on experience with SQL for large-scale data extraction and analysis (required)
+- Practical experience building and evaluating recommendation systems (required)
+- Solid understanding of A/B testing methodology and statistical hypothesis testing (required)
+
+Nice to have:
+- Experience with deep learning frameworks (TensorFlow, PyTorch) for learning-to-rank or embedding models
+- Familiarity with Spark or PySpark for distributed feature engineering
+- Understanding of the Indian e-commerce consumer behaviour and category dynamics
+- Knowledge of online serving systems and latency constraints for real-time recommendation APIs
+- Prior experience at a top Indian internet company (Flipkart, Meesho, Nykaa, etc.)

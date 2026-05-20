@@ -1,0 +1,30 @@
+Data Scientist (Mid-Level)
+Company: Swell Commerce is a growth-stage e-commerce enablement company (Series B, 150 employees) based in San Francisco, CA, helping DTC brands scale their operations.
+
+Location: San Francisco, CA (Hybrid - 2 days/week on-site)
+Compensation: $135,000 - $165,000 + equity
+
+About the Role:
+We are looking for a Data Scientist to join our Growth Analytics team. You will partner with product and marketing to measure the impact of new features, design and analyze experiments, and develop predictive models that drive acquisition and retention decisions. You will have direct access to clean data pipelines and a supportive analytics engineering team.
+
+Responsibilities:
+- Design, implement, and analyze A/B and multivariate experiments across the funnel
+- Build and maintain ML models for customer propensity, churn prediction, and LTV estimation
+- Partner with product managers to define success metrics and measurement frameworks
+- Develop SQL-based reporting and dashboards consumed by leadership
+- Communicate findings clearly in written reports and verbal presentations to non-technical stakeholders
+- Contribute to improving data quality and documentation across the analytics ecosystem
+
+Requirements:
+- 3+ years of experience in a data science or quantitative analyst role (required)
+- Proficiency in Python for data analysis and model building (Pandas, scikit-learn) (required)
+- Strong SQL skills, including complex joins, window functions, and query optimization (required)
+- Hands-on experience designing and evaluating A/B tests, including power analysis (required)
+- Solid understanding of supervised ML algorithms and model evaluation best practices (required)
+
+Nice to have:
+- Experience with causal inference methods (diff-in-diff, synthetic control, IV)
+- Familiarity with dbt, Airflow, or other data workflow tools
+- Exposure to Databricks or Spark for large-scale data processing
+- Experience at a growth-stage or consumer-facing company
+- Knowledge of e-commerce metrics (CAC, LTV, ROAS, conversion rate)

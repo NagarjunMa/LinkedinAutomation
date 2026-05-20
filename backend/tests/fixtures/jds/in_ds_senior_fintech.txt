@@ -1,0 +1,31 @@
+Senior Data Scientist - Credit Risk & Fraud
+Company: PaySafe India is a leading Indian fintech company (Mumbai, Maharashtra) providing digital payments, UPI infrastructure, and consumer credit products to 60M+ users, processing over INR 5 lakh crore in annual transaction value.
+
+Location: Mumbai, Maharashtra (Hybrid - 2 days/week on-site at BKC office)
+Compensation: INR 30-45 LPA + performance bonus + ESOPs
+
+About the Role:
+We are hiring a Senior Data Scientist to lead modeling efforts for our credit underwriting and transaction fraud detection systems. You will own end-to-end model development and deployment, interface directly with the risk and compliance functions, and ensure our models remain fair, explainable, and regulatory-compliant under RBI guidelines.
+
+Responsibilities:
+- Develop and maintain credit scoring models (scorecard, logistic regression, gradient boosting) for personal loans and BNPL products
+- Build real-time fraud detection models processing millions of UPI and card transactions daily
+- Conduct feature engineering from payments data, bureau data, and behavioural signals to improve model discrimination
+- Prepare and present model documentation for internal model risk review and regulatory submissions
+- Monitor model performance, population stability, and concept drift; own model re-training schedules
+- Mentor junior data scientists and establish data science standards within the risk analytics team
+
+Requirements:
+- 5+ years of data science experience, with at least 3 years in financial services (credit or fraud) (required)
+- Expert-level Python skills for statistical modeling and ML (required)
+- Strong SQL skills for data extraction from large transactional datasets (required)
+- Experience with statistical modeling for credit: logistic regression, scorecard development, survival models (required)
+- Familiarity with UPI, payments ecosystem, and India-specific credit bureau data (CIBIL, Experian) (required)
+- Understanding of RBI regulations relevant to digital lending and model risk (required)
+
+Nice to have:
+- Experience with graph-based fraud detection or network analysis
+- Knowledge of explainability tools (SHAP, LIME) for regulatory-compliant model interpretation
+- Familiarity with Apache Spark for large-scale transaction feature engineering
+- Experience presenting to risk committees or regulatory bodies
+- Prior work experience at a leading Indian fintech (Paytm, PhonePe, Razorpay, CRED, etc.)

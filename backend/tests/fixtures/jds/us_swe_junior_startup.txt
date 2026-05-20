@@ -1,0 +1,30 @@
+Software Engineer (Junior / New Grad)
+Company: Luminary Labs is an early-stage B2C startup (Seed-funded, 12 employees) building the next generation of personal finance tools, headquartered in Austin, TX.
+
+Location: Austin, TX (In-office preferred; remote considered for exceptional candidates)
+Compensation: $85,000 - $105,000 + early-stage equity
+
+About the Role:
+We are a small, fast-moving team and we are looking for a curious, motivated junior engineer who wants to ship real product from day one. You will work directly with our two senior engineers and our CTO to build and maintain our web application. This is a growth role - expect to wear multiple hats and ramp quickly.
+
+Responsibilities:
+- Build and maintain frontend features using React and TypeScript
+- Develop and document RESTful API endpoints consumed by web and mobile clients
+- Participate in code reviews and contribute to improving team engineering standards
+- Write unit and integration tests to maintain code quality and coverage targets
+- Debug production issues and respond to user-reported bugs with urgency
+- Collaborate closely with design and product to translate mockups into pixel-perfect UI
+
+Requirements:
+- 1+ year of professional software engineering experience or a strong internship record (required)
+- Hands-on experience with React and TypeScript in a production codebase (required)
+- Understanding of RESTful API design principles (required)
+- Familiarity with Git version control and pull-request-based workflows (required)
+- Ability to work independently and communicate blockers proactively (required)
+
+Nice to have:
+- Experience with Node.js or Python backend development
+- Exposure to PostgreSQL or another relational database
+- Familiarity with CI/CD pipelines (GitHub Actions, CircleCI)
+- Any personal side projects or open-source contributions you can share
+- Interest in fintech and financial literacy products

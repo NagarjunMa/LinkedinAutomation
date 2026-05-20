@@ -1,0 +1,30 @@
+Junior Software Engineer (Java / Spring Boot)
+Company: InfoMatrix Technologies is a mid-sized Indian IT services company (Pune, Maharashtra) with 8,000+ employees, delivering enterprise application development and maintenance services to clients in banking, insurance, and retail sectors across the US, UK, and Australia.
+
+Location: Pune, Maharashtra (On-site)
+Compensation: INR 4.5-7 LPA (based on B.Tech/MCA academic performance and interview performance)
+
+About the Role:
+We are hiring Junior Software Engineers for our Enterprise Application Development practice. You will work on client projects using Java and Spring Boot, developing new features and maintaining existing enterprise applications. This is a structured program with a 45-day onboarding and training period before client deployment.
+
+Responsibilities:
+- Develop and maintain Java-based web applications using the Spring Boot framework
+- Write unit tests and participate in integration testing cycles
+- Work with SQL databases (Oracle, MySQL) to write and optimise queries for CRUD operations
+- Participate in daily stand-ups, sprint planning, and code review sessions
+- Document code and prepare technical specifications as per client standards
+- Adhere to coding standards, security guidelines, and delivery timelines
+
+Requirements:
+- B.Tech / B.E. / MCA in Computer Science, IT, or related field (required)
+- Proficiency in Core Java (OOP, collections, exception handling, multithreading) (required)
+- Knowledge of Spring Boot framework and RESTful API development (required)
+- Understanding of SQL and relational database concepts (required)
+- Ability to work in a structured, process-oriented delivery environment (required)
+
+Nice to have:
+- Exposure to Hibernate or JPA for ORM-based data access
+- Basic understanding of Git for version control
+- Familiarity with Agile/Scrum methodologies
+- Any personal or academic project demonstrating Java backend skills
+- Good English communication skills (verbal and written) for client interactions
