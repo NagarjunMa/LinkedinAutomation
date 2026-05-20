@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { JdInputForm } from '@/components/jd/jd-input-form';
+import { JdAnalysisPanel } from '@/components/jd/jd-analysis-panel';
+import { DiffView } from '@/components/jd/diff-view';
 import { useJdAnalyze } from '@/hooks/use-jd-analyze';
 import { useToast } from '@/components/ui/use-toast';
 import type { JDAnalyzeResponse } from '@/app/lib/api';
@@ -51,12 +53,20 @@ export default function TailorPage() {
         </CardContent>
       </Card>
 
-      {/* JD analysis panel + diff view rendered here in later tasks */}
       {result && resumeId && (
-        <pre className="text-xs bg-app-text/5 p-3 rounded">
-          {/* placeholder until Tasks 12-13 land */}
-          Match score: {result.diff_plan.match_score}
-        </pre>
+        <>
+          <JdAnalysisPanel
+            extraction={result.extracted_requirements}
+            plan={result.diff_plan}
+          />
+          <DiffView
+            resumeId={resumeId}
+            plan={result.diff_plan}
+            onApplied={(versionId) => {
+              // user can navigate to the edit page if they want to see the result.
+            }}
+          />
+        </>
       )}
     </div>
   );
