@@ -38,3 +38,4 @@ pdfplumber==0.11.4
 respx==0.20.2
 tenacity==8.2.3
 pytest-asyncio==0.21.1
+syrupy==4.6.1
