@@ -55,17 +55,6 @@ export interface ResumeListItemResponse extends JsonRecord {
     evaluationStatus?: string;
 }
 
-export interface ReferralContactInfo extends JsonRecord {
-    contact?: string;
-    name?: string;
-    email?: string;
-    company?: string;
-    position?: string;
-    linkedin?: string;
-}
-
-export type ReferralDraftUpdate = JsonRecord;
-export type ReferralPreferencePayload = JsonRecord;
 export type JobApplicationStatusUpdate = JsonRecord;
 
 // Enhanced profile types
@@ -265,40 +254,6 @@ export interface ResumeEvaluation {
         confidence_percentage?: number;
         evaluation_type: 'consolidated' | 'legacy';
     };
-}
-
-// Referral types
-export interface ReferralDetailedInfo {
-    sent_id: number;
-    sent_at: string;
-    response_received: boolean;
-    response_date?: string;
-    contact_name: string;
-    contact_email: string;
-    company: string;
-    position?: string;
-    contact_relationship?: string;
-    email_subject?: string;
-    email_body?: string;
-    template_used?: string;
-    job_title?: string;
-    job_company?: string;
-    job_id?: number;
-}
-
-export interface ReferralDetailedListResponse {
-    referrals: ReferralDetailedInfo[];
-    total_count: number;
-    page: number;
-    page_size: number;
-}
-
-export interface ReferralFilters {
-    page?: number;
-    page_size?: number;
-    company_filter?: string;
-    date_from?: string;
-    date_to?: string;
 }
 
 export interface RecentApplication {
