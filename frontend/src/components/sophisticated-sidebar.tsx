@@ -10,7 +10,10 @@ import {
     LayoutGrid,
     Settings,
     LogOut,
-    ChevronDown
+    ChevronDown,
+    FileText,
+    Wand2,
+    Coins
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from "@/contexts/auth-context";
@@ -123,6 +126,8 @@ export function SophisticatedSidebar({ onClose }: { onClose?: () => void }) {
                     )}
                     <div className="space-y-1">
                         <NavItem to="/dashboard" label="Dashboard" icon={<LayoutGrid className="w-5 h-5" />} isCollapsed={isCollapsed} />
+                        <NavItem to="/dashboard/resume" label="Resume" icon={<FileText className="w-5 h-5" />} isCollapsed={isCollapsed} />
+                        <NavItem to="/dashboard/resume/tailor" label="Tailor" icon={<Wand2 className="w-5 h-5" />} isCollapsed={isCollapsed} />
                         <NavItem to="/dashboard/jobs" label="Job Search" icon={<Search className="w-5 h-5" />} isCollapsed={isCollapsed} />
                         <NavItem to="/dashboard/applications" label="Applications" icon={<Briefcase className="w-5 h-5" />} isCollapsed={isCollapsed} />
                     </div>
@@ -133,6 +138,7 @@ export function SophisticatedSidebar({ onClose }: { onClose?: () => void }) {
                         <p className="px-6 mb-4 text-[10px] font-extrabold tracking-[0.2em] uppercase text-app-text opacity-40">Account</p>
                     )}
                     <div className="space-y-1">
+                        <NavItem to="/dashboard/credits" label="Credits" icon={<Coins className="w-5 h-5" />} isCollapsed={isCollapsed} />
                         <NavItem to="/dashboard/profile" label="Profile Settings" icon={<Settings className="w-5 h-5" />} isCollapsed={isCollapsed} />
                         <NavItem to="/logout" label="Sign Out" icon={<LogOut className="w-5 h-5" />} isCollapsed={isCollapsed} />
                     </div>
