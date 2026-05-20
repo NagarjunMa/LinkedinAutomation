@@ -11,7 +11,9 @@ Behavior:
 """
 from __future__ import annotations
 
+import logging
 import threading
+import time
 from typing import Optional
 
 from playwright.sync_api import (
@@ -24,6 +26,8 @@ from playwright.sync_api import (
 from app.core.config import settings
 from app.schemas.resume import ResumeDocumentJSON
 from app.services.pdf.template_engine import render_html
+
+_log = logging.getLogger("pdf_render")
 
 
 class PdfRenderTimeout(Exception):
@@ -68,19 +72,47 @@ def render_pdf_from_doc(
 ) -> bytes:
     """Render a resume doc to PDF bytes. One retry on timeout. Template fallback on render error."""
     t = timeout_s or settings.PDF_RENDER_TIMEOUT_S
-
-    # Stage 1: template
+    started = time.monotonic()
+    status = "succeeded"
+    fallback_used = False
+    pdf: bytes = b""
     try:
-        html = render_html(doc, country, role)
-    except Exception:
-        # Template-engine failure → fall back to a known-good template.
-        html = render_html(doc, "US", "swe")
-
-    # Stage 2: PDF render with one retry on timeout.
-    try:
-        return _render_html_to_pdf_bytes(html, timeout_s=t)
-    except PWTimeout:
+        # Stage 1: template
         try:
-            return _render_html_to_pdf_bytes(html, timeout_s=t)
-        except PWTimeout as exc:
-            raise PdfRenderTimeout(f"PDF render timed out after retry (>{t}s)") from exc
+            html = render_html(doc, country, role)
+        except Exception:
+            # Template-engine failure → fall back to a known-good template.
+            fallback_used = True
+            html = render_html(doc, "US", "swe")
+
+        # Stage 2: PDF render with one retry on timeout.
+        try:
+            pdf = _render_html_to_pdf_bytes(html, timeout_s=t)
+        except PWTimeout:
+            try:
+                pdf = _render_html_to_pdf_bytes(html, timeout_s=t)
+            except PWTimeout as exc:
+                status = "timed_out"
+                raise PdfRenderTimeout(f"PDF render timed out after retry (>{t}s)") from exc
+        return pdf
+    except Exception:
+        if status == "succeeded":
+            status = "errored"
+        raise
+    finally:
+        render_ms = int((time.monotonic() - started) * 1000)
+        size = len(pdf) if status == "succeeded" else 0
+        _log.info(
+            "pdf_render",
+            extra={
+                "structured": {
+                    "event": "pdf_render",
+                    "country": country,
+                    "role": role,
+                    "render_ms": render_ms,
+                    "file_size_bytes": size,
+                    "status": status,
+                    "fallback_used": fallback_used,
+                }
+            },
+        )
