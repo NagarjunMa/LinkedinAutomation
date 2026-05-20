@@ -46,6 +46,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Install Playwright Chromium
+        run: python -m playwright install --with-deps chromium
+
       - name: Lint (ruff)
         run: |
           pip install ruff==0.5.0
