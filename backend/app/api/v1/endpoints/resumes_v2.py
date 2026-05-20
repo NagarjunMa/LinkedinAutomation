@@ -196,7 +196,13 @@ class VersionRequest(BaseModel):
 
 
 def apply_changes(doc: ResumeDocumentJSON, changes: list[ChangeItem]) -> ResumeDocumentJSON:
-    """Apply a list of change items to a ResumeDocumentJSON and return the result."""
+    """Apply a list of change items to a ResumeDocumentJSON and return the result.
+
+    Supported change types:
+    - bullet_update: update text of bullet with matching id
+    - skills_reorder: replace hard skills with new_skills_order list
+    - summary_update: replace summary with new_summary string
+    """
     data = doc.model_dump()
     for ch in changes:
         if ch.type == "bullet_update" and ch.bullet_id and ch.new_text:
