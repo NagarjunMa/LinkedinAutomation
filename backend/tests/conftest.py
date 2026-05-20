@@ -109,6 +109,23 @@ def _create_sqlite_tables(engine) -> None:
         sa.Column("created_at", sa.DateTime, server_default=sa.func.now()),
     )
 
+    sa.Table(
+        "resume_exports",
+        meta,
+        sa.Column("id", sa.String, primary_key=True),
+        sa.Column("user_id", sa.String, sa.ForeignKey("users.user_id"), nullable=False, index=True),
+        sa.Column("resume_document_id", sa.String, sa.ForeignKey("resume_documents.id"), nullable=False, index=True),
+        sa.Column("resume_version_id", sa.String, nullable=True),
+        sa.Column("country", sa.String(2), nullable=False),
+        sa.Column("role_template", sa.String(8), nullable=False),
+        sa.Column("storage_path", sa.String, nullable=False),
+        sa.Column("status", sa.String(16), nullable=False, server_default="succeeded"),
+        sa.Column("render_ms", sa.Integer, nullable=True),
+        sa.Column("file_size_bytes", sa.Integer, nullable=True),
+        sa.Column("error_message", sa.Text, nullable=True),
+        sa.Column("created_at", sa.DateTime, server_default=sa.func.now()),
+    )
+
     meta.create_all(bind=engine)
 
 
@@ -227,3 +244,61 @@ def client(db_session: Session, test_user_id: str, tmp_path):
 @pytest.fixture
 def auth_headers() -> dict:
     return {"Authorization": "Bearer test-token"}
+
+
+@pytest.fixture
+def user_with_credits(db_session, test_user_id):
+    from app.services.credits.ledger import grant_monthly
+    grant_monthly(db_session, test_user_id, 20)
+    db_session.commit()
+    return test_user_id
+
+
+@pytest.fixture
+def uploaded_resume_doc(db_session, test_user_id):
+    """A persisted ResumeDocument owned by the test user, for export tests."""
+    import uuid
+    from app.models.resume_document import ResumeDocument
+    from tests.fixtures.resume_doc_json import make_resume
+    doc_json = make_resume()
+    row = ResumeDocument(
+        id=str(uuid.uuid4()),
+        user_id=test_user_id,
+        original_filename="r.pdf",
+        file_path="/tmp/ignored.pdf",
+        file_type="pdf",
+        parsed_json=doc_json.model_dump(),
+        raw_text=doc_json.raw_text,
+    )
+    db_session.add(row)
+    db_session.commit()
+    return row
+
+
+@pytest.fixture
+def mock_pdf_render():
+    from unittest.mock import patch
+    with patch("app.api.v1.endpoints.exports.render_pdf_from_doc", return_value=b"%PDF-stub-content"):
+        yield
+
+
+@pytest.fixture
+def mock_pdf_render_timeout():
+    from unittest.mock import patch
+    from app.services.pdf.renderer import PdfRenderTimeout
+    with patch("app.api.v1.endpoints.exports.render_pdf_from_doc", side_effect=PdfRenderTimeout("simulated")):
+        yield
+
+
+@pytest.fixture
+def mock_supabase_upload():
+    from unittest.mock import patch
+    with patch("app.api.v1.endpoints.exports.upload_pdf", return_value="user-1/exp-1.pdf") as m:
+        yield m
+
+
+@pytest.fixture
+def mock_signed_url():
+    from unittest.mock import patch
+    with patch("app.api.v1.endpoints.exports.signed_url", return_value="https://supabase.example/file.pdf?token=abc") as m:
+        yield m

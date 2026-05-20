@@ -26,3 +26,16 @@ def test_phase1_routes_registered_in_openapi(client: TestClient):
     assert "/api/v1/credits/balance" in paths, (
         f"/api/v1/credits/balance not found. Available paths: {sorted(paths)}"
     )
+
+
+def test_phase2_export_routes_registered_in_openapi(client: TestClient):
+    """Phase-2 export endpoints must appear in /openapi.json."""
+    resp = client.get("/openapi.json")
+    assert resp.status_code == 200
+    paths = resp.json()["paths"]
+    assert "/api/v1/exports" in paths, (
+        f"/api/v1/exports not found. Available paths: {sorted(paths)}"
+    )
+    assert "/api/v1/exports/{export_id}" in paths, (
+        f"/api/v1/exports/{{export_id}} not found. Available paths: {sorted(paths)}"
+    )

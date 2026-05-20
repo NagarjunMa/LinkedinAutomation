@@ -95,6 +95,17 @@ New REST endpoints (v1):
 
 Architecture: see `docs/superpowers/specs/2026-05-19-prism-pro-pivot-design.md`.
 
+## Phase 2 — PDF Render (in progress)
+
+New REST endpoints (v1):
+- `POST /api/v1/exports` — render a resume document (optionally a specific version) to PDF using a country+role template, upload to Supabase Storage, return signed download URL. Costs 1 credit; refunded on hard render failure.
+- `GET /api/v1/exports/{id}` — return a fresh signed download URL for an existing successful export. Zero-cost.
+
+Templates: 6 HTML+CSS templates under `backend/app/services/pdf/templates/` (us|in × swe|ds|pm). Rendering uses headless Chromium via Playwright (`backend/app/services/pdf/renderer.py`); sync renderer is offloaded via `run_in_executor` from async endpoints.
+
+Phase 2 plan: `docs/superpowers/plans/2026-05-20-prism-pro-phase-2-pdf-render.md`.
+Architecture: see `docs/superpowers/specs/2026-05-19-prism-pro-pivot-design.md` §7.7.
+
 ## Security
 
 - All secrets in env vars (never committed)

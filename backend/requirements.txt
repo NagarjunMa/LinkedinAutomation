@@ -29,7 +29,7 @@ python-dotenv>=1.0.0
 email-validator==2.3.0
 
 # Missing dependencies
-playwright==1.40.0
+playwright>=1.49,<2.0
 supabase==2.3.0
 pytz==2023.3
 resend==0.8.0
