@@ -3,13 +3,10 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
-    DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
@@ -25,10 +22,8 @@ import {
     Moon,
     LogOut
 } from "lucide-react"
-import { Input } from "@/components/ui/input"
 import { useAuth } from "@/contexts/auth-context"
 import { useTheme } from "@/contexts/theme-context"
-import { ThemeToggle } from "@/components/theme-toggle"
 import { JobSearchModal } from "@/components/job-search-modal"
 
 interface SophisticatedHeaderProps {

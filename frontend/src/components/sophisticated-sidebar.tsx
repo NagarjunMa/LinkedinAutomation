@@ -12,7 +12,7 @@ import {
     LogOut,
     ChevronDown
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useAuth } from "@/contexts/auth-context";
 
 // Sidebar State Management

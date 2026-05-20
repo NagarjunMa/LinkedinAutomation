@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { CheckCircle, AlertTriangle, Target, Zap, ArrowRight } from "lucide-react"
-import { ResumeFile, ResumeEvaluation } from "@/app/lib/api/types"
+import { ResumeFile } from "@/app/lib/api/types"
 
 interface EnhancedResumeAnalysisProps {
   resume: ResumeFile | null

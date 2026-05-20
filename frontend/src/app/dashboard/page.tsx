@@ -18,7 +18,7 @@ import { PremiumButton } from '@/components/ui/premium-button';
 import { useRouter } from 'next/navigation';
 
 export default function DashboardPage() {
-    const { stats, userProfile, loading } = useDashboard();
+    const { stats: _stats, userProfile, loading } = useDashboard();
     const router = useRouter();
     const [isWarningIgnored, setIsWarningIgnored] = React.useState(false);
 

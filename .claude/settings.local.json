@@ -23,7 +23,10 @@
       "Bash(git commit -m ' *)",
       "Bash(xargs ls *)",
       "Bash(git rm *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(tee /tmp/lint-before.log)",
+      "Bash(npm run *)",
+      "Bash(tee /tmp/lint-final.log)"
     ],
     "deny": [],
     "ask": []
