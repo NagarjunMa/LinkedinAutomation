@@ -1,0 +1,31 @@
+DevOps / Platform Engineer
+Company: GridStack is a cloud-native infrastructure company (Series A, 90 employees) providing managed Kubernetes and observability solutions to engineering teams, headquartered in Denver, CO.
+
+Location: Denver, CO or Remote (US)
+Compensation: $140,000 - $175,000 + equity
+
+About the Role:
+We are hiring a DevOps / Platform Engineer to build and maintain the internal platform that enables our 60+ product engineers to ship safely and quickly. You will own our Kubernetes-based deployment infrastructure, CI/CD pipelines, and observability stack, while partnering closely with engineering teams to improve developer experience.
+
+Responsibilities:
+- Design, build, and operate multi-tenant Kubernetes clusters on AWS (EKS) supporting production workloads
+- Own and improve CI/CD pipelines using GitHub Actions and ArgoCD for continuous deployment
+- Manage infrastructure-as-code using Terraform across multiple AWS accounts and environments
+- Build and maintain observability stack (Prometheus, Grafana, Loki, OpenTelemetry) and on-call runbooks
+- Develop internal developer platform (IDP) tooling to reduce toil and improve deployment velocity
+- Respond to infrastructure incidents, lead post-mortems, and drive reliability improvements
+
+Requirements:
+- 3+ years of experience in a DevOps, SRE, or platform engineering role (required)
+- Strong hands-on experience with Kubernetes in production (cluster administration, networking, RBAC) (required)
+- Proficiency with Terraform for infrastructure-as-code (required)
+- Experience with AWS services: EC2, EKS, RDS, S3, IAM, VPC (required)
+- Solid CI/CD experience with GitHub Actions or equivalent (required)
+- Scripting proficiency in Python or Bash for automation (required)
+
+Nice to have:
+- Experience with GitOps workflows using ArgoCD or Flux
+- Familiarity with service mesh technologies (Istio, Linkerd)
+- Exposure to security hardening practices for cloud environments (CIS benchmarks, pod security policies)
+- AWS certifications (Solutions Architect, DevOps Engineer)
+- Experience with FinOps or cloud cost optimization

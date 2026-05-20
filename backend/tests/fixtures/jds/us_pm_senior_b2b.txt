@@ -1,0 +1,30 @@
+Senior Product Manager - Enterprise Platform
+Company: Orbis Software is a B2B SaaS company (Series C, 300 employees) providing workflow automation tools to mid-market and enterprise customers across financial services and healthcare, headquartered in Chicago, IL.
+
+Location: Chicago, IL (Hybrid - 2 days/week on-site)
+Compensation: $155,000 - $185,000 + equity
+
+About the Role:
+We are looking for a Senior Product Manager to own the core Enterprise Platform product area, which serves our 200+ largest customers. You will define the multi-year product vision, work daily with engineering and design, and maintain close relationships with key accounts and our enterprise sales organization.
+
+Responsibilities:
+- Define product strategy and multi-quarter roadmap for the Enterprise Platform, aligned to company OKRs
+- Lead discovery, scoping, and prioritization for new platform capabilities through customer interviews and data analysis
+- Partner with engineering and design leads to ship high-quality features on schedule
+- Act as the voice of the customer in cross-functional forums including executive reviews
+- Work with sales and customer success to develop go-to-market plans for major launches
+- Define success metrics and monitor product performance post-launch using dashboards and qualitative signals
+
+Requirements:
+- 5+ years of product management experience, with at least 2 years on a B2B SaaS product (required)
+- Strong written and verbal communication skills; ability to write clear PRDs and present to C-suite (required)
+- Experience managing a product roadmap and making data-informed prioritization decisions (required)
+- Demonstrated ability to lead cross-functional teams without direct authority (required)
+- Comfort with product analytics tools (Amplitude, Mixpanel, or similar) and SQL for self-service data analysis (required)
+
+Nice to have:
+- Experience with workflow automation, BPM, or integration products
+- Exposure to enterprise sales cycles and enterprise customer relationships
+- MBA or other advanced degree
+- Prior experience in financial services or healthcare technology
+- Familiarity with API-first product design

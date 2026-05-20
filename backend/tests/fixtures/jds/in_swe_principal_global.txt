@@ -1,0 +1,31 @@
+Principal Software Engineer - Developer Platform
+Company: CloudMatrix India is the Bengaluru engineering hub of a Fortune 100 global technology company, with 3,000+ engineers in India working on core platform, cloud infrastructure, and enterprise software products shipped to customers worldwide.
+
+Location: Bengaluru, Karnataka (Hybrid - 3 days on-site at Whitefield campus)
+Compensation: INR 80-120 LPA + RSUs + annual bonus
+
+About the Role:
+We are hiring a Principal Software Engineer to lead technical strategy for our Developer Platform organisation in India. This is a senior IC role with high visibility - you will partner with engineering directors and VPs, represent India engineering in global architecture forums, and directly mentor a cohort of senior engineers.
+
+Responsibilities:
+- Define and drive the 3-year technical vision for our internal developer platform serving 10,000+ engineers globally
+- Author technical RFCs, architecture decision records (ADRs), and present them to global engineering leadership
+- Identify and resolve the most complex, cross-cutting technical problems that block multiple teams
+- Serve as a technical bar-raiser in hiring panels for senior and staff engineer candidates in India
+- Build strong working relationships with peer principal engineers in the US, EU, and APAC offices
+- Coach and develop a pipeline of senior engineers toward staff-level readiness
+
+Requirements:
+- 12+ years of professional software engineering experience, with at least 3 years as a principal or distinguished IC (required)
+- Demonstrated history of defining and shipping large-scale platform or infrastructure systems in production (required)
+- Exceptional system design skills: distributed systems, API design, data modeling (required)
+- Strong technical communication: clear architecture docs, RFCs, and executive-level presentations (required)
+- Proven mentorship and influence track record across multiple engineering teams (required)
+- Fluency in at least one major language (Java, Go, Python, C++) and cloud platform (AWS, GCP, Azure) (required)
+
+Nice to have:
+- Prior experience as a global technical lead in a multinational technology company
+- Open-source contributions or technical publications
+- Experience with developer experience (DX) tooling, platform engineering, or internal developer portals
+- Familiarity with DORA metrics and engineering productivity measurement
+- Public speaking at PyCon India, VODKast, or equivalent engineering conferences

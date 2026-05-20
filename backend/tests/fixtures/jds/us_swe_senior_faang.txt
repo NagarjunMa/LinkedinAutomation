@@ -1,0 +1,31 @@
+Senior Software Engineer, Distributed Systems
+Company: Apex Technologies (FAANG-scale cloud infrastructure company headquartered in Seattle, WA)
+
+Location: Seattle, WA (Hybrid - 3 days on-site)
+Compensation: $210,000 - $270,000 base + equity (RSUs) + annual bonus
+
+About the Role:
+We are looking for a Senior Software Engineer to join our Distributed Systems team. You will design and build the foundational infrastructure that powers services at global scale, handling millions of requests per second across multiple regions. This role requires deep expertise in distributed systems, a bias for operational excellence, and the ability to lead cross-team technical initiatives.
+
+Responsibilities:
+- Design, build, and operate large-scale distributed systems serving 100M+ daily active users
+- Lead technical design reviews and architecture decisions for complex, multi-quarter projects
+- Drive reliability improvements (SLO/SLA ownership) and participate in on-call rotations
+- Mentor and level up junior and mid-level engineers through code reviews and pairing sessions
+- Collaborate with product, SRE, and data engineering teams to define technical requirements
+- Contribute to open-source and internal platform components used across engineering
+
+Requirements:
+- 5+ years of professional software engineering experience (required)
+- Strong proficiency in Python and/or Go, with production system experience (required)
+- Deep understanding of distributed systems fundamentals: consistency, availability, partitioning (required)
+- Hands-on experience with AWS services (EC2, S3, SQS, Lambda, RDS) (required)
+- Experience designing and operating microservices or service-mesh architectures (required)
+- Demonstrated ability to write clear technical design documents and present to senior stakeholders (required)
+
+Nice to have:
+- Experience with Kubernetes and container orchestration at scale
+- Familiarity with observability tooling (OpenTelemetry, Datadog, Prometheus)
+- Contributions to open-source distributed systems projects
+- Experience with stream-processing systems (Kafka, Flink, Kinesis)
+- Prior experience in an on-call rotation for mission-critical services

@@ -1,0 +1,30 @@
+Associate Product Manager (APM)
+Company: BrightByte is a high-growth Indian consumer internet company (Gurugram, Haryana) operating a short-video and content discovery platform with 15M+ monthly active users and backed by a top Indian VC fund.
+
+Location: Gurugram, Haryana (In-office, 5 days/week)
+Compensation: INR 12-18 LPA + ESOPs
+
+About the Role:
+BrightByte is launching a structured APM program for early-career product managers. You will be embedded in one of our core product squads (Feed, Creator Tools, or Monetisation) and mentored by senior PMs. This role is ideal for someone who is passionate about consumer products, is analytically sharp, and wants to build a PM career at a fast-growing startup.
+
+Responsibilities:
+- Work with senior PMs to define user stories, acceptance criteria, and sprint tasks
+- Conduct user research: design surveys, run interviews, and synthesise insights into actionable product recommendations
+- Monitor key product metrics daily using Amplitude and flag anomalies to the squad
+- Assist in A/B test setup, execution, and result communication to the team
+- Coordinate with design and engineering during sprint ceremonies to remove blockers
+- Prepare weekly product update summaries for the leadership team
+
+Requirements:
+- 1-2 years of experience in product management, business analysis, or a related role (required)
+- Strong analytical mindset with ability to work with data to form hypotheses (required)
+- Basic proficiency with user research methods (interviews, surveys, usability tests) (required)
+- Excellent written and verbal communication skills in English (required)
+- Comfort with ambiguity and ability to operate in a fast-moving startup environment (required)
+
+Nice to have:
+- Familiarity with short-video or social content platforms as a power user
+- Basic SQL skills for self-service data exploration
+- Experience with Figma for annotating or reviewing wireframes
+- Understanding of content creator economics and monetisation models in India
+- Previous internship at a consumer tech startup

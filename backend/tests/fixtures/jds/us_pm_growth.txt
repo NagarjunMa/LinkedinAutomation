@@ -1,0 +1,30 @@
+Growth Product Manager
+Company: Marketplace.io is a two-sided marketplace (Series B, 120 employees) connecting freelance creative talent with brands and agencies, headquartered in New York, NY.
+
+Location: New York, NY (Hybrid)
+Compensation: $130,000 - $160,000 + equity
+
+About the Role:
+We are looking for a Growth PM to own the full funnel - from acquisition through activation and retention. You will work closely with our data, engineering, and marketing teams to run a high-cadence experimentation program and identify the highest-leverage opportunities to grow GMV and supply/demand balance on the platform.
+
+Responsibilities:
+- Own the growth roadmap covering paid and organic acquisition, referral programs, and activation flows
+- Design and execute A/B tests across landing pages, onboarding, and core user journeys
+- Conduct funnel analysis to identify and prioritize drop-off points with the highest conversion impact
+- Partner with data engineering to build and maintain growth dashboards and experimentation infrastructure
+- Develop a deep understanding of marketplace dynamics and leverage network effects in product decisions
+- Present growth metrics and experiment results to leadership on a bi-weekly basis
+
+Requirements:
+- 3+ years of PM experience, with at least 1 year focused on growth or lifecycle (required)
+- Strong analytical skills and hands-on SQL experience for self-service funnel and cohort analysis (required)
+- Direct experience running A/B tests and interpreting results, including common pitfalls (required)
+- Familiarity with acquisition channels: SEO, paid search, referral programs, and email/push (required)
+- Excellent stakeholder communication and ability to drive alignment across marketing, engineering, and data (required)
+
+Nice to have:
+- Experience at a two-sided marketplace or platform business
+- Knowledge of marketplace liquidity metrics and supply/demand balance
+- Exposure to growth accounting frameworks (new/retained/resurrected/churned)
+- Familiarity with attribution modeling concepts
+- Experience with Amplitude, Braze, or Segment

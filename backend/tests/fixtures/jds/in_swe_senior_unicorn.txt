@@ -1,0 +1,31 @@
+Senior Software Engineer - Backend Platform
+Company: RocketCart is a leading Indian e-commerce unicorn (Bengaluru, India) operating at the scale of 50M+ monthly active users and ranked among India's top 5 consumer internet companies.
+
+Location: Bengaluru, Karnataka (Hybrid - 3 days on-site at Koramangala office)
+Compensation: INR 35-50 LPA + performance bonus + ESOPs
+
+About the Role:
+We are looking for a Senior Software Engineer to join our Backend Platform team, which owns the core services powering product listings, search, and checkout. You will design systems that handle massive traffic spikes during festive sale events and drive technical excellence across the team.
+
+Responsibilities:
+- Architect and own high-throughput backend services (Java/Go) handling 500K+ RPS during peak events
+- Lead low-level design (LLD) sessions for new features and review technical designs from peers
+- Drive performance optimisation initiatives: profiling, caching strategies, and DB query tuning
+- Collaborate with SRE and data engineering teams to improve platform observability and incident response
+- Mentor junior and mid-level engineers through structured code reviews and design discussions
+- Contribute to quarterly OKRs as a key individual contributor and technical decision-maker
+
+Requirements:
+- 6+ years of professional software engineering experience (required)
+- Strong proficiency in Java (Spring Boot) and/or Go for large-scale backend systems (required)
+- Deep understanding of distributed systems: CAP theorem, eventual consistency, idempotency (required)
+- Hands-on experience with Kafka, Redis, and Elasticsearch in production (required)
+- Proven ability to debug and resolve production incidents under time pressure (required)
+- Excellent communication skills in English for design docs and cross-team collaboration (required)
+
+Nice to have:
+- Experience with Kubernetes and Docker in a cloud (AWS/GCP) environment
+- Familiarity with gRPC and Protocol Buffers
+- Prior experience at an Indian unicorn or high-growth consumer internet company
+- Understanding of the Indian e-commerce ecosystem and festive sale traffic patterns
+- Experience with chaos engineering or fault injection testing

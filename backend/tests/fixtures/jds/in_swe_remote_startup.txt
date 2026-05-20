@@ -1,0 +1,31 @@
+Full-Stack Software Engineer (Remote)
+Company: BuildKit is a remote-first Indian SaaS startup (registered in Bengaluru, Karnataka; distributed team across India) building developer tooling for cloud-native application teams, backed by a Tier 1 Indian and a US-based VC fund.
+
+Location: Fully Remote (India only; IST working hours with async-first culture)
+Compensation: INR 20-32 LPA + ESOPs
+
+About the Role:
+We are a 25-person, fully distributed team and we work GitHub-first: every decision, design, and discussion is documented asynchronously before synchronous discussion. We are hiring a Full-Stack Engineer who thrives in this environment, can own features end-to-end with minimal supervision, and communicates clearly in writing.
+
+Responsibilities:
+- Design and implement features across our React (TypeScript) frontend and Node.js/Go backend services
+- Own features from technical design through deployment and post-launch monitoring
+- Write thorough pull requests with clear context, rationale, and testing notes - we value async communication
+- Collaborate with product and design via GitHub Issues, Notion, and Loom rather than defaulting to meetings
+- Participate in lightweight code review culture: thorough, kind, and fast
+- Contribute to internal runbooks and documentation to support team-wide knowledge sharing
+
+Requirements:
+- 3+ years of full-stack engineering experience (required)
+- Strong proficiency with React and TypeScript on the frontend (required)
+- Backend experience in Node.js or Go (required)
+- Comfortable with GitHub-first, async communication workflows (required)
+- Experience deploying to AWS or GCP using infrastructure-as-code (Terraform or CDK) (required)
+- Self-motivated with strong written English communication skills (required)
+
+Nice to have:
+- Prior experience at a remote-first or distributed company
+- Familiarity with developer tooling products (CI/CD, observability, IaC)
+- Experience with PostgreSQL and data modeling for SaaS multi-tenancy
+- Contributions to open-source projects (especially tools your team uses)
+- Interest in distributed systems and cloud-native architecture

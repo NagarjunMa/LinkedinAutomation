@@ -1,0 +1,30 @@
+Machine Learning Engineer
+Company: Synapse AI is a well-funded AI startup (Series B, 80 employees) building multimodal foundation models for enterprise document understanding, headquartered in San Francisco, CA.
+
+Location: San Francisco, CA (In-office preferred; strong candidates may negotiate hybrid)
+Compensation: $175,000 - $225,000 + equity
+
+About the Role:
+We are hiring an ML Engineer to join our core model training and serving team. You will work on the full ML lifecycle - from data curation and model training through evaluation, optimization, and production deployment. You will work alongside world-class researchers and have direct impact on the models used by our enterprise customers.
+
+Responsibilities:
+- Design and implement training pipelines for large-scale multimodal models using PyTorch and distributed training frameworks
+- Build and maintain MLOps infrastructure: experiment tracking, model registry, and deployment pipelines
+- Optimize model inference for latency and throughput on GPU clusters using quantization and batching strategies
+- Collaborate with research scientists to translate experimental prototypes into production-ready systems
+- Write high-quality, well-tested code and contribute to internal ML platform tooling
+- Monitor model performance in production and develop automated evaluation and alerting systems
+
+Requirements:
+- 3+ years of ML engineering or applied ML research experience (required)
+- Strong proficiency in PyTorch, including custom training loops and distributed training (DDP, FSDP) (required)
+- Hands-on experience building MLOps pipelines (experiment tracking with MLflow or W&B, model serving) (required)
+- Solid software engineering fundamentals: testing, code review, version control (required)
+- Experience deploying ML models to production serving infrastructure (required)
+
+Nice to have:
+- Familiarity with transformer architectures and attention mechanisms
+- Experience with model quantization (INT8, FP16) or distillation
+- Knowledge of ONNX, TensorRT, or vLLM for inference optimization
+- Exposure to multimodal (vision + language) model training
+- Prior publications or contributions to open-source ML projects

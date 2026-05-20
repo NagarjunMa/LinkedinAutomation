@@ -1,0 +1,30 @@
+Research Data Scientist - NLP / Computer Vision
+Company: IndraAI Research is an applied AI research lab (Hyderabad, Telangana) spun out of a major Indian conglomerate, focused on building foundation models and AI systems for Indic languages and domains, with 40+ full-time researchers.
+
+Location: Hyderabad, Telangana (On-site preferred; exceptional remote candidates considered)
+Compensation: INR 25-45 LPA (commensurate with research track record) + ESOPs
+
+About the Role:
+We are hiring a Research Data Scientist to work at the intersection of research and applied engineering. You will conduct original research in NLP and/or Computer Vision, publish findings at top-tier venues, and collaborate with product teams to transfer research outcomes into production AI systems serving Indian users and businesses.
+
+Responsibilities:
+- Conduct original research in NLP, Computer Vision, or multimodal AI with a focus on Indic languages and low-resource settings
+- Design and run controlled experiments; maintain rigorous experimental logs and reproducibility standards
+- Write and submit research papers to top-tier conferences (ACL, EMNLP, CVPR, ICCV, NeurIPS, ICML)
+- Collaborate with applied engineering teams to translate research prototypes into production-ready models
+- Build and curate datasets for Indic language NLP and domain-specific computer vision tasks
+- Present research internally at weekly seminars and externally at conferences and workshops
+
+Requirements:
+- PhD (preferred) or Master's degree in Computer Science, Statistics, or a related field with strong research output (required)
+- Deep theoretical understanding of modern NLP (transformers, attention, pre-training) and/or CV (CNNs, ViTs) (required)
+- Hands-on experience implementing models in PyTorch (required)
+- Track record of research publications at peer-reviewed venues (conference or journal) (required)
+- Strong mathematical foundations: linear algebra, probability, optimisation (required)
+
+Nice to have:
+- Publications specifically on low-resource NLP, multilingual NLP, or Indic language processing
+- Experience with RLHF, instruction tuning, or alignment techniques for LLMs
+- Familiarity with distributed training on multi-GPU or multi-node clusters
+- Contributions to open-source AI/ML projects (Hugging Face, spaCy, etc.)
+- Proficiency in one or more Indic languages (Hindi, Tamil, Telugu, Kannada, etc.)

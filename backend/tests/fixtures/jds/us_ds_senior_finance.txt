@@ -1,0 +1,31 @@
+Senior Data Scientist - Risk & Credit Modeling
+Company: NovaPay is a fintech company (Series D, 400 employees) providing embedded lending and BNPL solutions to enterprise merchants across North America, headquartered in New York, NY.
+
+Location: New York, NY (Hybrid)
+Compensation: $175,000 - $210,000 base + equity + performance bonus
+
+About the Role:
+We are hiring a Senior Data Scientist to lead the development of next-generation credit risk and fraud detection models. You will own the full model lifecycle - from feature engineering and training through deployment and monitoring - and present model performance directly to executive stakeholders and risk committees.
+
+Responsibilities:
+- Develop and maintain statistical and ML-based credit risk scoring models used in real-time underwriting decisions
+- Conduct deep-dive analyses on portfolio performance, loss rates, and fraud patterns
+- Partner with engineering to deploy models via REST APIs into production decisioning systems
+- Define and monitor model governance metrics; prepare model risk management documentation
+- Mentor junior data scientists and establish modeling best practices across the team
+- Collaborate with product and compliance teams to ensure models meet regulatory requirements
+
+Requirements:
+- 7+ years of experience in data science, with at least 3 years focused on financial modeling (required)
+- Expert-level proficiency in Python for statistical modeling and ML (required)
+- Strong SQL skills for feature extraction from large transactional datasets (required)
+- Hands-on experience with generalized linear models (GLM, logistic regression, survival analysis) (required)
+- Demonstrated experience building and deploying models to production systems (required)
+- Understanding of model risk management frameworks (SR 11-7 or equivalent) (required)
+
+Nice to have:
+- Experience with Apache Spark for large-scale feature engineering
+- Familiarity with SHAP or other explainability frameworks
+- Knowledge of fair lending laws and credit model compliance requirements
+- Experience with time-series forecasting for financial metrics
+- Exposure to graph-based fraud detection methods
