@@ -86,3 +86,55 @@ bullet_lookup.update({
 ## MINOR (Issues 13–22)
 
 See the original code review for the full list. These are low-priority polish items (naming, docstrings, logging improvements, etc.) and do not block a safe production launch on their own. Address them in a follow-up pass before the feature is generally available.
+
+---
+
+## Phase 2 — Issues raised by final review (2026-05-20)
+
+### Issue P2-1 — JWT signature verification disabled (pre-existing, elevated by Phase 2)
+
+**File:** `backend/app/core/auth.py:31`
+
+`jwt.decode(..., options={"verify_signature": False})` accepts forged tokens. Pre-existing, but Phase 2 added `POST /api/v1/exports` which debits credits and writes to Supabase Storage keyed by `user_id`. An attacker crafting a JWT with any `sub` claim can impersonate any user.
+
+**Required fix:** Switch to verified decode using `settings.SUPABASE_JWT_SECRET` (HS256). Tests need to mint properly signed JWTs.
+
+### Issue P2-2 — Per-thread Chromium accumulates without cleanup
+
+**File:** `backend/app/services/pdf/renderer.py:38-49`
+
+`threading.local()` stores a `Browser` + `Playwright` per thread. FastAPI's default executor has up to 12 worker threads on common hardware; under sustained concurrent exports, every thread leaks a ~150 MB headless Chromium with no `atexit` cleanup.
+
+**Required fix:** (1) Register an `atexit` hook iterating all known browsers and calling `browser.close()` + `pw.stop()`. (2) Install a bounded `ThreadPoolExecutor` (e.g. 2–4 workers) for PDF renders, or wrap the renderer call in an `asyncio.Semaphore`.
+
+### Issue P2-3 — `timed_out` audit row persistence is implicit
+
+**File:** `backend/app/api/v1/endpoints/exports.py:66-78`, `backend/app/middleware/credits.py:56-64`
+
+The `ResumeExport(status="timed_out")` row is staged before `raise HTTPException(500)`, and the `credit_transaction` exit path's `db.commit()` incidentally flushes it. If the refund itself errors and the middleware calls `db.rollback()`, the audit row vanishes silently along with the credit refund.
+
+**Required fix:** Commit the audit row in a separate transaction before raising, or document the contract explicitly. Add a test asserting the `timed_out` row exists after a render timeout.
+
+### Issue P2-4 — `ResumeExport.render_ms` column never populated
+
+**File:** `backend/app/models/resume_export.py:17`
+
+Column exists in model + migration + SQLite test schema. Endpoint never writes it. Source of truth for render latency is the structured `pdf_render` log only.
+
+**Required fix:** Change `render_pdf_from_doc` to return `(pdf_bytes, render_ms)` (or a small dataclass) and persist `render_ms` on the `ResumeExport` row. Alternative: drop the column.
+
+### Issue P2-5 — No per-endpoint concurrency cap
+
+**File:** `backend/app/api/v1/endpoints/exports.py`
+
+Credit gate limits spend, not concurrency. A single user with credits can fan out N parallel exports; combined with Issue P2-2, this saturates threads + memory before any render returns.
+
+**Required fix:** Module-level `asyncio.Semaphore(N)` around the `run_in_executor` call (N tuned to host memory headroom). Return `HTTP 429` on acquisition timeout.
+
+### Issue P2-6 — CSS loaded via `file://` URIs is path-sensitive in container builds
+
+**File:** `backend/app/services/pdf/template_engine.py:31-32`
+
+`_shared_css_url()` resolves paths at module import time from `__file__`. Container builds that `COPY` source files to a different layout can produce unstyled PDFs (Chromium silently skips unreachable stylesheets). Smoke test asserts `>2000 bytes` which passes even for fully unstyled output.
+
+**Required fix:** Inline the CSS into each template via `{% include 'shared/_base.css' %}` (raw block), or have the renderer set `page.set_content(html, base_url=...)` to a working file:// root. Add a test that confirms a known CSS rule is present in the rendered output.

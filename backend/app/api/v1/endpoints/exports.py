@@ -53,7 +53,7 @@ async def create_export(
         try:
             # Run sync Playwright renderer in a thread pool to avoid
             # "sync_playwright inside asyncio loop" error in async endpoints.
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             pdf_bytes = await loop.run_in_executor(
                 None,
                 functools.partial(
@@ -77,12 +77,11 @@ async def create_export(
             ))
             raise HTTPException(status_code=500, detail="PDF render timed out; please retry") from exc
 
+        # Persist the audit row BEFORE asking for a signed URL. If signed_url()
+        # fails after upload_pdf() succeeds, we'd otherwise leak an untracked
+        # storage object with no DB record. With this ordering the GET endpoint
+        # can always regenerate the URL because the row exists.
         upload_pdf(pdf_bytes, storage_path)
-        url = signed_url(storage_path)
-        expires_at = datetime.now(timezone.utc) + timedelta(
-            seconds=settings.SUPABASE_SIGNED_URL_TTL_SECONDS
-        )
-
         db.add(ResumeExport(
             id=export_id,
             user_id=current_user_id,
@@ -94,6 +93,10 @@ async def create_export(
             status="succeeded",
             file_size_bytes=len(pdf_bytes),
         ))
+        url = signed_url(storage_path)
+        expires_at = datetime.now(timezone.utc) + timedelta(
+            seconds=settings.SUPABASE_SIGNED_URL_TTL_SECONDS
+        )
         response_payload = ExportResponse(
             export_id=export_id,
             download_url=url,
