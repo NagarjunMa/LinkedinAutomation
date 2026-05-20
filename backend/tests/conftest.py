@@ -96,6 +96,19 @@ def _create_sqlite_tables(engine) -> None:
         sa.Column("created_at", sa.DateTime, server_default=sa.func.now()),
     )
 
+    sa.Table(
+        "jd_evaluations",
+        meta,
+        sa.Column("id", sa.String, primary_key=True),
+        sa.Column("user_id", sa.String, sa.ForeignKey("users.user_id"), nullable=False, index=True),
+        sa.Column("resume_document_id", sa.String, sa.ForeignKey("resume_documents.id"), nullable=False),
+        sa.Column("jd_text", sa.Text, nullable=False),
+        sa.Column("extracted_requirements", JSON, nullable=False),
+        sa.Column("diff_plan", JSON, nullable=False),
+        sa.Column("match_score", sa.Integer, nullable=False),
+        sa.Column("created_at", sa.DateTime, server_default=sa.func.now()),
+    )
+
     meta.create_all(bind=engine)
 
 
