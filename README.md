@@ -83,6 +83,18 @@ prism-pro/
 - Phase 0 cleanup plan: `docs/superpowers/plans/2026-05-19-prism-pro-phase-0-cleanup.md`
 - Phase 1 backend plan: `docs/superpowers/plans/2026-05-19-prism-pro-resume-backend-phase-1.md`
 
+## Phase 1 — Resume + JD Backend (in progress)
+
+New REST endpoints (v1):
+- `POST /api/v1/resumes/upload` — upload PDF/DOCX, returns parsed JSON
+- `POST /api/v1/resumes/{id}/evaluate` — single-agent eval + ATS sim (costs 1 credit)
+- `POST /api/v1/resumes/{id}/rewrite/{bullet_id}` — hallucination-guarded bullet rewrite (free)
+- `POST /api/v1/resumes/{id}/versions` — apply accepted changes, save new version
+- `POST /api/v1/jd/analyze` — extract JD requirements + tailor diff plan (costs 2 credits)
+- `GET /api/v1/credits/balance`
+
+Architecture: see `docs/superpowers/specs/2026-05-19-prism-pro-pivot-design.md`.
+
 ## Security
 
 - All secrets in env vars (never committed)
