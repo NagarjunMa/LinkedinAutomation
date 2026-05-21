@@ -301,8 +301,8 @@ def validate_production_config() -> List[str]:
     if not settings.SUPABASE_ANON_KEY:
         issues.append("SUPABASE_ANON_KEY is required")
 
-    if not settings.SUPABASE_JWT_SECRET:
-        issues.append("SUPABASE_JWT_SECRET is required")
+    # SUPABASE_JWT_SECRET no longer required — auth now uses ES256 + JWKS
+    # (fetched from <SUPABASE_URL>/auth/v1/.well-known/jwks.json).
 
     if settings.SECRET_KEY == "dev-secret-key-change-in-production":
         issues.append("SECRET_KEY must be changed from default value")
