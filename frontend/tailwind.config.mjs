@@ -9,22 +9,59 @@ export default {
   theme: {
   	extend: {
   		fontFamily: {
-  			'absans': ['Absans', 'sans-serif'], // Primary application font
-  			'sans': ['Absans', 'sans-serif'], // Default sans-serif
+  			// ── Prism Pro brand typography ──────────────────────────────────────
+  			// Display / headings: Fraunces (premium editorial serif)
+  			'display': ['var(--font-fraunces)', 'Georgia', 'serif'],
+  			'serif': ['var(--font-fraunces)', 'Georgia', 'serif'],
+  			// Body / UI copy: IBM Plex Sans (clean, professional)
+  			'sans': ['var(--font-ibm-plex-sans)', 'Inter', 'system-ui', 'sans-serif'],
+  			'body': ['var(--font-ibm-plex-sans)', 'Inter', 'system-ui', 'sans-serif'],
+  			// ── Legacy font families kept for backward compat ────────────────────
+  			'absans': ['Absans', 'sans-serif'],
   			'urbanist': ['var(--font-urbanist)', 'Urbanist', 'sans-serif'],
   			'clash': ['Clash Display', 'sans-serif'],
-  			'heading': ['Clash Display', 'sans-serif'],
-  			'title': ['Clash Display', 'sans-serif'], // All page titles
+  			'heading': ['Clash Display', 'var(--font-fraunces)', 'Georgia', 'serif'],
+  			'title': ['Clash Display', 'var(--font-fraunces)', 'Georgia', 'serif'],
   			'stardom': ['Stardom', 'sans-serif'],
-  			'app-title': ['Stardom', 'sans-serif'], // JOBFLOW PRO application name
-  			'adieu': ['Adieu', 'sans-serif'], // Backup for Adieu if files available
-  			// Resume evaluation specific fonts
-  			'inter': ['Inter', 'sans-serif'], // For resume evaluation UI
+  			'app-title': ['Stardom', 'var(--font-fraunces)', 'serif'],
+  			'adieu': ['Adieu', 'sans-serif'],
+  			'inter': ['Inter', 'var(--font-ibm-plex-sans)', 'sans-serif'],
   			'mono': ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'Monaco', 'Consolas', 'monospace'],
-            'serif': ['Playfair Display', 'serif'],
   		},
 		colors: {
-			// Unified application theme colors
+			// ── Prism Pro earth-tone design tokens ──────────────────────────────
+			// These map to CSS vars in globals.css; all shadcn components pick them up.
+			'terracotta': {
+				DEFAULT: 'hsl(18 52% 48%)',
+				light:   'hsl(18 52% 62%)',
+				dark:    'hsl(18 52% 34%)',
+			},
+			'sage': {
+				DEFAULT: 'hsl(140 14% 58%)',
+				light:   'hsl(140 14% 72%)',
+				dark:    'hsl(140 14% 40%)',
+			},
+			'sand': {
+				50:  'hsl(40 20% 97%)',
+				100: 'hsl(40 15% 93%)',
+				200: 'hsl(38 12% 86%)',
+				300: 'hsl(36 10% 76%)',
+			},
+			'charcoal': {
+				DEFAULT: 'hsl(30 8% 18%)',
+				soft:    'hsl(30 6% 28%)',
+				muted:   'hsl(30 5% 40%)',
+			},
+			'gold': {
+				DEFAULT: 'hsl(42 45% 65%)',
+				dark:    'hsl(42 45% 45%)',
+			},
+			'rust': {
+				DEFAULT: 'hsl(10 62% 38%)',
+				light:   'hsl(10 62% 52%)',
+			},
+
+			// ── Unified app-wide theme colors ───────────────────────────────────
 			'app-bg': 'var(--app-bg)',
 			'app-text': 'var(--app-text)',
 			'app-card': 'var(--app-card)',
@@ -32,7 +69,7 @@ export default {
 			'app-muted': 'var(--app-muted)',
 			'app-accent': 'var(--app-accent)',
 
-			// Resume evaluation specific colors
+			// ── Resume evaluation specific colors (unchanged) ────────────────────
 			'resume-primary': '#3b3b3b',
 			'resume-bg': '#f0eff2',
 			'resume-surface': '#ffffff',
@@ -49,14 +86,7 @@ export default {
 				hover: 'rgb(59 59 59 / 0.2)',
 			},
 
-			// Keep existing accent colors for special purposes
-			accent: {
-				600: '#e64a19', // Darker orange
-				500: '#ff5722', // Primary orange
-				400: '#ff6b3d', // Lighter orange
-				300: '#ff7f57', // Lightest orange
-			},
-  			// Keep existing shadcn colors for compatibility
+			// ── shadcn/ui semantic colors — map to CSS vars ──────────────────────
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
   			card: {
@@ -67,6 +97,10 @@ export default {
   				DEFAULT: 'hsl(var(--popover))',
   				foreground: 'hsl(var(--popover-foreground))'
   			},
+  			primary: {
+  				DEFAULT: 'hsl(var(--primary))',
+  				foreground: 'hsl(var(--primary-foreground))'
+  			},
   			secondary: {
   				DEFAULT: 'hsl(var(--secondary))',
   				foreground: 'hsl(var(--secondary-foreground))'
@@ -74,6 +108,10 @@ export default {
   			muted: {
   				DEFAULT: 'hsl(var(--muted))',
   				foreground: 'hsl(var(--muted-foreground))'
+  			},
+  			accent: {
+  				DEFAULT: 'hsl(var(--accent))',
+  				foreground: 'hsl(var(--accent-foreground))'
   			},
   			destructive: {
   				DEFAULT: 'hsl(var(--destructive))',
@@ -91,28 +129,34 @@ export default {
   			}
   		},
   		backgroundImage: {
-  			'gradient-warm': 'linear-gradient(135deg, #ff5722 0%, #f59e0b 100%)',
-  			'gradient-glow': 'radial-gradient(circle at 30% 40%, rgba(255, 87, 34, 0.15) 0%, transparent 60%)',
-  			'gradient-card': 'linear-gradient(to bottom right, rgba(255, 87, 34, 0.1), rgba(245, 158, 11, 0.05))',
-  			'gradient-orange': 'linear-gradient(135deg, #ff5722, #ff6b3d)',
-  			'gradient-gold': 'linear-gradient(135deg, #f59e0b, #fbbf24)',
+  			// ── Earth-tone gradients ─────────────────────────────────────────────
+  			'gradient-warm':       'linear-gradient(135deg, hsl(18 52% 48%) 0%, hsl(42 45% 65%) 100%)',
+  			'gradient-terracotta': 'linear-gradient(135deg, hsl(18 52% 42%), hsl(18 52% 58%))',
+  			'gradient-sage':       'linear-gradient(135deg, hsl(140 14% 50%), hsl(140 14% 65%))',
+  			'gradient-glow':       'radial-gradient(circle at 30% 40%, hsl(18 52% 48% / 0.15) 0%, transparent 60%)',
+  			'gradient-card':       'linear-gradient(to bottom right, hsl(18 52% 48% / 0.08), hsl(42 45% 65% / 0.04))',
+  			// Legacy orange gradients kept for backward compat
+  			'gradient-orange':     'linear-gradient(135deg, hsl(18 52% 48%), hsl(18 52% 58%))',
+  			'gradient-gold':       'linear-gradient(135deg, hsl(42 45% 58%), hsl(42 45% 70%))',
   		},
   		boxShadow: {
-  			'glow-orange': '0 0 20px rgba(255, 87, 34, 0.3)',
-  			'glow-gold': '0 0 20px rgba(245, 158, 11, 0.3)',
-  			'card-elevated': '0 8px 32px rgba(0, 0, 0, 0.4)',
-  			'card-subtle': '0 4px 16px rgba(0, 0, 0, 0.2)',
+  			// ── Earth-tone glow shadows ──────────────────────────────────────────
+  			'glow-terracotta': '0 0 20px hsl(18 52% 48% / 0.28)',
+  			'glow-gold':       '0 0 20px hsl(42 45% 60% / 0.28)',
+  			'card-elevated':   '0 8px 32px hsl(30 8% 10% / 0.18)',
+  			'card-subtle':     '0 4px 16px hsl(30 8% 10% / 0.10)',
+  			// Legacy aliases
+  			'glow-orange':     '0 0 20px hsl(18 52% 48% / 0.28)',
   		},
   		borderRadius: {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',
   			sm: 'calc(var(--radius) - 4px)',
-  			// Resume evaluation specific radius
-  			'3xl': '1.875rem', // 30px
-  			'4xl': '2.5rem',   // 40px - for cards
+  			'3xl': '1.875rem',
+  			'4xl': '2.5rem',
   		},
   		letterSpacing: {
-  			'ultra-wide': '0.2em', // For ultra-wide tracking
+  			'ultra-wide': '0.2em',
   		},
   		fontSize: {
   			'micro': '9px',

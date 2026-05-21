@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { Urbanist, Inter, Playfair_Display, JetBrains_Mono } from "next/font/google"
+import { Urbanist, Inter, Playfair_Display, JetBrains_Mono, Fraunces, IBM_Plex_Sans } from "next/font/google"
 import "./globals.css"
 import { Providers } from "@/components/ui/providers"
 import { AuthProvider } from "@/contexts/auth-context"
@@ -27,6 +27,24 @@ const playfair = Playfair_Display({
 const jetbrains = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-mono"
+})
+
+// ── Prism Pro brand typography ─────────────────────────────────────────────
+// Display / headings: Fraunces (premium editorial optical-size serif)
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "900"],
+  style: ["normal", "italic"],
+  variable: "--font-fraunces",
+  display: "swap",
+})
+
+// Body / UI: IBM Plex Sans (professional, legible, neutral)
+const ibmPlexSans = IBM_Plex_Sans({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-ibm-plex-sans",
+  display: "swap",
 })
 
 export const metadata: Metadata = {
@@ -142,7 +160,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${urbanist.className} ${urbanist.variable} ${inter.variable} ${playfair.variable} ${jetbrains.variable}`}>
+      <body className={`${ibmPlexSans.className} ${fraunces.variable} ${ibmPlexSans.variable} ${urbanist.variable} ${inter.variable} ${playfair.variable} ${jetbrains.variable}`}>
         <ErrorBoundary fallback={PageErrorFallback}>
           <ThemeProvider>
             <AuthProvider>

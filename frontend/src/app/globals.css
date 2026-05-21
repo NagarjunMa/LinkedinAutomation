@@ -66,97 +66,135 @@
 
 @layer base {
   :root {
-    /* Light theme with #F0EFF2 background and #3B3B3B accent */
-    --background: 240 13% 95%;
-    /* #F0EFF2 - light grayish purple background */
-    --foreground: 0 0% 23%;
-    /* #3B3B3B - dark gray text */
-    --card: 240 13% 97%;
-    /* Slightly lighter than background for cards */
-    --card-foreground: 0 0% 23%;
-    /* #3B3B3B - dark gray text on cards */
-    --popover: 240 13% 97%;
-    /* Slightly lighter than background for popovers */
-    --popover-foreground: 0 0% 23%;
-    --primary: 0 0% 23%;
-    /* #3B3B3B - dark gray primary */
-    --primary-foreground: 240 13% 95%;
-    --secondary: 240 13% 92%;
-    /* Slightly darker than background */
-    --secondary-foreground: 0 0% 23%;
-    --muted: 240 13% 92%;
-    /* Slightly darker than background */
-    --muted-foreground: 0 0% 40%;
-    --accent: 240 13% 92%;
-    /* Slightly darker than background */
-    --accent-foreground: 0 0% 23%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 240 13% 95%;
-    --border: 240 13% 88%;
-    /* Light purple-gray borders */
-    --input: 240 13% 88%;
-    /* Light purple-gray inputs */
-    --ring: 0 0% 23%;
-    /* Dark ring to match primary */
-    --chart-1: 0 0% 23%;
-    /* Dark primary color */
-    --chart-2: 240 13% 80%;
-    /* Light accent */
-    --chart-3: 220 70% 50%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    /* ─── Prism Pro Earth-Tone Light Theme ───────────────────────────────────
+       Palette: sand background · deep charcoal text · terracotta primary
+                sage secondary · warm gold accent · rust-red destructive
+       All values are HSL triples (no hsl() wrapper — shadcn convention).
+    ────────────────────────────────────────────────────────────────────────── */
+
+    /* Sand-50 off-white background */
+    --background: 40 20% 97%;
+    /* Deep charcoal foreground */
+    --foreground: 30 8% 18%;
+
+    /* Cards: slightly warmer than background */
+    --card: 38 18% 98%;
+    --card-foreground: 30 8% 18%;
+
+    /* Popovers match card */
+    --popover: 38 18% 98%;
+    --popover-foreground: 30 8% 18%;
+
+    /* Terracotta primary — buttons, links, key accents */
+    --primary: 18 52% 48%;
+    /* Cream primary foreground */
+    --primary-foreground: 40 30% 96%;
+
+    /* Sage secondary — secondary actions, badges */
+    --secondary: 140 14% 58%;
+    --secondary-foreground: 30 8% 18%;
+
+    /* Sand-100 muted surfaces */
+    --muted: 40 15% 93%;
+    --muted-foreground: 30 8% 40%;
+
+    /* Warm gold accent — sparing highlights */
+    --accent: 42 45% 65%;
+    --accent-foreground: 30 8% 18%;
+
+    /* Rust-red destructive — earth-tone family, not pure red */
+    --destructive: 10 62% 38%;
+    --destructive-foreground: 40 30% 96%;
+
+    /* Warm gray border / input */
+    --border: 38 12% 86%;
+    --input: 38 12% 86%;
+    /* Terracotta-tinted ring */
+    --ring: 18 40% 60%;
+
+    /* Chart palette — earth tones */
+    --chart-1: 18 52% 48%;
+    --chart-2: 140 14% 50%;
+    --chart-3: 42 45% 58%;
+    --chart-4: 10 40% 52%;
+    --chart-5: 200 20% 50%;
+
     --radius: 0.5rem;
 
-    /* Unified theme variables matching landing page */
-    --app-bg: #f0eff2;
-    --app-text: #3b3b3b;
-    --app-card: rgba(255, 255, 255, 0.5);
-    --app-card-border: rgba(59, 59, 59, 0.1);
-    --app-muted: rgba(59, 59, 59, 0.6);
-    --app-accent: rgba(59, 59, 59, 0.8);
+    /* ─── App-wide theme vars (used by landing page + bento cards) ─────────── */
+    --app-bg: hsl(40, 20%, 97%);
+    --app-text: hsl(30, 8%, 18%);
+    --app-card: rgba(255, 252, 248, 0.6);
+    --app-card-border: rgba(80, 55, 40, 0.10);
+    --app-muted: rgba(80, 55, 40, 0.55);
+    --app-accent: rgba(80, 55, 40, 0.80);
+
+    /* ─── Typography vars ───────────────────────────────────────────────────── */
+    --font-display: var(--font-fraunces), 'Georgia', serif;
+    --font-body: var(--font-ibm-plex-sans), 'Inter', sans-serif;
   }
 
   .dark {
-    /* Dark theme with #0a0a0a background and #FAFAFA text */
-    --background: 0 0% 3.9%;
-    /* #0a0a0a - Premium Dark background */
-    --foreground: 0 0% 98%;
-    /* #FAFAFA - Almost white text */
-    --card: 0 0% 11%;
-    /* #1c1c1c - Dark card background */
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 11%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    /* White primary in dark mode */
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    /* Darker gray for secondary */
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    /* Dark subtle borders */
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    /* Light ring in dark mode */
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    /* ─── Prism Pro Earth-Tone Dark Theme ────────────────────────────────────
+       Background: deep warm charcoal (not pure black)
+       Text: warm sand / cream
+       Primary: brightened terracotta (more luminous for dark backgrounds)
+    ────────────────────────────────────────────────────────────────────────── */
 
-    /* Unified theme variables matching Premium Dark */
-    --app-bg: #0a0a0a;
-    --app-text: #f0eff2;
-    --app-card: rgba(28, 28, 28, 0.7);
-    --app-card-border: rgba(255, 255, 255, 0.1);
-    --app-muted: rgba(255, 255, 255, 0.6);
-    --app-accent: rgba(255, 255, 255, 0.8);
+    /* Deep warm charcoal background */
+    --background: 28 12% 10%;
+    /* Warm sand foreground */
+    --foreground: 40 20% 92%;
+
+    /* Cards: slightly lighter charcoal */
+    --card: 28 10% 14%;
+    --card-foreground: 40 20% 92%;
+
+    /* Popovers */
+    --popover: 28 10% 14%;
+    --popover-foreground: 40 20% 92%;
+
+    /* Brightened terracotta for dark backgrounds */
+    --primary: 18 60% 58%;
+    /* Deep charcoal on primary */
+    --primary-foreground: 28 12% 10%;
+
+    /* Muted sage for dark mode secondary */
+    --secondary: 140 10% 28%;
+    --secondary-foreground: 40 20% 85%;
+
+    /* Dark muted surface */
+    --muted: 28 8% 18%;
+    --muted-foreground: 40 15% 62%;
+
+    /* Darker warm gold accent */
+    --accent: 42 30% 35%;
+    --accent-foreground: 40 20% 92%;
+
+    /* Rust-red destructive (slightly brighter in dark) */
+    --destructive: 10 65% 45%;
+    --destructive-foreground: 40 20% 92%;
+
+    /* Warm dark border / input */
+    --border: 28 8% 22%;
+    --input: 28 8% 22%;
+    /* Terracotta ring in dark */
+    --ring: 18 50% 52%;
+
+    /* Chart palette — dark earth tones */
+    --chart-1: 18 60% 58%;
+    --chart-2: 140 14% 48%;
+    --chart-3: 42 45% 52%;
+    --chart-4: 10 50% 55%;
+    --chart-5: 200 20% 48%;
+
+    /* ─── App-wide theme vars for dark mode ─────────────────────────────────── */
+    --app-bg: hsl(28, 12%, 10%);
+    --app-text: hsl(40, 20%, 92%);
+    --app-card: rgba(40, 32, 25, 0.65);
+    --app-card-border: rgba(220, 190, 160, 0.12);
+    --app-muted: rgba(220, 190, 160, 0.55);
+    --app-accent: rgba(220, 190, 160, 0.80);
   }
 }
 
@@ -169,7 +207,8 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', 'Absans', sans-serif;
+    /* IBM Plex Sans as default body / UI font; fallback chain preserved */
+    font-family: var(--font-ibm-plex-sans), 'Inter', 'Absans', sans-serif;
   }
 
   h1,
@@ -178,17 +217,21 @@
   h4,
   h5,
   h6 {
-    @apply font-clash;
+    /* Fraunces (premium editorial serif) as primary display font
+       Clash Display kept as fallback for backward compat */
+    font-family: var(--font-fraunces), 'Clash Display', Georgia, serif;
   }
 
-  /* Page titles styling - Clash Display for all titles */
+  /* Page titles styling — Fraunces display serif */
   .page-title {
-    @apply font-title font-semibold tracking-tight;
+    font-family: var(--font-fraunces), 'Clash Display', Georgia, serif;
+    @apply font-semibold tracking-tight;
   }
 
-  /* Application title styling - Stardom for PRISM PRO */
+  /* Application title styling — Fraunces for PRISM PRO wordmark */
   .app-title {
-    @apply font-app-title font-semibold tracking-wide;
+    font-family: var(--font-fraunces), 'Stardom', Georgia, serif;
+    @apply font-semibold tracking-wide;
   }
 
   /* Absans font utilities */
@@ -196,14 +239,14 @@
     font-family: 'Absans', sans-serif;
   }
 
-  /* Apply Absans to common text elements */
+  /* Apply IBM Plex Sans to common text elements (Absans kept as fallback) */
   p,
   span,
   div,
   label,
   input,
   button {
-    font-family: 'Absans', sans-serif;
+    font-family: var(--font-ibm-plex-sans), 'Absans', sans-serif;
   }
 }
 
@@ -237,13 +280,13 @@
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
   }
 
-  /* Gradient buttons */
+  /* Gradient buttons — earth-tone terracotta */
   .btn-gradient-warm {
-    @apply bg-gradient-warm text-white px-6 py-3 rounded-lg font-semibold shadow-glow-orange hover:shadow-glow-gold transition-all duration-300 hover:scale-105;
+    @apply bg-gradient-warm text-white px-6 py-3 rounded-lg font-semibold shadow-glow-terracotta hover:shadow-glow-gold transition-all duration-300 hover:scale-105;
   }
 
   .btn-gradient-orange {
-    @apply bg-gradient-orange text-white px-4 py-2 rounded-lg font-medium shadow-glow-orange hover:shadow-glow-gold transition-all duration-300;
+    @apply bg-gradient-terracotta text-white px-4 py-2 rounded-lg font-medium shadow-glow-terracotta hover:shadow-glow-gold transition-all duration-300;
   }
 
   /* Text styles - unified theme */
@@ -327,23 +370,23 @@
   @apply transition-all duration-300 ease-out;
 }
 
-/* Custom scrollbar for Apple aesthetic */
+/* Custom scrollbar — earth tones */
 ::-webkit-scrollbar {
   width: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.1);
+  background: hsl(38 12% 90% / 0.4);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
+  background: hsl(18 30% 55% / 0.3);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: hsl(18 30% 55% / 0.5);
 }
 
 /* Smooth animations */
