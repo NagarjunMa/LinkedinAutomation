@@ -6,7 +6,7 @@ from openai import AsyncOpenAI
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_not_exception_type
 from app.schemas.resume_v2 import RewriteResult, Placeholder
 from app.services.resume.hallucination_guard import check_no_unprompted_numbers, HallucinationError
-from app.core.llm_logging import measure, estimate_cost
+from app.core.llm_logging import measure, estimate_cost, log_cost
 
 logger = logging.getLogger("llm")
 
@@ -53,12 +53,13 @@ async def rewrite_bullet(
     target_role: str,
     jd_context: Optional[str] = None,
     country: str = "US",
+    user_id: str | None = None,
 ) -> RewriteResult:
     user = REWRITER_USER.format(
         original=original, target_role=target_role,
         country=country, jd_context=jd_context or "",
     )
-    async with measure("rewriter"):
+    async with measure("rewriter", user_id=user_id):
         resp = await _client.chat.completions.create(
             model="gpt-4o-2024-08-06",
             response_format={"type": "json_object"},
@@ -66,9 +67,7 @@ async def rewrite_bullet(
                       {"role": "user", "content": user}],
             temperature=0.4,
         )
-    logger.info(
-        {"event": "llm_cost", "label": "rewriter", "cost_usd": estimate_cost(resp.usage)}
-    )
+    log_cost("rewriter", resp.usage, user_id=user_id)
     data = json.loads(resp.choices[0].message.content or "{}")
     result = RewriteResult.model_validate(data)
     check_no_unprompted_numbers(

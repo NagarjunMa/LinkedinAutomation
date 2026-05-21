@@ -111,7 +111,7 @@ async def evaluate(
     result_payload = None
     with credit_transaction(db, current_user_id, amount=1, reason="evaluate"):
         doc_json = ResumeDocumentJSON.model_validate(doc_row.parsed_json)
-        report = await evaluate_resume(doc_json, target_role=body.target_role)
+        report = await evaluate_resume(doc_json, target_role=body.target_role, user_id=current_user_id)
 
         # ATS simulation: download raw bytes from Supabase Storage.
         # Falls back to file_path for rows uploaded before Phase 4 (backfill pending).
@@ -183,6 +183,7 @@ async def rewrite(
             target_role=body.target_role,
             country=body.country,
             jd_context=body.jd_context,
+            user_id=current_user_id,
         )
     except HallucinationError as exc:
         raise HTTPException(status_code=422, detail=f"Rewrite rejected: {exc}")

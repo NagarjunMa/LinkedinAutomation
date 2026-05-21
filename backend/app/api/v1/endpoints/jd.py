@@ -38,10 +38,10 @@ async def analyze(
 
     result_payload = None
     with credit_transaction(db, current_user_id, amount=2, reason="tailor"):
-        jd_ext = await extract_jd_requirements(body.jd_text)
+        jd_ext = await extract_jd_requirements(body.jd_text, user_id=current_user_id)
         doc = ResumeDocumentJSON.model_validate(doc_row.parsed_json)
         try:
-            plan = await tailor_resume_to_jd(doc, jd_ext)
+            plan = await tailor_resume_to_jd(doc, jd_ext, user_id=current_user_id)
         except HallucinationError as e:
             raise HTTPException(status_code=422, detail=f"Tailor rejected: {e}")
 
