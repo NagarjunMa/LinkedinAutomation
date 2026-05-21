@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import {
   ArrowRight,
   Upload,
@@ -20,25 +20,42 @@ import { SectionHeader } from '@/components/landing/SectionHeader';
 import { BentoGrid } from '@/components/landing/BentoGrid';
 import { useTheme } from '@/contexts/theme-context';
 
-const fadeInUp = {
-  hidden: { opacity: 0, y: 24 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.65, ease: [0.17, 0.55, 0.55, 1] as [number, number, number, number] }
-  }
-};
+// Build animation variants respecting prefers-reduced-motion.
+// When reduced motion is requested every variant resolves to a no-op so
+// the page is fully accessible without forking every JSX element.
+function useMotionVariants() {
+  const reduce = useReducedMotion();
 
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.12,
-      delayChildren: 0.1
-    }
-  }
-};
+  const fadeInUp = reduce
+    ? { hidden: { opacity: 1, y: 0 }, visible: { opacity: 1, y: 0 } }
+    : {
+        hidden: { opacity: 0, y: 24 },
+        visible: {
+          opacity: 1,
+          y: 0,
+          transition: { duration: 0.6, ease: [0.17, 0.55, 0.55, 1] as [number, number, number, number] }
+        }
+      };
+
+  const staggerContainer = reduce
+    ? { hidden: { opacity: 1 }, visible: { opacity: 1 } }
+    : {
+        hidden: { opacity: 0 },
+        visible: {
+          opacity: 1,
+          transition: { staggerChildren: 0.15, delayChildren: 0.1 }
+        }
+      };
+
+  const scrollReveal = reduce
+    ? { hidden: { opacity: 1, y: 0 }, visible: { opacity: 1, y: 0 } }
+    : {
+        hidden: { opacity: 0, y: 20 },
+        visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } }
+      };
+
+  return { fadeInUp, staggerContainer, scrollReveal, reduce };
+}
 
 const STEPS = [
   {
@@ -141,9 +158,13 @@ const FAQS = [
 
 export default function LandingPage() {
   const { isDark } = useTheme();
+  const { fadeInUp, staggerContainer, scrollReveal, reduce } = useMotionVariants();
 
   const borderFaint = isDark ? 'border-white/8' : 'border-black/8';
   const surfaceFaint = isDark ? 'bg-white/5' : 'bg-black/5';
+
+  // Viewport config for scroll-reveal sections
+  const viewport = { once: true, margin: '-100px' } as const;
 
   return (
     <div className="relative min-h-screen transition-colors duration-300 scroll-smooth bg-background text-foreground">
@@ -153,6 +174,27 @@ export default function LandingPage() {
 
       {/* ─── HERO ────────────────────────────────────────────────────────── */}
       <section id="hero" className="relative pt-44 pb-32 px-6">
+        {/* Ambient radial gradient — slow drift, stays behind content */}
+        {!reduce && (
+          <motion.div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 overflow-hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 2 }}
+          >
+            <motion.div
+              className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[600px] rounded-full"
+              style={{
+                background: isDark
+                  ? 'radial-gradient(ellipse at center, hsl(18 50% 56% / 0.07) 0%, transparent 70%)'
+                  : 'radial-gradient(ellipse at center, hsl(18 52% 48% / 0.06) 0%, transparent 70%)'
+              }}
+              animate={{ y: [0, -18, 0], x: [0, 10, 0] }}
+              transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut' }}
+            />
+          </motion.div>
+        )}
         <div className="max-w-5xl mx-auto">
           <motion.div
             initial="hidden"
@@ -191,24 +233,28 @@ export default function LandingPage() {
               variants={fadeInUp}
               className="flex flex-col sm:flex-row items-center gap-5"
             >
-              <Link href="/login">
-                <StyledButton isDark={isDark}>
-                  Polish Your Resume <ArrowRight size={15} />
-                </StyledButton>
-              </Link>
-              <button
-                onClick={() => {
-                  const el = document.getElementById('how-it-works');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
-                }}
-              >
-                <StyledButton variant="secondary" isDark={isDark} className="min-w-[150px]">
-                  <div className="flex items-center gap-2">
-                    <ChevronDown className="w-4 h-4" />
-                    <span>See How It Works</span>
-                  </div>
-                </StyledButton>
-              </button>
+              <motion.div whileTap={reduce ? {} : { scale: 0.97 }} transition={{ duration: 0.1 }}>
+                <Link href="/login">
+                  <StyledButton isDark={isDark}>
+                    Polish Your Resume <ArrowRight size={15} />
+                  </StyledButton>
+                </Link>
+              </motion.div>
+              <motion.div whileTap={reduce ? {} : { scale: 0.97 }} transition={{ duration: 0.1 }}>
+                <button
+                  onClick={() => {
+                    const el = document.getElementById('how-it-works');
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                >
+                  <StyledButton variant="secondary" isDark={isDark} className="min-w-[150px]">
+                    <div className="flex items-center gap-2">
+                      <ChevronDown className="w-4 h-4" />
+                      <span>See How It Works</span>
+                    </div>
+                  </StyledButton>
+                </button>
+              </motion.div>
             </motion.div>
 
             {/* Hero product screenshot */}
@@ -258,9 +304,10 @@ export default function LandingPage() {
             {PROBLEMS.map(({ stat, label, detail }) => (
               <motion.div
                 key={stat}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
+                initial="hidden"
+                whileInView="visible"
+                variants={scrollReveal}
+                viewport={viewport}
                 className={`p-8 border ${borderFaint} rounded-sm`}
               >
                 <div
@@ -289,9 +336,10 @@ export default function LandingPage() {
             {STEPS.map(({ icon: Icon, step, title, desc }) => (
               <motion.div
                 key={step}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
+                initial="hidden"
+                whileInView="visible"
+                variants={scrollReveal}
+                viewport={viewport}
                 className={`p-7 border ${borderFaint} rounded-sm flex flex-col gap-5 group hover:border-primary/30 transition-colors`}
               >
                 <div className="flex items-start justify-between">
@@ -333,9 +381,10 @@ export default function LandingPage() {
           {FEATURES.map(({ title, desc }) => (
             <motion.div
               key={title}
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              initial="hidden"
+              whileInView="visible"
+              variants={scrollReveal}
+              viewport={viewport}
               className="flex gap-4"
             >
               <CheckCircle size={20} className="shrink-0 mt-1 text-primary opacity-80" />
@@ -362,9 +411,10 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-2 gap-8 max-w-3xl">
             {/* Free tier */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              initial="hidden"
+              whileInView="visible"
+              variants={scrollReveal}
+              viewport={viewport}
               className={`p-8 border ${borderFaint} rounded-sm`}
             >
               <div className="text-xs font-bold tracking-[0.2em] uppercase opacity-50 mb-4">Free</div>
@@ -392,10 +442,10 @@ export default function LandingPage() {
 
             {/* Credit top-up */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
+              initial="hidden"
+              whileInView="visible"
+              variants={scrollReveal}
+              viewport={viewport}
               className={`p-8 border border-primary/30 bg-primary/5 rounded-sm`}
             >
               <div className="text-xs font-bold tracking-[0.2em] uppercase text-primary/70 mb-4">Top-up</div>
@@ -411,11 +461,13 @@ export default function LandingPage() {
                 Credit pack pricing will be shown in-dashboard. Top-ups are one-time purchases — no recurring charge, no lock-in.
               </p>
               <div className="mt-6">
-                <Link href="/login">
-                  <StyledButton isDark={isDark}>
-                    Get Started Free <ArrowRight size={14} />
-                  </StyledButton>
-                </Link>
+                <motion.div whileTap={reduce ? {} : { scale: 0.97 }} transition={{ duration: 0.1 }}>
+                  <Link href="/login">
+                    <StyledButton isDark={isDark}>
+                      Get Started Free <ArrowRight size={14} />
+                    </StyledButton>
+                  </Link>
+                </motion.div>
               </div>
             </motion.div>
           </div>
@@ -437,9 +489,10 @@ export default function LandingPage() {
             {FAQS.map(({ q, a }) => (
               <motion.div
                 key={q}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
+                initial="hidden"
+                whileInView="visible"
+                variants={scrollReveal}
+                viewport={viewport}
               >
                 <h4 className="font-semibold mb-3">{q}</h4>
                 <p className="text-sm opacity-60 leading-relaxed">{a}</p>
@@ -453,7 +506,13 @@ export default function LandingPage() {
       <section
         className={`py-32 px-6 border-t ${borderFaint}`}
       >
-        <div className="max-w-3xl mx-auto flex flex-col items-center text-center">
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          variants={scrollReveal}
+          viewport={viewport}
+          className="max-w-3xl mx-auto flex flex-col items-center text-center"
+        >
           <h2
             className="text-4xl md:text-5xl font-bold tracking-tight mb-6 leading-tight"
             style={{ fontFamily: 'var(--font-fraunces), serif' }}
@@ -464,12 +523,14 @@ export default function LandingPage() {
           <p className="opacity-60 mb-10 leading-relaxed max-w-lg">
             Join engineers and product professionals who prep smarter, not longer.
           </p>
-          <Link href="/login">
-            <StyledButton isDark={isDark}>
-              Polish Your Resume <ArrowRight size={16} />
-            </StyledButton>
-          </Link>
-        </div>
+          <motion.div whileTap={reduce ? {} : { scale: 0.97 }} transition={{ duration: 0.1 }}>
+            <Link href="/login">
+              <StyledButton isDark={isDark}>
+                Polish Your Resume <ArrowRight size={16} />
+              </StyledButton>
+            </Link>
+          </motion.div>
+        </motion.div>
       </section>
 
       {/* ─── FOOTER ─────────────────────────────────────────────────────── */}

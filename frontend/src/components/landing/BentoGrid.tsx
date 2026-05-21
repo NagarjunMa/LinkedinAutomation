@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { motion, useInView } from 'framer-motion';
+import { motion, useInView, useReducedMotion } from 'framer-motion';
 import {
   ScanText,
   Target,
@@ -15,29 +15,28 @@ interface BentoGridProps {
   isDark: boolean;
 }
 
-const fadeInUp = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] }
-  }
-};
-
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.12,
-      delayChildren: 0.1
-    }
-  }
-};
-
 export const BentoGrid: React.FC<BentoGridProps> = ({ isDark }) => {
   const ref = React.useRef(null);
   const isInView = useInView(ref, { once: true, amount: 0.1 });
+  const reduce = useReducedMotion();
+
+  const fadeInUp = reduce
+    ? { hidden: { opacity: 1, y: 0 }, visible: { opacity: 1, y: 0 } }
+    : {
+        hidden: { opacity: 0, y: 20 },
+        visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } }
+      };
+
+  const staggerContainer = reduce
+    ? { hidden: { opacity: 1 }, visible: { opacity: 1 } }
+    : {
+        hidden: { opacity: 0 },
+        visible: { opacity: 1, transition: { staggerChildren: 0.12, delayChildren: 0.1 } }
+      };
+
+  // Hover props: subtle scale + transition; skipped when reduced motion is requested
+  const cardHover = reduce ? {} : { scale: 1.02 };
+  const cardHoverTransition = { duration: 0.2, ease: 'easeOut' };
 
   const borderClass = isDark ? 'border-white/10' : 'border-black/10';
   const subtleClass = isDark ? 'bg-white/5' : 'bg-black/5';
@@ -54,6 +53,8 @@ export const BentoGrid: React.FC<BentoGridProps> = ({ isDark }) => {
       {/* Card 1: ATS Simulator — wide */}
       <motion.div
         variants={fadeInUp}
+        whileHover={cardHover}
+        transition={cardHoverTransition}
         className="md:col-span-8 bento-card p-8 rounded-sm flex flex-col justify-between group"
       >
         <div>
@@ -71,6 +72,8 @@ export const BentoGrid: React.FC<BentoGridProps> = ({ isDark }) => {
       {/* Card 2: Senior Recruiter Critique — narrow */}
       <motion.div
         variants={fadeInUp}
+        whileHover={cardHover}
+        transition={cardHoverTransition}
         className={`md:col-span-4 bento-card p-8 rounded-sm flex flex-col justify-between group ${subtleClass}`}
       >
         <div>
@@ -88,6 +91,8 @@ export const BentoGrid: React.FC<BentoGridProps> = ({ isDark }) => {
       {/* Card 3: JD Diff View — narrow */}
       <motion.div
         variants={fadeInUp}
+        whileHover={cardHover}
+        transition={cardHoverTransition}
         className="md:col-span-4 bento-card p-8 rounded-sm flex flex-col justify-between group"
       >
         <div>
@@ -102,6 +107,8 @@ export const BentoGrid: React.FC<BentoGridProps> = ({ isDark }) => {
       {/* Card 4: Country-Aware Export — wide */}
       <motion.div
         variants={fadeInUp}
+        whileHover={cardHover}
+        transition={cardHoverTransition}
         className={`md:col-span-8 bento-card p-8 rounded-sm flex flex-col justify-between group ${subtleClass}`}
       >
         <div className="flex justify-between items-start">
@@ -126,6 +133,8 @@ export const BentoGrid: React.FC<BentoGridProps> = ({ isDark }) => {
       {/* Card 5: Hallucination Guard — narrow */}
       <motion.div
         variants={fadeInUp}
+        whileHover={cardHover}
+        transition={cardHoverTransition}
         className={`md:col-span-6 bento-card p-8 rounded-sm flex flex-col justify-between group border ${borderClass}`}
       >
         <div>
@@ -142,6 +151,8 @@ export const BentoGrid: React.FC<BentoGridProps> = ({ isDark }) => {
       {/* Card 6: Credits — narrow */}
       <motion.div
         variants={fadeInUp}
+        whileHover={cardHover}
+        transition={cardHoverTransition}
         className={`md:col-span-6 bento-card p-8 rounded-sm flex flex-col justify-between group border ${borderClass}`}
       >
         <div>
