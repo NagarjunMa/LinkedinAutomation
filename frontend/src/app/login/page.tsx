@@ -344,7 +344,7 @@ function LoginForm() {
             variants={staggerItem}
             className="text-muted-foreground"
           >
-            {isSignUp ? "Create your account to get started" : "Welcome back! Sign in to your account"}
+            {isSignUp ? "Recruiter-grade resume prep starts here" : "Sign in to your workspace"}
           </motion.p>
         </motion.div>
 
@@ -361,8 +361,8 @@ function LoginForm() {
               </CardTitle>
               <CardDescription className="text-center text-muted-foreground">
                 {isSignUp
-                  ? "Join thousands of students who've streamlined their job search"
-                  : "Continue your job search journey"
+                  ? "Join engineers and PMs who prep smarter, not longer"
+                  : "Welcome back — your resume work continues here"
                 }
               </CardDescription>
             </CardHeader>
