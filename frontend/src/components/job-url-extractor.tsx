@@ -16,7 +16,6 @@ import { JobStatusModal, JobAnalysis } from './job-status-modal'
 import { useJobStatusModal } from '@/hooks/use-job-status-modal'
 import { updateJobApplicationStatus } from '@/app/lib/api'
 import { useToast } from '@/components/ui/use-toast'
-import { useActivity } from '@/contexts/activity-context'
 
 interface JobURLExtractorProps {
   userId: string
@@ -29,7 +28,6 @@ export default function JobURLExtractor({ userId, onJobExtracted }: JobURLExtrac
   const [extractedJob, setExtractedJob] = useState<JobAnalysis | null>(null)
   const [error, setError] = useState<string | null>(null)
   const { toast } = useToast()
-  const { trackJobExtractionActivity } = useActivity()
 
   const {
     isModalOpen,
@@ -130,17 +128,6 @@ export default function JobURLExtractor({ userId, onJobExtracted }: JobURLExtrac
           title: "Job Extracted Successfully!",
           description: `${job.title} at ${job.company}`,
         })
-
-        // Track activity for successful job extraction
-        try {
-          await trackJobExtractionActivity({
-            title: job.title,
-            company: job.company,
-            source: job.source
-          })
-        } catch (error) {
-          console.error('Failed to track job extraction activity:', error)
-        }
 
         // Call the callback with complete extraction result
         if (onJobExtracted) {
