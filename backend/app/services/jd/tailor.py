@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+from itertools import chain
 from openai import AsyncOpenAI, RateLimitError, APIConnectionError, APITimeoutError
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from app.schemas.resume_v2 import ResumeDocumentJSON
@@ -55,8 +56,15 @@ async def tailor_resume_to_jd(doc: ResumeDocumentJSON, jd: JDExtraction) -> Diff
         {"event": "llm_cost", "label": "tailor", "cost_usd": estimate_cost(resp.usage)}
     )
     plan = DiffPlan.model_validate_json(resp.choices[0].message.content or "{}")
-    # Hallucination guard on each bullet rewrite
-    bullet_lookup = {b.id: b.text for exp in doc.experience for b in exp.bullets}
+    # Hallucination guard on each bullet rewrite.
+    # Include both experience AND project bullets so the guard always uses the
+    # actual stored text rather than falling back to diff.old (the LLM's own
+    # claimed original, which can itself be fabricated).
+    bullet_lookup = {
+        b.id: b.text
+        for item in chain(doc.experience, doc.projects)
+        for b in item.bullets
+    }
     for diff in plan.bullets:
         original = bullet_lookup.get(diff.bullet_id, diff.old)
         try:
