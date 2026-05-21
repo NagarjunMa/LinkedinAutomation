@@ -66,136 +66,141 @@
 
 @layer base {
   :root {
-    /* ─── Prism Pro Earth-Tone Light Theme ───────────────────────────────────
-       Palette: sand background · deep charcoal text · terracotta primary
-                sage secondary · warm gold accent · rust-red destructive
+    /* ─── Prism Pro Editorial Light Theme ────────────────────────────────────
+       Palette: warm pale gray background · near-black text · black primary
+                deep warm brown accent — editorial minimalist (LUNE ATE. ref)
        All values are HSL triples (no hsl() wrapper — shadcn convention).
     ────────────────────────────────────────────────────────────────────────── */
 
-    /* Sand-50 off-white background */
-    --background: 40 20% 97%;
-    /* Deep charcoal foreground */
-    --foreground: 30 8% 18%;
+    /* #ece9e3 — warm pale gray — editorial background */
+    --background: 40 14% 91%;
+    /* #1a1a1a — near-black foreground */
+    --foreground: 0 0% 10%;
 
-    /* Cards: slightly warmer than background */
-    --card: 38 18% 98%;
-    --card-foreground: 30 8% 18%;
+    /* Cards: slightly lighter than background */
+    --card: 40 12% 94%;
+    --card-foreground: 0 0% 10%;
 
     /* Popovers match card */
-    --popover: 38 18% 98%;
-    --popover-foreground: 30 8% 18%;
+    --popover: 40 12% 94%;
+    --popover-foreground: 0 0% 10%;
 
-    /* Terracotta primary — buttons, links, key accents */
-    --primary: 18 52% 48%;
-    /* Cream primary foreground */
-    --primary-foreground: 40 30% 96%;
+    /* #1a1a1a — black primary — high contrast minimal buttons */
+    --primary: 0 0% 10%;
+    /* Off-white primary foreground */
+    --primary-foreground: 40 14% 91%;
 
-    /* Sage secondary — secondary actions, badges */
-    --secondary: 140 14% 58%;
-    --secondary-foreground: 30 8% 18%;
+    /* Neutral secondary surface */
+    --secondary: 40 8% 80%;
+    --secondary-foreground: 0 0% 10%;
 
-    /* Sand-100 muted surfaces */
-    --muted: 40 15% 93%;
-    --muted-foreground: 30 8% 40%;
+    /* #dad6cd — warm light muted surface */
+    --muted: 40 11% 83%;
+    --muted-foreground: 0 0% 38%;
 
-    /* Warm gold accent — sparing highlights */
-    --accent: 42 45% 65%;
-    --accent-foreground: 30 8% 18%;
+    /* #3a3528 — deep warm brown accent — sparing use */
+    --accent: 38 18% 19%;
+    --accent-foreground: 40 14% 91%;
 
-    /* Rust-red destructive — earth-tone family, not pure red */
-    --destructive: 10 62% 38%;
-    --destructive-foreground: 40 30% 96%;
+    /* Destructive */
+    --destructive: 0 72% 40%;
+    --destructive-foreground: 40 14% 91%;
 
-    /* Warm gray border / input */
-    --border: 38 12% 86%;
-    --input: 38 12% 86%;
-    /* Terracotta-tinted ring */
-    --ring: 18 40% 60%;
+    /* #cfccc4 — warm gray border */
+    --border: 40 8% 80%;
+    --input: 40 8% 80%;
+    /* Near-black ring */
+    --ring: 0 0% 20%;
 
-    /* Chart palette — earth tones */
-    --chart-1: 18 52% 48%;
-    --chart-2: 140 14% 50%;
-    --chart-3: 42 45% 58%;
-    --chart-4: 10 40% 52%;
-    --chart-5: 200 20% 50%;
+    /* Chart palette — monochrome earth */
+    --chart-1: 0 0% 10%;
+    --chart-2: 38 18% 19%;
+    --chart-3: 40 11% 50%;
+    --chart-4: 40 8% 65%;
+    --chart-5: 40 5% 78%;
 
-    --radius: 0.5rem;
+    --radius: 0.25rem;
 
-    /* ─── App-wide theme vars (used by landing page + bento cards) ─────────── */
-    --app-bg: hsl(40, 20%, 97%);
-    --app-text: hsl(30, 8%, 18%);
-    --app-card: rgba(255, 252, 248, 0.6);
-    --app-card-border: rgba(80, 55, 40, 0.10);
-    --app-muted: rgba(80, 55, 40, 0.55);
-    --app-accent: rgba(80, 55, 40, 0.80);
+    /* ─── App-wide theme vars (landing page + bento cards) ──────────────────── */
+    --app-bg: hsl(40, 14%, 91%);
+    --app-text: hsl(0, 0%, 10%);
+    --app-card: rgba(236, 233, 227, 0.8);
+    --app-card-border: rgba(26, 26, 26, 0.10);
+    --app-muted: rgba(26, 26, 26, 0.50);
+    --app-accent: rgba(58, 53, 40, 0.80);
 
     /* ─── Typography vars ───────────────────────────────────────────────────── */
     --font-display: var(--font-fraunces), 'Georgia', serif;
-    --font-body: var(--font-ibm-plex-sans), 'Inter', sans-serif;
+    --font-sans: var(--font-humane), 'Inter', sans-serif;
+    --font-body: var(--font-humane), var(--font-ibm-plex-sans), 'Inter', sans-serif;
   }
 
   .dark {
-    /* ─── Prism Pro Neutral Dark Theme ───────────────────────────────────────
-       Background: cool charcoal with a breath of warmth (not brown)
-       Text: very-slightly warm off-white — readable, not clinical
-       Primary: lightly desaturated terracotta — accent, not dominant
-       Goal: high-end editorial neutral with terracotta as the sole warmth
+    /* ─── Prism Pro Editorial Dark Theme ─────────────────────────────────────
+       Background: near-black · Text: warm off-white
+       Primary: warm off-white (inverts light theme primary)
+       Goal: cool editorial neutral — NOT brown, clean sophisticated dark
     ────────────────────────────────────────────────────────────────────────── */
 
-    /* Cool charcoal — neutral dark, hint of warmth to tie to brand */
-    --background: 220 6% 10%;
-    /* Off-white foreground — reduced saturation vs previous sandy 20% */
-    --foreground: 40 8% 92%;
+    /* #0d0d0d — near-black background */
+    --background: 0 0% 5%;
+    /* #e8e5de — warm off-white foreground */
+    --foreground: 40 10% 89%;
 
-    /* Cards: +2% lightness over background */
-    --card: 220 5% 13%;
-    --card-foreground: 40 8% 92%;
+    /* Cards: slightly lighter than near-black */
+    --card: 0 0% 8%;
+    --card-foreground: 40 10% 89%;
 
     /* Popovers match card */
-    --popover: 220 5% 13%;
-    --popover-foreground: 40 8% 92%;
+    --popover: 0 0% 8%;
+    --popover-foreground: 40 10% 89%;
 
-    /* Terracotta slightly desaturated — accent without overpowering */
-    --primary: 18 50% 56%;
-    /* Dark text on terracotta button */
-    --primary-foreground: 220 6% 10%;
+    /* #e8e5de — off-white primary (inverted from light) */
+    --primary: 40 10% 89%;
+    /* Near-black text on off-white button */
+    --primary-foreground: 0 0% 5%;
 
-    /* Neutral sage secondary */
-    --secondary: 140 8% 26%;
-    --secondary-foreground: 40 8% 85%;
+    /* Muted dark secondary */
+    --secondary: 0 0% 14%;
+    --secondary-foreground: 40 10% 89%;
 
-    /* Neutral muted surface — no brown tinge */
-    --muted: 220 5% 18%;
-    --muted-foreground: 40 6% 60%;
+    /* #1a1a1a — near-black muted surface */
+    --muted: 0 0% 10%;
+    --muted-foreground: 40 6% 55%;
 
-    /* Warm gold accent — kept subtle */
-    --accent: 42 22% 32%;
-    --accent-foreground: 40 8% 92%;
+    /* Warm brown accent for dark */
+    --accent: 38 14% 22%;
+    --accent-foreground: 40 10% 89%;
 
-    /* Rust-red destructive */
-    --destructive: 10 65% 45%;
-    --destructive-foreground: 40 8% 92%;
+    /* Destructive */
+    --destructive: 0 62% 45%;
+    --destructive-foreground: 40 10% 89%;
 
-    /* Neutral border / input */
-    --border: 220 5% 22%;
-    --input: 220 5% 22%;
-    /* Terracotta ring */
-    --ring: 18 44% 50%;
+    /* #2a2a28 — warm dark border */
+    --border: 40 3% 16%;
+    --input: 40 3% 16%;
+    /* Off-white ring */
+    --ring: 40 10% 70%;
 
-    /* Chart palette — neutral dark with terracotta accent */
-    --chart-1: 18 50% 56%;
-    --chart-2: 140 12% 46%;
-    --chart-3: 42 35% 50%;
-    --chart-4: 10 48% 52%;
-    --chart-5: 200 18% 46%;
+    /* Chart palette — monochrome dark */
+    --chart-1: 40 10% 89%;
+    --chart-2: 40 8% 70%;
+    --chart-3: 40 5% 50%;
+    --chart-4: 40 3% 30%;
+    --chart-5: 0 0% 20%;
 
     /* ─── App-wide theme vars for dark mode ─────────────────────────────────── */
-    --app-bg: hsl(220, 6%, 10%);
-    --app-text: hsl(40, 8%, 92%);
-    --app-card: rgba(28, 29, 32, 0.65);
-    --app-card-border: rgba(200, 195, 190, 0.10);
-    --app-muted: rgba(200, 195, 190, 0.50);
-    --app-accent: rgba(200, 195, 190, 0.75);
+    --app-bg: hsl(0, 0%, 5%);
+    --app-text: hsl(40, 10%, 89%);
+    --app-card: rgba(20, 20, 18, 0.80);
+    --app-card-border: rgba(232, 229, 222, 0.10);
+    --app-muted: rgba(232, 229, 222, 0.45);
+    --app-accent: rgba(232, 229, 222, 0.70);
+
+    /* ─── Typography vars ───────────────────────────────────────────────────── */
+    --font-display: var(--font-fraunces), 'Georgia', serif;
+    --font-sans: var(--font-humane), 'Inter', sans-serif;
+    --font-body: var(--font-humane), var(--font-ibm-plex-sans), 'Inter', sans-serif;
   }
 }
 
@@ -208,8 +213,8 @@
 
   body {
     @apply bg-background text-foreground;
-    /* IBM Plex Sans as default body / UI font; fallback chain preserved */
-    font-family: var(--font-ibm-plex-sans), 'Inter', 'Absans', sans-serif;
+    /* Humane as default body / UI font — editorial minimalist */
+    font-family: var(--font-humane), var(--font-ibm-plex-sans), 'Inter', sans-serif;
   }
 
   h1,
@@ -218,9 +223,8 @@
   h4,
   h5,
   h6 {
-    /* Fraunces (premium editorial serif) as primary display font
-       Clash Display kept as fallback for backward compat */
-    font-family: var(--font-fraunces), 'Clash Display', Georgia, serif;
+    /* Fraunces (premium editorial serif) as primary display font */
+    font-family: var(--font-fraunces), Georgia, serif;
   }
 
   /* Page titles styling — Fraunces display serif */
@@ -240,14 +244,14 @@
     font-family: 'Absans', sans-serif;
   }
 
-  /* Apply IBM Plex Sans to common text elements (Absans kept as fallback) */
+  /* Apply Humane to common text elements */
   p,
   span,
   div,
   label,
   input,
   button {
-    font-family: var(--font-ibm-plex-sans), 'Absans', sans-serif;
+    font-family: var(--font-humane), var(--font-ibm-plex-sans), sans-serif;
   }
 }
 

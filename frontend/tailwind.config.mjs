@@ -13,19 +13,22 @@ export default {
   			// Display / headings: Fraunces (premium editorial serif)
   			'display': ['var(--font-fraunces)', 'Georgia', 'serif'],
   			'serif': ['var(--font-fraunces)', 'Georgia', 'serif'],
-  			// Body / UI copy: IBM Plex Sans (clean, professional)
-  			'sans': ['var(--font-ibm-plex-sans)', 'Inter', 'system-ui', 'sans-serif'],
-  			'body': ['var(--font-ibm-plex-sans)', 'Inter', 'system-ui', 'sans-serif'],
+  			// Body / UI: Humane (editorial minimalist sans) — primary body + nav
+  			'sans': ['var(--font-humane)', 'var(--font-ibm-plex-sans)', 'Inter', 'system-ui', 'sans-serif'],
+  			'body': ['var(--font-humane)', 'var(--font-ibm-plex-sans)', 'Inter', 'system-ui', 'sans-serif'],
+  			// Humane direct reference
+  			'humane': ['var(--font-humane)', 'Inter', 'sans-serif'],
   			// ── Legacy font families kept for backward compat ────────────────────
   			'absans': ['Absans', 'sans-serif'],
   			'urbanist': ['var(--font-urbanist)', 'Urbanist', 'sans-serif'],
   			'clash': ['Clash Display', 'sans-serif'],
-  			'heading': ['Clash Display', 'var(--font-fraunces)', 'Georgia', 'serif'],
-  			'title': ['Clash Display', 'var(--font-fraunces)', 'Georgia', 'serif'],
+  			'heading': ['var(--font-fraunces)', 'Clash Display', 'Georgia', 'serif'],
+  			'title': ['var(--font-fraunces)', 'Clash Display', 'Georgia', 'serif'],
   			'stardom': ['Stardom', 'sans-serif'],
   			'app-title': ['Stardom', 'var(--font-fraunces)', 'serif'],
   			'adieu': ['Adieu', 'sans-serif'],
   			'inter': ['Inter', 'var(--font-ibm-plex-sans)', 'sans-serif'],
+  			'ibm': ['var(--font-ibm-plex-sans)', 'Inter', 'sans-serif'],
   			'mono': ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'Monaco', 'Consolas', 'monospace'],
   		},
 		colors: {
@@ -157,6 +160,14 @@ export default {
   		},
   		letterSpacing: {
   			'ultra-wide': '0.2em',
+  			// ── Editorial tracking utilities ─────────────────────────────────────
+  			'editorial': '0.18em',    // eyebrow / metadata
+  			'nav': '0.15em',          // nav links / wordmark
+  			'cta': '0.12em',          // CTA buttons
+  			'scroll': '0.2em',        // SCROLL DOWN indicator
+  			'tight-display': '-0.02em', // display H1 hero
+  			'tight-h2': '-0.01em',    // display H2 section
+  			'tight-h3': '-0.005em',   // H3 sub-headlines
   		},
   		fontSize: {
   			'micro': '9px',

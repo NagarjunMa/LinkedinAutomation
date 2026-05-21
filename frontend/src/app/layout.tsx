@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import localFont from "next/font/local"
 import { Urbanist, Inter, Playfair_Display, JetBrains_Mono, Fraunces, IBM_Plex_Sans } from "next/font/google"
 import "./globals.css"
 import { Providers } from "@/components/ui/providers"
@@ -6,6 +7,15 @@ import { AuthProvider } from "@/contexts/auth-context"
 import { ThemeProvider } from "@/contexts/theme-context"
 import ErrorBoundary, { PageErrorFallback } from "@/components/error-boundary"
 
+// ── Humane variable typeface — editorial display / UI font ─────────────────
+// Loaded via next/font/local for optimal performance (no FOUT/FOIT).
+// Variable font file covers wght 100–900 from a single file.
+const humane = localFont({
+  src: "../../public/fonts/HUMANE Typeface/Variable-TT/Humane-VF.ttf",
+  variable: "--font-humane",
+  display: "swap",
+  weight: "100 900",
+})
 
 const urbanist = Urbanist({
   subsets: ["latin"],
@@ -155,7 +165,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${ibmPlexSans.className} ${fraunces.variable} ${ibmPlexSans.variable} ${urbanist.variable} ${inter.variable} ${playfair.variable} ${jetbrains.variable}`}>
+      <body className={`${humane.variable} ${fraunces.variable} ${ibmPlexSans.variable} ${urbanist.variable} ${inter.variable} ${playfair.variable} ${jetbrains.variable}`}>
         <ErrorBoundary fallback={PageErrorFallback}>
           <ThemeProvider>
             <AuthProvider>
