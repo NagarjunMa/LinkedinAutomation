@@ -21,11 +21,8 @@ export function ProtectedRoute({ children, fallback }: ProtectedRouteProps) {
   const router = useRouter()
   const [showAuthRequired, setShowAuthRequired] = useState(false)
 
-  if (isTestBypass) {
-    return <>{children}</>
-  }
-
   useEffect(() => {
+    if (isTestBypass) return
     if (!loading && !user) {
       console.log('ProtectedRoute: No user, redirecting to landing page')
       // Add a small delay to prevent showing auth required screen during logout
@@ -44,7 +41,11 @@ export function ProtectedRoute({ children, fallback }: ProtectedRouteProps) {
     } else if (user) {
       setShowAuthRequired(false)
     }
-  }, [user, loading, router])
+  }, [user, loading, router, isTestBypass])
+
+  if (isTestBypass) {
+    return <>{children}</>
+  }
 
   const handleGoToLanding = () => {
     console.log('ProtectedRoute: Go to Landing Page button clicked')
