@@ -11,7 +11,7 @@ from app.services.jd.tailor import tailor_resume_to_jd
 from app.services.resume.hallucination_guard import HallucinationError
 from app.models.resume_document import ResumeDocument
 from app.models.jd_evaluation import JDEvaluation
-from app.schemas.resume import ResumeDocumentJSON
+from app.schemas.resume_v2 import ResumeDocumentJSON
 from app.middleware.credits import credit_transaction
 
 router = APIRouter(prefix="/jd", tags=["jd"])

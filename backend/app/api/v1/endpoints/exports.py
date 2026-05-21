@@ -17,7 +17,7 @@ from app.db.session import get_db
 from app.middleware.credits import credit_transaction
 from app.models.resume_document import ResumeDocument, ResumeVersion
 from app.models.resume_export import ResumeExport
-from app.schemas.resume import ResumeDocumentJSON
+from app.schemas.resume_v2 import ResumeDocumentJSON
 from app.schemas.resume_export import ExportRequest, ExportResponse
 from app.services.pdf.renderer import PdfRenderTimeout, render_pdf_from_doc
 

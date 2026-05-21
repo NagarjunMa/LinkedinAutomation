@@ -15,7 +15,7 @@ from docx import Document
 from sqlalchemy.orm import Session
 
 from app.core.ai_service import AIService
-from app.schemas.resume import ResumePrecisionAnalysis, ResumeEvaluationResult
+from app.schemas.resume_legacy import ResumePrecisionAnalysis, ResumeEvaluationResult
 from app.services.profile_service import ProfileService
 
 logger = logging.getLogger(__name__)

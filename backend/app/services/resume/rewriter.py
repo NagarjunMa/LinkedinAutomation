@@ -4,7 +4,7 @@ import logging
 from typing import Optional
 from openai import AsyncOpenAI
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_not_exception_type
-from app.schemas.resume import RewriteResult, Placeholder
+from app.schemas.resume_v2 import RewriteResult, Placeholder
 from app.services.resume.hallucination_guard import check_no_unprompted_numbers, HallucinationError
 from app.core.llm_logging import measure, estimate_cost
 

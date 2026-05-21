@@ -1,5 +1,5 @@
 """Shared resume fixture builder for PDF template testing."""
-from app.schemas.resume import (
+from app.schemas.resume_v2 import (
     Bullet,
     Contact,
     EducationEntry,

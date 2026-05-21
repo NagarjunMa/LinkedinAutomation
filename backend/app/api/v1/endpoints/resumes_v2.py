@@ -17,7 +17,7 @@ from app.db.session import get_db
 from app.core.auth import get_current_user_id
 from app.models.resume_document import ResumeDocument, ResumeVersion
 from app.models.resume_evaluation_v2 import ResumeEvaluationV2
-from app.schemas.resume import ResumeDocumentJSON
+from app.schemas.resume_v2 import ResumeDocumentJSON
 from app.services.resume.parser import parse_resume
 from app.services.resume.evaluator import evaluate_resume
 from app.services.resume.ats_simulator import simulate_ats

@@ -6,7 +6,7 @@ import respx
 import httpx
 import json
 from app.services.resume.evaluator import evaluate_resume
-from app.schemas.resume import ResumeDocumentJSON, Contact, ExperienceEntry, Bullet, Skills
+from app.schemas.resume_v2 import ResumeDocumentJSON, Contact, ExperienceEntry, Bullet, Skills
 
 OPENAI_URL = "https://api.openai.com/v1/chat/completions"
 

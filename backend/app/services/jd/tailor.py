@@ -3,7 +3,7 @@ import json
 import logging
 from openai import AsyncOpenAI, RateLimitError, APIConnectionError, APITimeoutError
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
-from app.schemas.resume import ResumeDocumentJSON
+from app.schemas.resume_v2 import ResumeDocumentJSON
 from app.schemas.jd import JDExtraction, DiffPlan
 from app.services.resume.hallucination_guard import check_no_unprompted_numbers, HallucinationError
 from app.core.llm_logging import measure, estimate_cost
