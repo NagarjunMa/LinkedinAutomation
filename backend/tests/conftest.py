@@ -235,10 +235,12 @@ def client(db_session: Session, test_user_id: str, tmp_path):
     # Phase 4: mock Supabase Storage so tests never hit the real bucket.
     # Also reset the module-level singleton so each test gets a fresh mock.
     import app.services.storage.supabase_storage as _storage_mod
+    from pathlib import Path as _Path
     _original_singleton = _storage_mod._client_instance
+    _resume_fixture_bytes = (_Path(__file__).parent / "fixtures/resumes/simple.pdf").read_bytes()
     _mock_storage = MagicMock()
     _mock_storage.upload.side_effect = lambda user_id, file_id, content, filename: f"{user_id}/{file_id}_{filename}"
-    _mock_storage.download.return_value = b"%PDF-stub"
+    _mock_storage.download.return_value = _resume_fixture_bytes
     _mock_storage.signed_url.return_value = "https://storage.example/file?token=test"
     _storage_mod._client_instance = _mock_storage
 

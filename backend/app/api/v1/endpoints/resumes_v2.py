@@ -113,9 +113,11 @@ async def evaluate(
         doc_json = ResumeDocumentJSON.model_validate(doc_row.parsed_json)
         report = await evaluate_resume(doc_json, target_role=body.target_role)
 
-        # ATS simulation reads the raw file from disk
-        with open(doc_row.file_path, "rb") as fh:
-            ats = simulate_ats(fh.read(), filename=doc_row.original_filename)
+        # ATS simulation: download raw bytes from Supabase Storage.
+        # Falls back to file_path for rows uploaded before Phase 4 (backfill pending).
+        storage = get_storage()
+        content_bytes = storage.download(doc_row.storage_path or doc_row.file_path)
+        ats = simulate_ats(content_bytes, filename=doc_row.original_filename)
 
         eval_row = ResumeEvaluationV2(
             id=str(uuid.uuid4()),
