@@ -13,6 +13,7 @@ import uuid
 from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 from app.models.credit_ledger import CreditLedger
+from app.models.user import User
 
 
 class InsufficientCredits(Exception):
@@ -49,22 +50,25 @@ def _append(
 ) -> CreditLedger:
     """Low-level: append one ledger row and flush (no commit).
 
-    Acquires a row-level lock on the most-recent ledger row for *user_id*
-    before computing the new balance.  This prevents concurrent double-spend
-    on Postgres.  On SQLite the FOR UPDATE clause is silently ignored — the
-    DB-level single-writer guarantee provides equivalent safety there.
+    Acquires a row-level lock on the ``users`` row for *user_id* before
+    computing the new balance.  Locking the users row (unique per user_id)
+    ensures that all concurrent credit operations for the same user serialise
+    through that single, deterministic row — avoiding the LIMIT-1 race where
+    two transactions could previously lock *different* ledger rows and both
+    pass the balance check.  On SQLite the FOR UPDATE clause is silently
+    ignored — the DB-level single-writer guarantee provides equivalent safety.
     """
-    # Attempt row-lock; ignore if the dialect does not support it (SQLite).
+    # Lock the users row for this user_id.  On Postgres this serialises all
+    # concurrent credit operations for the same user (SELECT … FOR UPDATE on a
+    # unique row is deterministic — no LIMIT-induced non-determinism).
+    # On SQLite the FOR UPDATE clause is a no-op, so correctness is still
+    # guaranteed by SQLite's single-writer model.
     try:
         db.execute(
-            select(CreditLedger)
-            .where(CreditLedger.user_id == user_id)
-            .with_for_update()
-            .limit(1)
+            select(User).where(User.user_id == user_id).with_for_update()
         )
     except Exception:
-        # SQLite raises no exception for FOR UPDATE — this path is a safety net
-        # in case a dialect raises on unsupported locking hints.
+        # Safety net: if the dialect rejects FOR UPDATE, swallow and continue.
         pass
 
     balance = get_balance(db, user_id)
