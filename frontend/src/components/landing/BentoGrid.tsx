@@ -175,7 +175,7 @@ export const BentoGrid: React.FC<BentoGridProps> = ({ isDark: _isDark }) => {
                 {card.pills.map((label) => (
                   <span
                     key={label}
-                    className="px-3 py-1 border border-foreground/12 text-foreground/40 uppercase"
+                    className="px-3 py-1 border border-foreground/10 text-foreground/40 uppercase"
                     style={humaneStyle(10, 500, '0.08em')}
                   >
                     {label}
