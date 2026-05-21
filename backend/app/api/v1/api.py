@@ -6,6 +6,7 @@ from app.api.v1.endpoints import resumes_v2
 from app.api.v1.endpoints import jd
 from app.api.v1.endpoints import credits
 from app.api.v1.endpoints import exports
+from app.api.v1.endpoints import webhooks
 
 api_router = APIRouter()
 
@@ -21,3 +22,5 @@ api_router.include_router(jd.router)
 api_router.include_router(credits.router)
 # Phase-2 new routes
 api_router.include_router(exports.router)
+# Phase-4 new routes
+api_router.include_router(webhooks.router)
