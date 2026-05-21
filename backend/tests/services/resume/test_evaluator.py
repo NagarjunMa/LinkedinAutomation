@@ -6,7 +6,7 @@ import respx
 import httpx
 import json
 from app.services.resume.evaluator import evaluate_resume
-from app.schemas.resume import ResumeDocumentJSON, Contact, ExperienceEntry, Bullet, Skills
+from app.schemas.resume_v2 import ResumeDocumentJSON, Contact, ExperienceEntry, Bullet, Skills
 
 OPENAI_URL = "https://api.openai.com/v1/chat/completions"
 
@@ -80,6 +80,40 @@ async def test_evaluator_logs_cost(caplog):
     messages = [r.message for r in caplog.records]
     assert any("llm_cost" in str(m) for m in messages), (
         f"Expected 'llm_cost' log record from llm logger; got: {messages}"
+    )
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_evaluator_logs_user_id(caplog):
+    """Verify that user_id is propagated to LLM log records."""
+    import logging
+    mock_payload = {
+        "id": "x", "object": "chat.completion", "created": 0, "model": "gpt-4o-2024-08-06",
+        "choices": [{
+            "index": 0, "finish_reason": "stop",
+            "message": {"role": "assistant",
+                "content": json.dumps({
+                    "overall_score": 75,
+                    "bullet_flags": [],
+                    "format_issues": [],
+                    "summary_critique": None,
+                    "skill_gaps": [],
+                })}
+        }],
+        "usage": {"prompt_tokens": 100, "completion_tokens": 50, "total_tokens": 150},
+    }
+    respx.route(url=OPENAI_URL).mock(
+        return_value=httpx.Response(200, json=mock_payload)
+    )
+    # Ensure the llm logger propagates so caplog captures it
+    import app.core.llm_logging as _llm_logging_mod
+    _llm_logging_mod.logger.propagate = True
+    with caplog.at_level(logging.INFO, logger="llm"):
+        await evaluate_resume(make_doc(), target_role="SWE", user_id="u1")
+    messages = [str(r.message) for r in caplog.records]
+    assert any("u1" in m for m in messages), (
+        f"Expected 'u1' in llm log records; got: {messages}"
     )
 
 

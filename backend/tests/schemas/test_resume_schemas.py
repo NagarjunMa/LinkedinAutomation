@@ -1,4 +1,4 @@
-from app.schemas.resume import ResumeDocumentJSON, Bullet, ExperienceEntry, Skills
+from app.schemas.resume_v2 import ResumeDocumentJSON, Bullet, ExperienceEntry, Skills
 
 
 def test_resume_document_json_roundtrip():

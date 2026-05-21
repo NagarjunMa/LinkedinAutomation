@@ -17,12 +17,13 @@ from app.db.session import get_db
 from app.core.auth import get_current_user_id
 from app.models.resume_document import ResumeDocument, ResumeVersion
 from app.models.resume_evaluation_v2 import ResumeEvaluationV2
-from app.schemas.resume import ResumeDocumentJSON
+from app.schemas.resume_v2 import ResumeDocumentJSON
 from app.services.resume.parser import parse_resume
 from app.services.resume.evaluator import evaluate_resume
 from app.services.resume.ats_simulator import simulate_ats
 from app.services.resume.rewriter import rewrite_bullet
 from app.services.resume.hallucination_guard import HallucinationError
+from app.services.storage.supabase_storage import get_storage
 from app.middleware.credits import credit_transaction
 
 router = APIRouter(tags=["resumes-v2"])
@@ -56,16 +57,24 @@ async def upload_resume(
         raise HTTPException(status_code=400, detail=str(exc))
 
     doc_id = str(uuid.uuid4())
-    file_path = os.path.join(UPLOAD_DIR, f"{doc_id}_{file.filename}")
-    with open(file_path, "wb") as fh:
-        fh.write(content)
-
     ext = file.filename.rsplit(".", 1)[-1].lower()
+
+    # Phase 4: upload to Supabase Storage instead of local disk.
+    # file_path is kept populated for backward compat (will be deprecated post-backfill).
+    storage = get_storage()
+    storage_path = storage.upload(
+        user_id=current_user_id,
+        file_id=doc_id,
+        content=content,
+        filename=file.filename,
+    )
+
     db_doc = ResumeDocument(
         id=doc_id,
         user_id=current_user_id,
         original_filename=file.filename,
-        file_path=file_path,
+        file_path=storage_path,       # legacy column — mirrors storage_path for one release
+        storage_path=storage_path,    # Phase 4 canonical column
         file_type=ext,
         parsed_json=doc_json.model_dump(),
         raw_text=doc_json.raw_text,
@@ -102,11 +111,13 @@ async def evaluate(
     result_payload = None
     with credit_transaction(db, current_user_id, amount=1, reason="evaluate"):
         doc_json = ResumeDocumentJSON.model_validate(doc_row.parsed_json)
-        report = await evaluate_resume(doc_json, target_role=body.target_role)
+        report = await evaluate_resume(doc_json, target_role=body.target_role, user_id=current_user_id)
 
-        # ATS simulation reads the raw file from disk
-        with open(doc_row.file_path, "rb") as fh:
-            ats = simulate_ats(fh.read(), filename=doc_row.original_filename)
+        # ATS simulation: download raw bytes from Supabase Storage.
+        # Falls back to file_path for rows uploaded before Phase 4 (backfill pending).
+        storage = get_storage()
+        content_bytes = storage.download(doc_row.storage_path or doc_row.file_path)
+        ats = simulate_ats(content_bytes, filename=doc_row.original_filename)
 
         eval_row = ResumeEvaluationV2(
             id=str(uuid.uuid4()),
@@ -172,6 +183,7 @@ async def rewrite(
             target_role=body.target_role,
             country=body.country,
             jd_context=body.jd_context,
+            user_id=current_user_id,
         )
     except HallucinationError as exc:
         raise HTTPException(status_code=422, detail=f"Rewrite rejected: {exc}")

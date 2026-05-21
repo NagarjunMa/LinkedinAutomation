@@ -1,12 +1,11 @@
 """Structured LLM latency + cost telemetry.
 
 Usage in services:
-    from app.core.llm_logging import measure, estimate_cost
+    from app.core.llm_logging import measure, estimate_cost, log_cost
 
-    async with measure("evaluator"):
+    async with measure("evaluator", user_id=user_id):
         resp = await _client.chat.completions.create(...)
-    logger.info({"event": "llm_cost", "label": "evaluator",
-                 "cost_usd": estimate_cost(resp.usage)})
+    log_cost("evaluator", resp.usage, user_id=user_id)
 """
 import logging
 import time
@@ -29,6 +28,18 @@ def estimate_cost(usage) -> float:
     if usage is None:
         return 0.0
     return usage.prompt_tokens * PRICE_PROMPT + usage.completion_tokens * PRICE_OUTPUT
+
+
+def log_cost(label: str, usage, user_id: str | None = None) -> None:
+    """Log per-call cost with optional user attribution.
+
+    Emits a structured INFO record on the ``llm`` logger including
+    ``user_id`` so that log aggregators can compute per-user spend.
+    """
+    logger.info(
+        {"event": "llm_cost", "label": label,
+         "cost_usd": estimate_cost(usage), "user_id": user_id}
+    )
 
 
 @asynccontextmanager

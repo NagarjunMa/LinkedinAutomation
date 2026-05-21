@@ -7,8 +7,9 @@ celery_app = Celery(
     broker=settings.CELERY_BROKER_URL,
     backend=settings.CELERY_RESULT_BACKEND,
     include=[
-        "app.tasks.resume_tasks",  # New AI tasks
-        "app.tasks.job_extraction_tasks"  # Future AI tasks
+        "app.tasks.resume_tasks",        # AI resume tasks
+        "app.tasks.job_extraction_tasks",  # Future AI tasks
+        "app.tasks.credit_tasks",          # Monthly credit grant
     ]
 )
 
@@ -63,5 +64,9 @@ celery_app.conf.update(
 
 # Beat schedule for automated tasks
 celery_app.conf.beat_schedule = {
-    # Add scheduled tasks here as needed
+    # Grant 20 credits to every user at midnight UTC on the 1st of each month.
+    "credits.grant_monthly": {
+        "task": "credits.grant_monthly",
+        "schedule": crontab(0, 0, day_of_month="1"),
+    },
 }

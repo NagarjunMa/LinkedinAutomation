@@ -4,7 +4,7 @@ from typing import Literal
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from app.schemas.resume import ResumeDocumentJSON
+from app.schemas.resume_v2 import ResumeDocumentJSON
 
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 

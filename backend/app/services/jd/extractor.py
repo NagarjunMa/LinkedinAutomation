@@ -4,7 +4,7 @@ import logging
 from openai import AsyncOpenAI, RateLimitError, APIConnectionError, APITimeoutError
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from app.schemas.jd import JDExtraction
-from app.core.llm_logging import measure, estimate_cost
+from app.core.llm_logging import measure, estimate_cost, log_cost
 
 _client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 logger = logging.getLogger("llm")
@@ -24,8 +24,8 @@ Output strict JSON per schema."""
 @retry(stop=stop_after_attempt(3),
        wait=wait_exponential(multiplier=1, min=1, max=10),
        retry=retry_if_exception_type((RateLimitError, APIConnectionError, APITimeoutError)))
-async def extract_jd_requirements(jd_text: str) -> JDExtraction:
-    async with measure("extractor"):
+async def extract_jd_requirements(jd_text: str, user_id: str | None = None) -> JDExtraction:
+    async with measure("extractor", user_id=user_id):
         resp = await _client.chat.completions.create(
             model="gpt-4o-2024-08-06",
             response_format={"type": "json_object"},
@@ -35,7 +35,5 @@ async def extract_jd_requirements(jd_text: str) -> JDExtraction:
             ],
             temperature=0.1,
         )
-    logger.info(
-        {"event": "llm_cost", "label": "extractor", "cost_usd": estimate_cost(resp.usage)}
-    )
+    log_cost("extractor", resp.usage, user_id=user_id)
     return JDExtraction.model_validate_json(resp.choices[0].message.content or "{}")

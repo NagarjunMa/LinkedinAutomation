@@ -2,7 +2,7 @@ import uuid
 from io import BytesIO
 import pdfplumber
 from docx import Document as DocxDocument
-from app.schemas.resume import (
+from app.schemas.resume_v2 import (
     ResumeDocumentJSON, Contact, ExperienceEntry, EducationEntry,
     Skills, Bullet,
 )

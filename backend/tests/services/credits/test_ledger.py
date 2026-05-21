@@ -1,5 +1,6 @@
 import pytest
 import sys
+import os
 from sqlalchemy.orm import Session
 from app.services.credits.ledger import (
     get_balance, debit, refund, grant_monthly, InsufficientCredits
@@ -87,3 +88,37 @@ def test_concurrent_debit_prevented(db_session: Session, test_user_id: str):
 
     assert results.count("ok") == 1
     assert results.count("insufficient") == 1
+
+
+# ---------------------------------------------------------------------------
+# New Postgres-only concurrent-debit test (row-lock on users row)
+# ---------------------------------------------------------------------------
+
+@pytest.mark.skipif(
+    "postgres" not in os.getenv("DATABASE_URL", ""),
+    reason="requires Postgres for SELECT FOR UPDATE on users row",
+)
+def test_concurrent_debits_do_not_double_spend(db_session: Session, test_user_id: str):
+    """Two threads each try to debit 3 from a balance of 5.
+    With the correct users-row lock, exactly one succeeds and one gets
+    InsufficientCredits (5 - 3 = 2 < 3).
+    """
+    import threading
+    grant_monthly(db_session, user_id=test_user_id, amount=5)
+    db_session.commit()
+
+    errors = []
+
+    def do_debit():
+        try:
+            debit(db_session, user_id=test_user_id, amount=3, reason="test")
+            db_session.commit()
+        except Exception as e:
+            errors.append(e)
+
+    t1 = threading.Thread(target=do_debit)
+    t2 = threading.Thread(target=do_debit)
+    t1.start(); t2.start()
+    t1.join(); t2.join()
+
+    assert sum(isinstance(e, InsufficientCredits) for e in errors) == 1

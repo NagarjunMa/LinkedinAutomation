@@ -62,6 +62,7 @@ def _create_sqlite_tables(engine) -> None:
         sa.Column("user_id", sa.String, sa.ForeignKey("users.user_id"), nullable=False, index=True),
         sa.Column("original_filename", sa.String, nullable=False),
         sa.Column("file_path", sa.String, nullable=False),
+        sa.Column("storage_path", sa.String, nullable=True),
         sa.Column("file_type", sa.String, nullable=False),
         sa.Column("parsed_json", JSON, nullable=False),
         sa.Column("raw_text", sa.Text, nullable=False),
@@ -231,6 +232,18 @@ def client(db_session: Session, test_user_id: str, tmp_path):
         resumes_v2_mod = None
         original_upload_dir = None
 
+    # Phase 4: mock Supabase Storage so tests never hit the real bucket.
+    # Also reset the module-level singleton so each test gets a fresh mock.
+    import app.services.storage.supabase_storage as _storage_mod
+    from pathlib import Path as _Path
+    _original_singleton = _storage_mod._client_instance
+    _resume_fixture_bytes = (_Path(__file__).parent / "fixtures/resumes/simple.pdf").read_bytes()
+    _mock_storage = MagicMock()
+    _mock_storage.upload.side_effect = lambda user_id, file_id, content, filename: f"{user_id}/{file_id}_{filename}"
+    _mock_storage.download.return_value = _resume_fixture_bytes
+    _mock_storage.signed_url.return_value = "https://storage.example/file?token=test"
+    _storage_mod._client_instance = _mock_storage
+
     with TestClient(app) as tc:
         yield tc
 
@@ -239,6 +252,8 @@ def client(db_session: Session, test_user_id: str, tmp_path):
     app.dependency_overrides.pop(get_current_user_id, None)
     if resumes_v2_mod is not None and original_upload_dir is not None:
         resumes_v2_mod.UPLOAD_DIR = original_upload_dir
+    # Restore storage singleton
+    _storage_mod._client_instance = _original_singleton
 
 
 @pytest.fixture

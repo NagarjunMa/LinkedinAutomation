@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import List
 import pdfplumber
 from docx import Document as DocxDocument
-from app.schemas.resume import FormatIssue
+from app.schemas.resume_v2 import FormatIssue
 
 
 class ATSResult(BaseModel):

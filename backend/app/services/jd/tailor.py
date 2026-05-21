@@ -1,12 +1,13 @@
 import os
 import json
 import logging
+from itertools import chain
 from openai import AsyncOpenAI, RateLimitError, APIConnectionError, APITimeoutError
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
-from app.schemas.resume import ResumeDocumentJSON
+from app.schemas.resume_v2 import ResumeDocumentJSON
 from app.schemas.jd import JDExtraction, DiffPlan
 from app.services.resume.hallucination_guard import check_no_unprompted_numbers, HallucinationError
-from app.core.llm_logging import measure, estimate_cost
+from app.core.llm_logging import measure, estimate_cost, log_cost
 
 
 _client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -38,12 +39,16 @@ Produce the DiffPlan."""
 @retry(stop=stop_after_attempt(3),
        wait=wait_exponential(multiplier=1, min=1, max=10),
        retry=retry_if_exception_type((RateLimitError, APIConnectionError, APITimeoutError)))
-async def tailor_resume_to_jd(doc: ResumeDocumentJSON, jd: JDExtraction) -> DiffPlan:
+async def tailor_resume_to_jd(
+    doc: ResumeDocumentJSON,
+    jd: JDExtraction,
+    user_id: str | None = None,
+) -> DiffPlan:
     user = TAILOR_USER.format(
         resume_json=doc.model_dump_json(exclude={"raw_text"}),
         jd_json=jd.model_dump_json(),
     )
-    async with measure("tailor"):
+    async with measure("tailor", user_id=user_id):
         resp = await _client.chat.completions.create(
             model="gpt-4o-2024-08-06",
             response_format={"type": "json_object"},
@@ -51,12 +56,17 @@ async def tailor_resume_to_jd(doc: ResumeDocumentJSON, jd: JDExtraction) -> Diff
                       {"role": "user", "content": user}],
             temperature=0.3,
         )
-    logger.info(
-        {"event": "llm_cost", "label": "tailor", "cost_usd": estimate_cost(resp.usage)}
-    )
+    log_cost("tailor", resp.usage, user_id=user_id)
     plan = DiffPlan.model_validate_json(resp.choices[0].message.content or "{}")
-    # Hallucination guard on each bullet rewrite
-    bullet_lookup = {b.id: b.text for exp in doc.experience for b in exp.bullets}
+    # Hallucination guard on each bullet rewrite.
+    # Include both experience AND project bullets so the guard always uses the
+    # actual stored text rather than falling back to diff.old (the LLM's own
+    # claimed original, which can itself be fabricated).
+    bullet_lookup = {
+        b.id: b.text
+        for item in chain(doc.experience, doc.projects)
+        for b in item.bullets
+    }
     for diff in plan.bullets:
         original = bullet_lookup.get(diff.bullet_id, diff.old)
         try:

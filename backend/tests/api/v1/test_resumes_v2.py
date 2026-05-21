@@ -7,6 +7,7 @@ import pytest
 import respx
 import httpx
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 from fastapi.testclient import TestClient
 
 FIXTURE = Path(__file__).parent.parent.parent / "fixtures/resumes/simple.pdf"
@@ -14,10 +15,14 @@ OPENAI_URL = "https://api.openai.com/v1/chat/completions"
 
 
 # ---------------------------------------------------------------------------
-# Task 14: POST /api/v1/resumes/upload
+# Task 14: POST /api/v1/resumes/upload  (Phase 4: uses Supabase Storage)
 # ---------------------------------------------------------------------------
 
-def test_upload_resume_creates_document(client: TestClient, auth_headers):
+@patch("app.api.v1.endpoints.resumes_v2.get_storage")
+def test_upload_resume_creates_document(mock_get_storage, client: TestClient, auth_headers):
+    storage = MagicMock()
+    storage.upload.return_value = "test-user-1/abc123_simple.pdf"
+    mock_get_storage.return_value = storage
     with FIXTURE.open("rb") as f:
         resp = client.post(
             "/api/v1/resumes/upload",
@@ -28,6 +33,7 @@ def test_upload_resume_creates_document(client: TestClient, auth_headers):
     data = resp.json()
     assert "resume_document_id" in data
     assert data["contact"]["name"]
+    storage.upload.assert_called_once()
 
 
 def test_upload_resume_rejects_unsupported_type(client: TestClient, auth_headers):

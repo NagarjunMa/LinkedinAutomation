@@ -25,7 +25,7 @@ from playwright.sync_api import (
 )
 
 from app.core.config import settings
-from app.schemas.resume import ResumeDocumentJSON
+from app.schemas.resume_v2 import ResumeDocumentJSON
 from app.services.pdf.template_engine import render_html
 
 _log = logging.getLogger("pdf_render")
