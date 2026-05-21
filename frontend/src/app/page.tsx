@@ -8,32 +8,38 @@ import {
   ScanText,
   FileDiff,
   Download,
-  ChevronDown,
-  BookOpen,
   CheckCircle
 } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 import { Navigation } from '@/components/landing/Navigation';
-import { StyledButton } from '@/components/landing/StyledButton';
 import { SectionHeader } from '@/components/landing/SectionHeader';
 import { BentoGrid } from '@/components/landing/BentoGrid';
 import { useTheme } from '@/contexts/theme-context';
 
-// Build animation variants respecting prefers-reduced-motion.
-// When reduced motion is requested every variant resolves to a no-op so
-// the page is fully accessible without forking every JSX element.
+// ── Motion variants respecting prefers-reduced-motion ─────────────────────
 function useMotionVariants() {
   const reduce = useReducedMotion();
+
+  const fadeIn = reduce
+    ? { hidden: { opacity: 1 }, visible: { opacity: 1 } }
+    : {
+        hidden: { opacity: 0 },
+        visible: {
+          opacity: 1,
+          transition: { duration: 0.7, ease: [0.17, 0.55, 0.55, 1] as [number, number, number, number] }
+        }
+      };
 
   const fadeInUp = reduce
     ? { hidden: { opacity: 1, y: 0 }, visible: { opacity: 1, y: 0 } }
     : {
-        hidden: { opacity: 0, y: 24 },
+        hidden: { opacity: 0, y: 20 },
         visible: {
           opacity: 1,
           y: 0,
-          transition: { duration: 0.6, ease: [0.17, 0.55, 0.55, 1] as [number, number, number, number] }
+          transition: { duration: 0.7, ease: [0.17, 0.55, 0.55, 1] as [number, number, number, number] }
         }
       };
 
@@ -43,20 +49,21 @@ function useMotionVariants() {
         hidden: { opacity: 0 },
         visible: {
           opacity: 1,
-          transition: { staggerChildren: 0.15, delayChildren: 0.1 }
+          transition: { staggerChildren: 0.12, delayChildren: 0.05 }
         }
       };
 
   const scrollReveal = reduce
     ? { hidden: { opacity: 1, y: 0 }, visible: { opacity: 1, y: 0 } }
     : {
-        hidden: { opacity: 0, y: 20 },
-        visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } }
+        hidden: { opacity: 0, y: 16 },
+        visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } }
       };
 
-  return { fadeInUp, staggerContainer, scrollReveal, reduce };
+  return { fadeIn, fadeInUp, staggerContainer, scrollReveal, reduce };
 }
 
+// ── Data ───────────────────────────────────────────────────────────────────
 const STEPS = [
   {
     icon: Upload,
@@ -98,7 +105,7 @@ const PROBLEMS = [
   {
     stat: '1 size',
     label: 'does not fit all — US and India formats differ',
-    detail: 'US recruiters expect a tight 1-page resume. Indian hiring teams expect a longer structured CV. Most tools ignore this.'
+    detail: 'US recruiters expect a tight 1-page resume. Indian hiring teams expect a longer structured CV.'
   }
 ];
 
@@ -117,7 +124,7 @@ const FEATURES = [
   },
   {
     title: 'Placeholder-hybrid rewrites',
-    desc: 'Numbers you can\'t verify appear as [X%] or [N users]. Verbs, structure, and framing are rewritten. The output reads like a recruiter wrote it.'
+    desc: "Numbers you can't verify appear as [X%] or [N users]. Verbs, structure, and framing are rewritten. The output reads like a recruiter wrote it."
   },
   {
     title: 'Country + role templates',
@@ -132,142 +139,220 @@ const FEATURES = [
 const FAQS = [
   {
     q: 'How is this different from Rezi or Teal?',
-    a: 'Most resume tools score your resume against a rubric and produce generic AI-written bullets. Prism Pro surfaces bullet-level severity flags the same way a senior recruiter would mark your resume by hand, then proposes rewrites in a diff view so you accept or reject every change. The output does not read machine-generated because numbers that can\'t be verified are preserved as placeholders — you fill them in.'
+    a: "Most resume tools score your resume against a rubric and produce generic AI-written bullets. Prism Pro surfaces bullet-level severity flags the same way a senior recruiter would mark your resume by hand, then proposes rewrites in a diff view so you accept or reject every change."
   },
   {
     q: 'Will the AI hallucinate my experience or invent metrics?',
-    a: 'No. Hard numbers (percentages, team sizes, revenue figures) that the AI cannot verify are replaced with typed placeholders like [X%] or [$Y]. Only verb choice, sentence structure, and framing are rewritten. Every proposed change is shown in a diff view before it is applied.'
+    a: "No. Hard numbers that the AI cannot verify are replaced with typed placeholders like [X%] or [$Y]. Only verb choice, sentence structure, and framing are rewritten. Every proposed change is shown in a diff view before it is applied."
   },
   {
     q: 'Which ATS systems does it test against?',
-    a: 'The simulator tests against the core parser behaviours shared by Workday, Greenhouse, Lever, and iCIMS: multi-column rejection, table parsing, header/footer stripping, and special-character handling. It generates a raw-text preview so you can read what the parser actually extracts.'
+    a: "The simulator tests against the core parser behaviours shared by Workday, Greenhouse, Lever, and iCIMS: multi-column rejection, table parsing, header/footer stripping, and special-character handling."
   },
   {
     q: 'Why do you have different templates for the USA and India?',
-    a: 'US hiring conventions expect a one-page, tightly scoped resume. Indian hiring teams and MNC Indian offices typically expect a 2-3 page structured CV with education placed prominently and a profile summary at the top. Using the wrong format in the wrong market creates friction before anyone reads your content.'
+    a: "US hiring conventions expect a one-page, tightly scoped resume. Indian hiring teams typically expect a 2-3 page structured CV with education placed prominently and a profile summary at the top."
   },
   {
     q: 'How are credits priced?',
-    a: 'Every account starts with 20 free credits per month. One full evaluation-and-tailor cycle (upload → critique → JD tailor → export) costs 10 credits. Top-up packs are available; pricing is shown in the dashboard once the credit system ships in the next release.'
+    a: "Every account starts with 20 free credits per month. One full evaluation-and-tailor cycle costs 10 credits. Top-up packs are available; pricing is shown in the dashboard."
   },
   {
     q: 'Is my resume data stored securely?',
-    a: 'All documents are stored in Supabase with Row-Level Security — your data is only accessible to your account. Google OAuth authentication is fully verified by Google under their Limited Use Policy. You can delete your data at any time from the account settings.'
+    a: "All documents are stored in Supabase with Row-Level Security — your data is only accessible to your account. You can delete your data at any time from the account settings."
   }
 ];
 
+// ── Humane typography helpers ──────────────────────────────────────────────
+const humaneStyle = (
+  size: number,
+  weight: number = 400,
+  tracking: string = '0'
+): React.CSSProperties => ({
+  fontFamily: 'var(--font-humane), sans-serif',
+  fontSize: `${size}px`,
+  fontWeight: weight,
+  letterSpacing: tracking,
+  lineHeight: 1,
+});
+
+const frauncesStyle = (
+  size: string,
+  weight: number = 400,
+  tracking: string = '-0.02em'
+): React.CSSProperties => ({
+  fontFamily: 'var(--font-fraunces), Georgia, serif',
+  fontSize: size,
+  fontWeight: weight,
+  letterSpacing: tracking,
+  lineHeight: 1.02,
+});
+
+// ── Page ───────────────────────────────────────────────────────────────────
 export default function LandingPage() {
   const { isDark } = useTheme();
-  const { fadeInUp, staggerContainer, scrollReveal, reduce } = useMotionVariants();
+  const { fadeIn, fadeInUp, staggerContainer, scrollReveal, reduce } = useMotionVariants();
 
-  const borderFaint = isDark ? 'border-white/8' : 'border-black/8';
-  const surfaceFaint = isDark ? 'bg-white/5' : 'bg-black/5';
-
-  // Viewport config for scroll-reveal sections
-  const viewport = { once: true, margin: '-100px' } as const;
+  const viewport = { once: true, margin: '-80px' } as const;
+  const borderFaint = isDark ? 'border-foreground/10' : 'border-foreground/10';
 
   return (
-    <div className="relative min-h-screen transition-colors duration-300 scroll-smooth bg-background text-foreground">
-      <div className="grain-overlay" />
+    <div className="relative min-h-screen bg-background text-foreground">
 
+      {/* ─── NAV (includes top dark band) ──────────────────────────────── */}
       <Navigation />
 
       {/* ─── HERO ────────────────────────────────────────────────────────── */}
-      <section id="hero" className="relative pt-44 pb-32 px-6">
-        {/* Ambient radial gradient — slow drift, stays behind content */}
-        {!reduce && (
+      {/* Push down below fixed nav: 14px band + 72px nav = 86px */}
+      <section id="hero" className="relative pt-[86px] min-h-screen">
+
+        {/* Asymmetric two-column grid */}
+        <div className="max-w-[1400px] mx-auto px-8 grid grid-cols-1 lg:grid-cols-[5fr_4fr] min-h-[calc(100vh-86px)]">
+
+          {/* LEFT column — editorial image + caption */}
           <motion.div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 overflow-hidden"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 2 }}
+            initial="hidden"
+            animate="visible"
+            variants={fadeIn}
+            className="relative flex flex-col lg:border-r border-foreground/10 py-16 pr-0 lg:pr-16"
           >
-            <motion.div
-              className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[600px] rounded-full"
-              style={{
-                background: isDark
-                  ? 'radial-gradient(ellipse at center, hsl(18 50% 56% / 0.07) 0%, transparent 70%)'
-                  : 'radial-gradient(ellipse at center, hsl(18 52% 48% / 0.06) 0%, transparent 70%)'
-              }}
-              animate={{ y: [0, -18, 0], x: [0, 10, 0] }}
-              transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut' }}
-            />
+            {/* Main hero image — tall editorial crop */}
+            {/* REPLACE: swap for actual product screenshot or brand photo */}
+            <div className="relative w-full flex-1 min-h-[420px] lg:min-h-[60vh] overflow-hidden bg-foreground/5">
+              <Image
+                src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1200&q=80&fit=crop"
+                alt="Professionals reviewing documents in a modern office environment"
+                fill
+                className="object-cover object-center"
+                priority
+              />
+              {/* Subtle overlay */}
+              <div className="absolute inset-0 bg-background/10" />
+            </div>
+
+            {/* Image caption */}
+            <div className="mt-4 flex items-center justify-between">
+              <span
+                className="text-foreground/40 uppercase"
+                style={humaneStyle(11, 500, '0.18em')}
+              >
+                ATS PARSE — 2026
+              </span>
+              <span
+                className="text-foreground/30 uppercase"
+                style={humaneStyle(11, 500, '0.18em')}
+              >
+                SAN FRANCISCO + BENGALURU
+              </span>
+            </div>
+
+            {/* Scroll down indicator — bottom left */}
+            <div className="hidden lg:flex items-center gap-3 mt-12">
+              <div className="w-8 h-[1px] bg-foreground/25" />
+              <span
+                className="text-foreground/40 uppercase"
+                style={humaneStyle(11, 500, '0.2em')}
+              >
+                SCROLL DOWN
+              </span>
+            </div>
           </motion.div>
-        )}
-        <div className="max-w-5xl mx-auto">
+
+          {/* RIGHT column — massive serif headline + smaller image */}
           <motion.div
             initial="hidden"
             animate="visible"
             variants={staggerContainer}
-            className="flex flex-col items-center text-center"
+            className="flex flex-col justify-between py-16 pl-0 lg:pl-16"
           >
-            {/* Badge */}
-            <motion.div
-              variants={fadeInUp}
-              className={`mb-8 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border ${borderFaint} ${surfaceFaint} text-[11px] font-semibold tracking-[0.15em] opacity-70 uppercase`}
-            >
-              Hand-tuned by senior recruiters · AI-powered, human-validated
-            </motion.div>
+            <div>
+              {/* Eyebrow */}
+              <motion.span
+                variants={fadeInUp}
+                className="block mb-8 text-foreground/40 uppercase"
+                style={humaneStyle(11, 500, '0.18em')}
+              >
+                RECRUITER-GRADE — 2026
+              </motion.span>
 
-            {/* H1 — Fraunces serif display */}
-            <motion.h1
-              variants={fadeInUp}
-              className="text-5xl md:text-7xl font-bold tracking-tight mb-7 max-w-4xl leading-[1.05]"
-              style={{ fontFamily: 'var(--font-fraunces), serif' }}
-            >
-              Recruiter-Grade<br />
-              <span className="italic font-normal opacity-60">Resume Prep</span>
-            </motion.h1>
+              {/* Display H1 — massive Fraunces, two lines, left-aligned */}
+              <motion.h1
+                variants={fadeInUp}
+                className="text-foreground font-normal leading-[0.95] mb-10"
+                style={{
+                  fontFamily: 'var(--font-fraunces), Georgia, serif',
+                  fontSize: 'clamp(64px, 11vw, 180px)',
+                  letterSpacing: '-0.02em',
+                  fontWeight: 400,
+                }}
+              >
+                PRISM
+                <br />
+                PRO.
+              </motion.h1>
 
-            {/* Subhead */}
-            <motion.p
-              variants={fadeInUp}
-              className="opacity-65 text-lg md:text-xl max-w-xl mb-12 leading-relaxed"
-            >
-              Paste a job description. See bullet-level rewrites in a diff view. Export a PDF template recruiters in the USA or India actually expect.
-            </motion.p>
+              {/* Decorative circle — editorial accent */}
+              <motion.div
+                variants={fadeInUp}
+                aria-hidden="true"
+                className="w-24 h-24 rounded-full border border-foreground/20 mb-10"
+              />
 
-            {/* CTAs */}
-            <motion.div
-              variants={fadeInUp}
-              className="flex flex-col sm:flex-row items-center gap-5"
-            >
-              <motion.div whileTap={reduce ? {} : { scale: 0.97 }} transition={{ duration: 0.1 }}>
+              {/* Body copy */}
+              <motion.p
+                variants={fadeInUp}
+                className="text-foreground/55 leading-relaxed max-w-sm mb-10"
+                style={humaneStyle(15, 400, '0')}
+              >
+                Bullet-level resume critique. JD-driven tailoring. Recruiter-grade PDF export for USA and India markets.
+              </motion.p>
+
+              {/* CTA buttons */}
+              <motion.div
+                variants={fadeInUp}
+                className="flex flex-col sm:flex-row items-start gap-4"
+              >
                 <Link href="/login">
-                  <StyledButton isDark={isDark}>
-                    Polish Your Resume <ArrowRight size={15} />
-                  </StyledButton>
+                  <button
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-foreground text-background uppercase transition-opacity hover:opacity-80"
+                    style={humaneStyle(13, 500, '0.12em')}
+                  >
+                    Polish Your Resume <ArrowRight size={14} />
+                  </button>
                 </Link>
-              </motion.div>
-              <motion.div whileTap={reduce ? {} : { scale: 0.97 }} transition={{ duration: 0.1 }}>
                 <button
                   onClick={() => {
                     const el = document.getElementById('how-it-works');
                     if (el) el.scrollIntoView({ behavior: 'smooth' });
                   }}
+                  className="inline-flex items-center gap-2 px-6 py-3 border border-foreground/25 text-foreground/65 uppercase transition-colors hover:text-foreground hover:border-foreground/60"
+                  style={humaneStyle(13, 500, '0.12em')}
                 >
-                  <StyledButton variant="secondary" isDark={isDark} className="min-w-[150px]">
-                    <div className="flex items-center gap-2">
-                      <ChevronDown className="w-4 h-4" />
-                      <span>See How It Works</span>
-                    </div>
-                  </StyledButton>
+                  See How It Works
                 </button>
               </motion.div>
-            </motion.div>
+            </div>
 
-            {/* Hero product screenshot */}
+            {/* Secondary image card — warm tones, lower-right */}
+            {/* REPLACE: swap for product dashboard screenshot */}
             <motion.div
               variants={fadeInUp}
-              className={`mt-20 w-full max-w-5xl aspect-[16/9] bg-muted rounded-sm border ${borderFaint} relative overflow-hidden group shadow-xl`}
+              className="relative mt-12 lg:mt-0 h-[200px] lg:h-[240px] overflow-hidden"
             >
-              <div className={`absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent z-10`} />
-              {/* <Image src="https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=1600&q=80" alt="Prism Pro resume evaluation interface" className="w-full h-full object-cover" /> */}
-              <div className="absolute inset-0 flex items-center justify-center z-20">
-                <div className={`px-6 py-3 rounded-sm border ${borderFaint} ${surfaceFaint} backdrop-blur-sm`}>
-                  <span className="text-xs font-mono opacity-50 tracking-widest uppercase">[ dashboard preview coming soon ]</span>
-                </div>
+              <Image
+                src="https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=800&q=80&fit=crop"
+                alt="Resume document on a warm-toned desk — placeholder for dashboard preview"
+                fill
+                className="object-cover object-center"
+              />
+              <div className="absolute inset-0 bg-foreground/5" />
+              <div className="absolute bottom-4 left-4">
+                <span
+                  className="text-background/70 uppercase"
+                  style={humaneStyle(10, 500, '0.15em')}
+                >
+                  DASHBOARD PREVIEW — COMING SOON
+                </span>
               </div>
             </motion.div>
           </motion.div>
@@ -275,16 +360,27 @@ export default function LandingPage() {
       </section>
 
       {/* ─── SOCIAL PROOF STRIP ──────────────────────────────────────────── */}
-      {/* <!-- REPLACE THIS SECTION when real logos or review data is available --> */}
-      <section className={`py-10 px-6 border-y ${borderFaint} ${surfaceFaint}`}>
-        <div className="max-w-5xl mx-auto text-center">
-          <p className="text-[11px] font-semibold tracking-[0.2em] uppercase opacity-40 mb-6">
-            Used by engineers from
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-10 opacity-30">
-            {['Stripe', 'Razorpay', 'Flipkart', 'Spotify', 'Amazon Web Services', 'Thoughtworks'].map((name) => (
-              <span key={name} className="text-sm font-semibold tracking-wide">{name}</span>
-            ))}
+      {/* REPLACE: add real company logos when available */}
+      <section className={`py-10 px-8 border-y ${borderFaint}`}>
+        <div className="max-w-[1400px] mx-auto">
+          <div className="flex flex-wrap items-center justify-between gap-6">
+            <span
+              className="text-foreground/35 uppercase"
+              style={humaneStyle(11, 500, '0.18em')}
+            >
+              USED BY ENGINEERS FROM
+            </span>
+            <div className="flex flex-wrap items-center gap-10">
+              {['Stripe', 'Razorpay', 'Flipkart', 'Spotify', 'Amazon', 'Thoughtworks'].map((name) => (
+                <span
+                  key={name}
+                  className="text-foreground/25 uppercase"
+                  style={humaneStyle(13, 500, '0.08em')}
+                >
+                  {name}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -292,32 +388,43 @@ export default function LandingPage() {
       {/* ─── PROBLEM STATEMENT ──────────────────────────────────────────── */}
       <section
         id="problem"
-        className={`py-32 px-6 border-b ${borderFaint} scroll-mt-20`}
+        className={`py-40 px-8 border-b ${borderFaint} scroll-mt-20`}
       >
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-[1400px] mx-auto">
           <SectionHeader
-            label="Why most resumes fail"
+            number="01"
+            label="PROBLEM"
             title="The problem is not your experience."
             subtitle="It is how your experience is presented. Three structural failures cause most rejections before a hiring manager ever reads your name."
           />
-          <div className="grid md:grid-cols-3 gap-8 mt-8">
-            {PROBLEMS.map(({ stat, label, detail }) => (
+          <div className="grid md:grid-cols-3 gap-0 border-l border-foreground/10">
+            {PROBLEMS.map(({ stat, label, detail }, i) => (
               <motion.div
                 key={stat}
                 initial="hidden"
                 whileInView="visible"
                 variants={scrollReveal}
                 viewport={viewport}
-                className={`p-8 border ${borderFaint} rounded-sm`}
+                className={`p-10 border-r border-b border-foreground/10 ${i === 2 ? '' : ''}`}
               >
                 <div
-                  className="text-5xl font-bold mb-4 text-primary"
-                  style={{ fontFamily: 'var(--font-fraunces), serif' }}
+                  className="mb-5 text-foreground font-normal leading-none"
+                  style={frauncesStyle('clamp(40px, 5vw, 72px)', 400, '-0.02em')}
                 >
                   {stat}
                 </div>
-                <h4 className="font-semibold mb-3 leading-snug">{label}</h4>
-                <p className="text-sm opacity-60 leading-relaxed">{detail}</p>
+                <h4
+                  className="font-normal mb-4 text-foreground leading-snug"
+                  style={frauncesStyle('clamp(18px, 1.8vw, 24px)', 500, '-0.005em')}
+                >
+                  {label}
+                </h4>
+                <p
+                  className="text-foreground/50 leading-relaxed"
+                  style={humaneStyle(14, 400, '0')}
+                >
+                  {detail}
+                </p>
               </motion.div>
             ))}
           </div>
@@ -325,14 +432,15 @@ export default function LandingPage() {
       </section>
 
       {/* ─── HOW IT WORKS ───────────────────────────────────────────────── */}
-      <section id="how-it-works" className="py-32 px-6 scroll-mt-20">
-        <div className="max-w-7xl mx-auto">
+      <section id="how-it-works" className="py-40 px-8 scroll-mt-20">
+        <div className="max-w-[1400px] mx-auto">
           <SectionHeader
-            label="The workflow"
+            number="02"
+            label="WORKFLOW"
             title="Four steps from upload to recruiter-ready."
             subtitle="Every step is designed for experienced professionals who know what their resume needs — and want to act on it fast."
           />
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-0 border-l border-t border-foreground/10">
             {STEPS.map(({ icon: Icon, step, title, desc }) => (
               <motion.div
                 key={step}
@@ -340,22 +448,32 @@ export default function LandingPage() {
                 whileInView="visible"
                 variants={scrollReveal}
                 viewport={viewport}
-                className={`p-7 border ${borderFaint} rounded-sm flex flex-col gap-5 group hover:border-primary/30 transition-colors`}
+                className={`p-8 border-r border-b border-foreground/10 flex flex-col gap-6 group hover:bg-foreground/[0.03] transition-colors`}
               >
                 <div className="flex items-start justify-between">
-                  <div className={`w-11 h-11 flex items-center justify-center border ${borderFaint} rounded-sm group-hover:border-primary/30 transition-colors`}>
-                    <Icon size={20} className="text-primary" />
+                  <div className="w-10 h-10 border border-foreground/15 flex items-center justify-center group-hover:border-foreground/30 transition-colors">
+                    <Icon size={18} className="text-foreground/60" strokeWidth={1.25} />
                   </div>
                   <span
-                    className="text-4xl font-bold opacity-10"
-                    style={{ fontFamily: 'var(--font-fraunces), serif' }}
+                    className="text-foreground/10 font-normal"
+                    style={frauncesStyle('clamp(28px, 3vw, 42px)', 400, '-0.02em')}
                   >
                     {step}
                   </span>
                 </div>
                 <div>
-                  <h4 className="font-semibold mb-2">{title}</h4>
-                  <p className="text-sm opacity-60 leading-relaxed">{desc}</p>
+                  <h4
+                    className="text-foreground mb-2 font-normal"
+                    style={frauncesStyle('clamp(18px, 1.6vw, 22px)', 500, '-0.005em')}
+                  >
+                    {title}
+                  </h4>
+                  <p
+                    className="text-foreground/50 leading-relaxed"
+                    style={humaneStyle(14, 400, '0')}
+                  >
+                    {desc}
+                  </p>
                 </div>
               </motion.div>
             ))}
@@ -364,10 +482,11 @@ export default function LandingPage() {
       </section>
 
       {/* ─── FEATURE DEEP DIVE (BENTO) ──────────────────────────────────── */}
-      <section id="features" className={`py-32 px-6 border-t ${borderFaint} scroll-mt-20`}>
-        <div className="max-w-7xl mx-auto">
+      <section id="features" className={`py-40 px-8 border-t ${borderFaint} scroll-mt-20`}>
+        <div className="max-w-[1400px] mx-auto">
           <SectionHeader
-            label="Feature detail"
+            number="03"
+            label="FEATURES"
             title="Every tool is built around what recruiters actually look for."
             subtitle="Not a generic AI wrapper. Each feature maps directly to a documented hiring-team behaviour or ATS failure mode."
           />
@@ -376,56 +495,88 @@ export default function LandingPage() {
       </section>
 
       {/* ─── FEATURE LIST ───────────────────────────────────────────────── */}
-      <section className={`py-20 px-6 border-t ${borderFaint}`}>
-        <div className="max-w-7xl mx-auto grid md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-10">
-          {FEATURES.map(({ title, desc }) => (
-            <motion.div
-              key={title}
-              initial="hidden"
-              whileInView="visible"
-              variants={scrollReveal}
-              viewport={viewport}
-              className="flex gap-4"
-            >
-              <CheckCircle size={20} className="shrink-0 mt-1 text-primary opacity-80" />
-              <div>
-                <h4 className="font-semibold mb-1.5">{title}</h4>
-                <p className="text-sm opacity-60 leading-relaxed">{desc}</p>
-              </div>
-            </motion.div>
-          ))}
+      <section className={`py-32 px-8 border-t ${borderFaint}`}>
+        <div className="max-w-[1400px] mx-auto">
+          <div
+            className="mb-6 uppercase text-foreground/35"
+            style={humaneStyle(11, 500, '0.18em')}
+          >
+            04 / CAPABILITIES
+          </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-0 border-l border-t border-foreground/10">
+            {FEATURES.map(({ title, desc }, i) => (
+              <motion.div
+                key={title}
+                initial="hidden"
+                whileInView="visible"
+                variants={scrollReveal}
+                viewport={viewport}
+                className="p-8 border-r border-b border-foreground/10 hover:bg-foreground/[0.02] transition-colors"
+              >
+                <span
+                  className="block mb-5 text-foreground/25"
+                  style={humaneStyle(11, 500, '0.18em')}
+                >
+                  {String(i + 1).padStart(2, '0')}.
+                </span>
+                <h4
+                  className="text-foreground mb-3 font-normal"
+                  style={frauncesStyle('clamp(18px, 1.6vw, 22px)', 500, '-0.005em')}
+                >
+                  {title}
+                </h4>
+                <p
+                  className="text-foreground/50 leading-relaxed"
+                  style={humaneStyle(14, 400, '0')}
+                >
+                  {desc}
+                </p>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* ─── PRICING TEASER ─────────────────────────────────────────────── */}
       <section
         id="pricing"
-        className={`py-32 px-6 border-t ${borderFaint} scroll-mt-20`}
+        className={`py-40 px-8 border-t ${borderFaint} scroll-mt-20`}
       >
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-[1400px] mx-auto">
           <SectionHeader
-            label="Pricing"
+            number="05"
+            label="PRICING"
             title="Freemium + credits. No surprises."
             subtitle="Start for free. Pay only when you need more evaluations or exports."
           />
-          <div className="grid md:grid-cols-2 gap-8 max-w-3xl">
+          <div className="grid md:grid-cols-2 gap-0 max-w-3xl border border-foreground/10">
             {/* Free tier */}
             <motion.div
               initial="hidden"
               whileInView="visible"
               variants={scrollReveal}
               viewport={viewport}
-              className={`p-8 border ${borderFaint} rounded-sm`}
+              className="p-10 border-r border-foreground/10"
             >
-              <div className="text-xs font-bold tracking-[0.2em] uppercase opacity-50 mb-4">Free</div>
               <div
-                className="text-4xl font-bold mb-1"
-                style={{ fontFamily: 'var(--font-fraunces), serif' }}
+                className="uppercase text-foreground/40 mb-6"
+                style={humaneStyle(11, 500, '0.18em')}
+              >
+                FREE
+              </div>
+              <div
+                className="text-foreground font-normal mb-1 leading-none"
+                style={frauncesStyle('clamp(36px, 4vw, 56px)', 400, '-0.02em')}
               >
                 20 credits
               </div>
-              <div className="text-sm opacity-50 mb-6">per month, always</div>
-              <ul className="space-y-3 text-sm opacity-70">
+              <div
+                className="text-foreground/40 mb-8"
+                style={humaneStyle(14, 400, '0')}
+              >
+                per month, always
+              </div>
+              <ul className="space-y-3">
                 {[
                   '2 full evaluation-and-tailor cycles',
                   'ATS raw-text simulator',
@@ -433,8 +584,13 @@ export default function LandingPage() {
                   'JD diff with per-change accept'
                 ].map((item) => (
                   <li key={item} className="flex items-center gap-3">
-                    <CheckCircle size={14} className="text-primary shrink-0" />
-                    {item}
+                    <CheckCircle size={13} className="text-foreground/40 shrink-0" strokeWidth={1.5} />
+                    <span
+                      className="text-foreground/60"
+                      style={humaneStyle(14, 400, '0')}
+                    >
+                      {item}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -446,29 +602,41 @@ export default function LandingPage() {
               whileInView="visible"
               variants={scrollReveal}
               viewport={viewport}
-              className={`p-8 border border-primary/30 bg-primary/5 rounded-sm`}
+              className="p-10 bg-foreground/[0.03]"
             >
-              <div className="text-xs font-bold tracking-[0.2em] uppercase text-primary/70 mb-4">Top-up</div>
               <div
-                className="text-4xl font-bold mb-1"
-                style={{ fontFamily: 'var(--font-fraunces), serif' }}
+                className="uppercase text-foreground/40 mb-6"
+                style={humaneStyle(11, 500, '0.18em')}
+              >
+                TOP-UP
+              </div>
+              <div
+                className="text-foreground font-normal mb-1 leading-none"
+                style={frauncesStyle('clamp(36px, 4vw, 56px)', 400, '-0.02em')}
               >
                 Buy credits
               </div>
-              <div className="text-sm opacity-50 mb-6">when you need them — no subscription</div>
-              <p className="text-sm opacity-60 leading-relaxed">
+              <div
+                className="text-foreground/40 mb-8"
+                style={humaneStyle(14, 400, '0')}
+              >
+                when you need them — no subscription
+              </div>
+              <p
+                className="text-foreground/50 leading-relaxed mb-8"
+                style={humaneStyle(14, 400, '0')}
+              >
                 {/* REPLACE: Add real pricing tiers when Stripe integration ships */}
                 Credit pack pricing will be shown in-dashboard. Top-ups are one-time purchases — no recurring charge, no lock-in.
               </p>
-              <div className="mt-6">
-                <motion.div whileTap={reduce ? {} : { scale: 0.97 }} transition={{ duration: 0.1 }}>
-                  <Link href="/login">
-                    <StyledButton isDark={isDark}>
-                      Get Started Free <ArrowRight size={14} />
-                    </StyledButton>
-                  </Link>
-                </motion.div>
-              </div>
+              <Link href="/login">
+                <button
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-foreground text-background uppercase transition-opacity hover:opacity-80"
+                  style={humaneStyle(13, 500, '0.12em')}
+                >
+                  Get Started Free <ArrowRight size={13} />
+                </button>
+              </Link>
             </motion.div>
           </div>
         </div>
@@ -477,25 +645,37 @@ export default function LandingPage() {
       {/* ─── FAQ ────────────────────────────────────────────────────────── */}
       <section
         id="faq"
-        className={`py-32 px-6 border-t ${borderFaint} scroll-mt-20`}
+        className={`py-40 px-8 border-t ${borderFaint} scroll-mt-20`}
       >
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-[1400px] mx-auto">
           <SectionHeader
+            number="06"
             label="FAQ"
             title="Straight answers."
             subtitle="Questions we get from engineers who have tried every other resume tool."
           />
-          <div className="grid md:grid-cols-2 gap-x-16 gap-y-12 max-w-5xl">
-            {FAQS.map(({ q, a }) => (
+          <div className="max-w-3xl">
+            {FAQS.map(({ q, a }, i) => (
               <motion.div
                 key={q}
                 initial="hidden"
                 whileInView="visible"
                 variants={scrollReveal}
                 viewport={viewport}
+                className={`py-8 ${i < FAQS.length - 1 ? `border-b ${borderFaint}` : ''}`}
               >
-                <h4 className="font-semibold mb-3">{q}</h4>
-                <p className="text-sm opacity-60 leading-relaxed">{a}</p>
+                <h4
+                  className="text-foreground mb-4 font-normal"
+                  style={frauncesStyle('clamp(18px, 1.8vw, 24px)', 500, '-0.005em')}
+                >
+                  {q}
+                </h4>
+                <p
+                  className="text-foreground/50 leading-relaxed"
+                  style={humaneStyle(14, 400, '0')}
+                >
+                  {a}
+                </p>
               </motion.div>
             ))}
           </div>
@@ -503,113 +683,170 @@ export default function LandingPage() {
       </section>
 
       {/* ─── FINAL CTA ──────────────────────────────────────────────────── */}
-      <section
-        className={`py-32 px-6 border-t ${borderFaint}`}
-      >
+      <section className={`py-40 px-8 border-t ${borderFaint} bg-foreground/[0.02]`}>
         <motion.div
           initial="hidden"
           whileInView="visible"
           variants={scrollReveal}
           viewport={viewport}
-          className="max-w-3xl mx-auto flex flex-col items-center text-center"
+          className="max-w-[1400px] mx-auto flex flex-col items-center text-center"
         >
           <h2
-            className="text-4xl md:text-5xl font-bold tracking-tight mb-6 leading-tight"
-            style={{ fontFamily: 'var(--font-fraunces), serif' }}
+            className="text-foreground font-normal mb-8 leading-[0.95]"
+            style={{
+              fontFamily: 'var(--font-fraunces), Georgia, serif',
+              fontSize: 'clamp(40px, 6vw, 88px)',
+              letterSpacing: '-0.01em',
+              fontWeight: 400,
+            }}
           >
             Your resume reviewed by a<br />
-            <span className="italic font-normal opacity-60">senior recruiter in minutes.</span>
+            <em className="font-normal opacity-60">senior recruiter in minutes.</em>
           </h2>
-          <p className="opacity-60 mb-10 leading-relaxed max-w-lg">
+          <p
+            className="text-foreground/50 mb-12 max-w-md leading-relaxed"
+            style={humaneStyle(15, 400, '0')}
+          >
             Join engineers and product professionals who prep smarter, not longer.
           </p>
-          <motion.div whileTap={reduce ? {} : { scale: 0.97 }} transition={{ duration: 0.1 }}>
-            <Link href="/login">
-              <StyledButton isDark={isDark}>
-                Polish Your Resume <ArrowRight size={16} />
-              </StyledButton>
-            </Link>
-          </motion.div>
+          <Link href="/login">
+            <button
+              className="inline-flex items-center gap-2 px-8 py-4 bg-foreground text-background uppercase transition-opacity hover:opacity-80 mb-8"
+              style={humaneStyle(13, 500, '0.12em')}
+            >
+              Polish Your Resume <ArrowRight size={14} />
+            </button>
+          </Link>
+          <span
+            className="text-foreground/30 uppercase"
+            style={humaneStyle(11, 500, '0.18em')}
+          >
+            PRISM PRO. — RECRUITER-GRADE RESUME PREP
+          </span>
         </motion.div>
       </section>
 
-      {/* ─── FOOTER ─────────────────────────────────────────────────────── */}
-      <footer
-        className={`py-16 px-6 border-t ${borderFaint}`}
-      >
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start gap-12">
-          <div className="max-w-sm">
-            {/* Wordmark */}
-            <div className="mb-5">
-              <span
-                className="font-bold tracking-tight text-xl text-foreground"
-                style={{ fontFamily: 'var(--font-fraunces), serif' }}
-              >
-                Prism <span className="italic font-normal opacity-70">Pro</span>
-              </span>
-            </div>
-            <p className="opacity-45 text-sm leading-relaxed">
-              Recruiter-grade resume tailoring for experienced engineers and product professionals. Built for USA and India markets.
-            </p>
-          </div>
+      {/* ─── BOTTOM DARK BAND ────────────────────────────────────────────── */}
+      <div className="h-[14px] w-full" style={{ backgroundColor: '#1a1a1a' }} />
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-14">
+      {/* ─── FOOTER ─────────────────────────────────────────────────────── */}
+      <footer className={`py-16 px-8 border-t ${borderFaint}`}>
+        <div className="max-w-[1400px] mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+            {/* Wordmark column */}
+            <div className="md:col-span-1">
+              <span
+                className="block mb-4 uppercase text-foreground"
+                style={humaneStyle(14, 500, '0.15em')}
+              >
+                PRISM PRO.
+              </span>
+              <p
+                className="text-foreground/40 leading-relaxed"
+                style={humaneStyle(13, 400, '0.01em')}
+              >
+                Recruiter-grade resume tailoring for experienced engineers and product professionals. Built for USA and India markets.
+              </p>
+            </div>
+
+            {/* Product */}
             <div>
-              <h5 className="text-[10px] font-bold tracking-[0.2em] uppercase mb-5 opacity-100">Product</h5>
-              <ul className="text-sm opacity-50 space-y-3">
-                <li className="hover:opacity-100 transition-opacity">
-                  <button onClick={() => { const el = document.getElementById('how-it-works'); if (el) el.scrollIntoView({ behavior: 'smooth' }); }}>
-                    How It Works
-                  </button>
-                </li>
-                <li className="hover:opacity-100 transition-opacity">
-                  <button onClick={() => { const el = document.getElementById('features'); if (el) el.scrollIntoView({ behavior: 'smooth' }); }}>
-                    Features
-                  </button>
-                </li>
-                <li className="hover:opacity-100 transition-opacity">
-                  <button onClick={() => { const el = document.getElementById('pricing'); if (el) el.scrollIntoView({ behavior: 'smooth' }); }}>
-                    Pricing
-                  </button>
-                </li>
+              <h5
+                className="uppercase text-foreground mb-5"
+                style={humaneStyle(11, 500, '0.18em')}
+              >
+                PRODUCT
+              </h5>
+              <ul className="space-y-3">
+                {[
+                  { label: 'How It Works', action: () => { const el = document.getElementById('how-it-works'); if (el) el.scrollIntoView({ behavior: 'smooth' }); } },
+                  { label: 'Features', action: () => { const el = document.getElementById('features'); if (el) el.scrollIntoView({ behavior: 'smooth' }); } },
+                  { label: 'Pricing', action: () => { const el = document.getElementById('pricing'); if (el) el.scrollIntoView({ behavior: 'smooth' }); } },
+                ].map(({ label, action }) => (
+                  <li key={label}>
+                    <button
+                      onClick={action}
+                      className="text-foreground/40 hover:text-foreground transition-colors"
+                      style={humaneStyle(13, 400, '0.01em')}
+                    >
+                      {label}
+                    </button>
+                  </li>
+                ))}
               </ul>
             </div>
+
+            {/* Resources */}
             <div>
-              <h5 className="text-[10px] font-bold tracking-[0.2em] uppercase mb-5 opacity-100">Resources</h5>
-              <ul className="text-sm opacity-50 space-y-3">
-                <li className="hover:opacity-100 transition-opacity">
-                  <Link href="/docs" className="flex items-center gap-1.5">
-                    <BookOpen size={12} /> Docs
+              <h5
+                className="uppercase text-foreground mb-5"
+                style={humaneStyle(11, 500, '0.18em')}
+              >
+                RESOURCES
+              </h5>
+              <ul className="space-y-3">
+                <li>
+                  <Link href="/docs" className="text-foreground/40 hover:text-foreground transition-colors" style={humaneStyle(13, 400, '0.01em')}>
+                    Docs
                   </Link>
                 </li>
-                <li className="hover:opacity-100 transition-opacity">
-                  <button onClick={() => { const el = document.getElementById('faq'); if (el) el.scrollIntoView({ behavior: 'smooth' }); }}>
+                <li>
+                  <button
+                    onClick={() => { const el = document.getElementById('faq'); if (el) el.scrollIntoView({ behavior: 'smooth' }); }}
+                    className="text-foreground/40 hover:text-foreground transition-colors"
+                    style={humaneStyle(13, 400, '0.01em')}
+                  >
                     FAQ
                   </button>
                 </li>
               </ul>
             </div>
+
+            {/* Legal */}
             <div>
-              <h5 className="text-[10px] font-bold tracking-[0.2em] uppercase mb-5 opacity-100">Legal</h5>
-              <ul className="text-sm opacity-50 space-y-3">
-                <li className="hover:opacity-100 transition-opacity">
-                  <Link href="/privacy-policy">Privacy Policy</Link>
+              <h5
+                className="uppercase text-foreground mb-5"
+                style={humaneStyle(11, 500, '0.18em')}
+              >
+                LEGAL
+              </h5>
+              <ul className="space-y-3">
+                <li>
+                  <Link href="/privacy-policy" className="text-foreground/40 hover:text-foreground transition-colors" style={humaneStyle(13, 400, '0.01em')}>
+                    Privacy Policy
+                  </Link>
                 </li>
-                <li className="hover:opacity-100 transition-opacity">
-                  <Link href="/terms">Terms of Service</Link>
+                <li>
+                  <Link href="/terms" className="text-foreground/40 hover:text-foreground transition-colors" style={humaneStyle(13, 400, '0.01em')}>
+                    Terms of Service
+                  </Link>
                 </li>
               </ul>
             </div>
           </div>
-        </div>
 
-        <div className={`max-w-7xl mx-auto mt-16 pt-8 border-t ${borderFaint} flex flex-col md:flex-row justify-between items-center gap-4`}>
-          <p className="text-[10px] opacity-35 tracking-widest uppercase">
-            &copy; 2026 Prism Pro. All rights reserved.
-          </p>
-          <p className="text-[10px] opacity-35 tracking-widest uppercase">
-            prismpro.live
-          </p>
+          {/* Bottom row */}
+          <div className={`pt-8 border-t ${borderFaint} flex flex-col md:flex-row justify-between items-center gap-4`}>
+            <span
+              className="text-foreground/30 uppercase"
+              style={humaneStyle(11, 500, '0.18em')}
+            >
+              &copy; 2026 PRISM PRO. ALL RIGHTS RESERVED.
+            </span>
+            <span
+              className="text-foreground/30 uppercase"
+              style={humaneStyle(11, 500, '0.18em')}
+            >
+              PRISMPRO.LIVE
+            </span>
+            {/* Locale switch placeholder */}
+            <span
+              className="text-foreground/20 uppercase cursor-default"
+              style={humaneStyle(11, 500, '0.18em')}
+            >
+              EN / IN
+            </span>
+          </div>
         </div>
       </footer>
     </div>
