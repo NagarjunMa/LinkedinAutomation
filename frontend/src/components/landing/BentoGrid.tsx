@@ -60,11 +60,11 @@ export const BentoGrid: React.FC<BentoGridProps> = ({ isDark }) => {
           <ScanText className="mb-4 group-hover:opacity-60 transition-opacity text-primary" size={24} />
           <h3 className="text-xl font-bold mb-2">ATS Raw-Text Simulator</h3>
           <p className="opacity-70 max-w-md text-sm leading-relaxed">
-            See exactly what an applicant tracking system reads after stripping your formatting. Catches tables, columns, and special characters that cause silent parse failures before you apply.
+            See your resume as a parser sees it — tables, columns, and special characters called out before they cost you a screen.
           </p>
         </div>
-        <div className={`flex items-center gap-2 opacity-50 text-[10px] tracking-[0.2em] uppercase font-bold`}>
-          <ScanText size={12} /> Parse check always-on
+        <div className={`font-mono text-[10px] opacity-40 leading-relaxed border-l-2 border-primary/30 pl-3`}>
+          {'Name: John Doe  |  [TABLE STRIPPED]  |  Skills: [COLUMN LOST]'}
         </div>
       </motion.div>
 
