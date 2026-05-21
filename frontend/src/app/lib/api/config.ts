@@ -50,13 +50,13 @@ export async function makeAPIRequest<T>(
         });
 
         if (!response.ok) {
-            const errorText = await response.text();
-            throw new APIError(
-                `API request failed: ${response.status} ${response.statusText}`,
-                response.status,
-                response.statusText,
-                errorText
-            );
+            let detail: any = await response.text();
+            try {
+                const parsed = JSON.parse(detail);
+                detail = parsed.detail ?? parsed;
+            } catch { /* not JSON — keep text */ }
+            const msg = typeof detail === 'string' ? detail : JSON.stringify(detail);
+            throw new APIError(msg, response.status, response.statusText, detail);
         }
 
         return response.json();

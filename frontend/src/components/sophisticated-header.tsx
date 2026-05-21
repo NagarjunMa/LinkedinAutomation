@@ -25,6 +25,7 @@ import {
 import { useAuth } from "@/contexts/auth-context"
 import { useTheme } from "@/contexts/theme-context"
 import { JobSearchModal } from "@/components/job-search-modal"
+import { CreditsBalanceBadge } from '@/components/credits/credits-balance-badge'
 
 interface SophisticatedHeaderProps {
     notificationCount?: number
@@ -105,6 +106,7 @@ export function SophisticatedHeader({
 
             <div className="flex items-center gap-4 sm:gap-8">
                 <div className="flex gap-4 sm:gap-6 items-center">
+                    <CreditsBalanceBadge />
                     {/* Search Icon Mobile */}
                     <button
                         onClick={() => setIsSearchModalOpen(true)}
