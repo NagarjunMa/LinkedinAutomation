@@ -49,21 +49,21 @@ const ibmPlexSans = IBM_Plex_Sans({
 
 export const metadata: Metadata = {
   title: {
-    default: "Prism Pro - AI-Powered LinkedIn Job Automation for Students",
+    default: "Prism Pro — Recruiter-Grade Resume Prep",
     template: "%s | Prism Pro"
   },
-  description: "Streamline your job search with Prism Pro. Extract jobs from URLs, track applications, and get smart job matching. Perfect for students and recent graduates.",
+  description: "Recruiter-grade resume tailoring and JD matching for experienced engineers and product professionals. Used by SWEs, Data Scientists, and PMs targeting roles in the US and India.",
   keywords: [
-    "LinkedIn automation",
-    "job search automation",
-    "AI job matching",
-    "student job search",
-    "LinkedIn job extraction",
-    "application tracking",
-    "career automation",
-    "job hunting tools",
-    "graduate job search",
-    "LinkedIn tools"
+    "resume tailoring",
+    "ATS optimization",
+    "JD matching",
+    "resume scoring",
+    "recruiter resume review",
+    "software engineer resume",
+    "data scientist resume",
+    "product manager resume",
+    "resume builder USA India",
+    "ATS resume checker"
   ],
   authors: [{ name: "Prism Pro Team" }],
   creator: "Prism Pro",
@@ -73,30 +73,30 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL('https://jobflowpro.com'),
+  metadataBase: new URL('https://prismpro.live'),
   alternates: {
     canonical: '/',
   },
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://jobflowpro.com',
-    title: 'Prism Pro - AI-Powered LinkedIn Job Automation',
-    description: 'Streamline your job search with Prism Pro. Perfect for students and recent graduates.',
+    url: 'https://prismpro.live',
+    title: 'Prism Pro — Recruiter-Grade Resume Prep',
+    description: 'Recruiter-grade resume tailoring and JD matching for experienced engineers and product professionals. Used by SWEs, Data Scientists, and PMs targeting roles in the US and India.',
     siteName: 'Prism Pro',
     images: [
       {
         url: '/og-image.jpg',
         width: 1200,
         height: 630,
-        alt: 'Prism Pro - AI-Powered Job Search Automation',
+        alt: 'Prism Pro — Recruiter-Grade Resume Prep',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Prism Pro - AI-Powered LinkedIn Job Automation',
-    description: 'Streamline your job search with Prism Pro.',
+    title: 'Prism Pro — Recruiter-Grade Resume Prep',
+    description: 'Bullet-level resume critique, JD-driven tailoring, and country-aware PDF export for experienced engineers and PMs.',
     images: ['/og-image.jpg'],
     creator: '@prismpro',
   },
@@ -137,7 +137,7 @@ export default function RootLayout({
               "@context": "https://schema.org",
               "@type": "SoftwareApplication",
               "name": "Prism Pro",
-              "description": "AI-powered LinkedIn job search automation for students and recent graduates",
+              "description": "Recruiter-grade resume tailoring platform. Professionals use Prism Pro to evaluate and tailor their resumes to job descriptions, prepare for ATS systems, and export polished, country-aware PDF resumes.",
               "url": "https://prismpro.live",
               "applicationCategory": "BusinessApplication",
               "operatingSystem": "Web Browser",
@@ -145,12 +145,7 @@ export default function RootLayout({
                 "@type": "Offer",
                 "price": "0",
                 "priceCurrency": "USD",
-                "description": "Free for students"
-              },
-              "aggregateRating": {
-                "@type": "AggregateRating",
-                "ratingValue": "4.9",
-                "ratingCount": "1000"
+                "description": "Freemium — 20 free credits per month; top-up credits available"
               },
               "author": {
                 "@type": "Organization",

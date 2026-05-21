@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
             allow: '/',
             disallow: ['/api/', '/admin/', '/private/'],
         },
-        sitemap: 'https://jobflowpro.com/sitemap.xml',
+        sitemap: 'https://prismpro.live/sitemap.xml',
     }
-} 
+}
