@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { CheckCircle, Mail, Shield, User, Briefcase, GraduationCap, Plus, Trash2 } from 'lucide-react'
+import { CheckCircle, Shield, User, GraduationCap, Plus, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
 
 export default function OnboardingPage() {
@@ -18,11 +18,11 @@ export default function OnboardingPage() {
     const [loading, setLoading] = useState(false)
     const [formData, setFormData] = useState({
         fullName: '',
-        company: '',
         jobTitle: '',
+        targetRole: '',
+        targetCountry: 'USA',
+        careerLevel: 'mid',
         acceptTerms: false,
-        acceptGmailAccess: false,
-        acceptJobTracking: false,
         education: [{
             degree: '',
             institution: '',
@@ -39,12 +39,10 @@ export default function OnboardingPage() {
             return
         }
 
-        // Pre-fill form with user data if available
         if (user.user_metadata) {
             setFormData(prev => ({
                 ...prev,
                 fullName: user.user_metadata.full_name || '',
-                company: user.user_metadata.company || '',
                 jobTitle: user.user_metadata.job_title || ''
             }))
         }
@@ -93,13 +91,12 @@ export default function OnboardingPage() {
             return
         }
 
-        if (step === 2 && !formData.acceptTerms) {
-            setError('Please accept the terms and conditions')
+        if (step === 2 && !formData.targetRole.trim()) {
+            setError('Please enter your target role')
             return
         }
 
         if (step === 3) {
-            // Validate at least one education entry has degree and institution
             const hasValidEducation = formData.education.some(edu =>
                 edu.degree.trim() && edu.institution.trim()
             )
@@ -107,6 +104,11 @@ export default function OnboardingPage() {
                 setError('Please provide at least your degree and institution')
                 return
             }
+        }
+
+        if (step === 4 && !formData.acceptTerms) {
+            setError('Please accept the Terms of Service and Privacy Policy')
+            return
         }
 
         setError(null)
@@ -131,18 +133,14 @@ export default function OnboardingPage() {
 
             const supabase = createClient()
 
-            // Update user metadata with onboarding completion and OAuth provider
             const { error: updateError } = await supabase.auth.updateUser({
                 data: {
                     onboarding_completed: true,
-                    oauth_provider: 'google', // Mark that user has completed OAuth
                     full_name: formData.fullName,
-                    company: formData.company,
                     job_title: formData.jobTitle,
-                    permissions: {
-                        gmail_access: formData.acceptGmailAccess,
-                        job_tracking: formData.acceptJobTracking
-                    }
+                    target_role: formData.targetRole,
+                    target_country: formData.targetCountry,
+                    career_level: formData.careerLevel,
                 }
             })
 
@@ -150,15 +148,12 @@ export default function OnboardingPage() {
                 throw updateError
             }
 
-            // Refresh user data
             await refreshUser()
-
-            // Redirect to dashboard
             router.push('/dashboard')
 
         } catch (error) {
             console.error('Error completing onboarding:', error)
-            setError('Failed to complete onboarding. Please try again.')
+            setError('Failed to complete setup. Please try again.')
         } finally {
             setLoading(false)
         }
@@ -176,13 +171,13 @@ export default function OnboardingPage() {
                         <div className="mx-auto mb-4 w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
                             <User className="w-8 h-8 text-primary" />
                         </div>
-                        <CardTitle className="text-2xl">Welcome to Prism Pro!</CardTitle>
+                        <CardTitle className="text-2xl">Welcome to Prism Pro</CardTitle>
                         <CardDescription>
-                            Let&apos;s set up your account and get you started
+                            Let&apos;s set up your resume workspace in 4 quick steps.
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
-                        {/* Progress indicator */}
+                        {/* Step progress */}
                         <div className="flex items-center justify-between mb-6">
                             {[1, 2, 3, 4].map((stepNumber) => (
                                 <div
@@ -210,80 +205,76 @@ export default function OnboardingPage() {
                         {/* Step 1: Basic Information */}
                         {step === 1 && (
                             <div className="space-y-4">
+                                <h3 className="text-base font-semibold">Your details</h3>
+                                <p className="text-sm text-muted-foreground">
+                                    We use your name and current title to personalise the AI evaluation output and resume header suggestions.
+                                </p>
                                 <div>
-                                    <Label htmlFor="fullName">Full Name</Label>
+                                    <Label htmlFor="fullName">Full Name *</Label>
                                     <Input
                                         id="fullName"
                                         value={formData.fullName}
                                         onChange={(e) => handleInputChange('fullName', e.target.value)}
-                                        placeholder="Enter your full name"
+                                        placeholder="Your full name"
                                         className="mt-1"
                                     />
                                 </div>
                                 <div>
-                                    <Label htmlFor="company">Company (Optional)</Label>
-                                    <Input
-                                        id="company"
-                                        value={formData.company}
-                                        onChange={(e) => handleInputChange('company', e.target.value)}
-                                        placeholder="Where do you work?"
-                                        className="mt-1"
-                                    />
-                                </div>
-                                <div>
-                                    <Label htmlFor="jobTitle">Job Title (Optional)</Label>
+                                    <Label htmlFor="jobTitle">Current Title (optional)</Label>
                                     <Input
                                         id="jobTitle"
                                         value={formData.jobTitle}
                                         onChange={(e) => handleInputChange('jobTitle', e.target.value)}
-                                        placeholder="What's your role?"
+                                        placeholder="e.g. Senior Software Engineer"
                                         className="mt-1"
                                     />
                                 </div>
                             </div>
                         )}
 
-                        {/* Step 2: Permissions */}
+                        {/* Step 2: Target Role + Market */}
                         {step === 2 && (
-                            <div className="space-y-4">
-                                <div className="space-y-3">
-                                    <div className="flex items-start space-x-3">
-                                        <Checkbox
-                                            id="gmailAccess"
-                                            checked={formData.acceptGmailAccess}
-                                            onCheckedChange={(checked) =>
-                                                handleInputChange('acceptGmailAccess', checked as boolean)
-                                            }
-                                        />
-                                        <div className="space-y-1">
-                                            <Label htmlFor="gmailAccess" className="flex items-center space-x-2">
-                                                <Mail className="w-4 h-4" />
-                                                <span>Gmail Access</span>
-                                            </Label>
-                                            <p className="text-sm text-muted-foreground">
-                                                Allow Prism Pro to access your Gmail to automatically track job application emails
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-start space-x-3">
-                                        <Checkbox
-                                            id="jobTracking"
-                                            checked={formData.acceptJobTracking}
-                                            onCheckedChange={(checked) =>
-                                                handleInputChange('acceptJobTracking', checked as boolean)
-                                            }
-                                        />
-                                        <div className="space-y-1">
-                                            <Label htmlFor="jobTracking" className="flex items-center space-x-2">
-                                                <Briefcase className="w-4 h-4" />
-                                                <span>Job Application Tracking</span>
-                                            </Label>
-                                            <p className="text-sm text-muted-foreground">
-                                                Track your job applications and get insights on your application performance
-                                            </p>
-                                        </div>
-                                    </div>
+                            <div className="space-y-5">
+                                <h3 className="text-base font-semibold">Target role and market</h3>
+                                <p className="text-sm text-muted-foreground">
+                                    This tells the AI which job market to optimise for. ATS rules, keyword expectations, and resume formats differ between the US and India hiring pipelines.
+                                </p>
+                                <div>
+                                    <Label htmlFor="targetRole">Target Role *</Label>
+                                    <Input
+                                        id="targetRole"
+                                        value={formData.targetRole}
+                                        onChange={(e) => handleInputChange('targetRole', e.target.value)}
+                                        placeholder="e.g. Staff Engineer, Data Scientist, Product Manager"
+                                        className="mt-1"
+                                    />
+                                </div>
+                                <div>
+                                    <Label htmlFor="targetCountry">Target Market</Label>
+                                    <select
+                                        id="targetCountry"
+                                        value={formData.targetCountry}
+                                        onChange={(e) => handleInputChange('targetCountry', e.target.value)}
+                                        className="mt-1 w-full border border-input bg-background px-3 py-2 text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
+                                    >
+                                        <option value="USA">United States</option>
+                                        <option value="India">India</option>
+                                        <option value="Both">Both (US + India)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <Label htmlFor="careerLevel">Career Level</Label>
+                                    <select
+                                        id="careerLevel"
+                                        value={formData.careerLevel}
+                                        onChange={(e) => handleInputChange('careerLevel', e.target.value)}
+                                        className="mt-1 w-full border border-input bg-background px-3 py-2 text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
+                                    >
+                                        <option value="mid">Mid-level (3–6 years)</option>
+                                        <option value="senior">Senior (6–10 years)</option>
+                                        <option value="staff">Staff / Principal (10+ years)</option>
+                                        <option value="manager">Engineering Manager / Director</option>
+                                    </select>
                                 </div>
                             </div>
                         )}
@@ -291,15 +282,18 @@ export default function OnboardingPage() {
                         {/* Step 3: Education */}
                         {step === 3 && (
                             <div className="space-y-4">
-                                <div className="flex items-center space-x-2 mb-4">
+                                <div className="flex items-center space-x-2 mb-2">
                                     <GraduationCap className="w-5 h-5" />
-                                    <h3 className="text-lg font-medium">Education Information</h3>
+                                    <h3 className="text-base font-semibold">Education</h3>
                                 </div>
+                                <p className="text-sm text-muted-foreground">
+                                    Used to populate the Education section of your resume and help the AI calibrate expected seniority and keyword density.
+                                </p>
 
                                 {formData.education.map((edu, index) => (
                                     <div key={index} className="p-4 border rounded-lg space-y-4">
                                         <div className="flex justify-between items-center">
-                                            <h4 className="font-medium">Education {index + 1}</h4>
+                                            <h4 className="font-medium text-sm">Education {index + 1}</h4>
                                             {formData.education.length > 1 && (
                                                 <Button
                                                     variant="outline"
@@ -318,7 +312,7 @@ export default function OnboardingPage() {
                                                     id={`degree-${index}`}
                                                     value={edu.degree}
                                                     onChange={(e) => handleEducationChange(index, 'degree', e.target.value)}
-                                                    placeholder="Bachelor's in Computer Science"
+                                                    placeholder="B.Tech. Computer Science"
                                                     className="mt-1"
                                                 />
                                             </div>
@@ -328,7 +322,7 @@ export default function OnboardingPage() {
                                                     id={`institution-${index}`}
                                                     value={edu.institution}
                                                     onChange={(e) => handleEducationChange(index, 'institution', e.target.value)}
-                                                    placeholder="University of California"
+                                                    placeholder="IIT Bombay / UC Berkeley"
                                                     className="mt-1"
                                                 />
                                             </div>
@@ -338,17 +332,17 @@ export default function OnboardingPage() {
                                                     id={`year-${index}`}
                                                     value={edu.graduationYear}
                                                     onChange={(e) => handleEducationChange(index, 'graduationYear', e.target.value)}
-                                                    placeholder="2023"
+                                                    placeholder="2019"
                                                     className="mt-1"
                                                 />
                                             </div>
                                             <div>
-                                                <Label htmlFor={`gpa-${index}`}>GPA (Optional)</Label>
+                                                <Label htmlFor={`gpa-${index}`}>GPA / CGPA (optional)</Label>
                                                 <Input
                                                     id={`gpa-${index}`}
                                                     value={edu.gpa}
                                                     onChange={(e) => handleEducationChange(index, 'gpa', e.target.value)}
-                                                    placeholder="3.8"
+                                                    placeholder="8.4 / 10"
                                                     className="mt-1"
                                                 />
                                             </div>
@@ -362,63 +356,54 @@ export default function OnboardingPage() {
                                     className="w-full"
                                 >
                                     <Plus className="w-4 h-4 mr-2" />
-                                    Add Another Education
+                                    Add Another Degree
                                 </Button>
                             </div>
                         )}
 
-                        {/* Step 4: Terms and Final Review */}
+                        {/* Step 4: Terms + Review */}
                         {step === 4 && (
-                            <div className="space-y-4">
-                                <div className="space-y-3">
-                                    <div className="flex items-start space-x-3">
-                                        <Checkbox
-                                            id="acceptTerms"
-                                            checked={formData.acceptTerms}
-                                            onCheckedChange={(checked) =>
-                                                handleInputChange('acceptTerms', checked as boolean)
-                                            }
-                                        />
-                                        <div className="space-y-1">
-                                            <Label htmlFor="acceptTerms" className="flex items-center space-x-2">
-                                                <Shield className="w-4 h-4" />
-                                                <span>Terms and Conditions</span>
-                                            </Label>
-                                            <p className="text-sm text-muted-foreground">
-                                                I agree to the Terms of Service and Privacy Policy
-                                            </p>
-                                        </div>
+                            <div className="space-y-5">
+                                <h3 className="text-base font-semibold">Review and agree</h3>
+
+                                <div className="p-4 bg-muted/50 rounded-lg text-sm space-y-2">
+                                    <p className="font-semibold mb-3">Your setup summary</p>
+                                    <p><strong>Name:</strong> {formData.fullName}</p>
+                                    {formData.jobTitle && <p><strong>Current Title:</strong> {formData.jobTitle}</p>}
+                                    {formData.targetRole && <p><strong>Target Role:</strong> {formData.targetRole}</p>}
+                                    <p><strong>Target Market:</strong> {formData.targetCountry}</p>
+                                    <p><strong>Career Level:</strong> {formData.careerLevel}</p>
+                                    {formData.education[0]?.degree && (
+                                        <p><strong>Education:</strong> {formData.education[0].degree}{formData.education[0].institution ? ` — ${formData.education[0].institution}` : ''}</p>
+                                    )}
+                                </div>
+
+                                <div className="flex items-start space-x-3">
+                                    <Checkbox
+                                        id="acceptTerms"
+                                        checked={formData.acceptTerms}
+                                        onCheckedChange={(checked) =>
+                                            handleInputChange('acceptTerms', checked as boolean)
+                                        }
+                                    />
+                                    <div className="space-y-1">
+                                        <Label htmlFor="acceptTerms" className="flex items-center space-x-2 cursor-pointer">
+                                            <Shield className="w-4 h-4" />
+                                            <span>I agree to the Terms of Service and Privacy Policy</span>
+                                        </Label>
+                                        <p className="text-xs text-muted-foreground">
+                                            Prism Pro is Google OAuth verified. We request only your name and email — no Gmail access. Your resume data is private and never shared with third parties.
+                                        </p>
                                     </div>
                                 </div>
 
-                                <div className="p-4 bg-muted/50 rounded-lg">
-                                    <h4 className="font-medium mb-2">Review Your Setup</h4>
-                                    <div className="space-y-2 text-sm">
-                                        <p><strong>Name:</strong> {formData.fullName}</p>
-                                        {formData.company && <p><strong>Company:</strong> {formData.company}</p>}
-                                        {formData.jobTitle && <p><strong>Job Title:</strong> {formData.jobTitle}</p>}
-
-                                        <div className="mt-3">
-                                            <p className="font-medium">Education:</p>
-                                            {formData.education.map((edu, index) => (
-                                                <div key={index} className="ml-4 text-xs space-y-1">
-                                                    {edu.degree && <p>• <strong>Degree:</strong> {edu.degree}</p>}
-                                                    {edu.institution && <p>• <strong>Institution:</strong> {edu.institution}</p>}
-                                                    {edu.graduationYear && <p>• <strong>Year:</strong> {edu.graduationYear}</p>}
-                                                    {edu.gpa && <p>• <strong>GPA:</strong> {edu.gpa}</p>}
-                                                    {index < formData.education.length - 1 && <div className="border-t pt-1 mt-2" />}
-                                                </div>
-                                            ))}
-                                        </div>
-
-                                        <p><strong>Gmail Access:</strong> {formData.acceptGmailAccess ? 'Enabled' : 'Disabled'}</p>
-                                        <p><strong>Job Tracking:</strong> {formData.acceptJobTracking ? 'Enabled' : 'Disabled'}</p>
-                                    </div>
+                                <div className="text-xs text-muted-foreground p-3 bg-muted/30 rounded-md">
+                                    <strong>What happens next:</strong> You will land on your Resume workspace. Upload your resume to get your first ATS score and recruiter-grade feedback. Your 5 complimentary credits are waiting.
                                 </div>
                             </div>
                         )}
 
-                        {/* Navigation buttons */}
+                        {/* Navigation */}
                         <div className="flex justify-between pt-4">
                             <Button
                                 variant="outline"
@@ -432,7 +417,7 @@ export default function OnboardingPage() {
                                 disabled={loading}
                                 className="ml-auto"
                             >
-                                {step === 4 ? (loading ? 'Setting up...' : 'Complete Setup') : 'Next'}
+                                {step === 4 ? (loading ? 'Setting up...' : 'Enter Prism Pro') : 'Next'}
                             </Button>
                         </div>
                     </CardContent>

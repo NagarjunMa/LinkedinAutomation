@@ -56,7 +56,7 @@ export default function SettingsPage() {
               <SettingsIcon className="mr-3 h-8 w-8" />
               Settings
             </h1>
-            <p className="text-muted-foreground">Configure your application preferences and privacy settings</p>
+            <p className="text-muted-foreground">Manage your data privacy, consent settings, and account change history.</p>
           </div>
         </div>
 

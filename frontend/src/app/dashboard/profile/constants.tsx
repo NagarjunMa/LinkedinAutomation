@@ -17,5 +17,4 @@ export const INITIAL_PROFILE_DATA: ProfileData = {
         locations: [],
         salaryRange: ''
     },
-    referralBlueprint: ''
 };

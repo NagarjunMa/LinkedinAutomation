@@ -15,13 +15,13 @@ function HistoryTab({ userId: _userId }: HistoryTabProps) {
             id: 1,
             action: 'Profile Updated',
             timestamp: '2025-01-27 10:30:00',
-            details: 'Updated job preferences'
+            details: 'Updated target role and job preferences'
         },
         {
             id: 2,
-            action: 'Email Settings Changed',
+            action: 'Privacy Settings Updated',
             timestamp: '2025-01-26 15:45:00',
-            details: 'Enabled email forwarding'
+            details: 'Updated data retention preference'
         },
         {
             id: 3,
