@@ -10,6 +10,7 @@ class ResumeDocument(Base):
     user_id = Column(String, ForeignKey("users.user_id"), nullable=False, index=True)
     original_filename = Column(String, nullable=False)
     file_path = Column(String, nullable=False)
+    storage_path = Column(String, nullable=True)   # Phase 4: Supabase Storage path
     file_type = Column(String, nullable=False)
     parsed_json = Column(JSONB, nullable=False)
     raw_text = Column(Text, nullable=False)

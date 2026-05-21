@@ -23,6 +23,7 @@ from app.services.resume.evaluator import evaluate_resume
 from app.services.resume.ats_simulator import simulate_ats
 from app.services.resume.rewriter import rewrite_bullet
 from app.services.resume.hallucination_guard import HallucinationError
+from app.services.storage.supabase_storage import get_storage
 from app.middleware.credits import credit_transaction
 
 router = APIRouter(tags=["resumes-v2"])
@@ -56,16 +57,24 @@ async def upload_resume(
         raise HTTPException(status_code=400, detail=str(exc))
 
     doc_id = str(uuid.uuid4())
-    file_path = os.path.join(UPLOAD_DIR, f"{doc_id}_{file.filename}")
-    with open(file_path, "wb") as fh:
-        fh.write(content)
-
     ext = file.filename.rsplit(".", 1)[-1].lower()
+
+    # Phase 4: upload to Supabase Storage instead of local disk.
+    # file_path is kept populated for backward compat (will be deprecated post-backfill).
+    storage = get_storage()
+    storage_path = storage.upload(
+        user_id=current_user_id,
+        file_id=doc_id,
+        content=content,
+        filename=file.filename,
+    )
+
     db_doc = ResumeDocument(
         id=doc_id,
         user_id=current_user_id,
         original_filename=file.filename,
-        file_path=file_path,
+        file_path=storage_path,       # legacy column — mirrors storage_path for one release
+        storage_path=storage_path,    # Phase 4 canonical column
         file_type=ext,
         parsed_json=doc_json.model_dump(),
         raw_text=doc_json.raw_text,
