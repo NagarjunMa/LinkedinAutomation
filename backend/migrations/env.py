@@ -16,8 +16,12 @@ from app.models.job import Base
 # access to the values within the .ini file in use.
 config = context.config
 
-# Override sqlalchemy.url with our app's database URL
-config.set_main_option("sqlalchemy.url", settings.SQLALCHEMY_DATABASE_URI)
+# Override sqlalchemy.url with our app's database URL.
+# Escape % for configparser interpolation (e.g. URL-encoded passwords like %40).
+config.set_main_option(
+    "sqlalchemy.url",
+    settings.SQLALCHEMY_DATABASE_URI.replace("%", "%%"),
+)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

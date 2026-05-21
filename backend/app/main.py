@@ -1,3 +1,11 @@
+from dotenv import load_dotenv
+
+# Load .env into os.environ before any app modules import — keeps os.getenv()
+# callers working without requiring uvicorn --env-file. On Railway/Vercel/Docker
+# this is a no-op when no .env file is present; platform env vars are already
+# in os.environ. See TECH_DEBT.md for the longer-term settings.X migration.
+load_dotenv()
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
