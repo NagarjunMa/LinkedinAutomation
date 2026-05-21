@@ -7,6 +7,7 @@ from app.api.v1.endpoints import jd
 from app.api.v1.endpoints import credits
 from app.api.v1.endpoints import exports
 from app.api.v1.endpoints import webhooks
+from app.api.v1.endpoints import admin_metrics
 
 api_router = APIRouter()
 
@@ -24,3 +25,4 @@ api_router.include_router(credits.router)
 api_router.include_router(exports.router)
 # Phase-4 new routes
 api_router.include_router(webhooks.router)
+api_router.include_router(admin_metrics.router)
