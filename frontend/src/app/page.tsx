@@ -215,22 +215,35 @@ export default function LandingPage() {
             variants={staggerContainer}
             className="flex flex-col justify-center lg:border-r border-foreground/10 py-16 pr-0 lg:pr-20"
           >
-            {/* Eyebrow */}
-            <motion.span
+            {/* Eyebrow — with horizontal rules for emphasis */}
+            <motion.div
               variants={fadeInUp}
-              className="block mb-8 text-foreground/40 uppercase"
-              style={humaneStyle(11, 500, '0.18em')}
+              className="flex items-center gap-3 mb-8"
             >
-              RECRUITER-GRADE — 2026
-            </motion.span>
+              <div className="w-6 h-[1px] bg-foreground/30" aria-hidden="true" />
+              <span
+                className="text-foreground/50 uppercase font-humane"
+                style={{ fontSize: '15px', fontWeight: 700, letterSpacing: '0.22em', lineHeight: 1 }}
+              >
+                RECRUITER-GRADE — 2026
+              </span>
+              <div className="w-6 h-[1px] bg-foreground/30" aria-hidden="true" />
+            </motion.div>
 
-            {/* Body copy */}
+            {/* Body copy — with Humane accent on key phrase */}
             <motion.p
               variants={fadeInUp}
               className="text-foreground/65 leading-relaxed mb-10"
               style={{ ...humaneStyle(17, 400, '0'), maxWidth: '480px' }}
             >
-              Bullet-level resume critique. JD-driven tailoring. Recruiter-grade PDF export for USA and India markets.
+              Bullet-level resume critique. JD-driven tailoring.{' '}
+              <span
+                className="text-foreground uppercase font-humane"
+                style={{ fontSize: '18px', fontWeight: 600, letterSpacing: '0.08em', display: 'inline-block', transform: 'scale(1.05)', transformOrigin: 'left center' }}
+              >
+                Recruiter&#8209;grade
+              </span>{' '}
+              PDF export for USA and India markets.
             </motion.p>
 
             {/* CTA buttons */}
