@@ -63,8 +63,8 @@ export const Navigation: React.FC = () => {
                   <Link
                     key={item.label}
                     href={item.href}
-                    className="text-foreground/55 hover:text-foreground transition-colors duration-200 uppercase font-humane"
-                    style={{ fontSize: '14px', fontWeight: 500, letterSpacing: '0.18em', lineHeight: 1 }}
+                    className="text-foreground/85 hover:text-foreground transition-colors duration-200 uppercase font-humane"
+                    style={{ fontSize: '14px', fontWeight: 600, letterSpacing: '0.18em', lineHeight: 1 }}
                   >
                     {item.label}
                   </Link>
@@ -72,8 +72,8 @@ export const Navigation: React.FC = () => {
                   <button
                     key={item.label}
                     onClick={item.action}
-                    className="text-foreground/55 hover:text-foreground transition-colors duration-200 uppercase font-humane"
-                    style={{ fontSize: '14px', fontWeight: 500, letterSpacing: '0.18em', lineHeight: 1 }}
+                    className="text-foreground/85 hover:text-foreground transition-colors duration-200 uppercase font-humane"
+                    style={{ fontSize: '14px', fontWeight: 600, letterSpacing: '0.18em', lineHeight: 1 }}
                   >
                     {item.label}
                   </button>
@@ -115,8 +115,8 @@ export const Navigation: React.FC = () => {
 
               <Link href="/login">
                 <span
-                  className="text-foreground/55 hover:text-foreground transition-colors duration-200 uppercase font-humane"
-                  style={{ fontSize: '14px', fontWeight: 500, letterSpacing: '0.18em', lineHeight: 1 }}
+                  className="text-foreground/85 hover:text-foreground transition-colors duration-200 uppercase font-humane"
+                  style={{ fontSize: '14px', fontWeight: 600, letterSpacing: '0.18em', lineHeight: 1 }}
                 >
                   SIGN IN
                 </span>
