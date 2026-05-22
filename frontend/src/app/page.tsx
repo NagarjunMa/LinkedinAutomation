@@ -337,8 +337,8 @@ export default function LandingPage() {
               className="text-foreground uppercase leading-[0.9] mb-10"
               style={{
                 fontFamily: 'var(--font-humane), sans-serif',
-                fontSize: 'clamp(120px, 18vw, 260px)',
-                letterSpacing: '-0.01em',
+                fontSize: 'clamp(180px, 24vw, 380px)',
+                letterSpacing: '0.04em',
                 fontWeight: 500,
                 fontVariationSettings: '"wght" 500',
               }}
