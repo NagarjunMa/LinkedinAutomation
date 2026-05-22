@@ -12,7 +12,7 @@ const humaneStyle = (
   weight: number = 400,
   tracking: string = '0'
 ): React.CSSProperties => ({
-  fontFamily: 'var(--font-humane), sans-serif',
+  fontFamily: 'var(--font-geist-sans), system-ui, sans-serif',
   fontSize: `${size}px`,
   fontWeight: weight,
   letterSpacing: tracking,
