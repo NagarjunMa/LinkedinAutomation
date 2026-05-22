@@ -33,7 +33,7 @@ export const Navigation: React.FC = () => {
           className="transition-colors duration-300"
           style={{ backgroundColor: isDark ? 'hsl(0 0% 5% / 0.95)' : 'hsl(40 14% 91% / 0.95)' }}
         >
-          <div className="max-w-[1400px] mx-auto px-8 h-[72px] flex items-center justify-between">
+          <div className="max-w-[1400px] mx-auto px-8 py-7 flex items-center justify-between">
 
             {/* Left: wordmark */}
             <Link href="/" className="flex items-center gap-3">
@@ -45,8 +45,8 @@ export const Navigation: React.FC = () => {
                 <span className="w-[1px] h-3 bg-foreground/40 absolute" />
               </span>
               <span
-                className="text-foreground uppercase tracking-nav text-[14px] font-medium"
-                style={{ fontFamily: 'var(--font-humane), sans-serif', letterSpacing: '0.15em' }}
+                className="text-foreground uppercase font-humane"
+                style={{ fontSize: '18px', fontWeight: 600, letterSpacing: '0.12em', lineHeight: 1 }}
               >
                 PRISM PRO.
               </span>
@@ -63,8 +63,8 @@ export const Navigation: React.FC = () => {
                   <Link
                     key={item.label}
                     href={item.href}
-                    className="text-foreground/55 hover:text-foreground transition-colors duration-200 text-[12px] font-medium uppercase"
-                    style={{ fontFamily: 'var(--font-humane), sans-serif', letterSpacing: '0.15em' }}
+                    className="text-foreground/55 hover:text-foreground transition-colors duration-200 uppercase font-humane"
+                    style={{ fontSize: '14px', fontWeight: 500, letterSpacing: '0.18em', lineHeight: 1 }}
                   >
                     {item.label}
                   </Link>
@@ -72,8 +72,8 @@ export const Navigation: React.FC = () => {
                   <button
                     key={item.label}
                     onClick={item.action}
-                    className="text-foreground/55 hover:text-foreground transition-colors duration-200 text-[12px] font-medium uppercase"
-                    style={{ fontFamily: 'var(--font-humane), sans-serif', letterSpacing: '0.15em' }}
+                    className="text-foreground/55 hover:text-foreground transition-colors duration-200 uppercase font-humane"
+                    style={{ fontSize: '14px', fontWeight: 500, letterSpacing: '0.18em', lineHeight: 1 }}
                   >
                     {item.label}
                   </button>
@@ -115,8 +115,8 @@ export const Navigation: React.FC = () => {
 
               <Link href="/login">
                 <span
-                  className="text-foreground/55 hover:text-foreground transition-colors duration-200 text-[12px] font-medium uppercase"
-                  style={{ fontFamily: 'var(--font-humane), sans-serif', letterSpacing: '0.15em' }}
+                  className="text-foreground/55 hover:text-foreground transition-colors duration-200 uppercase font-humane"
+                  style={{ fontSize: '14px', fontWeight: 500, letterSpacing: '0.18em', lineHeight: 1 }}
                 >
                   SIGN IN
                 </span>
