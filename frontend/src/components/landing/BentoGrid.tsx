@@ -35,7 +35,7 @@ const CARDS = [
     num: '01',
     title: 'ATS Raw-Text Simulator',
     desc: 'See your resume as a parser sees it — tables, columns, and special characters called out before they cost you a screen.',
-    span: 'md:col-span-8',
+    span: 'md:col-span-2',
     detail: 'Name: John Doe  |  [TABLE STRIPPED]  |  Skills: [COLUMN LOST]',
     mono: true,
   },
@@ -43,34 +43,34 @@ const CARDS = [
     num: '02',
     title: 'Senior-Recruiter Panel',
     desc: 'Bullet-level severity flags: Strong, Weak, Vague Impact. Actionable rewrites, not five-paragraph rubrics.',
-    span: 'md:col-span-4',
+    span: 'md:col-span-1',
     bar: 82,
   },
   {
     num: '03',
     title: 'JD Diff & Accept',
     desc: 'Paste any job description. AI proposes bullet rewrites in a diff view — accept each change individually or all at once.',
-    span: 'md:col-span-4',
+    span: 'md:col-span-1',
   },
   {
     num: '04',
     title: 'Country-Aware PDF Export',
     desc: 'Six templates (SWE · DS · PM) × (USA · India) rendered to recruiter-standard PDFs.',
-    span: 'md:col-span-8',
+    span: 'md:col-span-2',
     pills: ['SWE – USA', 'DS – USA', 'PM – USA', 'SWE – India', 'DS – India', 'PM – India'],
   },
   {
     num: '05',
     title: 'Placeholder-Hybrid Rewrites',
     desc: 'Hard numbers are preserved as [X%] or [N users] — you fill them in. Verbs, structure, and framing are rewritten.',
-    span: 'md:col-span-6',
+    span: 'md:col-span-1',
     tag: 'NO HALLUCINATION',
   },
   {
     num: '06',
     title: 'Transparent Credit System',
     desc: '20 free credits every month — enough to evaluate and tailor your resume twice. Top up when you need more.',
-    span: 'md:col-span-6',
+    span: 'md:col-span-1',
     creditBar: 60,
   },
 ];
@@ -100,7 +100,7 @@ export const BentoGrid: React.FC<BentoGridProps> = ({ isDark: _isDark }) => {
       variants={staggerContainer}
       initial="hidden"
       animate={isInView ? 'visible' : 'hidden'}
-      className="grid grid-cols-1 md:grid-cols-12 gap-0 border-l border-t border-foreground/10 auto-rows-[280px]"
+      className="grid grid-cols-1 md:grid-cols-3 gap-0 border-l border-t border-foreground/10 auto-rows-[260px]"
     >
       {CARDS.map((card) => (
         <motion.div
