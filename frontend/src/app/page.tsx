@@ -220,26 +220,26 @@ export default function LandingPage() {
               variants={fadeInUp}
               className="flex items-center gap-3 mb-8"
             >
-              <div className="w-6 h-[1px] bg-foreground/30" aria-hidden="true" />
+              <div className="w-8 h-[1px] bg-foreground/60" aria-hidden="true" />
               <span
-                className="text-foreground/50 uppercase font-humane"
-                style={{ fontSize: '15px', fontWeight: 700, letterSpacing: '0.22em', lineHeight: 1 }}
+                className="text-foreground uppercase font-humane"
+                style={{ fontSize: '18px', fontWeight: 800, letterSpacing: '0.22em', lineHeight: 1 }}
               >
                 RECRUITER-GRADE — 2026
               </span>
-              <div className="w-6 h-[1px] bg-foreground/30" aria-hidden="true" />
+              <div className="w-8 h-[1px] bg-foreground/60" aria-hidden="true" />
             </motion.div>
 
-            {/* Body copy — with Humane accent on key phrase */}
+            {/* Body copy — IBM Plex Sans for paragraph readability (Humane too condensed) */}
             <motion.p
               variants={fadeInUp}
-              className="text-foreground/65 leading-relaxed mb-10"
-              style={{ ...humaneStyle(17, 400, '0'), maxWidth: '480px' }}
+              className="text-foreground leading-relaxed mb-10"
+              style={{ fontSize: '19px', fontWeight: 400, lineHeight: '1.55', maxWidth: '500px' }}
             >
               Bullet-level resume critique. JD-driven tailoring.{' '}
               <span
                 className="text-foreground uppercase font-humane"
-                style={{ fontSize: '18px', fontWeight: 600, letterSpacing: '0.08em', display: 'inline-block', transform: 'scale(1.05)', transformOrigin: 'left center' }}
+                style={{ fontSize: '22px', fontWeight: 700, letterSpacing: '0.06em' }}
               >
                 Recruiter&#8209;grade
               </span>{' '}
@@ -253,10 +253,10 @@ export default function LandingPage() {
             >
               <Link href="/login">
                 <button
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-foreground text-background uppercase transition-opacity hover:opacity-80"
-                  style={humaneStyle(13, 500, '0.12em')}
+                  className="inline-flex items-center gap-2 px-7 py-3.5 bg-foreground text-background uppercase transition-opacity hover:opacity-85"
+                  style={humaneStyle(15, 700, '0.14em')}
                 >
-                  Polish Your Resume <ArrowRight size={14} />
+                  Polish Your Resume <ArrowRight size={16} />
                 </button>
               </Link>
               <button
@@ -264,8 +264,8 @@ export default function LandingPage() {
                   const el = document.getElementById('how-it-works');
                   if (el) el.scrollIntoView({ behavior: 'smooth' });
                 }}
-                className="inline-flex items-center gap-2 px-6 py-3 border border-foreground/25 text-foreground/65 uppercase transition-colors hover:text-foreground hover:border-foreground/60"
-                style={humaneStyle(13, 500, '0.12em')}
+                className="inline-flex items-center gap-2 px-7 py-3.5 border border-foreground/40 text-foreground uppercase transition-colors hover:border-foreground"
+                style={humaneStyle(15, 700, '0.14em')}
               >
                 See How It Works
               </button>
@@ -276,10 +276,10 @@ export default function LandingPage() {
               variants={fadeIn}
               className="hidden lg:flex items-center gap-3"
             >
-              <div className="w-8 h-[1px] bg-foreground/25" />
+              <div className="w-10 h-[1px] bg-foreground/50" />
               <span
-                className="text-foreground/40 uppercase"
-                style={humaneStyle(11, 500, '0.2em')}
+                className="text-foreground/75 uppercase"
+                style={humaneStyle(14, 700, '0.2em')}
               >
                 SCROLL DOWN
               </span>
