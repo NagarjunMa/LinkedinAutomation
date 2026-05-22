@@ -11,7 +11,6 @@ import {
   Edit3,
   Settings,
   ChevronRight,
-  Code2,
   Terminal,
   ExternalLink,
   FileText,
@@ -97,10 +96,9 @@ export default function ProfilePage() {
             ? `$${(userProfile.salary_range_min / 1000).toFixed(0)}k - $${(userProfile.salary_range_max / 1000).toFixed(0)}k`
             : 'Not set'
         },
-        referralBlueprint: userProfile.referral_template || 'No template defined.'
       };
 
-      setData(transformedData);
+      setData({ ...transformedData, referralBlueprint: '' });
       setEditedPrefs(transformedData.preferences);
 
     } catch (error) {
@@ -255,7 +253,7 @@ export default function ProfilePage() {
           transition={{ duration: 1, ease: LeicaBezier, delay: 0.1 }}
           className="mb-20"
         >
-          <h2 className="text-[10px] tracking-[0.4em] uppercase font-bold mb-3 text-foreground/60">Identity Profile</h2>
+          <h2 className="text-[10px] tracking-[0.4em] uppercase font-bold mb-3 text-foreground/60">Profile</h2>
           <h1 className="text-6xl md:text-8xl font-serif-italic text-foreground tracking-tight">
             {data.user.name}
           </h1>
@@ -268,9 +266,9 @@ export default function ProfilePage() {
           transition={{ duration: 0.8, ease: LeicaBezier, delay: 0.3 }}
           className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-24 border-y border-foreground/5 py-10"
         >
-          <StatItem label="Active Applications" value={data.stats.applications} />
-          <StatItem label="Validated Resumes" value={data.resumes.length} />
-          <StatItem label="Professional Nodes" value={data.stats.experiences} />
+          <StatItem label="Resume Evaluations" value={data.stats.applications} />
+          <StatItem label="Resume Versions" value={data.resumes.length} />
+          <StatItem label="Work Experience Entries" value={data.stats.experiences} />
         </motion.section>
 
         {/* DNA Modules Grid */}
@@ -281,11 +279,11 @@ export default function ProfilePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: LeicaBezier, delay: 0.4 }}
           >
-            <SectionLabel icon={<User size={14} />} label="Personal Specifications" />
+            <SectionLabel icon={<User size={14} />} label="Contact" />
             <div className="space-y-8 mt-8">
-              <InfoRow label="Access Key" value={data.user.email} icon={<Mail size={14} />} />
-              <InfoRow label="Primary Cluster" value={data.user.location} icon={<MapPin size={14} />} />
-              <InfoRow label="Designation" value={data.user.title} icon={<Briefcase size={14} />} />
+              <InfoRow label="Email" value={data.user.email} icon={<Mail size={14} />} />
+              <InfoRow label="Location" value={data.user.location} icon={<MapPin size={14} />} />
+              <InfoRow label="Current Title" value={data.user.title} icon={<Briefcase size={14} />} />
             </div>
           </motion.div>
 
@@ -297,7 +295,7 @@ export default function ProfilePage() {
             className="relative"
           >
             <div className="flex justify-between items-center border-b border-foreground/5 pb-4">
-              <SectionLabel icon={<Settings size={14} />} label="Preference Parameters" noBorder />
+              <SectionLabel icon={<Settings size={14} />} label="Job Preferences" noBorder />
               {!isEditingPrefs && (
                 <button
                   onClick={() => setIsEditingPrefs(true)}
@@ -323,12 +321,12 @@ export default function ProfilePage() {
                     icon={<Terminal size={14} />}
                   />
                   <InfoRow
-                    label="Mobility Range"
+                    label="Target Locations"
                     value={data.preferences.locations.join(', ')}
                     icon={<MapPin size={14} />}
                   />
                   <InfoRow
-                    label="Compensation Floor"
+                    label="Salary Range"
                     value={data.preferences.salaryRange}
                     icon={<DollarSign size={14} />}
                   />
@@ -395,7 +393,7 @@ export default function ProfilePage() {
           className="mb-32"
         >
           <div className="flex justify-between items-end mb-8">
-            <SectionLabel icon={<FileText size={14} />} label="Resume Revision Ledger" />
+            <SectionLabel icon={<FileText size={14} />} label="Resume Versions" />
             <div className="relative">
               <input
                 type="file"
@@ -479,47 +477,13 @@ export default function ProfilePage() {
           </div>
         </motion.section>
 
-        {/* Referral Email Blueprint */}
-        <motion.section
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, ease: LeicaBezier, delay: 0.8 }}
-          className="mb-32"
-        >
-          <div className="flex justify-between items-end mb-8">
-            <SectionLabel icon={<Code2 size={14} />} label="Communication Blueprint [RE-01]" />
-            <button className="flex items-center gap-2 text-[10px] tracking-widest uppercase font-bold text-foreground/40 hover:text-foreground transition-colors"
-              onClick={() => {
-                navigator.clipboard.writeText(data.referralBlueprint);
-                toast({ title: "Copied", description: "Referral template copied to clipboard" });
-              }}
-            >
-              Copy Syntax <ExternalLink size={10} />
-            </button>
-          </div>
-
-          <div className="relative group">
-            <div className="absolute -inset-0.5 bg-foreground/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-sm"></div>
-            <div className="relative bg-card/40 dark:bg-card/20 border border-foreground/5 p-8 md:p-12 font-mono text-sm leading-relaxed text-foreground/80 shadow-sm backdrop-blur-sm">
-              <div className="flex gap-4 mb-6 opacity-20">
-                <div className="w-2 h-2 rounded-full bg-foreground"></div>
-                <div className="w-2 h-2 rounded-full bg-foreground"></div>
-                <div className="w-2 h-2 rounded-full bg-foreground"></div>
-              </div>
-              <pre className="whitespace-pre-wrap selection:bg-foreground/10 font-mono">
-                {data.referralBlueprint}
-              </pre>
-            </div>
-          </div>
-        </motion.section>
-
         {/* Footer Branding */}
         <footer className="mt-32 pt-12 border-t border-foreground/5 flex flex-col md:flex-row justify-between items-center gap-8">
           <div className="flex items-center gap-4">
-            <div className="w-8 h-8 rounded-full border border-foreground flex items-center justify-center font-bold text-[10px]">JF</div>
-            <p className="text-[10px] tracking-widest text-foreground/40 uppercase">System Integrity: Nominal</p>
+            <div className="w-8 h-8 rounded-full border border-foreground flex items-center justify-center font-bold text-[10px]">PP</div>
+            <p className="text-[10px] tracking-widest text-foreground/40 uppercase">Prism Pro — Recruiter-Grade Resume Intelligence</p>
           </div>
-          <p className="text-[10px] tracking-widest text-foreground/30 uppercase">© 2026 Prism Pro Command / Leica Theory Design</p>
+          <p className="text-[10px] tracking-widest text-foreground/30 uppercase">© 2026 Prism Pro</p>
         </footer>
       </div>
 

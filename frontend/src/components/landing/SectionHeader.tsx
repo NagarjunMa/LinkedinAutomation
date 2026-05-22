@@ -7,10 +7,11 @@ interface SectionHeaderProps {
   title: string;
   subtitle: string;
   label?: string;
+  number?: string; // e.g. "01"
 }
 
 const fadeInUp = {
-  hidden: { opacity: 0, y: 20 },
+  hidden: { opacity: 0, y: 16 },
   visible: {
     opacity: 1,
     y: 0,
@@ -21,11 +22,12 @@ const fadeInUp = {
 export const SectionHeader: React.FC<SectionHeaderProps> = ({
   title,
   subtitle,
-  label
+  label,
+  number,
 }) => {
   const controls = useAnimation();
   const ref = React.useRef(null);
-  const isInView = useInView(ref, { once: true, amount: 0.5 });
+  const isInView = useInView(ref, { once: true, amount: 0.3 });
 
   useEffect(() => {
     if (isInView) {
@@ -41,15 +43,35 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
       variants={fadeInUp}
       className="mb-16 max-w-2xl text-left"
     >
-      {label && (
-        <span className="text-xs font-bold tracking-[0.2em] uppercase opacity-60 mb-4 block">
-          {label}
+      {/* Eyebrow label with optional number */}
+      {(label || number) && (
+        <span
+          className="block mb-5 text-foreground/45 uppercase text-[11px] font-medium"
+          style={{
+            fontFamily: 'var(--font-humane), sans-serif',
+            letterSpacing: '0.18em',
+          }}
+        >
+          {number ? `${number} / ${label}` : label}
         </span>
       )}
-      <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6 leading-tight">
+
+      {/* Section H2 — Fraunces serif, left-aligned */}
+      <h2
+        className="mb-6 font-normal leading-[1.1] text-foreground"
+        style={{
+          fontFamily: 'var(--font-fraunces), Georgia, serif',
+          fontSize: 'clamp(40px, 6vw, 88px)',
+          letterSpacing: '-0.01em',
+        }}
+      >
         {title}
       </h2>
-      <p className="text-lg opacity-70 leading-relaxed">
+
+      <p
+        className="text-foreground/60 leading-relaxed text-[15px]"
+        style={{ fontFamily: 'var(--font-humane), sans-serif' }}
+      >
         {subtitle}
       </p>
     </motion.div>

@@ -1,114 +1,188 @@
-# Prism Pro - AI-Powered Resume Polish & JD Tailoring
+# Prism Pro
 
-A focused, AI-powered career toolkit that helps job seekers polish resumes and tailor them to specific job descriptions. Built for SWE, Data Science, and PM candidates targeting roles in the USA and India.
+**Recruiter-grade resume prep for working engineers.** Polish your resume the way a senior recruiter would, tailor it to any JD with a per-change diff view, and export country-aware PDFs for US and Indian markets.
 
-## What Prism Pro does (current pivot)
+For engineers who refuse generic AI bullets.
 
-Prism Pro is being refocused around two primary capabilities, with job tracking demoted to a supporting role.
+---
 
-### Primary features
+## What's shipped
 
-- **Resume Polish** - Upload a resume; receive a structured, evidence-based critique covering ATS compatibility, bullet quality (XYZ formula), 7-second scan rule, and section ordering. Specialized passes for SWE / DS / PM templates.
-- **JD-Driven Tailoring** - Paste a job description; Prism Pro generates targeted rewrites of your bullets, keyword recommendations, and a coverage report against the JD.
+### Resume polish
+- Upload PDF or DOCX (parsed structurally — bullets, skills, sections preserved)
+- Single-agent GPT-4o evaluator with specialized passes (ATS, XYZ formula, 7-second scan, country-aware tone)
+- Bullet-level severity flags: **Strong / Weak / Vague Impact** — same lens a senior recruiter uses
+- ATS raw-text simulator shows your resume as a parser sees it (tables stripped, columns lost, etc.)
+- Per-bullet rewrite with hallucination guard — hard numbers stay as `[X%]` / `[N users]` placeholders; verbs, structure, framing are rewritten
 
-### Supporting feature (demoted, kept)
+### JD-driven tailoring
+- Paste any job description
+- Backend extracts must-have / good-to-have / soft-skills + seniority + country hint
+- Tailor produces a diff plan: bullet rewrites + skill reorder + summary rewrite
+- Per-change accept; version history preserved
 
-- **Job Tracking** - Lightweight applications board (`/dashboard/applications` + `/dashboard/jobs`) for tracking saved roles. URL-based job extraction retained.
+### PDF export
+- Playwright + Chromium renders 6 country-aware templates (USA / India × SWE / DS / PM)
+- Files persist to Supabase Storage; signed-URL access for downloads
+- 1 credit per export
 
-### Deferred / out of scope (Phase 1)
+### Credit system
+- 20 free credits / month (auto-granted on the 1st via Celery beat)
+- Stripe webhook for top-ups (idempotent via `external_ref`)
+- Per-operation cost: evaluate = 1, tailor = 2, rewrite = 0, export = 1
 
-- Voice interview prep
-- Browser extension
-- Email automation, Gmail scanning, referrals, contact discovery, analytics dashboards
-
-## Phase 1 backend API surface
-
-Phase 1 (resume backend) exposes 6 endpoints under `/api/v1/resumes/`. See the umbrella spec at `docs/superpowers/specs/2026-05-19-prism-pro-pivot-design.md` for the full contract.
+---
 
 ## Tech stack
 
 ### Frontend
-- **Next.js 14** (App Router), **TypeScript**, **Tailwind CSS**
-- **Framer Motion** for animations
-- **Radix UI** primitives + custom design system
+- Next.js 14 (App Router)
+- Tailwind CSS + shadcn/ui
+- TanStack Query for API state
+- Framer Motion for animations (restrained — fade-up, scroll reveals, marquee)
+- Typography: **Humane** (display + nav), **Fraunces** (serif headings), **Geist Sans** (body / UI)
 
 ### Backend
-- **FastAPI** (Python) - async, high-performance
-- **Supabase** (PostgreSQL) + Row Level Security
-- **Manual JWT handling** for stateless auth
-- **Redis + Celery** for background AI tasks
+- FastAPI 0.104 + SQLAlchemy 2.0 + Pydantic v2
+- OpenAI 1.56 (`gpt-4o-2024-08-06` for eval/rewrite/tailor, `gpt-4o-mini` for extraction)
+- Tenacity retries on `RateLimitError` / `APIConnectionError` / `APITimeoutError`
+- Hallucination guard (regex) rejects unprompted digits incl. scientific notation + `x` multipliers
 
-### AI
-- **OpenAI GPT-4o / GPT-4o-mini** with Pydantic-validated structured outputs
-- Single-agent architecture with specialized passes (refactored away from the prior 12-agent system)
+### Database & infra
+- Supabase Postgres + Row-Level Security on every user-owned table
+- Supabase Storage (private bucket, signed URLs)
+- Supabase Auth (ES256 JWT via JWKS — migrated from HS256)
+- Redis + Celery (beat + worker) for monthly grants, async tasks
+- Railway deploy targets
 
-## Prerequisites
+---
 
-- Node.js 18+
-- Python 3.9+
-- PostgreSQL (Supabase)
-- Redis
-- OpenAI API key
+## API endpoints (`/api/v1/`)
 
-## Quick start
+| Method | Path | Credits | What |
+|---|---|---|---|
+| POST | `/resumes/upload` | 0 | PDF/DOCX → parsed JSON + Supabase Storage |
+| POST | `/resumes/{id}/evaluate` | 1 | Single-agent eval + ATS simulator |
+| POST | `/resumes/{id}/rewrite/{bullet_id}` | 0 | Per-bullet rewrite (hallucination-guarded) |
+| POST | `/resumes/{id}/versions` | 0 | Apply accepted changes, save version |
+| POST | `/jd/analyze` | 2 | JD extract + tailor diff plan |
+| POST | `/exports` | 1 | Render to PDF via Playwright |
+| GET | `/exports/{id}` | 0 | Refresh signed URL |
+| GET | `/credits/balance` | 0 | Current balance |
+| POST | `/webhooks/stripe` | — | Idempotent Stripe credit grants |
+| GET | `/admin/metrics/cost-per-user` | — | Admin allowlist gated |
+
+Legacy job-tracking routes (`/jobs`, `/job-extraction`, `/profiles`, `/user-profiles`, `/logs`) are kept and demoted.
+
+---
+
+## Local development
+
+### One command — backend + frontend
 
 ```bash
-git clone https://github.com/yourusername/prism-pro.git
-cd prism-pro
-cp .env.example .env  # edit with your credentials
-docker-compose up -d
+make dev
 ```
 
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:8000
-- API docs: http://localhost:8000/docs
+Boots FastAPI on `:8000` and Next.js on `:3000` together. Ctrl+C stops both.
 
-## Project structure
+### Other Makefile targets
 
-```
-prism-pro/
-├── frontend/                  # Next.js app
-│   └── src/app/dashboard/     # Dashboard, jobs, applications, settings, profile
-├── backend/                   # FastAPI app
-│   └── app/
-│       ├── api/v1/endpoints/  # jobs, profiles, resumes, user_profiles, logs, job_extraction
-│       ├── services/          # job_scorer, url_job_extractor, ai_service, resume services
-│       └── tasks/             # resume_tasks, job_extraction_tasks (Celery)
-└── docs/superpowers/          # Specs and execution plans
+```bash
+make install        # pip install + npm install
+make backend        # backend only
+make frontend       # frontend only
+make test           # backend pytest + frontend lint/tsc/build
+make lint           # ruff + next lint
+make build          # frontend production build
+make clean          # wipe .next/, __pycache__/, .pytest_cache/
+make stop           # kill processes on :8000 and :3000
+make migrate        # alembic upgrade head
 ```
 
-## Documentation
+### Required env vars
 
-- Pivot spec: `docs/superpowers/specs/2026-05-19-prism-pro-pivot-design.md`
-- Phase 0 cleanup plan: `docs/superpowers/plans/2026-05-19-prism-pro-phase-0-cleanup.md`
-- Phase 1 backend plan: `docs/superpowers/plans/2026-05-19-prism-pro-resume-backend-phase-1.md`
+`backend/.env`:
+```
+SQLALCHEMY_DATABASE_URI=postgresql://postgres:<pwd>@db.<ref>.supabase.co:5432/postgres
+SUPABASE_URL=https://<ref>.supabase.co
+SUPABASE_ANON_KEY=sb_publishable_xxxxx
+SUPABASE_SERVICE_ROLE_KEY=sb_secret_xxxxx
+SUPABASE_STORAGE_BUCKET=resume
+OPENAI_API_KEY=sk-proj-xxxxx
+STRIPE_API_KEY=sk_test_xxxxx           # optional pre-launch
+STRIPE_WEBHOOK_SECRET=test             # set "test" locally to bypass sig check
+ADMIN_USER_IDS=user-id-1,user-id-2     # comma-separated; for admin/metrics endpoint
+```
 
-## Phase 1 — Resume + JD Backend (in progress)
+`frontend/.env.local`:
+```
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_SUPABASE_URL=https://<ref>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_xxxxx
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=...
+```
 
-New REST endpoints (v1):
-- `POST /api/v1/resumes/upload` — upload PDF/DOCX, returns parsed JSON
-- `POST /api/v1/resumes/{id}/evaluate` — single-agent eval + ATS sim (costs 1 credit)
-- `POST /api/v1/resumes/{id}/rewrite/{bullet_id}` — hallucination-guarded bullet rewrite (free)
-- `POST /api/v1/resumes/{id}/versions` — apply accepted changes, save new version
-- `POST /api/v1/jd/analyze` — extract JD requirements + tailor diff plan (costs 2 credits)
-- `GET /api/v1/credits/balance`
+URL-encode special characters in your Postgres password (`@` → `%40`, `#` → `%23`, etc.) OR set a password without special chars.
 
-Architecture: see `docs/superpowers/specs/2026-05-19-prism-pro-pivot-design.md`.
+### DB bootstrap on a fresh Supabase project
 
-## Phase 2 — PDF Render (in progress)
+```bash
+make migrate     # alembic upgrade head — relies on existing chain
+# If migration chain conflicts (known issue, see TECH_DEBT.md):
+cd backend && python3.11 -c "from app.main import app; from app.db.base_class import Base; from app.db.session import engine; from app.models import *; Base.metadata.create_all(bind=engine)" && alembic stamp head
+```
 
-New REST endpoints (v1):
-- `POST /api/v1/exports` — render a resume document (optionally a specific version) to PDF using a country+role template, upload to Supabase Storage, return signed download URL. Costs 1 credit; refunded on hard render failure.
-- `GET /api/v1/exports/{id}` — return a fresh signed download URL for an existing successful export. Zero-cost.
+Then apply RLS policies via Supabase SQL editor — see `CLAUDE.md` for the canonical RLS + Storage policy SQL.
 
-Templates: 6 HTML+CSS templates under `backend/app/services/pdf/templates/` (us|in × swe|ds|pm). Rendering uses headless Chromium via Playwright (`backend/app/services/pdf/renderer.py`); sync renderer is offloaded via `run_in_executor` from async endpoints.
+---
 
-Phase 2 plan: `docs/superpowers/plans/2026-05-20-prism-pro-phase-2-pdf-render.md`.
-Architecture: see `docs/superpowers/specs/2026-05-19-prism-pro-pivot-design.md` §7.7.
+## Repo layout
 
-## Security
+```
+backend/                       FastAPI app
+  app/
+    api/v1/endpoints/          Route handlers
+    services/resume/           parser, evaluator, ATS sim, rewriter, hallucination_guard
+    services/jd/               extractor, tailor
+    services/pdf/              Playwright renderer + 6 templates
+    services/storage/          Supabase Storage client
+    services/credits/          ledger (debit/refund/grant)
+    services/payments/         Stripe webhook handler
+    core/                      auth (ES256), config, llm_logging
+    middleware/                credits, security
+  migrations/                  Alembic
+  tests/                       services, api, integration, fixtures
+frontend/                      Next.js 14
+  src/app/                     Routes
+  src/components/landing/      Navigation, BentoGrid
+docs/superpowers/
+  specs/                       Pivot design spec
+  plans/                       Phase 0/1/4 implementation plans
+Makefile                       make dev / make test / make stop
+TECH_DEBT.md                   Deferred refactors
+BLOCKERS.md                    Pre-deploy must-fix
+progress.txt                   Phase-by-phase delivery status
+```
 
-- All secrets in env vars (never committed)
-- Supabase RLS isolates user data
-- Rate limiting on all endpoints
-- Pydantic validation on every request
+---
+
+## Known issues
+
+See `BLOCKERS.md` and `TECH_DEBT.md`:
+- 10 Phase 2 PDF renderer tests fail in CI (Playwright threading; BLOCKERS §P2)
+- Alembic migration chain has tangled merge points — fresh DBs use `create_all` + `stamp head` (TECH_DEBT)
+- 12 pre-existing TS errors masked by `next.config.mjs` `ignoreBuildErrors: true`
+- 9 frontend `react-hooks/exhaustive-deps` warnings in legacy components
+
+---
+
+## Status
+
+See `progress.txt` for phase-by-phase delivery state.
+
+---
+
+## License
+
+Proprietary. Internal use only.

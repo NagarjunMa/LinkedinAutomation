@@ -27,7 +27,7 @@ function PrivacyTab({ userId: _userId }: PrivacyTabProps) {
                         Privacy Settings
                     </CardTitle>
                     <CardDescription className="text-muted-foreground">
-                        Control your data privacy and retention settings
+                        Control how long Prism Pro retains your resume data and evaluation history. Your data is never shared with third parties. Prism Pro is Google OAuth verified and complies with Google&apos;s Limited Use Policy.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">

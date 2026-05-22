@@ -17,6 +17,11 @@
       ignoreDuringBuilds: true,
       dirs: ['src'], // Only lint src directory, not node_modules
     },
+    images: {
+      remotePatterns: [
+        { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
+      ],
+    },
   experimental: {
     // Enhanced package optimization for better tree-shaking
     optimizePackageImports: [

@@ -28,7 +28,7 @@ export const DashboardHeader = () => {
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#3b3b3b]/20" />
                     <input
                         type="text"
-                        placeholder="Search jobs, companies... (⌘F)"
+                        placeholder="Search resumes, evaluations... (⌘F)"
                         className="bg-[#f0eff2]/50 border border-[#3b3b3b]/5 pl-12 pr-6 py-2.5 text-[11px] w-80 focus:outline-none focus:border-[#3b3b3b]/20 transition-all duration-700 font-light"
                     />
                 </div>

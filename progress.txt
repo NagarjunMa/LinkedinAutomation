@@ -1,0 +1,238 @@
+PRISM PRO — DELIVERY PROGRESS
+Last updated: 2026-05-22
+
+================================================================================
+LEGEND
+  [x] shipped + merged to main
+  [~] in progress
+  [ ] not started
+  [!] blocked (see BLOCKERS.md)
+
+================================================================================
+PHASE 0  —  CLEANUP                                                       [x]
+--------------------------------------------------------------------------------
+Branch: chore/phase-4-plan-fixtures-ci (merged via PR #2)
+Status: merged 2026-05-19
+
+[x] Delete backend/_archived_features/ (5 stale modules)
+[x] Delete 7 one-shot utility scripts at backend root
+[x] Delete 19 stale .md docs (root + frontend + backend/docs)
+[x] Remove backend email services (Resend, SendGrid, generic + templates)
+[x] Remove referrals + contact discovery (apollo, contact_discovery, simple_referral)
+[x] Remove activity endpoint + ActivityRecord model
+[x] Remove analytics services (analytics_service, analytics_intelligence, job_aggregator, question_answer_service)
+[x] Remove Celery tasks for email/analytics/feedback
+[x] Remove frontend routes /activity, /referrals, /resume-evaluation (redirects in next.config.mjs)
+[x] Strip email + notifications tabs from /dashboard/settings
+[x] Resolve frontend lint debt (STRICT_LINT_TRACKER categories)
+[x] Update CLAUDE.md + README.md for pivot positioning
+[x] Remove obsolete multi-agent test files (Harvard compliance, agentic evaluator)
+
+================================================================================
+PHASE 1  —  BACKEND FOUNDATION                                            [x]
+--------------------------------------------------------------------------------
+Branch: feat/phase-1-resume-backend (merged via PR #1)
+Status: merged 2026-05-19
+Spec: docs/superpowers/specs/2026-05-19-prism-pro-pivot-design.md
+Plan: docs/superpowers/plans/2026-05-19-prism-pro-resume-backend-phase-1.md
+
+[x] Task 0 — pin pdfplumber, respx, tenacity
+[x] Task 1 — Alembic migration for 5 new tables
+[x] Task 2 — SQLAlchemy models (ResumeDocument, ResumeVersion, ResumeEvaluationV2, JDEvaluation, CreditLedger)
+[x] Task 3 — Pydantic schemas (resume_v2)
+[x] Task 4 — Resume parser (PDF path)
+[x] Task 5 — Resume parser (DOCX path)
+[x] Task 6 — ATS simulator (parseability + raw-text + format issues)
+[x] Task 7 — GPT-4o evaluator (structured outputs + schema validation)
+[x] Task 8 — Hallucination guard (regex blocks unprompted numbers)
+[x] Task 9 — Per-bullet rewriter (placeholder hybrid)
+[x] Task 10 — JD extractor (must-have / good-to-have / seniority / country)
+[x] Task 11 — JD tailor (diff plan + per-bullet guard)
+[x] Task 12 — Credit ledger service (debit/refund/grant)
+[x] Task 13 — credit_transaction middleware + require_credits decorator
+[x] Task 14 — POST /resumes/upload
+[x] Task 15 — POST /resumes/{id}/evaluate
+[x] Task 16 — POST /resumes/{id}/rewrite/{bullet_id}
+[x] Task 17 — POST /resumes/{id}/versions
+[x] Task 18 — POST /jd/analyze
+[x] Task 19 — GET /credits/balance
+[x] Task 20 — Smoke test for route registration
+[x] Task 21 — Golden snapshots (RUN_GOLDEN=1 nightly gate)
+[x] Task 22 — Structured LLM latency + cost logging
+[x] Task 23 — README endpoint summary
+[x] Task 24 — E2E happy-path integration test
+
+Final test counts: 51 pass, 1 skip (Postgres concurrent debit), 2 skip (golden snapshots gated)
+Code review applied 6 fixes:
+  - Hallucination guard regex extended (scientific notation + x-multipliers)
+  - db.commit() moved outside credit_transaction block for atomicity
+  - parent_version_id ownership check added
+  - Retry decoration on OpenAI transient errors across all 4 LLM services
+  - Input validation (min_length) on jd_text + target_role before credit debit
+  - E2E test summary_update bug fixed
+
+================================================================================
+PHASE 2  —  PDF RENDER                                                    [x]
+--------------------------------------------------------------------------------
+Branch: feat/phase-2-pdf-render (merged via PR #3)
+Status: merged 2026-05-20
+
+[x] resume_exports table + migration
+[x] ResumeExport SQLAlchemy model
+[x] ExportRequest / ExportResponse Pydantic schemas + Country/RoleTemplate enums
+[x] Supabase Storage client + signed-url helper (core/supabase_storage.py)
+[x] Jinja2 template engine + pick_template helper
+[x] Shared base/typography/print CSS partials
+[x] 6 country/role templates: US-SWE, US-DS, US-PM, IN-SWE, IN-DS, IN-PM
+[x] Playwright renderer with 15s timeout, retry, template fallback
+[x] PDF render structured latency + size logging
+[x] POST /api/v1/exports endpoint (1 credit, refund on hard fail)
+[x] GET /api/v1/exports/{id} (refresh signed URL)
+[x] E2E test: upload → version → export → fresh signed URL
+[x] Per-thread Playwright + worker-thread isolation in tests
+[x] CI: Playwright Chromium install step
+
+[!] 10 PDF renderer tests fail in CI — Playwright threading model issue
+    See BLOCKERS.md §P2 for details + repro
+
+Final test counts: 83 pass, 10 pre-existing PDF render failures (tracked)
+
+================================================================================
+PHASE 3  —  FRONTEND                                                      [x]
+--------------------------------------------------------------------------------
+Branch: feat/phase-3-frontend (merged via PR #4)
+Status: merged 2026-05-20
+
+[x] Routes: /dashboard/resume, /resume/[id]/edit, /resume/tailor, /credits
+[x] API client + TanStack Query hooks for resume / JD / credits
+[x] Severity-coded bullet renderer (Strong/Weak/Vague Impact)
+[x] Hallucination-guarded rewrite modal
+[x] ATS parseability tab (raw-text preview)
+[x] Diff view with per-change accept
+[x] Sidebar nav + header credits badge
+[x] Playwright e2e (25 tests passing) — cookie-based auth bypass gated to non-prod
+[x] TooltipProvider at root
+[x] Rules-of-Hooks fix in protected-route.tsx
+[x] test-bypass-auth cookie gated to NODE_ENV !== 'production'
+[x] Sidebar no double-highlight (Resume + Tailor)
+[x] DiffView keyed by jd_evaluation_id
+
+================================================================================
+PHASE 4 — PLAN + FIXTURES + CI                                            [x]
+--------------------------------------------------------------------------------
+Branch: chore/phase-4-plan-fixtures-ci (merged via PR #2)
+Status: merged 2026-05-19
+
+[x] Phase 4 hardening plan (12 TDD tasks)
+[x] 8 PDF resume fixtures (US/IN × SWE/DS/PM × junior/senior + table-PDF)
+[x] 9 DOCX resume fixtures
+[x] 20 JD .txt fixtures (US/IN across roles)
+[x] GitHub Actions CI workflow: backend pytest + frontend lint/build/types
+[x] pytest.ini pythonpath fix
+
+================================================================================
+PHASE 4 — PRODUCTION HARDENING                                            [x]
+--------------------------------------------------------------------------------
+Branch: feat/phase-4-production-hardening (merged)
+Status: merged 2026-05-21
+Plan: docs/superpowers/plans/2026-05-19-prism-pro-phase-4-production-hardening.md
+
+[x] Task 1 — Supabase Storage client (services/storage/)
+[x] Task 2 — Migrate /resumes/upload to Storage + storage_path column
+[x] Task 3 — Migrate /resumes/{id}/evaluate to download from Storage
+[x] Task 4 — Split schemas/resume.py into resume_legacy + resume_v2
+[x] Task 5 — Delete 9 dead-code files (schemas, helpers, legacy resumes endpoint, orchestrator_manager)
+[x] Task 6 — Fix credit ledger row-lock to target users row (was arbitrary ledger row)
+[x] Task 7 — Tailor projects bullets lookup (was experience-only)
+[x] Task 8 — Stripe webhook + idempotent credit grants
+[x] Task 9 — Monthly grant Celery beat task
+[x] Task 10 — Per-user LLM cost telemetry (user_id propagated to logs)
+[x] Task 11 — Admin /admin/metrics/cost-per-user endpoint
+[x] Task 12 — Final verification + phase-4-complete tag
+
+================================================================================
+OPS / INFRA                                                               [x]
+--------------------------------------------------------------------------------
+[x] Supabase ES256 + JWKS migration (HS256 deprecated)
+[x] Fresh Supabase project bootstrap completed (2026-05-21)
+[x] Storage bucket "resume" created with RLS policies
+[x] All 6 user-owned tables have RLS enabled + policies
+[x] Storage RLS enforces per-user folder isolation
+[x] Makefile at repo root (make dev / backend / frontend / test / stop / clean / migrate)
+[x] load_dotenv() in app/main.py — no --env-file flag needed
+[x] env.py percent-escape fix for URL-encoded passwords in DATABASE_URL
+[x] Geist Sans font installed + wired (replaces IBM Plex Sans for body text)
+
+================================================================================
+FRONTEND EDITORIAL REBRAND                                                [~]
+--------------------------------------------------------------------------------
+Branch: feat/frontend-content-rebrand (not yet merged)
+Status: in progress 2026-05-22
+
+[x] Batch 1 — Earth-tone design tokens + Fraunces + IBM Plex Sans + REBRAND_AUDIT.md
+[x] Batch 2 — Landing page rewrite (11 sections), SEO/manifest/sitemap → prismpro.live, login copy
+[x] Batch 3 — Dashboard sidebar + header, /dashboard home rewrite, /docs page, onboarding + settings + profile
+[x] Batch 4 — Delete 10 dead frontend components, .gitignore test artifacts
+[x] Editorial palette refinement (cool-neutral dark mode, less brown)
+[x] Tasteful Framer Motion animations (fade-up, scroll reveals, hover, ambient)
+[x] Humane VF + Geist Sans wiring
+[x] Single-line "PRISM PRO." hero + tagline "For engineers who refuse generic AI bullets."
+[x] Infinite-scroll marquee on social proof strip
+[x] Side-by-side split section layout (heading LEFT sticky / content RIGHT)
+[x] Readability fixes: Humane reserved for nav/wordmark only, Geist Sans for all body
+[x] ATS feature card density match
+[x] Nav typography sizing (Humane SemiBold 600, 32px wordmark / 20px links)
+[x] Bento card font fix (Humane → Geist Sans in BentoGrid helper)
+
+[ ] Visual review + push PR
+[ ] Manual smoke through full user journey on new design
+[ ] Merge to main
+
+================================================================================
+TRACK 2 — MANUAL SMOKE TEST                                               [ ]
+--------------------------------------------------------------------------------
+Status: not started
+
+[ ] Sign in via Google OAuth (Supabase + Google Cloud redirect URLs configured)
+[ ] Upload PDF resume — verify storage_path populated, file in Supabase Storage
+[ ] Evaluate — verify 1 credit debited, bullet flags + ATS data returned
+[ ] Rewrite bullet — verify zero credit, hallucination guard active
+[ ] JD tailor — verify 2 credits debited, diff plan returned
+[ ] Apply changes — verify new resume_versions row
+[ ] Export PDF — verify 1 credit debited, PDF downloads
+[ ] Credit balance + ledger history correctness
+[ ] Multi-user RLS isolation
+[ ] Burn all credits → 402 expected
+[ ] Hallucination edge cases
+
+================================================================================
+PRE-DEPLOY CHECKLIST                                                      [ ]
+--------------------------------------------------------------------------------
+[ ] Fix 10 Phase 2 PDF renderer test failures (BLOCKERS §P2)
+[ ] Apply Alembic migrations on staging Postgres (production env)
+[ ] Configure Railway env vars (STRIPE_*, ADMIN_USER_IDS, SUPABASE_* with new keys)
+[ ] Set up Stripe webhook endpoint in Stripe dashboard
+[ ] Verify Celery beat scheduler running on Railway (monthly grant cron)
+[ ] Update Google OAuth callback URL in Google Cloud Console (new Supabase project)
+[ ] Staging deploy + full manual smoke
+[ ] Production cutover
+
+================================================================================
+TECH DEBT (DEFERRED — see TECH_DEBT.md)                                   [ ]
+--------------------------------------------------------------------------------
+[ ] Migrate os.getenv → settings.X across LLM services
+[ ] Squash Alembic migration chain into single baseline
+[ ] Remove test_user_123 auth fallback in app/core/auth.py
+[ ] Drop SUPABASE_JWT_SECRET from conftest + .env.example
+[ ] Add SQLALCHEMY_DATABASE_URI to .env.example
+[ ] Standardize storage bucket name to "resumes"
+[ ] Fix 12 pre-existing TS errors (next.config.mjs ignoreBuildErrors)
+[ ] Fix 9 react-hooks/exhaustive-deps warnings
+[ ] Re-enable secret scanning in CI (gitleaks license or alternative)
+[ ] Postgres concurrent-debit test wired to actually run in CI
+
+================================================================================
+DEFERRED PILLARS (NOT SCHEDULED)
+--------------------------------------------------------------------------------
+[ ] Voice interview pillar (original Phase 2 of pivot vision — deferred)
+[ ] Browser extension job tracker (Pillar 3 — deferred)

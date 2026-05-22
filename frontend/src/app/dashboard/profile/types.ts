@@ -27,5 +27,6 @@ export interface ProfileData {
     stats: UserStats;
     resumes: ResumeVersion[];
     preferences: JobPreferences;
-    referralBlueprint: string;
+    /** @deprecated kept for API shape compat; not displayed in UI */
+    referralBlueprint?: string;
 }
