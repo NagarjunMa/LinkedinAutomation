@@ -1,86 +1,151 @@
-# Prism Pro - Project Documentation (Pivot Scope)
+# Prism Pro — Project Documentation
 
-**Prism Pro** is an AI-powered resume polish and JD tailoring platform for job seekers. The codebase is being refocused: resume tooling is now the headline product, job tracking is demoted to a supporting feature, and a number of legacy modules (email automation, referrals, contact discovery, analytics dashboards, multi-agent evaluator) have been removed.
+**Prism Pro** is an AI-powered resume polish and JD-tailoring platform for experienced engineers targeting roles in the USA and India. The product gives bullet-level severity flags the way a senior recruiter would mark up a resume by hand, then proposes JD-driven rewrites in a per-change diff view, and exports recruiter-grade PDFs in country-aware templates.
 
-For the canonical scope, see `docs/superpowers/specs/2026-05-19-prism-pro-pivot-design.md`.
+**Canonical spec:** `docs/superpowers/specs/2026-05-19-prism-pro-pivot-design.md`
 
 ---
 
 ## Current scope
 
-### Primary (Phase 1)
-- **Resume Polish** - Structured, evidence-based resume critique. ATS compliance, XYZ-formula bullet checks, 7-second scan rule, section ordering. Specialized passes for SWE / DS / PM.
-- **JD-Driven Tailoring** - Paste a job description; receive targeted bullet rewrites, keyword coverage, and a coverage report.
+### Primary (shipped — Phase 1)
+- **Resume Polish** — single-agent GPT-4o evaluator with specialized passes. Bullet-level severity flags (Strong / Weak / Vague Impact). ATS raw-text simulator with parseability scoring.
+- **JD-Driven Tailoring** — JD extractor + tailor produces a diff plan (bullet rewrites, skill reorder, summary rewrite) with per-change accept. Hallucination guard rejects unprompted numbers across rewriter + tailor.
+
+### Primary (shipped — Phase 2)
+- **PDF Export** — Playwright + Chromium renders six country-aware templates (USA / India × SWE / DS / PM). Files persist to Supabase Storage. Signed-URL access.
+
+### Primary (shipped — Phase 3)
+- **Frontend** — Routes: `/dashboard/resume`, `/resume/[id]/edit`, `/resume/tailor`, `/credits`. API client + TanStack Query hooks. Severity-coded bullet renderer. Hallucination-guarded rewrite modal. ATS parseability tab. Diff view with per-change accept.
+
+### Primary (shipped — Phase 4 production hardening)
+- Supabase Storage upload (replaces Railway ephemeral filesystem).
+- Credit ledger row-lock on `users` row (was arbitrary ledger row — non-deterministic).
+- Stripe webhook receiver with idempotent grants.
+- Monthly free-tier grant Celery beat task.
+- Per-user LLM cost telemetry.
+- Admin metrics endpoint (`GET /admin/metrics/cost-per-user`).
 
 ### Supporting (kept, demoted)
 - Job tracking under `/dashboard/applications` and `/dashboard/jobs`.
 - URL-based job extraction (Jina AI Reader + GPT-4o-mini).
 
-### Deferred / not in scope
-- Voice interview prep
-- Browser extension
+### Deferred (not in MVP)
+- Voice interview prep — separate pillar, not scheduled
+- Browser extension job tracker — separate pillar, not scheduled
+- Multi-agent resume evaluation — explicitly rejected (single-agent + specialized passes is the canonical architecture)
 - Email automation, Gmail scanning, weekly digests
 - Referral templates, contact discovery (Apollo)
 - Analytics intelligence dashboards
-- Multi-agent resume evaluation (replaced by single-agent + specialized passes)
 
 ### Geography & personas
-- MVP targets: USA + India
-- Personas: SWE, Data Science, PM
+- MVP markets: **USA + India**
+- Personas: SWE, Data Science, PM (six PDF templates: 3 roles × 2 countries)
 
 ---
 
 ## Architecture
 
-### AI - "Precision over Complexity"
-The earlier multi-agent system (12+ agents) was retired. Current approach:
-- **Single-agent core** with specialized passes for ATS, XYZ-formula, scan-rule, and JD-keyword coverage.
-- **Pydantic-validated structured outputs** for every model call - the AI is a data processor, not a creative writer.
-- Models: GPT-4o-2024-08-06 for evaluation, GPT-4o-mini for extraction / cheaper passes.
-- Hyper-Critical Sr. Hiring Manager persona for resume critique.
+### AI — "precision over complexity"
+- **Single-agent core** (GPT-4o-2024-08-06) with specialized passes for ATS, XYZ-formula, scan-rule, JD-keyword coverage.
+- **Pydantic-validated structured outputs** for every model call — AI is a data processor, not a creative writer.
+- **Hallucination guard** — regex rejects digits/scientific-notation/x-multipliers not present in the original bullet, except for typed placeholders like `[X%]` or `[N users]`.
+- **Retry policy** — `tenacity` retries on `RateLimitError`, `APIConnectionError`, `APITimeoutError`. Never retries on `HallucinationError` (logic error, not transient).
+- Models: GPT-4o-2024-08-06 for evaluation/rewrite/tailor, GPT-4o-mini for extraction.
 
 ### Backend (FastAPI)
-Routes that remain after Phase 0:
-- `jobs.py` - job CRUD
-- `profiles.py` + `user_profiles.py` - user profile data
-- `job_extraction.py` - URL-based job extraction
-- `resumes.py` - resume CRUD (evolves into Phase 1 endpoints)
-- `logs.py` - logging
+Routes live at `/api/v1/`:
 
-Removed in Phase 0:
-- Email services (Resend, SendGrid, email_service), email templates
-- Referral services (simple_referral_service, apollo_client, contact_discovery), `simple_referrals` endpoint
-- `activity` endpoint + `ActivityRecord` model
-- Analytics services (analytics_service, analytics_intelligence), `job_aggregator`, `question_answer_service`
-- Celery tasks: `email_monitoring_tasks`, `email_scanning_tasks`, `analytics_tasks`, `feedback_collector`
+| Route | Purpose | Credits |
+|---|---|---|
+| `POST /resumes/upload` | PDF/DOCX → parsed JSON + Supabase Storage | 0 |
+| `POST /resumes/{id}/evaluate` | Single-agent eval + ATS simulator | 1 |
+| `POST /resumes/{id}/rewrite/{bullet_id}` | Per-bullet rewrite (guarded) | 0 |
+| `POST /resumes/{id}/versions` | Apply accepted changes, save new version | 0 |
+| `POST /jd/analyze` | JD extract + tailor diff plan | 2 |
+| `POST /exports` | Playwright PDF render to Storage | 1 |
+| `GET /exports/{id}` | Refresh signed URL (no credit) | 0 |
+| `GET /credits/balance` | Current credit balance | 0 |
+| `POST /webhooks/stripe` | Idempotent credit grants | platform |
+| `GET /admin/metrics/cost-per-user` | Admin allowlist gated | 0 |
+
+Legacy routes (kept, demoted): `jobs.py`, `job_extraction.py`, `profiles.py`, `user_profiles.py`, `logs.py`.
+
+Removed in Phase 0: email services (Resend, SendGrid, generic), referral services + endpoint, activity endpoint + model, analytics services, `job_aggregator`, `question_answer_service`, Celery tasks for email/analytics/feedback, multi-agent evaluator + Harvard compliance test files, ten one-shot debug/migration scripts, sixteen stale `.md` files.
+
+Removed in Phase 4: `schemas/activity.py`, `schemas/analytics.py`, `schemas/export.py`, `utils/email_helpers.py`, `core/config_old.py`, two stale in-app migration files, `services/orchestrator_manager.py`, legacy `api/v1/endpoints/resumes.py`.
+
+### Auth
+- **Supabase ES256 + JWKS** (migrated from HS256 shared secret in 2026).
+- Backend fetches public keys from `${SUPABASE_URL}/auth/v1/.well-known/jwks.json`, caches 1 hour, verifies tokens with `audience="authenticated"`.
+- `SUPABASE_JWT_SECRET` no longer required.
 
 ### Frontend (Next.js 14 App Router)
-Routes kept:
-- `/dashboard`, `/dashboard/jobs`, `/dashboard/applications`, `/dashboard/profile`, `/dashboard/settings`
+Kept routes:
+- `/` (rebranded landing — editorial minimalist, earth-tone + neutral)
+- `/dashboard`, `/dashboard/resume`, `/dashboard/resume/[id]/edit`, `/dashboard/resume/tailor`, `/dashboard/credits`, `/dashboard/applications`, `/dashboard/jobs`, `/dashboard/profile`, `/dashboard/settings`
 - `/docs`, `/privacy-policy`, `/terms`, `/login`, `/onboarding`
 
-Routes removed in Phase 0:
-- `/dashboard/activity`, `/dashboard/referrals`, `/dashboard/resume-evaluation` (redirects to `/dashboard` configured in `next.config.mjs`)
+Removed in Phase 0: `/dashboard/activity`, `/dashboard/referrals`, `/dashboard/resume-evaluation` (redirects configured in `next.config.mjs`).
+Settings trimmed to **Privacy** + **Change History** only.
 
-Settings tabs trimmed to **Privacy** + **Change History** only (email/notifications tabs removed).
+### Frontend typography (in-progress branch: `feat/frontend-content-rebrand`)
+- **Display headlines / wordmark / nav** — Humane variable typeface (`public/fonts/HUMANE Typeface/Variable-TT/Humane-VF.ttf`)
+- **Section H2s, card titles, FAQ Qs** — Fraunces (serif, optical-size, italic)
+- **Body / UI / labels / buttons / footer / marquee** — Geist Sans (Vercel's typeface)
+- Earth-tone palette (terracotta/sage/sand/charcoal) in light mode; cool near-black `#0d0d0d` neutral in dark mode.
 
 ### Database & infra
-- Supabase (Postgres + RLS) for primary data.
-- Redis + Celery for background AI tasks (`resume_tasks`, `job_extraction_tasks`).
-- Manual JWT handling on top of Supabase auth.
+- **Supabase** (Postgres 17 + Auth + Storage + Row-Level Security).
+- **Redis + Celery** for background tasks (`resume_tasks`, `job_extraction_tasks`, `credit_tasks`).
+- **Alembic** migrations — note: the migration chain has accumulated branches and is bootstrapped on fresh DBs via `Base.metadata.create_all()` + `alembic stamp head`. A baseline squash is in TECH_DEBT.md.
+- **Storage bucket** name: `resume` (env-overridable via `SUPABASE_STORAGE_BUCKET`).
+- **RLS policies** on every user-owned table (`resume_documents`, `resume_evaluations_v2`, `resume_versions`, `jd_evaluations`, `credit_ledger`, `resume_exports`). Storage policies enforce per-user folder isolation.
+
+### Local dev
+- **Makefile** at repo root: `make dev` runs backend + frontend together; `make stop` kills both; `make test`, `make lint`, `make migrate`, `make clean` available.
+- Backend env loaded via `load_dotenv()` at `app/main.py` startup — no `--env-file` flag required.
+
+### CI
+- GitHub Actions workflow at `.github/workflows/ci.yml`.
+- Backend: ruff lint (advisory — see TECH_DEBT), pytest SQLite default, pytest Postgres for concurrency-sensitive paths, Playwright Chromium install for PDF render tests.
+- Frontend: lint, build, tsc (`continue-on-error` — pre-existing TS errors tracked in TECH_DEBT).
 
 ---
 
 ## Engineering principles learned
 
-- **Context is king.** The model needs the right user context (experience level, target role, JD) injected without blowing up tokens.
+- **Context is king.** The model needs the right user context (experience level, target role, JD) injected without blowing the token budget.
 - **Structured AI beats free-form.** Pydantic schemas turned unreliable generation into a reliable data pipeline.
-- **Compliance is engineering.** Google's OAuth verification / Limited Use Policy required real refactoring (scope reduction, privacy policy).
+- **Compliance is engineering.** Google OAuth verification / Limited Use Policy required real refactoring.
+- **Hallucination is a runtime guard, not a prompt-only concern.** Regex on rewriter + tailor outputs is the last line of defense.
+- **Multi-agent fan-out is theater for resume eval.** Five specialized passes through one well-prompted model beats a panel of agents debating.
+- **Storage MUST be persistent.** Railway ephemeral filesystem cost us a P0 in staging — Supabase Storage migration was non-negotiable.
 
 ---
 
 ## Plans & specs
 
 - Pivot spec: `docs/superpowers/specs/2026-05-19-prism-pro-pivot-design.md`
-- Phase 0 cleanup (this branch): `docs/superpowers/plans/2026-05-19-prism-pro-phase-0-cleanup.md`
+- Phase 0 cleanup: `docs/superpowers/plans/2026-05-19-prism-pro-phase-0-cleanup.md`
 - Phase 1 backend: `docs/superpowers/plans/2026-05-19-prism-pro-resume-backend-phase-1.md`
+- Phase 4 production hardening: `docs/superpowers/plans/2026-05-19-prism-pro-phase-4-production-hardening.md`
+- Tech debt: `TECH_DEBT.md`
+- Production blockers: `BLOCKERS.md` (Phase 2 PDF renderer failures, items §P2)
+- Frontend rebrand audit: `frontend/REBRAND_AUDIT.md`
+
+---
+
+## Status (2026-05-22)
+
+| Phase | Status |
+|---|---|
+| Phase 0 — Cleanup | ✅ merged to main |
+| Phase 1 — Backend foundation | ✅ merged to main |
+| Phase 2 — PDF render + 6 templates | ✅ merged to main (10 pre-existing test failures tracked in BLOCKERS §P2) |
+| Phase 3 — Frontend resume + JD + credits UI | ✅ merged to main |
+| Phase 4 — Plan + fixtures + CI | ✅ merged to main |
+| Phase 4 — Production hardening (12 tasks) | ✅ merged to main |
+| ES256 JWT migration | ✅ merged to main |
+| Fresh Supabase project bootstrap | ✅ completed |
+| Frontend editorial rebrand | 🚧 in progress on `feat/frontend-content-rebrand` |
