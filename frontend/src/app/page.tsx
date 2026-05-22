@@ -331,15 +331,16 @@ export default function LandingPage() {
             variants={staggerContainer}
             className="flex flex-col justify-center py-16 pl-0 lg:pl-20"
           >
-            {/* Display H1 — massive Fraunces, two lines, left-aligned */}
+            {/* Display H1 — massive Humane, two lines, left-aligned, condensed */}
             <motion.h1
               variants={fadeInUp}
-              className="text-foreground font-normal leading-[0.95] mb-10"
+              className="text-foreground uppercase leading-[0.9] mb-10"
               style={{
-                fontFamily: 'var(--font-fraunces), Georgia, serif',
-                fontSize: 'clamp(64px, 11vw, 180px)',
-                letterSpacing: '-0.02em',
-                fontWeight: 400,
+                fontFamily: 'var(--font-humane), sans-serif',
+                fontSize: 'clamp(120px, 18vw, 260px)',
+                letterSpacing: '-0.01em',
+                fontWeight: 500,
+                fontVariationSettings: '"wght" 500',
               }}
             >
               PRISM

@@ -46,7 +46,13 @@ export const Navigation: React.FC = () => {
               </span>
               <span
                 className="text-foreground uppercase font-humane"
-                style={{ fontSize: '18px', fontWeight: 600, letterSpacing: '0.12em', lineHeight: 1 }}
+                style={{
+                  fontSize: '32px',
+                  fontWeight: 600,
+                  fontVariationSettings: '"wght" 600',
+                  letterSpacing: '0.04em',
+                  lineHeight: 1,
+                }}
               >
                 PRISM PRO.
               </span>
@@ -64,7 +70,7 @@ export const Navigation: React.FC = () => {
                     key={item.label}
                     href={item.href}
                     className="text-foreground/85 hover:text-foreground transition-colors duration-200 uppercase font-humane"
-                    style={{ fontSize: '14px', fontWeight: 600, letterSpacing: '0.18em', lineHeight: 1 }}
+                    style={{ fontSize: '20px', fontWeight: 600, fontVariationSettings: '"wght" 600', letterSpacing: '0.12em', lineHeight: 1 }}
                   >
                     {item.label}
                   </Link>
@@ -73,7 +79,7 @@ export const Navigation: React.FC = () => {
                     key={item.label}
                     onClick={item.action}
                     className="text-foreground/85 hover:text-foreground transition-colors duration-200 uppercase font-humane"
-                    style={{ fontSize: '14px', fontWeight: 600, letterSpacing: '0.18em', lineHeight: 1 }}
+                    style={{ fontSize: '20px', fontWeight: 600, fontVariationSettings: '"wght" 600', letterSpacing: '0.12em', lineHeight: 1 }}
                   >
                     {item.label}
                   </button>
@@ -116,7 +122,7 @@ export const Navigation: React.FC = () => {
               <Link href="/login">
                 <span
                   className="text-foreground/85 hover:text-foreground transition-colors duration-200 uppercase font-humane"
-                  style={{ fontSize: '14px', fontWeight: 600, letterSpacing: '0.18em', lineHeight: 1 }}
+                  style={{ fontSize: '20px', fontWeight: 600, fontVariationSettings: '"wght" 600', letterSpacing: '0.12em', lineHeight: 1 }}
                 >
                   SIGN IN
                 </span>
