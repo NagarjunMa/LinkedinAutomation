@@ -358,30 +358,47 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ─── SOCIAL PROOF STRIP ──────────────────────────────────────────── */}
-      {/* REPLACE: add real company logos when available */}
-      <section className={`py-10 px-8 border-y ${borderFaint}`}>
-        <div className="max-w-[1400px] mx-auto">
-          <div className="flex flex-wrap items-center justify-between gap-6">
-            <span
-              className="text-foreground/35 uppercase"
-              style={humaneStyle(15, 700, '0.2em')}
+      {/* ─── SOCIAL PROOF STRIP — infinite marquee ───────────────────────── */}
+      <section className={`py-10 border-y ${borderFaint} overflow-hidden`}>
+        <div className="flex items-center gap-16">
+          <span
+            className="shrink-0 pl-8 text-foreground/35 uppercase whitespace-nowrap"
+            style={humaneStyle(15, 700, '0.2em')}
+          >
+            USED BY ENGINEERS FROM
+          </span>
+
+          {/* Marquee — duplicates list twice; CSS keyframe translates -50% */}
+          <div className="flex-1 overflow-hidden relative">
+            <div
+              className="flex gap-12 whitespace-nowrap pr-12"
+              style={{
+                animation: 'marquee 30s linear infinite',
+                width: 'max-content',
+              }}
             >
-              USED BY ENGINEERS FROM
-            </span>
-            <div className="flex flex-wrap items-center gap-10">
-              {['Stripe', 'Razorpay', 'Flipkart', 'Spotify', 'Amazon', 'Thoughtworks'].map((name) => (
-                <span
-                  key={name}
-                  className="text-foreground/25 uppercase"
-                  style={humaneStyle(18, 700, '0.06em')}
-                >
-                  {name}
-                </span>
-              ))}
+              {[...Array(2)].flatMap((_, dupIdx) =>
+                ['Stripe', 'Razorpay', 'Flipkart', 'Spotify', 'Amazon', 'Thoughtworks', 'Atlassian', 'Zerodha', 'Cloudflare'].map((name) => (
+                  <span
+                    key={`${dupIdx}-${name}`}
+                    className="text-foreground/40 uppercase shrink-0"
+                    style={humaneStyle(20, 700, '0.08em')}
+                  >
+                    {name}
+                  </span>
+                ))
+              )}
             </div>
           </div>
         </div>
+
+        {/* Keyframe scoped via JSX style block */}
+        <style jsx>{`
+          @keyframes marquee {
+            0%   { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+          }
+        `}</style>
       </section>
 
       {/* ─── 01 / PROBLEM STATEMENT ─────────────────────────────────────── */}
