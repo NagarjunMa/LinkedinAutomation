@@ -11,7 +11,6 @@ import {
   CheckCircle
 } from 'lucide-react';
 import Link from 'next/link';
-import Image from 'next/image';
 
 import { Navigation } from '@/components/landing/Navigation';
 import { SectionHeader } from '@/components/landing/SectionHeader';
@@ -203,51 +202,67 @@ export default function LandingPage() {
       <Navigation />
 
       {/* ─── HERO ────────────────────────────────────────────────────────── */}
-      {/* Push down below fixed nav: 14px band + 72px nav = 86px */}
-      <section id="hero" className="relative pt-[86px] min-h-screen">
+      {/* Push down below fixed nav: 14px band + ~74px nav = 88px */}
+      <section id="hero" className="relative pt-[88px] min-h-screen bg-background">
 
         {/* Asymmetric two-column grid */}
-        <div className="max-w-[1400px] mx-auto px-8 grid grid-cols-1 lg:grid-cols-[5fr_4fr] min-h-[calc(100vh-86px)]">
+        <div className="max-w-[1400px] mx-auto px-8 grid grid-cols-1 lg:grid-cols-[1fr_1fr] min-h-[calc(100vh-88px)]">
 
-          {/* LEFT column — editorial image + caption */}
+          {/* LEFT column — eyebrow + body copy + CTAs */}
           <motion.div
             initial="hidden"
             animate="visible"
-            variants={fadeIn}
-            className="relative flex flex-col lg:border-r border-foreground/10 py-16 pr-0 lg:pr-16"
+            variants={staggerContainer}
+            className="flex flex-col justify-center lg:border-r border-foreground/10 py-16 pr-0 lg:pr-20"
           >
-            {/* Main hero image — tall editorial crop */}
-            {/* REPLACE: swap for actual product screenshot or brand photo */}
-            <div className="relative w-full flex-1 min-h-[420px] lg:min-h-[60vh] overflow-hidden bg-foreground/5">
-              <Image
-                src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1200&q=80&fit=crop"
-                alt="Professionals reviewing documents in a modern office environment"
-                fill
-                className="object-cover object-center"
-                priority
-              />
-              {/* Subtle overlay */}
-              <div className="absolute inset-0 bg-background/10" />
-            </div>
+            {/* Eyebrow */}
+            <motion.span
+              variants={fadeInUp}
+              className="block mb-8 text-foreground/40 uppercase"
+              style={humaneStyle(11, 500, '0.18em')}
+            >
+              RECRUITER-GRADE — 2026
+            </motion.span>
 
-            {/* Image caption */}
-            <div className="mt-4 flex items-center justify-between">
-              <span
-                className="text-foreground/40 uppercase"
-                style={humaneStyle(11, 500, '0.18em')}
+            {/* Body copy */}
+            <motion.p
+              variants={fadeInUp}
+              className="text-foreground/65 leading-relaxed mb-10"
+              style={{ ...humaneStyle(17, 400, '0'), maxWidth: '480px' }}
+            >
+              Bullet-level resume critique. JD-driven tailoring. Recruiter-grade PDF export for USA and India markets.
+            </motion.p>
+
+            {/* CTA buttons */}
+            <motion.div
+              variants={fadeInUp}
+              className="flex flex-col sm:flex-row items-start gap-4 mb-16"
+            >
+              <Link href="/login">
+                <button
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-foreground text-background uppercase transition-opacity hover:opacity-80"
+                  style={humaneStyle(13, 500, '0.12em')}
+                >
+                  Polish Your Resume <ArrowRight size={14} />
+                </button>
+              </Link>
+              <button
+                onClick={() => {
+                  const el = document.getElementById('how-it-works');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="inline-flex items-center gap-2 px-6 py-3 border border-foreground/25 text-foreground/65 uppercase transition-colors hover:text-foreground hover:border-foreground/60"
+                style={humaneStyle(13, 500, '0.12em')}
               >
-                ATS PARSE — 2026
-              </span>
-              <span
-                className="text-foreground/30 uppercase"
-                style={humaneStyle(11, 500, '0.18em')}
-              >
-                SAN FRANCISCO + BENGALURU
-              </span>
-            </div>
+                See How It Works
+              </button>
+            </motion.div>
 
             {/* Scroll down indicator — bottom left */}
-            <div className="hidden lg:flex items-center gap-3 mt-12">
+            <motion.div
+              variants={fadeIn}
+              className="hidden lg:flex items-center gap-3"
+            >
               <div className="w-8 h-[1px] bg-foreground/25" />
               <span
                 className="text-foreground/40 uppercase"
@@ -255,106 +270,38 @@ export default function LandingPage() {
               >
                 SCROLL DOWN
               </span>
-            </div>
+            </motion.div>
           </motion.div>
 
-          {/* RIGHT column — massive serif headline + smaller image */}
+          {/* RIGHT column — massive serif headline */}
           <motion.div
             initial="hidden"
             animate="visible"
             variants={staggerContainer}
-            className="flex flex-col justify-between py-16 pl-0 lg:pl-16"
+            className="flex flex-col justify-center py-16 pl-0 lg:pl-20"
           >
-            <div>
-              {/* Eyebrow */}
-              <motion.span
-                variants={fadeInUp}
-                className="block mb-8 text-foreground/40 uppercase"
-                style={humaneStyle(11, 500, '0.18em')}
-              >
-                RECRUITER-GRADE — 2026
-              </motion.span>
+            {/* Display H1 — massive Fraunces, two lines, left-aligned */}
+            <motion.h1
+              variants={fadeInUp}
+              className="text-foreground font-normal leading-[0.95] mb-10"
+              style={{
+                fontFamily: 'var(--font-fraunces), Georgia, serif',
+                fontSize: 'clamp(64px, 11vw, 180px)',
+                letterSpacing: '-0.02em',
+                fontWeight: 400,
+              }}
+            >
+              PRISM
+              <br />
+              PRO.
+            </motion.h1>
 
-              {/* Display H1 — massive Fraunces, two lines, left-aligned */}
-              <motion.h1
-                variants={fadeInUp}
-                className="text-foreground font-normal leading-[0.95] mb-10"
-                style={{
-                  fontFamily: 'var(--font-fraunces), Georgia, serif',
-                  fontSize: 'clamp(64px, 11vw, 180px)',
-                  letterSpacing: '-0.02em',
-                  fontWeight: 400,
-                }}
-              >
-                PRISM
-                <br />
-                PRO.
-              </motion.h1>
-
-              {/* Decorative circle — editorial accent */}
-              <motion.div
-                variants={fadeInUp}
-                aria-hidden="true"
-                className="w-24 h-24 rounded-full border border-foreground/20 mb-10"
-              />
-
-              {/* Body copy */}
-              <motion.p
-                variants={fadeInUp}
-                className="text-foreground/55 leading-relaxed max-w-sm mb-10"
-                style={humaneStyle(15, 400, '0')}
-              >
-                Bullet-level resume critique. JD-driven tailoring. Recruiter-grade PDF export for USA and India markets.
-              </motion.p>
-
-              {/* CTA buttons */}
-              <motion.div
-                variants={fadeInUp}
-                className="flex flex-col sm:flex-row items-start gap-4"
-              >
-                <Link href="/login">
-                  <button
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-foreground text-background uppercase transition-opacity hover:opacity-80"
-                    style={humaneStyle(13, 500, '0.12em')}
-                  >
-                    Polish Your Resume <ArrowRight size={14} />
-                  </button>
-                </Link>
-                <button
-                  onClick={() => {
-                    const el = document.getElementById('how-it-works');
-                    if (el) el.scrollIntoView({ behavior: 'smooth' });
-                  }}
-                  className="inline-flex items-center gap-2 px-6 py-3 border border-foreground/25 text-foreground/65 uppercase transition-colors hover:text-foreground hover:border-foreground/60"
-                  style={humaneStyle(13, 500, '0.12em')}
-                >
-                  See How It Works
-                </button>
-              </motion.div>
-            </div>
-
-            {/* Secondary image card — warm tones, lower-right */}
-            {/* REPLACE: swap for product dashboard screenshot */}
+            {/* Decorative circle — editorial accent */}
             <motion.div
               variants={fadeInUp}
-              className="relative mt-12 lg:mt-0 h-[200px] lg:h-[240px] overflow-hidden"
-            >
-              <Image
-                src="https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=800&q=80&fit=crop"
-                alt="Resume document on a warm-toned desk — placeholder for dashboard preview"
-                fill
-                className="object-cover object-center"
-              />
-              <div className="absolute inset-0 bg-foreground/5" />
-              <div className="absolute bottom-4 left-4">
-                <span
-                  className="text-background/70 uppercase"
-                  style={humaneStyle(10, 500, '0.15em')}
-                >
-                  DASHBOARD PREVIEW — COMING SOON
-                </span>
-              </div>
-            </motion.div>
+              aria-hidden="true"
+              className="w-24 h-24 rounded-full border border-foreground/20"
+            />
           </motion.div>
         </div>
       </section>
