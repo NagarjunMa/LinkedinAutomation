@@ -14,8 +14,8 @@ export default {
   			'display': ['var(--font-fraunces)', 'Georgia', 'serif'],
   			'serif': ['var(--font-fraunces)', 'Georgia', 'serif'],
   			// Body / UI: Humane (editorial minimalist sans) — primary body + nav
-  			'sans': ['var(--font-humane)', 'var(--font-ibm-plex-sans)', 'Inter', 'system-ui', 'sans-serif'],
-  			'body': ['var(--font-humane)', 'var(--font-ibm-plex-sans)', 'Inter', 'system-ui', 'sans-serif'],
+  			'sans': ['var(--font-geist-sans)', 'var(--font-ibm-plex-sans)', 'Inter', 'system-ui', 'sans-serif'],
+  			'body': ['var(--font-geist-sans)', 'var(--font-ibm-plex-sans)', 'Inter', 'system-ui', 'sans-serif'],
   			// Humane direct reference
   			'humane': ['var(--font-humane)', 'Inter', 'sans-serif'],
   			// ── Legacy font families kept for backward compat ────────────────────

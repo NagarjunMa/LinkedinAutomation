@@ -131,8 +131,8 @@
 
     /* ─── Typography vars ───────────────────────────────────────────────────── */
     --font-display: var(--font-fraunces), 'Georgia', serif;
-    --font-sans: var(--font-humane), 'Inter', sans-serif;
-    --font-body: var(--font-humane), var(--font-ibm-plex-sans), 'Inter', sans-serif;
+    --font-sans: var(--font-geist-sans), 'Inter', sans-serif;
+    --font-body: var(--font-geist-sans), var(--font-geist-sans), 'Inter', sans-serif;
   }
 
   .dark {
@@ -199,8 +199,8 @@
 
     /* ─── Typography vars ───────────────────────────────────────────────────── */
     --font-display: var(--font-fraunces), 'Georgia', serif;
-    --font-sans: var(--font-humane), 'Inter', sans-serif;
-    --font-body: var(--font-humane), var(--font-ibm-plex-sans), 'Inter', sans-serif;
+    --font-sans: var(--font-geist-sans), 'Inter', sans-serif;
+    --font-body: var(--font-geist-sans), var(--font-geist-sans), 'Inter', sans-serif;
   }
 }
 
@@ -214,7 +214,7 @@
   body {
     @apply bg-background text-foreground;
     /* Humane as default body / UI font — editorial minimalist */
-    font-family: var(--font-humane), var(--font-ibm-plex-sans), 'Inter', sans-serif;
+    font-family: var(--font-geist-sans), var(--font-geist-sans), 'Inter', sans-serif;
   }
 
   h1,
@@ -251,7 +251,7 @@
   label,
   input,
   button {
-    font-family: var(--font-humane), var(--font-ibm-plex-sans), sans-serif;
+    font-family: var(--font-geist-sans), var(--font-geist-sans), sans-serif;
   }
 }
 

@@ -169,7 +169,7 @@ const humaneStyle = (
   weight: number = 400,
   tracking: string = '0'
 ): React.CSSProperties => ({
-  fontFamily: 'var(--font-ibm-plex-sans), system-ui, sans-serif',
+  fontFamily: 'var(--font-geist-sans), system-ui, sans-serif',
   fontSize: `${size}px`,
   fontWeight: weight,
   letterSpacing: tracking,
@@ -261,7 +261,7 @@ export default function LandingPage() {
               <div className="w-10 h-[1px] bg-foreground/60" aria-hidden="true" />
               <span
                 className="text-foreground uppercase"
-                style={{ fontFamily: 'var(--font-ibm-plex-sans), system-ui, sans-serif', fontSize: '22px', fontWeight: 700, letterSpacing: '0.22em', lineHeight: 1 }}
+                style={{ fontFamily: 'var(--font-geist-sans), system-ui, sans-serif', fontSize: '22px', fontWeight: 700, letterSpacing: '0.22em', lineHeight: 1 }}
               >
                 RECRUITER-GRADE — 2026
               </span>
@@ -272,12 +272,12 @@ export default function LandingPage() {
             <motion.p
               variants={fadeInUp}
               className="text-foreground leading-relaxed mb-12"
-              style={{ fontFamily: 'var(--font-ibm-plex-sans), system-ui, sans-serif', fontSize: '24px', fontWeight: 400, lineHeight: '1.5', maxWidth: '600px' }}
+              style={{ fontFamily: 'var(--font-geist-sans), system-ui, sans-serif', fontSize: '24px', fontWeight: 400, lineHeight: '1.5', maxWidth: '600px' }}
             >
               Bullet-level resume critique. JD-driven tailoring.{' '}
               <span
                 className="text-foreground uppercase"
-                style={{ fontFamily: 'var(--font-ibm-plex-sans), system-ui, sans-serif', fontSize: '26px', fontWeight: 700, letterSpacing: '0.05em' }}
+                style={{ fontFamily: 'var(--font-geist-sans), system-ui, sans-serif', fontSize: '26px', fontWeight: 700, letterSpacing: '0.05em' }}
               >
                 Recruiter&#8209;grade
               </span>{' '}
@@ -331,22 +331,35 @@ export default function LandingPage() {
             variants={staggerContainer}
             className="flex flex-col justify-center py-16 pl-0 lg:pl-20"
           >
-            {/* Display H1 — massive Humane, two lines, left-aligned, condensed */}
+            {/* Display H1 — massive Humane, single line, left-aligned, condensed */}
             <motion.h1
               variants={fadeInUp}
-              className="text-foreground uppercase leading-[0.9] mb-10"
+              className="text-foreground uppercase leading-[0.9] mb-8 whitespace-nowrap"
               style={{
                 fontFamily: 'var(--font-humane), sans-serif',
-                fontSize: 'clamp(180px, 24vw, 380px)',
+                fontSize: 'clamp(96px, 14vw, 220px)',
                 letterSpacing: '0.04em',
                 fontWeight: 500,
                 fontVariationSettings: '"wght" 500',
               }}
             >
-              PRISM
-              <br />
-              PRO.
+              PRISM PRO.
             </motion.h1>
+
+            {/* Tagline */}
+            <motion.p
+              variants={fadeInUp}
+              className="text-foreground/85 mb-10 max-w-xl"
+              style={{
+                fontFamily: 'var(--font-geist-sans), system-ui, sans-serif',
+                fontSize: 'clamp(20px, 1.6vw, 26px)',
+                fontWeight: 400,
+                lineHeight: 1.4,
+                letterSpacing: '-0.005em',
+              }}
+            >
+              For engineers who refuse generic AI bullets.
+            </motion.p>
 
             {/* Decorative circle — editorial accent */}
             <motion.div

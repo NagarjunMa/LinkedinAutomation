@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import localFont from "next/font/local"
 import { Urbanist, Inter, Playfair_Display, JetBrains_Mono, Fraunces, IBM_Plex_Sans } from "next/font/google"
+import { GeistSans } from "geist/font/sans"
 import "./globals.css"
 import { Providers } from "@/components/ui/providers"
 import { AuthProvider } from "@/contexts/auth-context"
@@ -165,7 +166,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${humane.variable} ${fraunces.variable} ${ibmPlexSans.variable} ${urbanist.variable} ${inter.variable} ${playfair.variable} ${jetbrains.variable}`}>
+      <body className={`${GeistSans.variable} ${humane.variable} ${fraunces.variable} ${ibmPlexSans.variable} ${urbanist.variable} ${inter.variable} ${playfair.variable} ${jetbrains.variable}`}>
         <ErrorBoundary fallback={PageErrorFallback}>
           <ThemeProvider>
             <AuthProvider>
