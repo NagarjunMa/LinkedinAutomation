@@ -161,13 +161,15 @@ const FAQS = [
   }
 ];
 
-// ── Humane typography helpers ──────────────────────────────────────────────
+// ── Sans typography helper ─────────────────────────────────────────────────
+// NOTE: Humane is reserved for the wordmark + Navbar only (see Navigation.tsx).
+// All other UI labels use IBM Plex Sans for legibility.
 const humaneStyle = (
   size: number,
   weight: number = 400,
   tracking: string = '0'
 ): React.CSSProperties => ({
-  fontFamily: 'var(--font-humane), sans-serif',
+  fontFamily: 'var(--font-ibm-plex-sans), system-ui, sans-serif',
   fontSize: `${size}px`,
   fontWeight: weight,
   letterSpacing: tracking,
@@ -198,7 +200,7 @@ const SplitHeading: React.FC<SplitHeadingProps> = ({ number, label, title, subti
   <div className="lg:sticky lg:top-32 self-start">
     <div
       className="mb-8 uppercase text-foreground/85"
-      style={humaneStyle(14, 700, '0.2em')}
+      style={humaneStyle(16, 700, '0.2em')}
     >
       {number} / {label}
     </div>
@@ -215,8 +217,8 @@ const SplitHeading: React.FC<SplitHeadingProps> = ({ number, label, title, subti
       {title}
     </h2>
     <p
-      className="text-foreground/85 max-w-sm"
-      style={{ fontSize: '18px', lineHeight: 1.6, fontWeight: 400 }}
+      className="text-foreground/85 max-w-md"
+      style={{ fontSize: '21px', lineHeight: 1.55, fontWeight: 400 }}
     >
       {subtitle}
     </p>
@@ -256,26 +258,26 @@ export default function LandingPage() {
               variants={fadeInUp}
               className="flex items-center gap-3 mb-8"
             >
-              <div className="w-8 h-[1px] bg-foreground/60" aria-hidden="true" />
+              <div className="w-10 h-[1px] bg-foreground/60" aria-hidden="true" />
               <span
-                className="text-foreground uppercase font-humane"
-                style={{ fontSize: '18px', fontWeight: 800, letterSpacing: '0.22em', lineHeight: 1 }}
+                className="text-foreground uppercase"
+                style={{ fontFamily: 'var(--font-ibm-plex-sans), system-ui, sans-serif', fontSize: '22px', fontWeight: 700, letterSpacing: '0.22em', lineHeight: 1 }}
               >
                 RECRUITER-GRADE — 2026
               </span>
-              <div className="w-8 h-[1px] bg-foreground/60" aria-hidden="true" />
+              <div className="w-10 h-[1px] bg-foreground/60" aria-hidden="true" />
             </motion.div>
 
-            {/* Body copy — IBM Plex Sans for paragraph readability (Humane too condensed) */}
+            {/* Body copy — IBM Plex Sans for paragraph readability */}
             <motion.p
               variants={fadeInUp}
-              className="text-foreground leading-relaxed mb-10"
-              style={{ fontSize: '19px', fontWeight: 400, lineHeight: '1.55', maxWidth: '500px' }}
+              className="text-foreground leading-relaxed mb-12"
+              style={{ fontFamily: 'var(--font-ibm-plex-sans), system-ui, sans-serif', fontSize: '24px', fontWeight: 400, lineHeight: '1.5', maxWidth: '600px' }}
             >
               Bullet-level resume critique. JD-driven tailoring.{' '}
               <span
-                className="text-foreground uppercase font-humane"
-                style={{ fontSize: '22px', fontWeight: 700, letterSpacing: '0.06em' }}
+                className="text-foreground uppercase"
+                style={{ fontFamily: 'var(--font-ibm-plex-sans), system-ui, sans-serif', fontSize: '26px', fontWeight: 700, letterSpacing: '0.05em' }}
               >
                 Recruiter&#8209;grade
               </span>{' '}
@@ -290,7 +292,7 @@ export default function LandingPage() {
               <Link href="/login">
                 <button
                   className="inline-flex items-center gap-2 px-7 py-3.5 bg-foreground text-background uppercase transition-opacity hover:opacity-85"
-                  style={humaneStyle(15, 700, '0.14em')}
+                  style={humaneStyle(17, 700, '0.14em')}
                 >
                   Polish Your Resume <ArrowRight size={16} />
                 </button>
@@ -301,7 +303,7 @@ export default function LandingPage() {
                   if (el) el.scrollIntoView({ behavior: 'smooth' });
                 }}
                 className="inline-flex items-center gap-2 px-7 py-3.5 border border-foreground/40 text-foreground uppercase transition-colors hover:border-foreground"
-                style={humaneStyle(15, 700, '0.14em')}
+                style={humaneStyle(17, 700, '0.14em')}
               >
                 See How It Works
               </button>
@@ -315,7 +317,7 @@ export default function LandingPage() {
               <div className="w-10 h-[1px] bg-foreground/50" />
               <span
                 className="text-foreground/75 uppercase"
-                style={humaneStyle(14, 700, '0.2em')}
+                style={humaneStyle(16, 700, '0.2em')}
               >
                 SCROLL DOWN
               </span>
@@ -362,7 +364,7 @@ export default function LandingPage() {
           <div className="flex flex-wrap items-center justify-between gap-6">
             <span
               className="text-foreground/35 uppercase"
-              style={humaneStyle(13, 700, '0.2em')}
+              style={humaneStyle(15, 700, '0.2em')}
             >
               USED BY ENGINEERS FROM
             </span>
@@ -371,7 +373,7 @@ export default function LandingPage() {
                 <span
                   key={name}
                   className="text-foreground/25 uppercase"
-                  style={humaneStyle(15, 600, '0.08em')}
+                  style={humaneStyle(18, 700, '0.06em')}
                 >
                   {name}
                 </span>
@@ -430,7 +432,7 @@ export default function LandingPage() {
                   </h4>
                   <p
                     className="text-foreground/85 leading-relaxed"
-                    style={humaneStyle(16, 500, '0')}
+                    style={humaneStyle(19, 500, '0')}
                   >
                     {detail}
                   </p>
@@ -494,7 +496,7 @@ export default function LandingPage() {
                     </div>
                     <p
                       className="text-foreground/85 leading-relaxed"
-                      style={humaneStyle(16, 500, '0')}
+                      style={humaneStyle(19, 500, '0')}
                     >
                       {desc}
                     </p>
@@ -574,7 +576,7 @@ export default function LandingPage() {
                 >
                   <span
                     className="block mb-5 text-foreground/25"
-                    style={humaneStyle(13, 700, '0.2em')}
+                    style={humaneStyle(15, 700, '0.2em')}
                   >
                     {String(i + 1).padStart(2, '0')}.
                   </span>
@@ -586,7 +588,7 @@ export default function LandingPage() {
                   </h4>
                   <p
                     className="text-foreground/85 leading-relaxed"
-                    style={humaneStyle(16, 500, '0')}
+                    style={humaneStyle(19, 500, '0')}
                   >
                     {desc}
                   </p>
@@ -634,7 +636,7 @@ export default function LandingPage() {
               >
                 <div
                   className="uppercase text-foreground/80 mb-6"
-                  style={humaneStyle(13, 700, '0.2em')}
+                  style={humaneStyle(15, 700, '0.2em')}
                 >
                   FREE
                 </div>
@@ -646,7 +648,7 @@ export default function LandingPage() {
                 </div>
                 <div
                   className="text-foreground/80 mb-8"
-                  style={humaneStyle(16, 500, '0')}
+                  style={humaneStyle(19, 500, '0')}
                 >
                   per month, always
                 </div>
@@ -661,7 +663,7 @@ export default function LandingPage() {
                       <CheckCircle size={13} className="text-foreground/40 shrink-0" strokeWidth={1.5} />
                       <span
                         className="text-foreground/60"
-                        style={humaneStyle(16, 500, '0')}
+                        style={humaneStyle(19, 500, '0')}
                       >
                         {item}
                       </span>
@@ -680,7 +682,7 @@ export default function LandingPage() {
               >
                 <div
                   className="uppercase text-foreground/80 mb-6"
-                  style={humaneStyle(13, 700, '0.2em')}
+                  style={humaneStyle(15, 700, '0.2em')}
                 >
                   TOP-UP
                 </div>
@@ -692,13 +694,13 @@ export default function LandingPage() {
                 </div>
                 <div
                   className="text-foreground/80 mb-8"
-                  style={humaneStyle(16, 500, '0')}
+                  style={humaneStyle(19, 500, '0')}
                 >
                   when you need them — no subscription
                 </div>
                 <p
                   className="text-foreground/85 leading-relaxed mb-8"
-                  style={humaneStyle(16, 500, '0')}
+                  style={humaneStyle(19, 500, '0')}
                 >
                   {/* REPLACE: Add real pricing tiers when Stripe integration ships */}
                   Credit pack pricing will be shown in-dashboard. Top-ups are one-time purchases — no recurring charge, no lock-in.
@@ -706,7 +708,7 @@ export default function LandingPage() {
                 <Link href="/login">
                   <button
                     className="inline-flex items-center gap-2 px-6 py-3 bg-foreground text-background uppercase transition-opacity hover:opacity-80"
-                    style={humaneStyle(14, 700, '0.14em')}
+                    style={humaneStyle(16, 700, '0.14em')}
                   >
                     Get Started Free <ArrowRight size={13} />
                   </button>
@@ -762,7 +764,7 @@ export default function LandingPage() {
                   </h4>
                   <p
                     className="text-foreground/85 leading-relaxed"
-                    style={humaneStyle(16, 500, '0')}
+                    style={humaneStyle(19, 500, '0')}
                   >
                     {a}
                   </p>
@@ -797,21 +799,21 @@ export default function LandingPage() {
           </h2>
           <p
             className="text-foreground/50 mb-12 max-w-md leading-relaxed"
-            style={humaneStyle(17, 500, '0')}
+            style={humaneStyle(20, 500, '0')}
           >
             Join engineers and product professionals who prep smarter, not longer.
           </p>
           <Link href="/login">
             <button
               className="inline-flex items-center gap-2 px-8 py-4 bg-foreground text-background uppercase transition-opacity hover:opacity-80 mb-8"
-              style={humaneStyle(14, 700, '0.14em')}
+              style={humaneStyle(16, 700, '0.14em')}
             >
               Polish Your Resume <ArrowRight size={14} />
             </button>
           </Link>
           <span
             className="text-foreground/30 uppercase"
-            style={humaneStyle(13, 700, '0.2em')}
+            style={humaneStyle(15, 700, '0.2em')}
           >
             PRISM PRO. — RECRUITER-GRADE RESUME PREP
           </span>
@@ -829,13 +831,13 @@ export default function LandingPage() {
             <div className="md:col-span-1">
               <span
                 className="block mb-4 uppercase text-foreground"
-                style={humaneStyle(14, 500, '0.15em')}
+                style={humaneStyle(16, 600, '0.15em')}
               >
                 PRISM PRO.
               </span>
               <p
                 className="text-foreground/80 leading-relaxed"
-                style={humaneStyle(14, 500, '0.01em')}
+                style={humaneStyle(16, 500, '0.01em')}
               >
                 Recruiter-grade resume tailoring for experienced engineers and product professionals. Built for USA and India markets.
               </p>
@@ -845,7 +847,7 @@ export default function LandingPage() {
             <div>
               <h5
                 className="uppercase text-foreground mb-5"
-                style={humaneStyle(13, 700, '0.2em')}
+                style={humaneStyle(15, 700, '0.2em')}
               >
                 PRODUCT
               </h5>
@@ -859,7 +861,7 @@ export default function LandingPage() {
                     <button
                       onClick={action}
                       className="text-foreground/75 hover:text-foreground transition-colors"
-                      style={humaneStyle(14, 500, '0.01em')}
+                      style={humaneStyle(16, 500, '0.01em')}
                     >
                       {label}
                     </button>
@@ -872,13 +874,13 @@ export default function LandingPage() {
             <div>
               <h5
                 className="uppercase text-foreground mb-5"
-                style={humaneStyle(13, 700, '0.2em')}
+                style={humaneStyle(15, 700, '0.2em')}
               >
                 RESOURCES
               </h5>
               <ul className="space-y-3">
                 <li>
-                  <Link href="/docs" className="text-foreground/75 hover:text-foreground transition-colors" style={humaneStyle(14, 500, '0.01em')}>
+                  <Link href="/docs" className="text-foreground/75 hover:text-foreground transition-colors" style={humaneStyle(16, 500, '0.01em')}>
                     Docs
                   </Link>
                 </li>
@@ -886,7 +888,7 @@ export default function LandingPage() {
                   <button
                     onClick={() => { const el = document.getElementById('faq'); if (el) el.scrollIntoView({ behavior: 'smooth' }); }}
                     className="text-foreground/75 hover:text-foreground transition-colors"
-                    style={humaneStyle(14, 500, '0.01em')}
+                    style={humaneStyle(16, 500, '0.01em')}
                   >
                     FAQ
                   </button>
@@ -898,18 +900,18 @@ export default function LandingPage() {
             <div>
               <h5
                 className="uppercase text-foreground mb-5"
-                style={humaneStyle(13, 700, '0.2em')}
+                style={humaneStyle(15, 700, '0.2em')}
               >
                 LEGAL
               </h5>
               <ul className="space-y-3">
                 <li>
-                  <Link href="/privacy-policy" className="text-foreground/75 hover:text-foreground transition-colors" style={humaneStyle(14, 500, '0.01em')}>
+                  <Link href="/privacy-policy" className="text-foreground/75 hover:text-foreground transition-colors" style={humaneStyle(16, 500, '0.01em')}>
                     Privacy Policy
                   </Link>
                 </li>
                 <li>
-                  <Link href="/terms" className="text-foreground/75 hover:text-foreground transition-colors" style={humaneStyle(14, 500, '0.01em')}>
+                  <Link href="/terms" className="text-foreground/75 hover:text-foreground transition-colors" style={humaneStyle(16, 500, '0.01em')}>
                     Terms of Service
                   </Link>
                 </li>
@@ -921,20 +923,20 @@ export default function LandingPage() {
           <div className={`pt-8 border-t ${borderFaint} flex flex-col md:flex-row justify-between items-center gap-4`}>
             <span
               className="text-foreground/30 uppercase"
-              style={humaneStyle(13, 700, '0.2em')}
+              style={humaneStyle(15, 700, '0.2em')}
             >
               &copy; 2026 PRISM PRO. ALL RIGHTS RESERVED.
             </span>
             <span
               className="text-foreground/30 uppercase"
-              style={humaneStyle(13, 700, '0.2em')}
+              style={humaneStyle(15, 700, '0.2em')}
             >
               PRISMPRO.LIVE
             </span>
             {/* Locale switch placeholder */}
             <span
               className="text-foreground/20 uppercase cursor-default"
-              style={humaneStyle(13, 700, '0.2em')}
+              style={humaneStyle(15, 700, '0.2em')}
             >
               EN / IN
             </span>
