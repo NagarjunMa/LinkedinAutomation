@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List
+from typing import Any, Dict, List
 
 from app.db.session import get_db
 from app.services.profile_service import ProfileService
@@ -13,19 +13,46 @@ from app.schemas.profile import (
 
 router = APIRouter()
 
+_EMPTY_PROFILE_DEFAULTS: Dict[str, Any] = {
+    "full_name": "",
+    "email": "",
+    "phone": None,
+    "location": None,
+    "years_of_experience": None,
+    "career_level": None,
+    "professional_summary": None,
+    "programming_languages": [],
+    "frameworks_libraries": [],
+    "tools_platforms": [],
+    "desired_roles": [],
+    "preferred_locations": [],
+    "salary_range_min": None,
+    "salary_range_max": None,
+    "job_types": [],
+    "degrees": [],
+    "institutions": [],
+    "graduation_years": [],
+    "total_applications": 0,
+    "total_resumes": 0,
+    "profile_completion": 0,
+    "exists": False,
+}
 
-@router.get("/{user_id}", response_model=UserProfileResponse)
+
+@router.get("/{user_id}")
 def get_profile(
     user_id: str,
     db: Session = Depends(get_db)
-):
-    """Get user profile with statistics"""
+) -> Dict[str, Any]:
+    """Get user profile with statistics.
+
+    Returns an empty profile with ``exists=False`` for new users who have not
+    yet configured their profile, instead of raising 404.
+    """
     profile_data = ProfileService.get_profile_with_stats(db, user_id)
     if not profile_data:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Profile not found"
-        )
+        return {"user_id": user_id, **_EMPTY_PROFILE_DEFAULTS}
+    profile_data["exists"] = True
     return profile_data
 
 
