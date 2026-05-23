@@ -39,6 +39,6 @@ respx==0.20.2
 tenacity==8.2.3
 pytest-asyncio==0.21.1
 syrupy==4.6.1
-stripe==9.5.0storage3>=2.30.0
+stripe==9.5.0
 websockets>=14.0
 storage3>=2.30.0
