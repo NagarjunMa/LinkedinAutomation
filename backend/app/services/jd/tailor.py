@@ -15,17 +15,22 @@ logger = logging.getLogger("llm")
 
 TAILOR_SYSTEM = """You tailor a candidate's resume to a specific JD as a senior recruiter would.
 
-Produce a DIFF PLAN:
-- Match score (0-100) based on must_have/good_to_have coverage.
-- For each bullet, decide whether it should be rewritten for this JD. If so, propose the new bullet.
-- Reorder skills list to lead with JD-matched ones. Provide rationale.
-- Optionally rewrite the summary for the target role.
-- Suggest additions ONLY if the candidate has evidence (in projects/experience) but the skill is not surfaced.
+Return a DiffPlan JSON object with these EXACT fields (all required, even when empty):
+- match_score: int 0-100
+- must_have_coverage_found: ARRAY of skill name strings (empty array if none)
+- must_have_coverage_missing: ARRAY of skill name strings (empty array if none)
+- good_to_have_coverage_found: ARRAY of skill name strings (empty array if none)
+- good_to_have_coverage_missing: ARRAY of skill name strings (empty array if none)
+- bullets: ARRAY of BulletDiff objects {bullet_id, old, new, reason, placeholders: []} (empty array if no rewrites)
+- skills_reorder: OBJECT {new_order: [str], rationale: str} or null. Do NOT return the raw skills dict — use the new_order/rationale shape.
+- summary_rewrite: OBJECT {old: str|null, new: str, reason: str} or null. Do NOT return a bare string — wrap in the object shape.
+- suggested_additions: ARRAY of {section: str, item: str, reason: str} (empty array if none)
 
 RULES:
 - NEVER fabricate numbers/metrics. Use placeholders like [X%], [N users].
 - NEVER add a skill the candidate has no evidence of. If JD requires Kubernetes and resume has zero K8s evidence, add to must_have_coverage_missing, NOT suggested_additions.
-- Country-aware tone."""
+- Country-aware tone.
+- Use empty arrays [] for empty coverage lists, NEVER omit fields."""
 
 TAILOR_USER = """Resume JSON:
 {resume_json}
@@ -44,20 +49,23 @@ async def tailor_resume_to_jd(
     jd: JDExtraction,
     user_id: str | None = None,
 ) -> DiffPlan:
+    """Tailor a resume to a JD via schema-enforced parse() API."""
     user = TAILOR_USER.format(
         resume_json=doc.model_dump_json(exclude={"raw_text"}),
         jd_json=jd.model_dump_json(),
     )
     async with measure("tailor", user_id=user_id):
-        resp = await _client.chat.completions.create(
+        resp = await _client.beta.chat.completions.parse(
             model="gpt-4o-2024-08-06",
-            response_format={"type": "json_object"},
+            response_format=DiffPlan,
             messages=[{"role": "system", "content": TAILOR_SYSTEM},
                       {"role": "user", "content": user}],
             temperature=0.3,
         )
     log_cost("tailor", resp.usage, user_id=user_id)
-    plan = DiffPlan.model_validate_json(resp.choices[0].message.content or "{}")
+    plan = resp.choices[0].message.parsed
+    if plan is None:
+        raise ValueError("OpenAI returned no parsed content for JD tailor")
     # Hallucination guard on each bullet rewrite.
     # Include both experience AND project bullets so the guard always uses the
     # actual stored text rather than falling back to diff.old (the LLM's own
