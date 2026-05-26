@@ -26,7 +26,8 @@
       "Bash(git commit *)",
       "Bash(tee /tmp/lint-before.log)",
       "Bash(npm run *)",
-      "Bash(tee /tmp/lint-final.log)"
+      "Bash(tee /tmp/lint-final.log)",
+      "Bash(pip install *)"
     ],
     "deny": [],
     "ask": []
