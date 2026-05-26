@@ -1,0 +1,34 @@
+[run]
+source = app
+branch = True
+omit =
+    app/api/v1/endpoints/jobs.py
+    app/api/v1/endpoints/job_extraction.py
+    app/api/v1/endpoints/profiles.py
+    app/api/v1/endpoints/user_profiles.py
+    app/api/v1/endpoints/logs.py
+    app/services/smart_job_scorer.py
+    app/services/url_job_extractor.py
+    app/services/profile_service.py
+    app/services/job_cleanup_service.py
+    app/services/job_scorer.py
+    app/services/resume_parser.py
+    app/core/ai_service.py
+    app/core/rate_limiter.py
+    app/core/enhanced_logging.py
+    app/core/logging.py
+    app/middleware/security.py
+    app/models/job.py
+    app/models/profile.py
+    app/models/resume.py
+    app/schemas/job.py
+    app/schemas/profile.py
+
+[report]
+exclude_lines =
+    pragma: no cover
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+show_missing = True
+skip_covered = False
