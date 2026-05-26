@@ -204,17 +204,19 @@ def apply_changes(doc: ResumeDocumentJSON, changes: list[ChangeItem]) -> ResumeD
     """Apply a list of change items to a ResumeDocumentJSON and return the result.
 
     Supported change types:
-    - bullet_update: update text of bullet with matching id
+    - bullet_update: update text of bullet with matching id (searches experience AND projects)
     - skills_reorder: replace hard skills with new_skills_order list
     - summary_update: replace summary with new_summary string
     """
     data = doc.model_dump()
     for ch in changes:
         if ch.type == "bullet_update" and ch.bullet_id and ch.new_text:
-            for exp in data["experience"]:
-                for b in exp["bullets"]:
-                    if b["id"] == ch.bullet_id:
-                        b["text"] = ch.new_text
+            # Update across BOTH experience and projects
+            for container in (data.get("experience", []), data.get("projects", [])):
+                for entry in container:
+                    for b in entry.get("bullets", []):
+                        if b["id"] == ch.bullet_id:
+                            b["text"] = ch.new_text
         elif ch.type == "skills_reorder" and ch.new_skills_order is not None:
             data["skills"]["hard"] = ch.new_skills_order
         elif ch.type == "summary_update" and ch.new_summary is not None:
