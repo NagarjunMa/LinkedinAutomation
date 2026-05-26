@@ -19,7 +19,7 @@ from app.middleware.credits import credit_transaction
 from app.models.resume_document import ResumeDocument, ResumeVersion
 from app.models.resume_export import ResumeExport
 from app.schemas.resume_v2 import ResumeDocumentJSON
-from app.schemas.resume_export import ExportRequest, ExportResponse
+from app.schemas.resume_export import Country, ExportRequest, ExportResponse, RoleTemplate
 from app.services.pdf.renderer import PdfRenderTimeout, render_pdf_from_doc
 
 router = APIRouter(prefix="/exports", tags=["exports"])
@@ -65,25 +65,62 @@ def _sanitize_filename(name: str | None, default: str = _DEFAULT_FILENAME) -> st
     return name
 
 
+def _parse_template_id(template_id: str) -> tuple[str, str]:
+    """Parse a template_id like 'us-swe' or 'us/swe' into (country_upper, role_lower).
+
+    Returns e.g. ('US', 'swe').
+    Raises HTTPException 422 if the format is invalid.
+    """
+    normalized = template_id.replace("/", "-")
+    parts = normalized.split("-")
+    if len(parts) != 2:
+        raise HTTPException(status_code=422, detail=f"Invalid template_id: {template_id}")
+    country_str, role_str = parts
+    country = country_str.upper()
+    role = role_str.lower()
+    if country not in ("US", "IN") or role not in ("swe", "ds", "pm"):
+        raise HTTPException(status_code=422, detail=f"Invalid template_id: {template_id}")
+    return country, role
+
+
 @router.post("", response_model=ExportResponse, status_code=201)
 async def create_export(
     body: ExportRequest,
     db: Session = Depends(get_db),
     current_user_id: str = Depends(get_current_user_id),
 ):
-    # 1. Verify the resume document exists and belongs to the caller.
-    doc_row = db.get(ResumeDocument, body.resume_document_id)
-    if not doc_row or doc_row.user_id != current_user_id:
-        raise HTTPException(status_code=404, detail="Resume document not found")
-
-    # 2. Optionally hydrate from a specific version.
-    version: ResumeVersion | None = None
+    # Resolve the two supported request shapes into common variables.
     if body.resume_version_id:
+        # Apply-flow shape: resume_version_id + optional template_id
         version = db.get(ResumeVersion, body.resume_version_id)
-        if not version or version.resume_document_id != body.resume_document_id:
+        if not version:
             raise HTTPException(status_code=404, detail="Version not found")
+
+        # Ownership via parent document
+        doc_row = db.get(ResumeDocument, version.resume_document_id)
+        if not doc_row or doc_row.user_id != current_user_id:
+            raise HTTPException(status_code=404, detail="Resume document not found")
+
+        resume_doc_id = version.resume_document_id
+        raw_template_id = body.template_id or version.template_id or "us-swe"
+        country_str, role_str = _parse_template_id(raw_template_id)
+        country_enum = Country(country_str)
+        role_enum = RoleTemplate(role_str)
         doc_json = ResumeDocumentJSON.model_validate(version.parsed_json)
     else:
+        # Legacy Phase-2 shape: resume_document_id + country + role_template
+        if not (body.resume_document_id and body.country and body.role_template):
+            raise HTTPException(
+                status_code=422,
+                detail="Either resume_version_id OR (resume_document_id + country + role_template) required",
+            )
+        doc_row = db.get(ResumeDocument, body.resume_document_id)
+        if not doc_row or doc_row.user_id != current_user_id:
+            raise HTTPException(status_code=404, detail="Resume document not found")
+
+        resume_doc_id = body.resume_document_id
+        country_enum = body.country
+        role_enum = body.role_template
         doc_json = ResumeDocumentJSON.model_validate(doc_row.parsed_json)
 
     # 2b. Sanitize download filename (server-side, never trust client input on storage paths).
@@ -104,18 +141,18 @@ async def create_export(
                 functools.partial(
                     render_pdf_from_doc,
                     doc_json,
-                    country=body.country.value,
-                    role=body.role_template.value,
+                    country=country_enum.value,
+                    role=role_enum.value,
                 ),
             )
         except PdfRenderTimeout as exc:
             db.add(ResumeExport(
                 id=export_id,
                 user_id=current_user_id,
-                resume_document_id=body.resume_document_id,
+                resume_document_id=resume_doc_id,
                 resume_version_id=body.resume_version_id,
-                country=body.country.value,
-                role_template=body.role_template.value,
+                country=country_enum.value,
+                role_template=role_enum.value,
                 storage_path=storage_path,
                 status="timed_out",
                 error_message=str(exc),
@@ -130,10 +167,10 @@ async def create_export(
         db.add(ResumeExport(
             id=export_id,
             user_id=current_user_id,
-            resume_document_id=body.resume_document_id,
+            resume_document_id=resume_doc_id,
             resume_version_id=body.resume_version_id,
-            country=body.country.value,
-            role_template=body.role_template.value,
+            country=country_enum.value,
+            role_template=role_enum.value,
             storage_path=storage_path,
             status="succeeded",
             file_size_bytes=len(pdf_bytes),
@@ -146,8 +183,8 @@ async def create_export(
             export_id=export_id,
             download_url=url,
             expires_at=expires_at,
-            country=body.country,
-            role_template=body.role_template,
+            country=country_enum,
+            role_template=role_enum,
             filename=safe_filename,
         )
     db.commit()

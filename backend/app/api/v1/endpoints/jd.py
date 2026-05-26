@@ -30,10 +30,10 @@ _ROLE_MAP = {"SWE": "swe", "DS": "ds", "PM": "pm"}
 
 
 def _resolve_template(country_hint: str, role_category: str) -> str:
-    """Map JDExtraction country/role hints to a template path like 'us/swe'."""
+    """Map JDExtraction country/role hints to a template id like 'us-swe'."""
     country = _COUNTRY_MAP.get(country_hint, "us")
     role = _ROLE_MAP.get(role_category, "swe")
-    return f"{country}/{role}"
+    return f"{country}-{role}"
 
 
 def _slugify(text: str) -> str:
@@ -142,8 +142,8 @@ async def apply_tailor(
     # Determine the template_id to persist (use override if provided)
     template_id = body.template_id or suggested_template
 
-    # Split suggested_template e.g. "us/swe" into country_code + role_code
-    country_code, role_code = suggested_template.split("/")
+    # Split suggested_template e.g. "us-swe" into country_code + role_code
+    country_code, role_code = suggested_template.split("-")
     _country_upper = country_code.upper()   # "US" or "IN"
     _role_lower = role_code.lower()          # "swe", "ds", "pm"
 

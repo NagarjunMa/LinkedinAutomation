@@ -132,8 +132,8 @@ def test_apply_happy_path_returns_apply_tailor_response(
     assert isinstance(data["preview_html"], str)
 
     assert "suggested_template" in data
-    # US SWE → us/swe
-    assert data["suggested_template"] in ("us/swe", "us/ds", "us/pm", "in/swe", "in/ds", "in/pm")
+    # US SWE → us-swe (dash format)
+    assert data["suggested_template"] in ("us-swe", "us-ds", "us-pm", "in-swe", "in-ds", "in-pm")
 
     assert "filename_hint" in data
     assert isinstance(data["filename_hint"], str)
