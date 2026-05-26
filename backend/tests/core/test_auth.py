@@ -8,7 +8,10 @@ import pytest
 from sqlalchemy.exc import IntegrityError
 from unittest.mock import patch
 
-from app.core.auth import _ensure_user_row
+from fastapi import HTTPException
+from fastapi.security import HTTPAuthorizationCredentials
+
+from app.core.auth import _ensure_user_row, get_current_user_id, get_current_user_email
 from app.models.user import User
 from app.models.credit_ledger import CreditLedger
 
@@ -89,7 +92,6 @@ def test_jwks_client_is_cached(monkeypatch):
 
 def test_decode_supabase_jwt_raises_on_invalid_token(monkeypatch):
     """Malformed token → HTTPException 401."""
-    from fastapi import HTTPException
     from jwt import PyJWTError
 
     # Raise a PyJWTError subclass so it is caught by decode_supabase_jwt's
@@ -120,3 +122,141 @@ def test_decode_supabase_jwt_valid_token_returns_claims(monkeypatch):
     claims = decode_supabase_jwt("valid-token")
     assert claims["sub"] == "user-123"
     assert claims["email"] == "test@x.com"
+
+
+# ---------------------------------------------------------------------------
+# get_current_user_id + get_current_user_email dependency-injection tests
+# ---------------------------------------------------------------------------
+
+
+def test_get_current_user_id_returns_sub_claim(monkeypatch, db_session):
+    """Valid bearer token → returns sub claim, ensures user row exists."""
+    monkeypatch.setattr(
+        "app.core.auth.decode_supabase_jwt",
+        lambda token: {"sub": "user-from-jwt", "email": "jwt@x.com", "aud": "authenticated"},
+    )
+
+    creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials="fake-token")
+    user_id = get_current_user_id(credentials=creds, db=db_session)
+
+    assert user_id == "user-from-jwt"
+
+    # Verify _ensure_user_row was called (user row was created)
+    user = db_session.query(User).filter_by(user_id="user-from-jwt").first()
+    assert user is not None
+
+
+def test_get_current_user_id_raises_401_on_bad_token(monkeypatch, db_session):
+    """Invalid token bubbles up as 401."""
+    def raise_unauthorized(token):
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    monkeypatch.setattr("app.core.auth.decode_supabase_jwt", raise_unauthorized)
+
+    creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials="bad")
+    with pytest.raises(HTTPException) as exc_info:
+        get_current_user_id(credentials=creds, db=db_session)
+    assert exc_info.value.status_code == 401
+
+
+def test_get_current_user_email_returns_email_claim(monkeypatch):
+    """Valid bearer token → returns email claim."""
+    monkeypatch.setattr(
+        "app.core.auth.decode_supabase_jwt",
+        lambda token: {"sub": "user-x", "email": "user@x.com", "aud": "authenticated"},
+    )
+
+    creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials="fake-token")
+    email = get_current_user_email(credentials=creds)
+    assert email == "user@x.com"
+
+
+# ---------------------------------------------------------------------------
+# Additional branch coverage tests
+# ---------------------------------------------------------------------------
+
+from app.core.auth import get_optional_user_id, get_authenticated_user_id
+
+
+def test_get_current_user_id_raises_401_when_no_credentials(db_session):
+    """Missing credentials → 401."""
+    with pytest.raises(HTTPException) as exc_info:
+        get_current_user_id(credentials=None, db=db_session)
+    assert exc_info.value.status_code == 401
+
+
+def test_get_current_user_id_raises_401_when_sub_missing(monkeypatch, db_session):
+    """Token with no sub claim → 401."""
+    monkeypatch.setattr(
+        "app.core.auth.decode_supabase_jwt",
+        lambda token: {"email": "no-sub@x.com", "aud": "authenticated"},
+    )
+    creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials="token-no-sub")
+    with pytest.raises(HTTPException) as exc_info:
+        get_current_user_id(credentials=creds, db=db_session)
+    assert exc_info.value.status_code == 401
+
+
+def test_get_current_user_email_raises_401_when_no_credentials():
+    """Missing credentials → 401 from get_current_user_email."""
+    with pytest.raises(HTTPException) as exc_info:
+        get_current_user_email(credentials=None)
+    assert exc_info.value.status_code == 401
+
+
+def test_get_current_user_email_raises_401_when_email_missing(monkeypatch):
+    """Token with no email claim → 401."""
+    monkeypatch.setattr(
+        "app.core.auth.decode_supabase_jwt",
+        lambda token: {"sub": "user-y", "aud": "authenticated"},
+    )
+    creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials="token-no-email")
+    with pytest.raises(HTTPException) as exc_info:
+        get_current_user_email(credentials=creds)
+    assert exc_info.value.status_code == 401
+
+
+def test_get_optional_user_id_returns_none_when_no_credentials(db_session):
+    """No credentials → returns None (not 401)."""
+    result = get_optional_user_id(credentials=None, db=db_session)
+    assert result is None
+
+
+def test_get_optional_user_id_returns_user_id_on_valid_token(monkeypatch, db_session):
+    """Valid token → returns sub claim."""
+    monkeypatch.setattr(
+        "app.core.auth.decode_supabase_jwt",
+        lambda token: {"sub": "optional-user", "email": "opt@x.com", "aud": "authenticated"},
+    )
+    creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials="valid-token")
+    result = get_optional_user_id(credentials=creds, db=db_session)
+    assert result == "optional-user"
+
+
+def test_get_optional_user_id_returns_none_on_bad_token(monkeypatch, db_session):
+    """Invalid token → returns None (not 401)."""
+    monkeypatch.setattr(
+        "app.core.auth.decode_supabase_jwt",
+        lambda token: (_ for _ in ()).throw(HTTPException(status_code=401, detail="bad")),
+    )
+    creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials="bad-token")
+    result = get_optional_user_id(credentials=creds, db=db_session)
+    assert result is None
+
+
+def test_get_authenticated_user_id_returns_sub_claim(monkeypatch, db_session):
+    """Valid token through get_authenticated_user_id → returns sub."""
+    monkeypatch.setattr(
+        "app.core.auth.decode_supabase_jwt",
+        lambda token: {"sub": "auth-user", "email": "auth@x.com", "aud": "authenticated"},
+    )
+    creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials="auth-token")
+    result = get_authenticated_user_id(credentials=creds, db=db_session)
+    assert result == "auth-user"
+
+
+def test_get_authenticated_user_id_raises_401_when_no_credentials(db_session):
+    """No credentials → 401 from get_authenticated_user_id."""
+    with pytest.raises(HTTPException) as exc_info:
+        get_authenticated_user_id(credentials=None, db=db_session)
+    assert exc_info.value.status_code == 401
