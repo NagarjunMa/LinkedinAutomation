@@ -8,7 +8,7 @@ export function useTailorApply(jdEvaluationId: string) {
   return useMutation<ApplyTailorResponse, Error, ApplyTailorRequest>({
     mutationFn: (body) => jdApi.applyTailor(jdEvaluationId, body),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['versions'] });
+      qc.invalidateQueries({ queryKey: ['resume-versions'] });  // match useResume actual key prefix
       qc.invalidateQueries({ queryKey: ['credits-balance'] });
       qc.invalidateQueries({ queryKey: ['jd-progress'] });
     },
