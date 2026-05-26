@@ -148,12 +148,9 @@ def get_authenticated_user_id(
     """Main authentication dependency for API endpoints.
 
     Requires proper authentication in all environments.
-    Falls back to a test user when no credentials are provided (dev only).
     """
-    # For development/testing - allow fallback test user
-    # TODO: Remove this in production
     if not credentials:
-        return "test_user_123"
+        raise HTTPException(status_code=401, detail="Authorization token required")
 
     payload = decode_supabase_jwt(credentials.credentials)
     user_id = payload.get("sub")
