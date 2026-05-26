@@ -6,6 +6,14 @@ Permanent fixes deferred for later. Track items here; add date + brief note when
 
 ## Backend
 
+### `grant_monthly_to_all` not idempotent — double-grants on monthly re-run
+
+**Added:** 2026-05-26 (discovered via test coverage work)
+**File:** `app/tasks/credit_tasks.py:grant_monthly_to_all`
+**Why:** The Celery beat task calls `grant_monthly(db, user_id, amount)` without passing `external_ref`. `grant_monthly` *accepts* `external_ref` for idempotency (DB unique constraint on `credit_ledger.external_ref`), but the caller doesn't supply one — so re-running the beat task within the same month double-grants credits to every user.
+**Test coverage:** `tests/tasks/test_credit_tasks.py::test_grant_monthly_to_all_uses_external_ref_for_month` asserts the *current broken behavior* (`bal_second == 40`) with a `KNOWN GAP` comment pointing to the fix.
+**Fix:** in `grant_monthly_to_all`, derive `ref = f"monthly:{datetime.utcnow():%Y-%m}"` and pass `external_ref=ref` to each `grant_monthly` call. Then flip the test assertion to `assert bal_first == bal_second`.
+
 ### Migrate `os.getenv` → `settings.X` for module-load env reads
 
 **Added:** 2026-05-21
