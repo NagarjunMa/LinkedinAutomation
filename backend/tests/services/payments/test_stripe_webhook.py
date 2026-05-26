@@ -9,9 +9,17 @@ os.environ.setdefault("OPENAI_API_KEY", "test")
 import pytest
 from unittest.mock import patch
 
+from app.services.payments import stripe_webhook_handler as swh
 from app.services.payments.stripe_webhook_handler import (
     verify_event, handle_event, _is_already_processed
 )
+
+
+@pytest.fixture(autouse=True)
+def force_real_signature_check(monkeypatch):
+    """Force _TEST_MODE off so signature verification path runs regardless of
+    which other test set STRIPE_WEBHOOK_SECRET=test before this module imported."""
+    monkeypatch.setattr(swh, "_TEST_MODE", False)
 
 
 def test_verify_event_raises_on_bad_signature():
