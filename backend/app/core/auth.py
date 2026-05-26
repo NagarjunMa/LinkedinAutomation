@@ -14,6 +14,7 @@ from fastapi import HTTPException, Security, Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt import PyJWTError, PyJWKClient
 from functools import lru_cache
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -61,8 +62,12 @@ def _ensure_user_row(db: Session, user_id: str, email: str) -> None:
         return
 
     # First contact — create the users row.
-    db.add(User(user_id=user_id, email=email))
-    db.commit()
+    try:
+        db.add(User(user_id=user_id, email=email))
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        return  # Another concurrent request created the row; skip welcome grant
 
     # Grant 10 welcome credits.
     try:
