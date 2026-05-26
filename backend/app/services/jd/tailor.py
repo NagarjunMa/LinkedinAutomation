@@ -81,7 +81,7 @@ async def tailor_resume_to_jd(
             check_no_unprompted_numbers(
                 original=original,
                 rewritten=diff.new,
-                placeholders=diff.placeholders,
+                placeholders=[p.model_dump() for p in diff.placeholders],
             )
         except HallucinationError as e:
             raise HallucinationError(f"Bullet {diff.bullet_id}: {e}")
