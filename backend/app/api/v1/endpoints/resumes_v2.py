@@ -17,7 +17,7 @@ from app.db.session import get_db
 from app.core.auth import get_current_user_id
 from app.models.resume_document import ResumeDocument, ResumeVersion
 from app.models.resume_evaluation_v2 import ResumeEvaluationV2
-from app.schemas.resume_v2 import ResumeDocumentJSON
+from app.schemas.resume_v2 import ResumeDocumentJSON, ChangeItem
 from app.services.resume.parser import parse_resume
 from app.services.resume.evaluator import evaluate_resume
 from app.services.resume.ats_simulator import simulate_ats
@@ -194,14 +194,6 @@ async def rewrite(
 # ---------------------------------------------------------------------------
 # Task 17: POST /{resume_document_id}/versions
 # ---------------------------------------------------------------------------
-
-class ChangeItem(BaseModel):
-    type: str  # 'bullet_update' | 'skills_reorder' | 'summary_update'
-    bullet_id: Optional[str] = None
-    new_text: Optional[str] = None
-    new_skills_order: Optional[list[str]] = None
-    new_summary: Optional[str] = None
-
 
 class VersionRequest(BaseModel):
     parent_version_id: Optional[str] = None
