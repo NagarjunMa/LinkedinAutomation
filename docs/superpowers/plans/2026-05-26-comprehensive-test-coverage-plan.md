@@ -74,6 +74,8 @@ cd frontend && npm install --save-dev @vitest/coverage-v8 msw -q
 - Delete: `backend/app/services/consolidated_resume_evaluator.py`
 - Delete: `backend/app/schemas/resume_legacy.py`
 - Delete: `backend/app/schemas/resume.py`
+- Delete: `backend/app/tasks/resume_tasks.py` (expanded scope during execution — `consolidated_resume_evaluator` is imported only by this Celery task, which itself has zero callers anywhere in the codebase. Both die together.)
+- Modify: `backend/app/core/celery_app.py` — remove `"app.tasks.resume_tasks"` from include list + remove its two `task_routes` entries.
 
 - [ ] **Step 1: Confirm no imports**
 
@@ -185,7 +187,6 @@ omit =
     app/core/enhanced_logging.py
     app/core/logging.py
     app/middleware/security.py
-    app/tasks/resume_tasks.py
     app/models/job.py
     app/models/profile.py
     app/models/resume.py
