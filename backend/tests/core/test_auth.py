@@ -68,3 +68,55 @@ def test_ensure_user_row_handles_integrity_error_race(db_session):
         _ensure_user_row(db_session, new_user_id, "race@example.com")
 
     # No exception raised = pass
+
+
+# ---------------------------------------------------------------------------
+# decode_supabase_jwt + _jwks_client tests
+# ---------------------------------------------------------------------------
+
+from unittest.mock import MagicMock
+from app.core.auth import decode_supabase_jwt, _jwks_client
+
+
+def test_jwks_client_is_cached(monkeypatch):
+    """_jwks_client uses @lru_cache(maxsize=1) — same instance returned across calls."""
+    # Clear the cache to start fresh
+    _jwks_client.cache_clear()
+    c1 = _jwks_client()
+    c2 = _jwks_client()
+    assert c1 is c2
+
+
+def test_decode_supabase_jwt_raises_on_invalid_token(monkeypatch):
+    """Malformed token → HTTPException 401."""
+    from fastapi import HTTPException
+    from jwt import PyJWTError
+
+    # Raise a PyJWTError subclass so it is caught by decode_supabase_jwt's
+    # `except PyJWTError` handler and converted to an HTTPException 401.
+    fake_client = MagicMock()
+    fake_client.get_signing_key_from_jwt.side_effect = PyJWTError("bad key")
+    monkeypatch.setattr("app.core.auth._jwks_client", lambda: fake_client)
+
+    with pytest.raises(HTTPException) as exc_info:
+        decode_supabase_jwt("not-a-real-token")
+    assert exc_info.value.status_code == 401
+
+
+def test_decode_supabase_jwt_valid_token_returns_claims(monkeypatch):
+    """Valid token → claims dict with sub + email."""
+    fake_signing_key = MagicMock()
+    fake_signing_key.key = "fake-key"
+    fake_client = MagicMock()
+    fake_client.get_signing_key_from_jwt.return_value = fake_signing_key
+    monkeypatch.setattr("app.core.auth._jwks_client", lambda: fake_client)
+
+    # Patch jwt.decode to return canned claims
+    monkeypatch.setattr(
+        "app.core.auth.jwt.decode",
+        lambda *a, **k: {"sub": "user-123", "email": "test@x.com", "aud": "authenticated"},
+    )
+
+    claims = decode_supabase_jwt("valid-token")
+    assert claims["sub"] == "user-123"
+    assert claims["email"] == "test@x.com"
