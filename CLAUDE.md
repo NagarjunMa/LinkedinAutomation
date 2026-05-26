@@ -176,5 +176,5 @@ Settings trimmed to **Privacy** + **Change History** only.
   - API endpoints: `analytics` 100%, `credits` 100%, `admin_metrics` 100%, `exports` 96%, `jd` 93%, `resumes_v2` 91%, `webhooks` 84%
   - Services: `hallucination_guard` 100%, `evaluator` 100%, `rewriter` 100%, `parser` 94%, `extractor` 95%, `tailor` 97%, `template_engine` 97%, `renderer` 81%, `supabase_storage` 89%, `ledger` 93%, `stripe_webhook_handler` 79%
   - Schemas: `jd` 100%, `resume_v2` 100%, `resume_export` 100%
-- **Low coverage (acceptable — legacy/demoted code):** `jobs.py` 17%, `job_extraction.py` 29%, `profiles.py` 16%, `url_job_extractor.py` 11%, `job_matcher.py` 0%, `supabase_cache_service.py` 0%, `supabase_task_queue.py` 0%, `resume_tasks.py` 0% (Celery), `consolidated_resume_evaluator.py` 0% (removed in Phase 0 but file remains)
+- **Low coverage (acceptable — legacy/demoted code):** `jobs.py` 17%, `job_extraction.py` 29%, `profiles.py` 16%, `url_job_extractor.py` 11%
 - **Gap to address:** `core/auth.py` at 35% — newly added `_ensure_user_row()` lacks direct unit tests (covered via integration tests)
