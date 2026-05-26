@@ -1,4 +1,14 @@
 [run]
+# Omit list rationale:
+# - jobs/profiles/job_extraction/user_profiles/logs endpoints: pre-pivot job tracker routes,
+#   kept wired but demoted (CLAUDE.md "Supporting kept, demoted"). Not Prism Pro core.
+# - smart_job_scorer, url_job_extractor, profile_service, job_cleanup_service, job_scorer,
+#   resume_parser: legacy services for the demoted job-tracking routes.
+# - ai_service, rate_limiter, enhanced_logging, logging, security middleware: infra
+#   wrappers around third-party libs (rate-limit decorator, structlog config, security headers,
+#   Anthropic client). Exercised at app startup + via integration; unit-test value low.
+# - models/job, models/profile, models/resume + schemas/job, schemas/profile: legacy ORM
+#   schemas superseded by resume_v2 / models/resume_document.
 source = app
 branch = True
 omit =

@@ -6,10 +6,10 @@ pre-push:
   commands:
     backend-tests:
       root: backend/
-      run: python -m pytest tests/ -x -q --no-cov
-      fail_text: "Backend tests failed — fix before pushing, or use --no-verify to bypass"
+      run: python -m pytest tests/ -x -q --cov=app --cov-fail-under=80
+      fail_text: "Backend tests or coverage gate failed — fix before pushing, or use --no-verify to bypass"
 
     frontend-tests:
       root: frontend/
-      run: npm run test
-      fail_text: "Frontend tests failed — fix before pushing, or use --no-verify to bypass"
+      run: npm run test:coverage
+      fail_text: "Frontend tests or coverage gate failed — fix before pushing, or use --no-verify to bypass"

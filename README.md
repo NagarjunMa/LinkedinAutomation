@@ -180,11 +180,12 @@ progress.txt                   Phase-by-phase delivery status
 
 ## Test coverage
 
-- **Backend pytest:** 127 pass, 12 skip — `make test` or `cd backend && pytest`
-- **Frontend vitest:** 5/5 pass — `cd frontend && npx vitest run src/`
+- **Backend pytest:** 157 pass, 12 skip — `make test` or `cd backend && pytest` (86.7% coverage, gate at 80%)
+- **Frontend vitest:** 44 pass across 15 test files — `cd frontend && npm run test` (83.6% lines, 75.3% branches, gate at 80/75)
 - **Frontend e2e (Playwright):** `cd frontend && npm run test:e2e`
-- **Coverage report:** `cd backend && pytest --cov=app --cov-report=term-missing`
-- Core Prism Pro paths are 90%+ covered; legacy job-tracking modules (demoted in Phase 0) sit at 0–30% and won't be improved.
+- **Coverage report:** `cd backend && pytest --cov=app --cov-report=term-missing` or `cd frontend && npm run test:coverage`
+- **Pre-push hook** (lefthook) runs both suites + coverage gates before every `git push`. Bypass with `--no-verify`.
+- Core Prism Pro paths are 90%+ covered; legacy job-tracking modules (excluded via `.coveragerc`) are not gated.
 
 ---
 
