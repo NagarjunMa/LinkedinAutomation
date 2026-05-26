@@ -41,6 +41,10 @@ export function ResumeUploadDropzone({ onUploaded }: ResumeUploadDropzoneProps) 
     if (!file) return;
     try {
       const res = await upload.mutateAsync(file);
+      toast({
+        title: 'Uploaded',
+        description: `${file.name} parsed. Redirecting to editor…`,
+      });
       onUploaded(res);
     } catch (e: any) {
       toast({

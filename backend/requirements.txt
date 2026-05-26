@@ -1,42 +1,87 @@
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-sqlalchemy==2.0.23
-alembic==1.12.1
-psycopg2-binary==2.9.9
-pydantic==2.5.0
-pydantic-settings==2.1.0
-python-multipart==0.0.6
-python-jose[cryptography]==3.3.0
-PyJWT==2.8.0
-passlib[bcrypt]==1.7.4
-celery==5.3.4
-redis==5.0.1
-beautifulsoup4==4.12.2
-requests==2.31.0
-aiohttp==3.9.1
-python-dateutil==2.8.2
-openai==1.56.0
-PyPDF2==3.0.1
-python-docx==1.1.0
-PyMuPDF==1.23.8
+# ─────────────────────────────────────────────────────────────────────────
+# Prism Pro backend dependencies
+#
+# Pinning policy:
+#   - `>=X.Y,<MAJOR+1` for libraries with stable APIs within a major
+#   - `>=X.Y` (no ceiling) for trusted small libraries with rare breakage
+#   - Strict `==X.Y.Z` only for libraries with known regressions OR
+#     when reproducibility on a specific patch is required
+#
+# To pin exactly for production deploy, run:
+#   pip-compile requirements.txt -o requirements.lock
+# ─────────────────────────────────────────────────────────────────────────
 
-# Email Agent Dependencies - Google OAuth
-google-auth==2.23.4
-google-auth-oauthlib==1.1.0
-google-auth-httplib2==0.1.1
-google-api-python-client==2.108.0
-python-dotenv>=1.0.0
-email-validator==2.3.0
+# ── Web framework + ASGI ──────────────────────────────────────────────────
+fastapi>=0.110,<1
+uvicorn[standard]>=0.30,<1
+python-multipart>=0.0.9
 
-# Missing dependencies
-playwright>=1.49,<2.0
-supabase==2.3.0
-pytz==2023.3
-resend==0.8.0
-jinja2==3.1.2
-pdfplumber==0.11.4
-respx==0.20.2
-tenacity==8.2.3
-pytest-asyncio==0.21.1
-syrupy==4.6.1
-stripe==9.5.0
+# ── DB + ORM + migrations ─────────────────────────────────────────────────
+sqlalchemy>=2.0.23,<3
+alembic>=1.13,<2
+psycopg2-binary>=2.9.9,<3
+
+# ── Validation + settings ─────────────────────────────────────────────────
+pydantic>=2.11.7,<3
+pydantic-settings>=2.6,<3
+email-validator>=2.0,<3
+
+# ── Auth + crypto ─────────────────────────────────────────────────────────
+PyJWT>=2.8,<3
+python-jose[cryptography]>=3.3,<4
+passlib[bcrypt]>=1.7.4,<2
+
+# ── Background tasks ──────────────────────────────────────────────────────
+celery>=5.3,<6
+redis>=5.0,<7
+
+# ── HTTP clients ──────────────────────────────────────────────────────────
+requests>=2.31,<3
+aiohttp>=3.10,<4
+httpx>=0.27,<1
+
+# ── Date / time ───────────────────────────────────────────────────────────
+python-dateutil>=2.8.2,<3
+pytz>=2023.3
+
+# ── AI ────────────────────────────────────────────────────────────────────
+openai>=1.56,<2
+tenacity>=8.2,<10
+
+# ── PDF + DOCX parsing ────────────────────────────────────────────────────
+PyPDF2>=3.0,<4
+PyMuPDF>=1.23,<2
+pdfplumber>=0.11,<1
+python-docx>=1.1,<2
+
+# ── PDF rendering ─────────────────────────────────────────────────────────
+playwright>=1.49,<2
+jinja2>=3.1,<4
+
+# ── Supabase (DB + Storage + Auth) ────────────────────────────────────────
+supabase>=2.30,<3
+storage3>=2.30,<3
+websockets>=14
+
+# ── Payments ──────────────────────────────────────────────────────────────
+stripe>=9,<13
+
+# ── Email (Resend transactional — kept for password reset / notifications) ─
+resend>=0.8,<3
+
+# ── HTML / web scraping (used by URL job extractor — legacy demoted) ──────
+beautifulsoup4>=4.12,<5
+
+# ── Google OAuth (Supabase OAuth flow + future Gmail integration) ─────────
+google-auth>=2.23,<3
+google-auth-oauthlib>=1.1,<2
+google-auth-httplib2>=0.1,<1
+google-api-python-client>=2.108,<3
+
+# ── Env loading ───────────────────────────────────────────────────────────
+python-dotenv>=1.0,<2
+
+# ── Test ──────────────────────────────────────────────────────────────────
+respx>=0.20,<1
+pytest-asyncio>=0.21,<1
+syrupy>=4.6,<5

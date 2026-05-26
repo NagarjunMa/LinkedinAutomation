@@ -1,6 +1,6 @@
 // frontend/src/components/jd/diff-view.tsx
 "use client";
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChangeCard } from './change-card';
@@ -18,9 +18,11 @@ export interface DiffViewProps {
   resumeId: string;
   plan: DiffPlan;
   onApplied: (versionId: string) => void;
+  /** When provided the internal Apply button is hidden; the parent drives Apply. */
+  onAcceptedChangesChange?: (items: ChangeItem[]) => void;
 }
 
-export function DiffView({ resumeId, plan, onApplied }: DiffViewProps) {
+export function DiffView({ resumeId, plan, onApplied, onAcceptedChangesChange }: DiffViewProps) {
   const { toast } = useToast();
   const createVersion = useCreateVersion();
   const initial: Selection = useMemo(() => ({
@@ -51,6 +53,12 @@ export function DiffView({ resumeId, plan, onApplied }: DiffViewProps) {
     (sel.skillsReorder ? 1 : 0) +
     (sel.summaryRewrite ? 1 : 0);
 
+  // Notify parent whenever the accepted change set changes
+  useEffect(() => {
+    onAcceptedChangesChange?.(buildChangeSet());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sel]);
+
   const onApply = async () => {
     const cs = buildChangeSet();
     if (cs.length === 0) {
@@ -70,13 +78,15 @@ export function DiffView({ resumeId, plan, onApplied }: DiffViewProps) {
     <Card>
       <CardHeader className="flex flex-row justify-between items-center">
         <CardTitle>Proposed changes</CardTitle>
-        <Button
-          onClick={onApply}
-          disabled={acceptedCount === 0 || createVersion.isPending}
-          data-testid="apply-changes"
-        >
-          {createVersion.isPending ? 'Saving…' : `Apply ${acceptedCount}`}
-        </Button>
+        {!onAcceptedChangesChange && (
+          <Button
+            onClick={onApply}
+            disabled={acceptedCount === 0 || createVersion.isPending}
+            data-testid="apply-changes"
+          >
+            {createVersion.isPending ? 'Saving…' : `Apply ${acceptedCount}`}
+          </Button>
+        )}
       </CardHeader>
       <CardContent className="space-y-3">
         {plan.bullets.map((b) => (

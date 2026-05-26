@@ -290,3 +290,46 @@ def test_versions_rejects_foreign_parent_version(client: TestClient, auth_header
         headers=auth_headers,
     )
     assert bad_resp.status_code == 404, bad_resp.text
+
+
+# ---------------------------------------------------------------------------
+# Issue 6: apply_changes must update project bullets, not just experience
+# ---------------------------------------------------------------------------
+
+
+def test_apply_changes_updates_project_bullets():
+    """apply_changes with a bullet_update for a project bullet must update that bullet."""
+    from app.api.v1.endpoints.resumes_v2 import apply_changes
+    from app.schemas.resume_v2 import (
+        ResumeDocumentJSON, Contact, ExperienceEntry, Bullet,
+        EducationEntry, Skills, ProjectEntry, ChangeItem,
+    )
+
+    project_bullet_id = "proj-b1"
+    original_text = "Built an OSS library."
+    new_text = "Built an OSS library with 500+ GitHub stars."
+
+    doc = ResumeDocumentJSON(
+        contact=Contact(name="Dev", email="dev@example.com"),
+        experience=[],
+        education=[EducationEntry(school="State U", degree="BS CS")],
+        skills=Skills(hard=["Python"]),
+        projects=[
+            ProjectEntry(
+                name="OSS Lib",
+                bullets=[Bullet(id=project_bullet_id, text=original_text, raw_text=original_text)],
+            )
+        ],
+        raw_text=original_text,
+    )
+
+    changes = [
+        ChangeItem(type="bullet_update", bullet_id=project_bullet_id, new_text=new_text)
+    ]
+
+    result = apply_changes(doc, changes)
+
+    project_bullets = result.projects[0].bullets
+    assert any(b.text == new_text for b in project_bullets), (
+        f"Expected project bullet text '{new_text}'; got {[b.text for b in project_bullets]}"
+    )

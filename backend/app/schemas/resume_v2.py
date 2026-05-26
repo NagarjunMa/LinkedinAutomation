@@ -86,3 +86,25 @@ class RewriteResult(BaseModel):
     rewritten: str
     placeholders: List[Placeholder]
     applied_changes: List[str]
+
+
+class ChangeItem(BaseModel):
+    type: Literal["bullet_update", "skills_reorder", "summary_update"]
+    bullet_id: Optional[str] = None
+    new_text: Optional[str] = None
+    new_skills_order: Optional[List[str]] = None
+    new_summary: Optional[str] = None
+
+
+class ApplyTailorRequest(BaseModel):
+    accepted_changes: List[ChangeItem]
+    template_id: Optional[str] = None
+
+
+class ApplyTailorResponse(BaseModel):
+    version_id: str
+    preview_html: str
+    company_name: Optional[str]
+    suggested_template: str
+    filename_hint: str
+    warning: Optional[str] = None

@@ -72,3 +72,49 @@ def test_get_export_returns_fresh_signed_url(
 def test_get_export_404_for_missing_id(client, auth_headers, user_with_credits):
     resp = client.get("/api/v1/exports/does-not-exist", headers=auth_headers)
     assert resp.status_code == 404
+
+
+def test_export_with_custom_filename(
+    client, auth_headers, user_with_credits, uploaded_resume_doc,
+    mock_pdf_render, mock_supabase_upload, mock_signed_url,
+):
+    """Client-supplied filename is echoed back in the response."""
+    resp = client.post(
+        "/api/v1/exports",
+        json={
+            "resume_document_id": uploaded_resume_doc.id,
+            "country": "US",
+            "role_template": "swe",
+            "filename": "my-resume.pdf",
+        },
+        headers=auth_headers,
+    )
+    assert resp.status_code == 201, resp.text
+    body = resp.json()
+    assert body["filename"] == "my-resume.pdf"
+    assert body["download_url"].startswith("https://")
+
+
+def test_export_sanitizes_filename(
+    client, auth_headers, user_with_credits, uploaded_resume_doc,
+    mock_pdf_render, mock_supabase_upload, mock_signed_url,
+):
+    """Path-traversal and control chars are stripped; .pdf suffix is enforced."""
+    resp = client.post(
+        "/api/v1/exports",
+        json={
+            "resume_document_id": uploaded_resume_doc.id,
+            "country": "US",
+            "role_template": "swe",
+            "filename": "../../etc/passwd\x00evil",
+        },
+        headers=auth_headers,
+    )
+    assert resp.status_code == 201, resp.text
+    body = resp.json()
+    # Should NOT contain path separators, null bytes, or bare "passwd"
+    fn = body["filename"]
+    assert "/" not in fn
+    assert "\\" not in fn
+    assert "\x00" not in fn
+    assert fn.endswith(".pdf")

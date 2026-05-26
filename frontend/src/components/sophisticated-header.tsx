@@ -160,27 +160,27 @@ export function SophisticatedHeader({
                         </div>
                     </DropdownMenuTrigger>
 
-                    <DropdownMenuContent align="end" className="w-56 bg-app-card backdrop-blur-xl border border-app-text border-opacity-10 shadow-xl rounded-sm p-0">
-                        <div className="p-4 border-b border-app-text border-opacity-5 bg-app-text bg-opacity-5">
-                            <p className="font-bold text-app-text text-xs uppercase tracking-wider">{userName}</p>
-                            <p className="text-[10px] text-app-text opacity-40 font-mono">{userEmail}</p>
+                    <DropdownMenuContent align="end" className="w-56 bg-card text-card-foreground backdrop-blur-xl border border-border shadow-xl rounded-sm p-0">
+                        <div className="p-4 border-b border-border bg-muted">
+                            <p className="font-bold text-foreground text-xs uppercase tracking-wider">{userName}</p>
+                            <p className="text-[10px] text-muted-foreground font-mono mt-1">{userEmail}</p>
                         </div>
                         <div className="p-2">
                             <DropdownMenuItem
                                 onClick={handleProfileClick}
-                                className="text-xs font-bold tracking-wide text-app-text opacity-70 hover:opacity-100 hover:bg-app-text hover:bg-opacity-5 focus:bg-app-text focus:bg-opacity-5 cursor-pointer py-3 rounded-sm mb-1 uppercase"
+                                className="text-xs font-bold tracking-wide text-foreground/80 hover:text-foreground hover:bg-muted focus:bg-muted cursor-pointer py-3 rounded-sm mb-1 uppercase"
                             >
                                 <User className="mr-3 h-4 w-4 opacity-70" />
                                 PROFILE
                             </DropdownMenuItem>
                             <DropdownMenuItem
                                 onClick={handleSettingsClick}
-                                className="text-xs font-bold tracking-wide text-app-text opacity-70 hover:opacity-100 hover:bg-app-text hover:bg-opacity-5 focus:bg-app-text focus:bg-opacity-5 cursor-pointer py-3 rounded-sm mb-1 uppercase"
+                                className="text-xs font-bold tracking-wide text-foreground/80 hover:text-foreground hover:bg-muted focus:bg-muted cursor-pointer py-3 rounded-sm mb-1 uppercase"
                             >
                                 <Settings className="mr-3 h-4 w-4 opacity-70" />
                                 SETTINGS
                             </DropdownMenuItem>
-                            <DropdownMenuSeparator className="bg-app-text bg-opacity-10 my-1" />
+                            <DropdownMenuSeparator className="bg-border my-1" />
                             <DropdownMenuItem
                                 onClick={async () => {
                                     try {
@@ -189,7 +189,7 @@ export function SophisticatedHeader({
                                         console.error('Error signing out:', error)
                                     }
                                 }}
-                                className="text-xs font-bold tracking-wide text-red-500 opacity-70 hover:opacity-100 hover:bg-red-500 hover:bg-opacity-10 focus:bg-red-500 focus:bg-opacity-10 cursor-pointer py-3 rounded-sm uppercase"
+                                className="text-xs font-bold tracking-wide text-destructive/85 hover:text-destructive hover:bg-destructive/10 focus:bg-destructive/10 cursor-pointer py-3 rounded-sm uppercase"
                             >
                                 <LogOut className="mr-3 h-4 w-4" />
                                 <span>LOG OUT</span>

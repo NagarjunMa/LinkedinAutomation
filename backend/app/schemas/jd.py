@@ -16,6 +16,19 @@ class JDExtraction(BaseModel):
     primary_role_category: Literal["SWE", "DS", "PM", "other"]
     country_hint: Literal["US", "IN", "other"]
     red_flags: List[str] = Field(default_factory=list)
+    company_name: Optional[str] = None
+
+
+class BulletPlaceholder(BaseModel):
+    """Typed placeholder for hard numbers the AI couldn't verify.
+
+    Same shape as ``app.schemas.resume_v2.Placeholder`` but redeclared
+    here so JD schemas stay self-contained for OpenAI strict mode
+    (which forbids dict fields without an explicit schema).
+    """
+
+    token: str
+    what: str
 
 
 class BulletDiff(BaseModel):
@@ -23,7 +36,7 @@ class BulletDiff(BaseModel):
     old: str
     new: str
     reason: str
-    placeholders: List[dict] = Field(default_factory=list)
+    placeholders: List[BulletPlaceholder] = Field(default_factory=list)
 
 
 class SkillsReorder(BaseModel):

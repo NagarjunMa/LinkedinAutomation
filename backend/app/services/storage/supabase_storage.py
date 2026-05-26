@@ -20,14 +20,22 @@ class StorageClient:
     def _bucket(self):
         return self._client.storage.from_(self.bucket_name)
 
+    _MIME_BY_EXT = {
+        "pdf": "application/pdf",
+        "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "doc": "application/msword",
+    }
+
     def upload(self, user_id: str, file_id: str, content: bytes, filename: str) -> str:
         """Upload bytes to <user_id>/<file_id>_<filename>. Returns the storage path."""
         path = f"{user_id}/{file_id}_{filename}"
+        ext = filename.lower().rsplit(".", 1)[-1] if "." in filename else ""
+        content_type = self._MIME_BY_EXT.get(ext, "application/octet-stream")
         try:
             self._bucket().upload(
                 path,
                 content,
-                file_options={"content-type": "application/octet-stream"},
+                file_options={"content-type": content_type},
             )
         except Exception as e:
             raise StorageUploadError(str(e)) from e

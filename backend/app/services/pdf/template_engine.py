@@ -1,4 +1,5 @@
 """Jinja2 environment + template selection for Phase 2 PDF render."""
+import re
 from pathlib import Path
 from typing import Literal
 
@@ -30,6 +31,71 @@ def pick_template(country: str, role: str) -> str:
 
 def _shared_css_url(filename: str) -> str:
     return (TEMPLATES_DIR / "shared" / filename).as_uri()
+
+
+def _read_shared_css() -> str:
+    """Read and concatenate the three shared CSS files into one string."""
+    css_files = ["_base.css", "_typography.css", "_print.css"]
+    parts = []
+    for name in css_files:
+        path = TEMPLATES_DIR / "shared" / name
+        parts.append(path.read_text(encoding="utf-8"))
+    return "\n".join(parts)
+
+
+def render_html_only(
+    doc: ResumeDocumentJSON,
+    country: Literal["US", "IN"],
+    role: Literal["swe", "ds", "pm"],
+) -> str:
+    """Render a resume as a fully self-contained HTML string with inlined CSS.
+
+    Unlike ``render_html``, this function:
+    - Reads the three shared CSS files (_base.css, _typography.css, _print.css)
+      and injects them as a single ``<style>`` block before ``</head>``.
+    - Strips any ``<link>`` tags that reference ``file://`` URIs so the result
+      can be used in a browser or converted to PDF without filesystem access.
+
+    Args:
+        doc: Structured resume document
+        country: Country code (US or IN)
+        role: Target role (swe, ds, or pm)
+
+    Returns:
+        Self-contained HTML string with all CSS inlined.
+
+    Raises:
+        ValueError: If country or role is not supported
+        jinja2.TemplateNotFound: If the template file doesn't exist
+    """
+    # Render via the standard render_html first (which uses file:// links)
+    raw_html = render_html(doc, country=country, role=role)
+
+    # Strip all <link> tags that point to file:// URIs
+    cleaned = re.sub(
+        r'<link\b[^>]*href=["\']file://[^"\']*["\'][^>]*>',
+        "",
+        raw_html,
+        flags=re.IGNORECASE,
+    )
+
+    # Build the inline <style> block
+    css_content = _read_shared_css()
+    style_block = f"<style>\n{css_content}\n</style>"
+
+    # Inject before </head>; if no </head>, prepend at top
+    if re.search(r"</head>", cleaned, re.IGNORECASE):
+        cleaned = re.sub(
+            r"(</head>)",
+            f"{style_block}\n\\1",
+            cleaned,
+            count=1,
+            flags=re.IGNORECASE,
+        )
+    else:
+        cleaned = style_block + "\n" + cleaned
+
+    return cleaned
 
 
 def render_html(

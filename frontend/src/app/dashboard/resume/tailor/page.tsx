@@ -1,49 +1,74 @@
 // frontend/src/app/dashboard/resume/tailor/page.tsx
 "use client";
 import { useState } from 'react';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { JdInputForm } from '@/components/jd/jd-input-form';
 import { JdAnalysisPanel } from '@/components/jd/jd-analysis-panel';
 import { DiffView } from '@/components/jd/diff-view';
+import { PreviewPanel } from '@/components/tailor/preview-panel';
 import { useJdAnalyze } from '@/hooks/use-jd-analyze';
+import { useTailorApply } from '@/hooks/use-tailor-apply';
 import { useToast } from '@/components/ui/use-toast';
-import type { JDAnalyzeResponse } from '@/app/lib/api';
+import type { JDAnalyzeResponse, ApplyTailorResponse, ChangeItem } from '@/app/lib/api';
 
 export default function TailorPage() {
   const { toast } = useToast();
   const analyze = useJdAnalyze();
   const [result, setResult] = useState<JDAnalyzeResponse | null>(null);
   const [resumeId, setResumeId] = useState<string | null>(null);
+  const [acceptedChanges, setAcceptedChanges] = useState<ChangeItem[]>([]);
+  const [applyResult, setApplyResult] = useState<ApplyTailorResponse | null>(null);
+
+  const applyMut = useTailorApply(result?.jd_evaluation_id ?? '');
 
   const onSubmit = async (args: { resumeDocumentId: string; jdText: string }) => {
     setResumeId(args.resumeDocumentId);
+    setApplyResult(null);
+    setAcceptedChanges([]);
     try {
       const r = await analyze.mutateAsync(args);
       setResult(r);
-    } catch (e: any) {
-      if (e?.status === 402) {
+    } catch (e: unknown) {
+      const err = e as { status?: number; message?: string };
+      if (err?.status === 402) {
         toast({
           title: 'Out of credits',
           description: 'Tailoring costs 2 credits.',
           variant: 'destructive',
         });
-      } else if (e?.status === 422) {
+      } else if (err?.status === 422) {
         toast({
           title: 'Tailor rejected',
           description: 'AI tried to fabricate a number. Try a different JD.',
           variant: 'destructive',
         });
       } else {
-        toast({ title: 'Analyze failed', description: e?.message, variant: 'destructive' });
+        toast({ title: 'Analyze failed', description: err?.message, variant: 'destructive' });
       }
     }
   };
 
+  const onApplyClick = async () => {
+    if (!result) return;
+    try {
+      const r = await applyMut.mutateAsync({ accepted_changes: acceptedChanges });
+      setApplyResult(r);
+      toast({
+        title: 'Applied',
+        description: `${acceptedChanges.length} change${acceptedChanges.length !== 1 ? 's' : ''} saved`,
+      });
+    } catch (e: unknown) {
+      const err = e as { message?: string };
+      toast({ title: 'Apply failed', description: err?.message, variant: 'destructive' });
+    }
+  };
+
   return (
-    <div className="max-w-5xl mx-auto p-6 space-y-6">
+    <div className="max-w-[1400px] mx-auto p-6 space-y-6">
       <header>
         <h1 className="text-2xl font-bold">Tailor</h1>
-        <p className="text-sm opacity-70">Paste a JD; we'll suggest targeted edits.</p>
+        <p className="text-sm opacity-70">Paste a JD; we&apos;ll suggest targeted edits.</p>
       </header>
 
       <Card>
@@ -59,14 +84,47 @@ export default function TailorPage() {
             extraction={result.extracted_requirements}
             plan={result.diff_plan}
           />
-          <DiffView
-            key={result.jd_evaluation_id}
-            resumeId={resumeId}
-            plan={result.diff_plan}
-            onApplied={(versionId) => {
-              // user can navigate to the edit page if they want to see the result.
-            }}
-          />
+
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_480px] gap-8 items-start">
+            {/* Left column: diff view + Apply button */}
+            <div className="space-y-4">
+              <DiffView
+                key={result.jd_evaluation_id}
+                resumeId={resumeId}
+                plan={result.diff_plan}
+                onApplied={() => {
+                  // legacy path — not used when onAcceptedChangesChange is set
+                }}
+                onAcceptedChangesChange={setAcceptedChanges}
+              />
+
+              <Button
+                onClick={onApplyClick}
+                disabled={applyMut.isPending || acceptedChanges.length === 0}
+                className="w-full sm:w-auto"
+                data-testid="tailor-apply"
+              >
+                {applyMut.isPending
+                  ? 'Applying…'
+                  : `Apply ${acceptedChanges.length} change${acceptedChanges.length !== 1 ? 's' : ''}`}
+              </Button>
+            </div>
+
+            {/* Right column: preview panel */}
+            {applyResult ? (
+              <PreviewPanel
+                versionId={applyResult.version_id}
+                previewHtml={applyResult.preview_html}
+                suggestedTemplate={applyResult.suggested_template}
+                filenameHint={applyResult.filename_hint}
+                warning={applyResult.warning}
+              />
+            ) : (
+              <aside className="sticky top-24 h-[calc(100vh-8rem)] border border-border rounded-md bg-card flex items-center justify-center text-sm text-muted-foreground p-6 text-center">
+                Apply changes to see a live preview and download PDF
+              </aside>
+            )}
+          </div>
         </>
       )}
     </div>

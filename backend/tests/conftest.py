@@ -95,6 +95,9 @@ def _create_sqlite_tables(engine) -> None:
         sa.Column("change_set", JSON, nullable=False),
         sa.Column("parsed_json", JSON, nullable=False),
         sa.Column("created_at", sa.DateTime, server_default=sa.func.now()),
+        sa.Column("jd_evaluation_id", sa.String, sa.ForeignKey("jd_evaluations.id"), nullable=True, index=True),
+        sa.Column("accepted_at", sa.DateTime, nullable=True),
+        sa.Column("template_id", sa.String, nullable=True),
     )
 
     sa.Table(
@@ -125,6 +128,48 @@ def _create_sqlite_tables(engine) -> None:
         sa.Column("file_size_bytes", sa.Integer, nullable=True),
         sa.Column("error_message", sa.Text, nullable=True),
         sa.Column("created_at", sa.DateTime, server_default=sa.func.now()),
+    )
+
+    # Legacy AI-extracted profile table (used by user-profiles endpoint).
+    # All columns are SQLite-compatible (JSON, not JSONB).
+    sa.Table(
+        "user_profiles",
+        meta,
+        sa.Column("id", sa.Integer, primary_key=True, autoincrement=True),
+        sa.Column("user_id", sa.String(100), unique=True, nullable=False, index=True),
+        sa.Column("full_name", sa.String(255)),
+        sa.Column("email", sa.String(255)),
+        sa.Column("phone", sa.String(50)),
+        sa.Column("location", sa.String(255)),
+        sa.Column("work_authorization", sa.String(100)),
+        sa.Column("years_of_experience", sa.Float, default=0.0),
+        sa.Column("career_level", sa.String(50)),
+        sa.Column("professional_summary", sa.Text),
+        sa.Column("programming_languages", JSON),
+        sa.Column("frameworks_libraries", JSON),
+        sa.Column("tools_platforms", JSON),
+        sa.Column("soft_skills", JSON),
+        sa.Column("job_titles", JSON),
+        sa.Column("companies", JSON),
+        sa.Column("industries", JSON),
+        sa.Column("experience_descriptions", JSON),
+        sa.Column("degrees", JSON),
+        sa.Column("institutions", JSON),
+        sa.Column("graduation_years", JSON),
+        sa.Column("relevant_coursework", JSON),
+        sa.Column("desired_roles", JSON),
+        sa.Column("preferred_locations", JSON),
+        sa.Column("salary_range_min", sa.Integer),
+        sa.Column("salary_range_max", sa.Integer),
+        sa.Column("job_types", JSON),
+        sa.Column("company_size_preference", JSON),
+        sa.Column("ai_profile_summary", sa.Text),
+        sa.Column("ai_strengths", JSON),
+        sa.Column("ai_improvement_areas", JSON),
+        sa.Column("ai_career_advice", sa.Text),
+        sa.Column("created_at", sa.DateTime),
+        sa.Column("updated_at", sa.DateTime),
+        sa.Column("last_resume_upload", sa.DateTime),
     )
 
     meta.create_all(bind=engine)

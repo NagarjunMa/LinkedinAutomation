@@ -102,6 +102,71 @@ test-results/
 
 ---
 
+## 2026-05-26 Code Review — Minor Issues (not fixed in fix/welcome-credits-and-profile-bootstrap)
+
+### Issue 3: iframe sandbox + COEP interaction
+
+**Added:** 2026-05-26
+**Why:** The PreviewPanel iframe uses a `sandbox` attribute and the page sets `Cross-Origin-Embedder-Policy: require-corp`. Browsers may block sandboxed iframes under COEP unless `allow-same-origin` is set, but that reintroduces the risks sandbox is meant to prevent. Consider dropping COEP or using an empty `sandbox=""` to evaluate trade-offs.
+
+### Issue 5: `lru_cache` on `_jwks_client` — document as intentional
+
+**Added:** 2026-05-26
+**Why:** `_jwks_client` is decorated with `@lru_cache(maxsize=1)` and never invalidated. This is intentional — the `lifespan=3600` on `PyJWKClient` handles key rotation internally, and the lru_cache avoids reconstructing the client on every request. Add a comment in `app/core/auth.py` explaining the caching strategy so it isn't mistakenly "fixed" in future.
+
+### Issue 7: analytics `versions_subq` + `exports_count` per-document not per-JD
+
+**Added:** 2026-05-26
+**Why:** The analytics query counts `resume_versions` and `resume_exports` per resume document, not per JD evaluation. This is a data model limitation (JD→version relationship is indirect). Ticket: investigate whether aggregating at the JD level is desirable and whether adding a direct FK on `resume_exports.jd_evaluation_id` is warranted.
+
+### Issue 8: e2e test uses content-based mock instead of full structured-outputs flow
+
+**Added:** 2026-05-26
+**Why:** `test_export_e2e.py` mocks the PDF renderer at the content level but does not exercise the structured-outputs response parsing path. A fuller integration test would include a respx mock for the OpenAI structured-outputs completion and validate that the parsed `ResumeDocumentJSON` round-trips correctly to HTML/PDF.
+
+### Issue 10: `_slugify` no length cap
+
+**Added:** 2026-05-26
+**File:** `app/api/v1/endpoints/jd.py:_slugify`
+**Why:** `_slugify` has no maximum output length. A very long company name or contact name in the JD response could produce a `filename_hint` that exceeds OS path limits (255 bytes on most filesystems). Cap output at ~100 chars.
+
+### Issue 11: `_sanitize_filename` `.rstrip(".pdf")` bug
+
+**Added:** 2026-05-26
+**File:** `app/api/v1/endpoints/exports.py:_sanitize_filename`
+**Why:** `default.rstrip(".pdf")` strips *any combination* of the characters `p`, `d`, `f`, `.` from the right of the string rather than removing the literal suffix `.pdf`. Replace with `default.removesuffix(".pdf")` (Python 3.9+).
+
+### Issue 12: `websockets>=14` missing upper bound
+
+**Added:** 2026-05-26
+**File:** `backend/requirements.txt` (or `pyproject.toml`)
+**Why:** `websockets>=14` has no upper bound. A future major version bump could introduce breaking API changes. Pin an upper bound (`websockets>=14,<16`) and update explicitly.
+
+### Issue 13: `pytz>=2023.3` missing upper bound
+
+**Added:** 2026-05-26
+**File:** `backend/requirements.txt` (or `pyproject.toml`)
+**Why:** Same as Issue 12. `pytz>=2023.3` is open-ended. Add an upper bound for reproducible builds.
+
+### Issue 14: dead deps (`python-jose`, `passlib`) — verify + remove
+
+**Added:** 2026-05-26
+**Why:** `python-jose` and `passlib` appear to be unused since the auth layer migrated to `PyJWT` + Supabase JWKS. Grep the codebase, confirm no remaining imports, and remove from `requirements.txt` to reduce attack surface.
+
+### Issue 16: `get_current_user_email` doesn't call `_ensure_user_row`
+
+**Added:** 2026-05-26
+**File:** `app/core/auth.py:get_current_user_email`
+**Why:** Unlike `get_current_user_id`, `get_current_user_email` does not call `_ensure_user_row`, so a user who first hits an endpoint that uses `get_current_user_email` will not have their row bootstrapped. Decide whether `get_current_user_email` should also call `_ensure_user_row` (requires `db: Session` dependency) or restrict its usage to endpoints where the user is guaranteed to already exist.
+
+### Issue 17: `ignoreBuildErrors: true` / `ignoreDuringBuilds: true` masking errors
+
+**Added:** 2026-05-26
+**File:** `frontend/next.config.mjs`
+**Why:** `typescript.ignoreBuildErrors: true` and `eslint.ignoreDuringBuilds: true` suppress type errors and lint warnings from the Next.js build output, allowing broken code to ship silently. These flags were added to unblock CI; they must be removed once the 12 pre-existing TypeScript errors (tracked above) are resolved.
+
+---
+
 ## CI / DevOps
 
 ### Migration squash blocks fresh-DB CI integration tests

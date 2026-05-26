@@ -16,10 +16,15 @@ class RoleTemplate(str, Enum):
 
 
 class ExportRequest(BaseModel):
-    resume_document_id: str = Field(..., min_length=1)
+    # Legacy Phase-2 shape (still supported)
+    resume_document_id: Optional[str] = None
+    country: Optional[Country] = None
+    role_template: Optional[RoleTemplate] = None
+    # Apply-flow shape (new)
     resume_version_id: Optional[str] = None
-    country: Country
-    role_template: RoleTemplate
+    template_id: Optional[str] = None  # accepts "us-swe" OR "us/swe"
+    # Common
+    filename: Optional[str] = None
 
 
 class ExportResponse(BaseModel):
@@ -28,3 +33,4 @@ class ExportResponse(BaseModel):
     expires_at: datetime
     country: Country
     role_template: RoleTemplate
+    filename: Optional[str] = None
