@@ -25,3 +25,7 @@ class ResumeVersion(Base):
     change_set = Column(JSONB, nullable=False)
     parsed_json = Column(JSONB, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    # Tailor-flow additions (2026-05-25)
+    jd_evaluation_id = Column(String, ForeignKey("jd_evaluations.id"), nullable=True, index=True)
+    accepted_at = Column(DateTime(timezone=True), nullable=True)
+    template_id = Column(String, nullable=True)

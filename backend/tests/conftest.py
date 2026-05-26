@@ -95,6 +95,9 @@ def _create_sqlite_tables(engine) -> None:
         sa.Column("change_set", JSON, nullable=False),
         sa.Column("parsed_json", JSON, nullable=False),
         sa.Column("created_at", sa.DateTime, server_default=sa.func.now()),
+        sa.Column("jd_evaluation_id", sa.String, sa.ForeignKey("jd_evaluations.id"), nullable=True, index=True),
+        sa.Column("accepted_at", sa.DateTime, nullable=True),
+        sa.Column("template_id", sa.String, nullable=True),
     )
 
     sa.Table(
