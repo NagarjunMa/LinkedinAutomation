@@ -20,6 +20,7 @@ class ExportRequest(BaseModel):
     resume_version_id: Optional[str] = None
     country: Country
     role_template: RoleTemplate
+    filename: Optional[str] = None
 
 
 class ExportResponse(BaseModel):
@@ -28,3 +29,4 @@ class ExportResponse(BaseModel):
     expires_at: datetime
     country: Country
     role_template: RoleTemplate
+    filename: Optional[str] = None

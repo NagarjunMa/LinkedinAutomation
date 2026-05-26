@@ -4,6 +4,7 @@ POST /api/v1/exports  — render a resume to PDF, store, return signed URL. Cost
 """
 import asyncio
 import functools
+import re
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -23,6 +24,46 @@ from app.services.pdf.renderer import PdfRenderTimeout, render_pdf_from_doc
 
 router = APIRouter(prefix="/exports", tags=["exports"])
 
+_SAFE_CHARS = re.compile(r"[^a-zA-Z0-9._-]")
+_DEFAULT_FILENAME = "resume.pdf"
+
+
+def _sanitize_filename(name: str | None, default: str = _DEFAULT_FILENAME) -> str:
+    """Return a safe, .pdf-suffixed filename.
+
+    Steps:
+    1. Strip directory parts (handles both / and \\ separators).
+    2. Remove control characters (\\x00-\\x1f) and null bytes.
+    3. Allow only [a-zA-Z0-9._-]; replace all other chars with '-'.
+    4. Strip leading/trailing '-'.
+    5. Fall back to *default* if result is empty after sanitizing.
+    6. Ensure filename ends with '.pdf'.
+    """
+    if not name:
+        return default if default.endswith(".pdf") else default + ".pdf"
+
+    # 1. Strip directory traversal
+    name = name.replace("\\", "/").split("/")[-1]
+
+    # 2. Remove control chars (includes \x00-\x1f)
+    name = re.sub(r"[\x00-\x1f]", "", name)
+
+    # 3. Replace unsafe chars
+    name = _SAFE_CHARS.sub("-", name)
+
+    # 4. Strip leading/trailing dashes
+    name = name.strip("-")
+
+    # 5. Fall back to default if empty
+    if not name:
+        name = default.rstrip(".pdf") if default.endswith(".pdf") else default
+
+    # 6. Ensure .pdf suffix
+    if not name.lower().endswith(".pdf"):
+        name = name + ".pdf"
+
+    return name
+
 
 @router.post("", response_model=ExportResponse, status_code=201)
 async def create_export(
@@ -36,6 +77,7 @@ async def create_export(
         raise HTTPException(status_code=404, detail="Resume document not found")
 
     # 2. Optionally hydrate from a specific version.
+    version: ResumeVersion | None = None
     if body.resume_version_id:
         version = db.get(ResumeVersion, body.resume_version_id)
         if not version or version.resume_document_id != body.resume_document_id:
@@ -43,6 +85,9 @@ async def create_export(
         doc_json = ResumeDocumentJSON.model_validate(version.parsed_json)
     else:
         doc_json = ResumeDocumentJSON.model_validate(doc_row.parsed_json)
+
+    # 2b. Sanitize download filename (server-side, never trust client input on storage paths).
+    safe_filename = _sanitize_filename(body.filename)
 
     export_id = str(uuid.uuid4())
     storage_path = f"{current_user_id}/{export_id}.pdf"
@@ -103,6 +148,7 @@ async def create_export(
             expires_at=expires_at,
             country=body.country,
             role_template=body.role_template,
+            filename=safe_filename,
         )
     db.commit()
     return response_payload
