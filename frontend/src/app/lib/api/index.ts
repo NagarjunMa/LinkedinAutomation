@@ -14,3 +14,4 @@ export * from './types-v2';
 export { resumeV2Api } from './resume-v2';
 export { jdApi } from './jd';
 export { creditsApi } from './credits';
+export { exportsApi } from './exports';

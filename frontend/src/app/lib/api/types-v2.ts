@@ -181,3 +181,49 @@ export interface JDAnalyzeResponse {
 export interface CreditsBalance {
   balance: number;
 }
+
+// Tailor-apply types (2026-05-25) -------------------------------------------
+
+export interface ApplyTailorRequest {
+  accepted_changes: ChangeItem[];
+  template_id?: string;
+}
+
+export interface ApplyTailorResponse {
+  version_id: string;
+  preview_html: string;
+  company_name: string | null;
+  suggested_template: string;
+  filename_hint: string;
+  warning?: string;
+}
+
+export interface AnalyticsJdProgress {
+  jds: Array<{
+    jd_evaluation_id: string;
+    jd_company: string | null;
+    tailored_at: string | null;
+    applies_count: number;
+    exports_count: number;
+    last_match_score: number | null;
+  }>;
+  totals: {
+    jds_tailored: number;
+    versions_created: number;
+    pdfs_exported: number;
+  };
+}
+
+// Exports types (2026-05-25) -------------------------------------------------
+
+export interface ExportPdfRequest {
+  resume_version_id: string;
+  template_id?: string;
+  filename?: string;
+}
+
+export interface ExportPdfResponse {
+  export_id: string;
+  signed_url: string;
+  filename: string;
+}
