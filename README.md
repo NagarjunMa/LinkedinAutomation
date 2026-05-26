@@ -4,6 +4,8 @@
 
 For engineers who refuse generic AI bullets.
 
+![Backend tests](https://img.shields.io/badge/backend--tests-157%20pass-green) ![Backend coverage](https://img.shields.io/badge/backend--coverage-87%25-green) ![Frontend tests](https://img.shields.io/badge/frontend--tests-44%20pass-green) ![Frontend coverage](https://img.shields.io/badge/frontend--coverage-84%25-green)
+
 ---
 
 ## What's shipped

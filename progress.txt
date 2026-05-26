@@ -224,6 +224,51 @@ Final test counts: 127 backend pass, 12 skip; 5 frontend vitest pass; full build
 Coverage: 45% overall; Prism Pro core paths 90%+; legacy job-tracking 0-30% (acceptable)
 
 ================================================================================
+COMPREHENSIVE TEST COVERAGE                                               [x]
+--------------------------------------------------------------------------------
+Branch: feat/comprehensive-test-coverage
+Status: in progress 2026-05-26
+Spec: docs/superpowers/specs/2026-05-26-comprehensive-test-coverage-design.md
+Plan: docs/superpowers/plans/2026-05-26-comprehensive-test-coverage-plan.md
+
+Phase 1 — Backend gap-fill:
+[x] Task 1 — Delete orphaned dead code (consolidated_resume_evaluator, resume_legacy,
+    resume stub, resume_tasks, ~1100 LOC)
+[x] Task 2 — Verify-and-delete legacy services (job_matcher, supabase_cache_service,
+    supabase_task_queue; ~992 LOC). resume_parser.py kept (still imported by profiles.py)
+[x] Task 3 — .coveragerc with 21 omit entries (legacy/demoted modules)
+[x] Task 4 — core/auth.py _ensure_user_row tests (3 tests)
+[x] Task 5 — decode_supabase_jwt + _jwks_client tests (3 tests)
+[x] Task 6 — get_current_user_id + get_current_user_email tests (auth.py at 92%)
+[x] Task 7 — stripe_webhook_handler verify_event tests (signature verification)
+[x] Task 8 — stripe handle_event tests (checkout, idempotent replay, unknown types)
+[x] Task 9 — credits/ledger edge tests (refund, insufficient, external_ref)
+[x] Task 10 — credit_tasks monthly grant tests (discovered real bug — see TECH_DEBT)
+[x] Task 11 — pytest.ini coverage opts + postgres marker
+[x] Task 12 — CI backend coverage gate at 70% floor
+
+Phase 2 — Frontend foundation:
+[x] Task 13 — @vitest/coverage-v8 + msw installed + test scripts
+[x] Task 14 — msw server fixture for API client tests
+[x] Task 15 — useTailorApply hook tests (success + 4xx)
+[x] Task 16 — useExportPdf hook tests (download trigger + 402)
+[x] Task 17 — use-resume hook tests (upload + evaluate, 4 tests)
+[x] Task 18 — useJDAnalyze + useCreditsBalance hook tests
+[x] Task 19 — API client tests (resume-v2, jd, exports, credits — 17 tests)
+[x] Task 20 — DiffView component tests
+[x] Task 21 — BulletHighlight + RewriteModal tests
+[x] Task 22 — ResumeUploadDropzone + AtsTab tests
+[x] Task 23 — vitest.config.ts coverage thresholds + CI frontend coverage step
+
+Phase 3 — Pre-push hook + ratchet:
+[x] Task 24 — lefthook installed + pre-push hook (backend pytest + frontend vitest)
+[x] Task 25 — CI thresholds ratcheted (backend 80, frontend 80/75/75/72)
+[x] Task 26 — Coverage badges in README + progress.txt phase block
+
+Final test counts: 157 backend pass, 12 skip (86.71% coverage at 80% gate);
+                   44 frontend pass across 15 test files (83.6% lines, 75.3% branches)
+
+================================================================================
 FRONTEND EDITORIAL REBRAND                                                [~]
 --------------------------------------------------------------------------------
 Branch: feat/frontend-content-rebrand (not yet merged)
