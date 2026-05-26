@@ -122,3 +122,13 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: test
         run: npm run build
 
+      - name: Run frontend tests with coverage
+        run: npm run test:coverage
+
+      - name: Upload frontend coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/cobertura-coverage.xml
+
