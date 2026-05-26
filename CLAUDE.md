@@ -26,6 +26,19 @@
 - Per-user LLM cost telemetry.
 - Admin metrics endpoint (`GET /admin/metrics/cost-per-user`).
 
+### Primary (shipped — 2026-05-26 Tailor Apply → Preview → Export)
+- **`POST /jd/{id}/apply`** — creates JD-linked `ResumeVersion` + preview HTML (0 credits, star-pattern versioning — re-tailoring branches from original `ResumeDocument`, never from latest version).
+- **`render_html_only()`** — self-contained HTML with inlined CSS for iframe `srcdoc` preview (no `file://` links).
+- **Extended `POST /exports`** — accepts `resume_version_id` + dash-format `template_id` alongside legacy `resume_document_id + country + role_template`.
+- **`GET /analytics/jd-progress`** — per-JD funnel counts (versions + exports).
+- Frontend: `PreviewPanel` (sticky iframe + template picker + Download PDF), `useTailorApply` + `useExportPdf` hooks.
+- Schema enforcement: extractor + tailor migrated to `client.beta.chat.completions.parse()` with typed Pydantic models (`JDExtraction.company_name`, `BulletPlaceholder` typed model).
+
+### Primary (shipped — 2026-05-26 Auth + onboarding)
+- **Welcome credits** — `_ensure_user_row()` auto-creates `User` row + grants 10 credits on first sign-in (idempotent via IntegrityError guard for TOCTOU race).
+- **Profile bootstrap** — returns empty defaults (not 404) for new users so dashboard loads cleanly.
+- **Auth hardening** — removed `test_user_123` unauthenticated fallback; returns 401 instead.
+
 ### Supporting (kept, demoted)
 - Job tracking under `/dashboard/applications` and `/dashboard/jobs`.
 - URL-based job extraction (Jina AI Reader + GPT-4o-mini).
@@ -63,8 +76,10 @@ Routes live at `/api/v1/`:
 | `POST /resumes/{id}/rewrite/{bullet_id}` | Per-bullet rewrite (guarded) | 0 |
 | `POST /resumes/{id}/versions` | Apply accepted changes, save new version | 0 |
 | `POST /jd/analyze` | JD extract + tailor diff plan | 2 |
-| `POST /exports` | Playwright PDF render to Storage | 1 |
+| `POST /jd/{id}/apply` | Create JD-linked ResumeVersion + preview HTML | 0 |
+| `POST /exports` | Playwright PDF render to Storage (accepts version_id + template_id) | 1 |
 | `GET /exports/{id}` | Refresh signed URL (no credit) | 0 |
+| `GET /analytics/jd-progress` | Per-JD funnel counts (versions + exports) | 0 |
 | `GET /credits/balance` | Current credit balance | 0 |
 | `POST /webhooks/stripe` | Idempotent credit grants | platform |
 | `GET /admin/metrics/cost-per-user` | Admin allowlist gated | 0 |
@@ -136,16 +151,30 @@ Settings trimmed to **Privacy** + **Change History** only.
 
 ---
 
-## Status (2026-05-22)
+## Status (2026-05-26)
 
 | Phase | Status |
 |---|---|
 | Phase 0 — Cleanup | ✅ merged to main |
 | Phase 1 — Backend foundation | ✅ merged to main |
-| Phase 2 — PDF render + 6 templates | ✅ merged to main (10 pre-existing test failures tracked in BLOCKERS §P2) |
+| Phase 2 — PDF render + 6 templates | ✅ merged to main |
 | Phase 3 — Frontend resume + JD + credits UI | ✅ merged to main |
 | Phase 4 — Plan + fixtures + CI | ✅ merged to main |
 | Phase 4 — Production hardening (12 tasks) | ✅ merged to main |
 | ES256 JWT migration | ✅ merged to main |
 | Fresh Supabase project bootstrap | ✅ completed |
+| Tailor Apply → Preview → Export pipeline | ✅ merged to main (2026-05-26) |
+| Welcome credits + profile bootstrap + auth hardening | ✅ merged to main (2026-05-26) |
+| Analytics endpoint (JD progress funnel) | ✅ merged to main (2026-05-26) |
 | Frontend editorial rebrand | 🚧 in progress on `feat/frontend-content-rebrand` |
+
+## Test coverage (2026-05-26)
+
+- **Backend pytest:** 127 pass, 12 skip, 45% overall coverage
+- **Frontend vitest:** 5/5 pass (`PreviewPanel` component tests)
+- **Core Prism Pro paths (high coverage):**
+  - API endpoints: `analytics` 100%, `credits` 100%, `admin_metrics` 100%, `exports` 96%, `jd` 93%, `resumes_v2` 91%, `webhooks` 84%
+  - Services: `hallucination_guard` 100%, `evaluator` 100%, `rewriter` 100%, `parser` 94%, `extractor` 95%, `tailor` 97%, `template_engine` 97%, `renderer` 81%, `supabase_storage` 89%, `ledger` 93%, `stripe_webhook_handler` 79%
+  - Schemas: `jd` 100%, `resume_v2` 100%, `resume_export` 100%
+- **Low coverage (acceptable — legacy/demoted code):** `jobs.py` 17%, `job_extraction.py` 29%, `profiles.py` 16%, `url_job_extractor.py` 11%, `job_matcher.py` 0%, `supabase_cache_service.py` 0%, `supabase_task_queue.py` 0%, `resume_tasks.py` 0% (Celery), `consolidated_resume_evaluator.py` 0% (removed in Phase 0 but file remains)
+- **Gap to address:** `core/auth.py` at 35% — newly added `_ensure_user_row()` lacks direct unit tests (covered via integration tests)
