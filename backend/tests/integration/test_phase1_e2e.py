@@ -234,3 +234,149 @@ def test_full_happy_path(client: TestClient, auth_headers, user_with_credits, db
     assert bal_resp.status_code == 200, f"Balance check failed: {bal_resp.text}"
     balance = bal_resp.json()["balance"]
     assert balance == 17, f"Expected balance 17, got {balance}"
+
+
+# ---------------------------------------------------------------------------
+# Task 15: Full apply → export → analytics e2e test
+# ---------------------------------------------------------------------------
+
+def test_apply_then_export_e2e(client, auth_headers, db_session, test_user_id, user_with_credits):
+    """Upload → jd/apply → exports → analytics funnel check.
+
+    Seeds a ResumeDocument and JDEvaluation directly (skips upload + analyze LLM
+    calls for speed). Mocks render_pdf_from_doc + storage so no Playwright or
+    Supabase calls are made.
+
+    Assertions:
+    - apply endpoint returns 200 + correct filename_hint suffix
+    - export endpoint returns 201 + download_url + filename
+    - analytics/jd-progress returns versions_count == 1 + exports_count == 1
+    """
+    import uuid
+    from unittest.mock import patch
+    from app.models.resume_document import ResumeDocument
+    from app.models.jd_evaluation import JDEvaluation
+
+    # -----------------------------------------------------------------------
+    # Seed: one ResumeDocument + one JDEvaluation (Asha Sharma applying to Stripe)
+    # -----------------------------------------------------------------------
+    doc_id = str(uuid.uuid4())
+    db_session.add(ResumeDocument(
+        id=doc_id,
+        user_id=test_user_id,
+        original_filename="asha-resume.pdf",
+        file_path="/tmp/ignored.pdf",
+        file_type="pdf",
+        parsed_json={
+            "contact": {"name": "Asha Sharma", "email": "asha@example.com", "links": []},
+            "summary": "Senior SWE with 6 years of Python experience.",
+            "experience": [{
+                "company": "Acme",
+                "role": "Senior SWE",
+                "bullets": [{"id": "b1", "text": "Built distributed systems at scale.", "raw_text": "Built distributed systems at scale."}],
+            }],
+            "education": [],
+            "skills": {"hard": ["Python", "FastAPI"], "soft": ["communication"]},
+            "projects": [],
+            "certifications": [],
+            "raw_text": "Asha Sharma resume text",
+        },
+        raw_text="Asha Sharma resume text",
+    ))
+    jd_id = str(uuid.uuid4())
+    db_session.add(JDEvaluation(
+        id=jd_id,
+        user_id=test_user_id,
+        resume_document_id=doc_id,
+        jd_text="Senior SWE at Stripe (US). Must have 5+ years Python, FastAPI, AWS.",
+        extracted_requirements={
+            "company_name": "Stripe",
+            "country_hint": "US",
+            "primary_role_category": "SWE",
+            "must_have": [{"skill": "Python", "evidence_from_jd": "5+ yrs", "type": "technical"}],
+            "good_to_have": [],
+            "soft_skills": [],
+            "seniority": "senior",
+            "red_flags": [],
+        },
+        diff_plan={
+            "match_score": 75,
+            "must_have_coverage_found": ["Python"],
+            "must_have_coverage_missing": [],
+            "good_to_have_coverage_found": [],
+            "good_to_have_coverage_missing": [],
+            "bullets": [],
+            "skills_reorder": None,
+            "summary_rewrite": None,
+            "suggested_additions": [],
+        },
+        match_score=75,
+    ))
+    db_session.commit()
+
+    # -----------------------------------------------------------------------
+    # 1. Apply — creates a ResumeVersion linked to the JDEvaluation
+    # -----------------------------------------------------------------------
+    apply_resp = client.post(
+        f"/api/v1/jd/{jd_id}/apply",
+        json={
+            "accepted_changes": [
+                {"type": "bullet_update", "bullet_id": "b1",
+                 "new_text": "Shipped Python services serving 1M+ req/day on AWS"}
+            ],
+        },
+        headers=auth_headers,
+    )
+    assert apply_resp.status_code == 200, f"Apply failed: {apply_resp.text}"
+    apply_data = apply_resp.json()
+    version_id = apply_data["version_id"]
+    assert version_id, "version_id missing from apply response"
+
+    # filename_hint format: <name-slug>-<company-slug>-<role>.pdf
+    # e.g. "asha-sharma-stripe-swe.pdf" for Asha Sharma + Stripe + SWE
+    filename_hint = apply_data["filename_hint"]
+    assert "asha-sharma" in filename_hint, f"Expected 'asha-sharma' in filename_hint, got: {filename_hint}"
+    assert "stripe" in filename_hint, f"Expected 'stripe' in filename_hint, got: {filename_hint}"
+    assert filename_hint.endswith(".pdf"), f"filename_hint should end with .pdf, got: {filename_hint}"
+
+    # -----------------------------------------------------------------------
+    # 2. Export — mock render + storage; call POST /api/v1/exports
+    # -----------------------------------------------------------------------
+    with patch("app.api.v1.endpoints.exports.render_pdf_from_doc", return_value=b"%PDF-1.4 stub"), \
+         patch("app.api.v1.endpoints.exports.upload_pdf", return_value=None), \
+         patch("app.api.v1.endpoints.exports.signed_url", return_value="https://signed.example/asha-stripe.pdf?token=abc"):
+
+        export_resp = client.post(
+            "/api/v1/exports",
+            json={
+                "resume_document_id": doc_id,
+                "resume_version_id": version_id,
+                "country": "US",
+                "role_template": "swe",
+                "filename": filename_hint,
+            },
+            headers=auth_headers,
+        )
+
+    assert export_resp.status_code == 201, f"Export failed: {export_resp.text}"
+    export_data = export_resp.json()
+    assert export_data["download_url"].startswith("https://"), (
+        f"Expected download_url to start with https://, got: {export_data['download_url']}"
+    )
+    assert export_data["filename"] == filename_hint, (
+        f"Expected filename '{filename_hint}', got '{export_data['filename']}'"
+    )
+
+    # -----------------------------------------------------------------------
+    # 3. Analytics — /api/v1/analytics/jd-progress should show 1 version + 1 export
+    # -----------------------------------------------------------------------
+    progress_resp = client.get("/api/v1/analytics/jd-progress", headers=auth_headers)
+    assert progress_resp.status_code == 200, f"Analytics failed: {progress_resp.text}"
+    jd_rows = progress_resp.json()
+    assert isinstance(jd_rows, list), "Expected a list from jd-progress"
+
+    matching = [r for r in jd_rows if r["jd_evaluation_id"] == jd_id]
+    assert len(matching) == 1, f"Expected exactly 1 row for jd_id={jd_id}, got {matching}"
+    row = matching[0]
+    assert row["versions_count"] == 1, f"Expected versions_count=1, got {row['versions_count']}"
+    assert row["exports_count"] == 1, f"Expected exports_count=1, got {row['exports_count']}"
