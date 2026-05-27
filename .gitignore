@@ -382,4 +382,5 @@ $RECYCLE.BIN/
 .claude/
 .env.production
 .DS_Store
+.lefthook-local.yml
 

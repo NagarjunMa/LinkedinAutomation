@@ -7,7 +7,6 @@ celery_app = Celery(
     broker=settings.CELERY_BROKER_URL,
     backend=settings.CELERY_RESULT_BACKEND,
     include=[
-        "app.tasks.resume_tasks",        # AI resume tasks
         "app.tasks.job_extraction_tasks",  # Future AI tasks
         "app.tasks.credit_tasks",          # Monthly credit grant
     ]
@@ -45,8 +44,6 @@ celery_app.conf.update(
 
     # Task routing for different workload types
     task_routes={
-        'app.tasks.resume_tasks.evaluate_resume_task': {'queue': 'ai_heavy'},
-        'app.tasks.resume_tasks.extract_resume_text': {'queue': 'ai_light'},
         'app.tasks.job_extraction_tasks.*': {'queue': 'ai_light'},
     },
 

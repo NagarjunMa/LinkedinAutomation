@@ -1,0 +1,44 @@
+[run]
+# Omit list rationale:
+# - jobs/profiles/job_extraction/user_profiles/logs endpoints: pre-pivot job tracker routes,
+#   kept wired but demoted (CLAUDE.md "Supporting kept, demoted"). Not Prism Pro core.
+# - smart_job_scorer, url_job_extractor, profile_service, job_cleanup_service, job_scorer,
+#   resume_parser: legacy services for the demoted job-tracking routes.
+# - ai_service, rate_limiter, enhanced_logging, logging, security middleware: infra
+#   wrappers around third-party libs (rate-limit decorator, structlog config, security headers,
+#   Anthropic client). Exercised at app startup + via integration; unit-test value low.
+# - models/job, models/profile, models/resume + schemas/job, schemas/profile: legacy ORM
+#   schemas superseded by resume_v2 / models/resume_document.
+source = app
+branch = True
+omit =
+    app/api/v1/endpoints/jobs.py
+    app/api/v1/endpoints/job_extraction.py
+    app/api/v1/endpoints/profiles.py
+    app/api/v1/endpoints/user_profiles.py
+    app/api/v1/endpoints/logs.py
+    app/services/smart_job_scorer.py
+    app/services/url_job_extractor.py
+    app/services/profile_service.py
+    app/services/job_cleanup_service.py
+    app/services/job_scorer.py
+    app/services/resume_parser.py
+    app/core/ai_service.py
+    app/core/rate_limiter.py
+    app/core/enhanced_logging.py
+    app/core/logging.py
+    app/middleware/security.py
+    app/models/job.py
+    app/models/profile.py
+    app/models/resume.py
+    app/schemas/job.py
+    app/schemas/profile.py
+
+[report]
+exclude_lines =
+    pragma: no cover
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+show_missing = True
+skip_covered = False

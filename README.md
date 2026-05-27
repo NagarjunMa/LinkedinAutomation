@@ -4,6 +4,8 @@
 
 For engineers who refuse generic AI bullets.
 
+![Backend tests](https://img.shields.io/badge/backend--tests-157%20pass-green) ![Backend coverage](https://img.shields.io/badge/backend--coverage-87%25-green) ![Frontend tests](https://img.shields.io/badge/frontend--tests-44%20pass-green) ![Frontend coverage](https://img.shields.io/badge/frontend--coverage-84%25-green)
+
 ---
 
 ## What's shipped
@@ -17,9 +19,15 @@ For engineers who refuse generic AI bullets.
 
 ### JD-driven tailoring
 - Paste any job description
-- Backend extracts must-have / good-to-have / soft-skills + seniority + country hint
+- Backend extracts must-have / good-to-have / soft-skills + seniority + country hint + company name
 - Tailor produces a diff plan: bullet rewrites + skill reorder + summary rewrite
 - Per-change accept; version history preserved
+
+### Apply → Preview → Export pipeline (new)
+- Apply accepted changes via `POST /jd/{id}/apply` — creates a JD-linked `ResumeVersion` (star-pattern: always branches from original ResumeDocument)
+- Inline iframe preview with sticky template picker
+- Download PDF in the matching country/role template
+- Per-JD funnel analytics via `GET /analytics/jd-progress`
 
 ### PDF export
 - Playwright + Chromium renders 6 country-aware templates (USA / India × SWE / DS / PM)
@@ -27,9 +35,10 @@ For engineers who refuse generic AI bullets.
 - 1 credit per export
 
 ### Credit system
+- 10 welcome credits on first sign-in (auto-granted via `_ensure_user_row()`)
 - 20 free credits / month (auto-granted on the 1st via Celery beat)
 - Stripe webhook for top-ups (idempotent via `external_ref`)
-- Per-operation cost: evaluate = 1, tailor = 2, rewrite = 0, export = 1
+- Per-operation cost: evaluate = 1, tailor = 2, rewrite = 0, apply = 0, export = 1
 
 ---
 
@@ -66,8 +75,10 @@ For engineers who refuse generic AI bullets.
 | POST | `/resumes/{id}/rewrite/{bullet_id}` | 0 | Per-bullet rewrite (hallucination-guarded) |
 | POST | `/resumes/{id}/versions` | 0 | Apply accepted changes, save version |
 | POST | `/jd/analyze` | 2 | JD extract + tailor diff plan |
-| POST | `/exports` | 1 | Render to PDF via Playwright |
+| POST | `/jd/{id}/apply` | 0 | Create JD-linked version + preview HTML |
+| POST | `/exports` | 1 | Render to PDF via Playwright (accepts version_id + template_id) |
 | GET | `/exports/{id}` | 0 | Refresh signed URL |
+| GET | `/analytics/jd-progress` | 0 | Per-JD funnel counts |
 | GET | `/credits/balance` | 0 | Current balance |
 | POST | `/webhooks/stripe` | — | Idempotent Stripe credit grants |
 | GET | `/admin/metrics/cost-per-user` | — | Admin allowlist gated |
@@ -167,13 +178,24 @@ progress.txt                   Phase-by-phase delivery status
 
 ---
 
+## Test coverage
+
+- **Backend pytest:** 157 pass, 12 skip — `make test` or `cd backend && pytest` (86.7% coverage, gate at 80%)
+- **Frontend vitest:** 44 pass across 15 test files — `cd frontend && npm run test` (83.6% lines, 75.3% branches, gate at 80/75)
+- **Frontend e2e (Playwright):** `cd frontend && npm run test:e2e`
+- **Coverage report:** `cd backend && pytest --cov=app --cov-report=term-missing` or `cd frontend && npm run test:coverage`
+- **Pre-push hook** (lefthook) runs both suites + coverage gates before every `git push`. Bypass with `--no-verify`.
+- Core Prism Pro paths are 90%+ covered; legacy job-tracking modules (excluded via `.coveragerc`) are not gated.
+
+---
+
 ## Known issues
 
 See `BLOCKERS.md` and `TECH_DEBT.md`:
-- 10 Phase 2 PDF renderer tests fail in CI (Playwright threading; BLOCKERS §P2)
 - Alembic migration chain has tangled merge points — fresh DBs use `create_all` + `stamp head` (TECH_DEBT)
 - 12 pre-existing TS errors masked by `next.config.mjs` `ignoreBuildErrors: true`
 - 9 frontend `react-hooks/exhaustive-deps` warnings in legacy components
+- 12 minor issues catalogued from 2026-05-26 code review (`TECH_DEBT.md` §2026-05-26)
 
 ---
 

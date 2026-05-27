@@ -1,5 +1,5 @@
 PRISM PRO — DELIVERY PROGRESS
-Last updated: 2026-05-22
+Last updated: 2026-05-26
 
 ================================================================================
 LEGEND
@@ -164,6 +164,111 @@ OPS / INFRA                                                               [x]
 [x] Geist Sans font installed + wired (replaces IBM Plex Sans for body text)
 
 ================================================================================
+TAILOR APPLY → PREVIEW → EXPORT + ONBOARDING                              [x]
+--------------------------------------------------------------------------------
+Branch: fix/welcome-credits-and-profile-bootstrap (merged via PR 2026-05-26)
+Status: merged 2026-05-26
+Spec: docs/superpowers/specs/2026-05-25-tailor-apply-preview-export-design.md
+Plan: docs/superpowers/plans/2026-05-25-tailor-apply-preview-export-plan.md
+
+Backend:
+[x] Migration: jd_evaluation_id + accepted_at + template_id on resume_versions
+[x] ResumeVersion model fields (jd_evaluation_id FK + accepted_at + template_id)
+[x] ApplyTailorRequest / ApplyTailorResponse schemas; centralized ChangeItem
+[x] JDExtraction.company_name field + extractor prompt update
+[x] BulletPlaceholder typed model (OpenAI strict mode compatibility)
+[x] Switch extractor + tailor to client.beta.chat.completions.parse()
+[x] render_html_only() with inlined CSS, no file:// links
+[x] POST /jd/{id}/apply endpoint (0 credits, star-pattern versioning)
+[x] Extend POST /exports for resume_version_id + dash-format template_id
+[x] _sanitize_filename() strips path traversal
+[x] GET /analytics/jd-progress per-JD funnel counts
+[x] apply_changes() iterates both experience + projects bullets
+
+Frontend:
+[x] PreviewPanel — sticky iframe + template picker + Download PDF
+[x] useTailorApply hook (TanStack mutation)
+[x] useExportPdf hook (triggers browser download)
+[x] applyTailor API client method + types
+[x] Wire Apply button → useTailorApply + mount PreviewPanel
+[x] PreviewPanel vitest component tests (5/5 pass)
+
+Auth + onboarding:
+[x] _ensure_user_row() auto-creates User + grants 10 welcome credits
+[x] IntegrityError guard for TOCTOU race on concurrent first sign-in
+[x] Remove test_user_123 unauthenticated fallback (security)
+[x] Profile bootstrap returns empty defaults (not 404) for new users
+
+Storage + deps + CI:
+[x] Content-type auto-mapped from file extension (was hardcoded octet-stream)
+[x] Frontend CSP + Unsplash remotePatterns
+[x] User dropdown semantic theme tokens (light/dark theme fix)
+[x] Loosen requirements.txt to >= with major-version ceilings (resolve cascades)
+[x] Bump playwright 1.49→1.60 (Darwin ARM segfault fix; 10 PDF render tests pass)
+[x] Bump supabase 2.4.6→2.30 (sb_publishable_/sb_secret_ key support)
+[x] Bump websockets >=14 (asyncio module)
+[x] Loosen pydantic >=2.11.7 (storage3 2.30 compat)
+[x] Loosen aiohttp >=3.10 (yarl compat)
+[x] Remove @rolldown/binding-darwin-arm64 from devDeps (Linux CI compat)
+
+Code review fixes (2026-05-26):
+[x] Export API contract unified (version_id + dash-format template_id)
+[x] Auth fallback removed
+[x] IntegrityError guard
+[x] apply_changes updates project bullets
+[x] Hooks query key invalidation ['resume-versions']
+[x] BulletPlaceholder model_dump() for hallucination guard
+[x] 12 minor issues catalogued in TECH_DEBT.md §2026-05-26
+
+Final test counts: 127 backend pass, 12 skip; 5 frontend vitest pass; full build clean
+Coverage: 45% overall; Prism Pro core paths 90%+; legacy job-tracking 0-30% (acceptable)
+
+================================================================================
+COMPREHENSIVE TEST COVERAGE                                               [x]
+--------------------------------------------------------------------------------
+Branch: feat/comprehensive-test-coverage
+Status: in progress 2026-05-26
+Spec: docs/superpowers/specs/2026-05-26-comprehensive-test-coverage-design.md
+Plan: docs/superpowers/plans/2026-05-26-comprehensive-test-coverage-plan.md
+
+Phase 1 — Backend gap-fill:
+[x] Task 1 — Delete orphaned dead code (consolidated_resume_evaluator, resume_legacy,
+    resume stub, resume_tasks, ~1100 LOC)
+[x] Task 2 — Verify-and-delete legacy services (job_matcher, supabase_cache_service,
+    supabase_task_queue; ~992 LOC). resume_parser.py kept (still imported by profiles.py)
+[x] Task 3 — .coveragerc with 21 omit entries (legacy/demoted modules)
+[x] Task 4 — core/auth.py _ensure_user_row tests (3 tests)
+[x] Task 5 — decode_supabase_jwt + _jwks_client tests (3 tests)
+[x] Task 6 — get_current_user_id + get_current_user_email tests (auth.py at 92%)
+[x] Task 7 — stripe_webhook_handler verify_event tests (signature verification)
+[x] Task 8 — stripe handle_event tests (checkout, idempotent replay, unknown types)
+[x] Task 9 — credits/ledger edge tests (refund, insufficient, external_ref)
+[x] Task 10 — credit_tasks monthly grant tests (discovered real bug — see TECH_DEBT)
+[x] Task 11 — pytest.ini coverage opts + postgres marker
+[x] Task 12 — CI backend coverage gate at 70% floor
+
+Phase 2 — Frontend foundation:
+[x] Task 13 — @vitest/coverage-v8 + msw installed + test scripts
+[x] Task 14 — msw server fixture for API client tests
+[x] Task 15 — useTailorApply hook tests (success + 4xx)
+[x] Task 16 — useExportPdf hook tests (download trigger + 402)
+[x] Task 17 — use-resume hook tests (upload + evaluate, 4 tests)
+[x] Task 18 — useJDAnalyze + useCreditsBalance hook tests
+[x] Task 19 — API client tests (resume-v2, jd, exports, credits — 17 tests)
+[x] Task 20 — DiffView component tests
+[x] Task 21 — BulletHighlight + RewriteModal tests
+[x] Task 22 — ResumeUploadDropzone + AtsTab tests
+[x] Task 23 — vitest.config.ts coverage thresholds + CI frontend coverage step
+
+Phase 3 — Pre-push hook + ratchet:
+[x] Task 24 — lefthook installed + pre-push hook (backend pytest + frontend vitest)
+[x] Task 25 — CI thresholds ratcheted (backend 80, frontend 80/75/75/72)
+[x] Task 26 — Coverage badges in README + progress.txt phase block
+
+Final test counts: 157 backend pass, 12 skip (86.71% coverage at 80% gate);
+                   44 frontend pass across 15 test files (83.6% lines, 75.3% branches)
+
+================================================================================
 FRONTEND EDITORIAL REBRAND                                                [~]
 --------------------------------------------------------------------------------
 Branch: feat/frontend-content-rebrand (not yet merged)
@@ -222,7 +327,7 @@ TECH DEBT (DEFERRED — see TECH_DEBT.md)                                   [ ]
 --------------------------------------------------------------------------------
 [ ] Migrate os.getenv → settings.X across LLM services
 [ ] Squash Alembic migration chain into single baseline
-[ ] Remove test_user_123 auth fallback in app/core/auth.py
+[x] Remove test_user_123 auth fallback in app/core/auth.py (done 2026-05-26)
 [ ] Drop SUPABASE_JWT_SECRET from conftest + .env.example
 [ ] Add SQLALCHEMY_DATABASE_URI to .env.example
 [ ] Standardize storage bucket name to "resumes"
@@ -230,6 +335,11 @@ TECH DEBT (DEFERRED — see TECH_DEBT.md)                                   [ ]
 [ ] Fix 9 react-hooks/exhaustive-deps warnings
 [ ] Re-enable secret scanning in CI (gitleaks license or alternative)
 [ ] Postgres concurrent-debit test wired to actually run in CI
+[ ] 12 minor reviewer-flagged issues from 2026-05-26 review (iframe sandbox + COEP,
+    lru_cache docs, analytics aggregation level, e2e structured-outputs mock,
+    _slugify length cap, _sanitize_filename .rstrip bug, websockets upper bound,
+    pytz upper bound, dead deps python-jose+passlib, get_current_user_email
+    _ensure_user_row, ignoreBuildErrors flags)
 
 ================================================================================
 DEFERRED PILLARS (NOT SCHEDULED)
