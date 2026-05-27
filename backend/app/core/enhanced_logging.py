@@ -357,7 +357,7 @@ def validate_railway_config():
         'OPENAI_API_KEY': 'OpenAI API integration',
         'SUPABASE_URL': 'Database connection',
         'SQLALCHEMY_DATABASE_URI': 'SQLAlchemy database',
-        'SUPABASE_JWT_SECRET': 'JWT verification'
+        'SUPABASE_SERVICE_ROLE_KEY': 'Supabase Storage + admin ops',
     }
 
     missing_vars = []
