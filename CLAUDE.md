@@ -104,7 +104,7 @@ Kept routes:
 Removed in Phase 0: `/dashboard/activity`, `/dashboard/referrals`, `/dashboard/resume-evaluation` (redirects configured in `next.config.mjs`).
 Settings trimmed to **Privacy** + **Change History** only.
 
-### Frontend typography (in-progress branch: `feat/frontend-content-rebrand`)
+### Frontend typography (merged via PR #6, 2026-05-26)
 - **Display headlines / wordmark / nav** — Humane variable typeface (`public/fonts/HUMANE Typeface/Variable-TT/Humane-VF.ttf`)
 - **Section H2s, card titles, FAQ Qs** — Fraunces (serif, optical-size, italic)
 - **Body / UI / labels / buttons / footer / marquee** — Geist Sans (Vercel's typeface)
@@ -112,19 +112,26 @@ Settings trimmed to **Privacy** + **Change History** only.
 
 ### Database & infra
 - **Supabase** (Postgres 17 + Auth + Storage + Row-Level Security).
-- **Redis + Celery** for background tasks (`resume_tasks`, `job_extraction_tasks`, `credit_tasks`).
+- **pg_cron** for the monthly credit grant — replaces Celery as of 2026-05-29. Single SQL function `grant_monthly_credits()` scheduled at midnight UTC on the 1st of each month. Idempotent per `(user, month)` via `credit_ledger.external_ref` unique constraint. See `docs/supabase-pg-cron-setup.md` for one-time setup.
 - **Alembic** migrations — note: the migration chain has accumulated branches and is bootstrapped on fresh DBs via `Base.metadata.create_all()` + `alembic stamp head`. A baseline squash is in TECH_DEBT.md.
 - **Storage bucket** name: `resume` (env-overridable via `SUPABASE_STORAGE_BUCKET`).
 - **RLS policies** on every user-owned table (`resume_documents`, `resume_evaluations_v2`, `resume_versions`, `jd_evaluations`, `credit_ledger`, `resume_exports`). Storage policies enforce per-user folder isolation.
+- **No async task queue.** All LLM calls return synchronously. There are no long-running background jobs in the active feature set.
 
 ### Local dev
 - **Makefile** at repo root: `make dev` runs backend + frontend together; `make stop` kills both; `make test`, `make lint`, `make migrate`, `make clean` available.
 - Backend env loaded via `load_dotenv()` at `app/main.py` startup — no `--env-file` flag required.
+- **Pre-push hook** (`lefthook.yml`) runs backend pytest + frontend vitest with coverage gates before every `git push`. Bypass with `--no-verify`.
 
 ### CI
 - GitHub Actions workflow at `.github/workflows/ci.yml`.
-- Backend: ruff lint (advisory — see TECH_DEBT), pytest SQLite default, pytest Postgres for concurrency-sensitive paths, Playwright Chromium install for PDF render tests.
-- Frontend: lint, build, tsc (`continue-on-error` — pre-existing TS errors tracked in TECH_DEBT).
+- Backend: ruff lint (advisory — see TECH_DEBT), pytest SQLite default, pytest Postgres for concurrency-sensitive paths, Playwright Chromium install for PDF render tests. **Coverage gate at 80%**.
+- Frontend: lint, build, tsc (`continue-on-error` — pre-existing TS errors tracked in TECH_DEBT), vitest with coverage. **Coverage gate at 80% lines / 75% branches / 72% functions**.
+
+### Production deploy (Railway)
+- **SQLALCHEMY_DATABASE_URI** must use Supabase **session pooler** (`aws-0-<region>.pooler.supabase.com:5432`) — Railway containers can't reach Supabase's direct connection (IPv6-only).
+- Username on pooled URI: `postgres.<project_ref>` (tenant routing).
+- See README "Local development" → Required env vars + Supabase Dashboard → Project Settings → Database → "Session pooler" for canonical URI.
 
 ---
 
@@ -141,17 +148,29 @@ Settings trimmed to **Privacy** + **Change History** only.
 
 ## Plans & specs
 
-- Pivot spec: `docs/superpowers/specs/2026-05-19-prism-pro-pivot-design.md`
-- Phase 0 cleanup: `docs/superpowers/plans/2026-05-19-prism-pro-phase-0-cleanup.md`
-- Phase 1 backend: `docs/superpowers/plans/2026-05-19-prism-pro-resume-backend-phase-1.md`
-- Phase 4 production hardening: `docs/superpowers/plans/2026-05-19-prism-pro-phase-4-production-hardening.md`
+**Specs (`docs/superpowers/specs/`):**
+- `2026-05-19-prism-pro-pivot-design.md` — pivot from job tracker to resume polish platform
+- `2026-05-25-tailor-apply-preview-export-design.md` — Apply→Preview→Export pipeline
+- `2026-05-26-comprehensive-test-coverage-design.md` — tiered coverage gates + dead-code culling
+
+**Plans (`docs/superpowers/plans/`):**
+- `2026-05-19-prism-pro-phase-0-cleanup.md`
+- `2026-05-19-prism-pro-resume-backend-phase-1.md`
+- `2026-05-19-prism-pro-phase-4-production-hardening.md`
+- `2026-05-20-prism-pro-phase-2-pdf-render.md`
+- `2026-05-20-prism-pro-frontend-phase-3.md`
+- `2026-05-25-tailor-apply-preview-export-plan.md`
+- `2026-05-26-comprehensive-test-coverage-plan.md`
+
+**Other refs:**
 - Tech debt: `TECH_DEBT.md`
-- Production blockers: `BLOCKERS.md` (Phase 2 PDF renderer failures, items §P2)
+- Production blockers: `BLOCKERS.md`
 - Frontend rebrand audit: `frontend/REBRAND_AUDIT.md`
+- Progress tracker: `progress.txt`
 
 ---
 
-## Status (2026-05-26)
+## Status (2026-05-27)
 
 | Phase | Status |
 |---|---|
@@ -163,18 +182,25 @@ Settings trimmed to **Privacy** + **Change History** only.
 | Phase 4 — Production hardening (12 tasks) | ✅ merged to main |
 | ES256 JWT migration | ✅ merged to main |
 | Fresh Supabase project bootstrap | ✅ completed |
-| Tailor Apply → Preview → Export pipeline | ✅ merged to main (2026-05-26) |
-| Welcome credits + profile bootstrap + auth hardening | ✅ merged to main (2026-05-26) |
-| Analytics endpoint (JD progress funnel) | ✅ merged to main (2026-05-26) |
-| Frontend editorial rebrand | 🚧 in progress on `feat/frontend-content-rebrand` |
+| Tailor Apply → Preview → Export pipeline | ✅ merged to main (2026-05-26, PR #7) |
+| Welcome credits + profile bootstrap + auth hardening | ✅ merged to main (2026-05-26, PR #7) |
+| Analytics endpoint (JD progress funnel) | ✅ merged to main (2026-05-26, PR #7) |
+| Frontend editorial rebrand | ✅ merged to main (2026-05-26, PR #6) |
+| Comprehensive test coverage (26 tasks) | ✅ merged to main (2026-05-26, PR #8) |
+| Railway Supabase pooler fix + env validation cleanup | ✅ merged to main (2026-05-27, PR #9) |
 
-## Test coverage (2026-05-26)
+## Test coverage (2026-05-27)
 
-- **Backend pytest:** 127 pass, 12 skip, 45% overall coverage
-- **Frontend vitest:** 5/5 pass (`PreviewPanel` component tests)
+- **Backend pytest:** 157 pass, 12 skip — **86.7% coverage** (gate at 80%)
+- **Frontend vitest:** 44 pass across 15 test files — **83.6% lines / 75.3% branches / 72.7% functions** (gate at 80/75/72)
+- **Frontend e2e (Playwright):** 25-test suite, cookie-based auth bypass gated to non-prod
+- **Pre-push hook** (lefthook): runs both suites + coverage gates before every `git push`. Bypass with `--no-verify`.
 - **Core Prism Pro paths (high coverage):**
   - API endpoints: `analytics` 100%, `credits` 100%, `admin_metrics` 100%, `exports` 96%, `jd` 93%, `resumes_v2` 91%, `webhooks` 84%
-  - Services: `hallucination_guard` 100%, `evaluator` 100%, `rewriter` 100%, `parser` 94%, `extractor` 95%, `tailor` 97%, `template_engine` 97%, `renderer` 81%, `supabase_storage` 89%, `ledger` 93%, `stripe_webhook_handler` 79%
+  - Services: `hallucination_guard` 100%, `evaluator` 100%, `rewriter` 100%, `parser` 94%, `extractor` 95%, `tailor` 97%, `template_engine` 97%, `renderer` 81%, `supabase_storage` 89%, `ledger` 94%, `stripe_webhook_handler` 91%
   - Schemas: `jd` 100%, `resume_v2` 100%, `resume_export` 100%
-- **Low coverage (acceptable — legacy/demoted code):** `jobs.py` 17%, `job_extraction.py` 29%, `profiles.py` 16%, `url_job_extractor.py` 11%
-- **Gap to address:** `core/auth.py` at 35% — newly added `_ensure_user_row()` lacks direct unit tests (covered via integration tests)
+  - `core/auth.py`: 92% (added unit tests for `_ensure_user_row`, JWKS, dependency wiring)
+  - Frontend hooks (all): 100% — `useTailorApply`, `useExportPdf`, `useJdAnalyze`, `useCreditsBalance`; `use-resume` at 54%
+  - Frontend API clients (all): 100% — `resume-v2`, `jd`, `exports`, `credits`
+- **Excluded from coverage gate** (`.coveragerc`): legacy job-tracking routes + infra wrappers + legacy ORM models (21 files)
+- **Coverage gaps remaining:** `frontend/use-resume.ts` 54% lines (additional mutations untested), 3 components with function coverage below 75% (tracked in TECH_DEBT)

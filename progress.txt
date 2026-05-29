@@ -1,5 +1,5 @@
 PRISM PRO — DELIVERY PROGRESS
-Last updated: 2026-05-26
+Last updated: 2026-05-27
 
 ================================================================================
 LEGEND
@@ -226,8 +226,8 @@ Coverage: 45% overall; Prism Pro core paths 90%+; legacy job-tracking 0-30% (acc
 ================================================================================
 COMPREHENSIVE TEST COVERAGE                                               [x]
 --------------------------------------------------------------------------------
-Branch: feat/comprehensive-test-coverage
-Status: in progress 2026-05-26
+Branch: feat/comprehensive-test-coverage (merged via PR #8)
+Status: merged 2026-05-26
 Spec: docs/superpowers/specs/2026-05-26-comprehensive-test-coverage-design.md
 Plan: docs/superpowers/plans/2026-05-26-comprehensive-test-coverage-plan.md
 
@@ -269,10 +269,10 @@ Final test counts: 157 backend pass, 12 skip (86.71% coverage at 80% gate);
                    44 frontend pass across 15 test files (83.6% lines, 75.3% branches)
 
 ================================================================================
-FRONTEND EDITORIAL REBRAND                                                [~]
+FRONTEND EDITORIAL REBRAND                                                [x]
 --------------------------------------------------------------------------------
-Branch: feat/frontend-content-rebrand (not yet merged)
-Status: in progress 2026-05-22
+Branch: feat/frontend-content-rebrand (merged via PR #6)
+Status: merged 2026-05-26
 
 [x] Batch 1 — Earth-tone design tokens + Fraunces + IBM Plex Sans + REBRAND_AUDIT.md
 [x] Batch 2 — Landing page rewrite (11 sections), SEO/manifest/sitemap → prismpro.live, login copy
@@ -289,9 +289,42 @@ Status: in progress 2026-05-22
 [x] Nav typography sizing (Humane SemiBold 600, 32px wordmark / 20px links)
 [x] Bento card font fix (Humane → Geist Sans in BentoGrid helper)
 
-[ ] Visual review + push PR
-[ ] Manual smoke through full user journey on new design
-[ ] Merge to main
+[x] Merged to main 2026-05-26 (PR #6)
+
+================================================================================
+REPLACE CELERY WITH SUPABASE PG_CRON                                      [x]
+--------------------------------------------------------------------------------
+Branch: feat/replace-celery-with-pg-cron
+Status: in progress 2026-05-29
+
+[x] Delete backend/app/tasks/ (credit_tasks.py + __init__)
+[x] Delete backend/app/core/celery_app.py
+[x] Delete backend/tests/tasks/
+[x] Drop celery + redis from requirements.txt
+[x] Remove CELERY_BROKER_URL / CELERY_RESULT_BACKEND properties from config.py
+[x] Alembic migration 2026_05_29_pg_cron: grant_monthly_credits() PL/pgSQL function
+[x] docs/supabase-pg-cron-setup.md: pg_cron enable + cron.schedule() one-time setup
+[x] Update CLAUDE.md + README.md (drop "Redis + Celery" from tech stack)
+[x] Update pre-deploy checklist (drop Celery beat verification)
+
+Idempotency model: external_ref = 'monthly:YYYY-MM:user_id' per (user, month).
+DB unique constraint blocks duplicates — re-running mid-month is safe.
+Resolves the grant_monthly_to_all idempotency bug in one stroke (no Python loop).
+
+================================================================================
+RAILWAY DEPLOY HARDENING                                                  [x]
+--------------------------------------------------------------------------------
+Branch: fix/railway-env-validation (merged via PR #9)
+Status: merged 2026-05-27
+
+[x] Switched Railway SQLALCHEMY_DATABASE_URI to Supabase session pooler
+    (port 5432 via aws-0-<region>.pooler.supabase.com) — direct URL resolves
+    IPv6-only, unreachable from Railway containers
+[x] Dropped dead SUPABASE_JWT_SECRET check from validate_railway_config()
+    (HS256→ES256/JWKS migration left it as dead config)
+[x] Replaced with SUPABASE_SERVICE_ROLE_KEY check (actually required for Storage)
+[x] Added pytest-cov to requirements.txt (was installed locally, missing from
+    CI image — caused CI exit 4 on first test-coverage push)
 
 ================================================================================
 TRACK 2 — MANUAL SMOKE TEST                                               [ ]
@@ -311,16 +344,20 @@ Status: not started
 [ ] Hallucination edge cases
 
 ================================================================================
-PRE-DEPLOY CHECKLIST                                                      [ ]
+PRE-DEPLOY CHECKLIST  (main = production, no staging)                     [~]
 --------------------------------------------------------------------------------
-[ ] Fix 10 Phase 2 PDF renderer test failures (BLOCKERS §P2)
-[ ] Apply Alembic migrations on staging Postgres (production env)
-[ ] Configure Railway env vars (STRIPE_*, ADMIN_USER_IDS, SUPABASE_* with new keys)
-[ ] Set up Stripe webhook endpoint in Stripe dashboard
-[ ] Verify Celery beat scheduler running on Railway (monthly grant cron)
+[x] Fix 10 Phase 2 PDF renderer test failures — resolved by playwright 1.49→1.60 bump
+[x] Configure Railway SUPABASE_URL, SQLALCHEMY_DATABASE_URI (session pooler),
+    SUPABASE_SERVICE_ROLE_KEY, OPENAI_API_KEY (verified booting 2026-05-27)
+[x] Backend live on api.prismpro.live
+[ ] Apply Alembic migrations on production Postgres (alembic upgrade head)
+[ ] Configure Railway env vars: STRIPE_API_KEY, STRIPE_WEBHOOK_SECRET, ADMIN_USER_IDS
+[ ] Set up Stripe webhook endpoint in Stripe dashboard (point at api.prismpro.live/api/v1/webhooks/stripe)
+[ ] Enable pg_cron extension + schedule monthly-credit-grant (one-time SQL,
+    see docs/supabase-pg-cron-setup.md)
 [ ] Update Google OAuth callback URL in Google Cloud Console (new Supabase project)
-[ ] Staging deploy + full manual smoke
-[ ] Production cutover
+[ ] Manual smoke test on production with personal account (Track 2)
+[ ] Announce launch
 
 ================================================================================
 TECH DEBT (DEFERRED — see TECH_DEBT.md)                                   [ ]
@@ -328,6 +365,7 @@ TECH DEBT (DEFERRED — see TECH_DEBT.md)                                   [ ]
 [ ] Migrate os.getenv → settings.X across LLM services
 [ ] Squash Alembic migration chain into single baseline
 [x] Remove test_user_123 auth fallback in app/core/auth.py (done 2026-05-26)
+[x] Drop SUPABASE_JWT_SECRET from validate_railway_config (done 2026-05-27, PR #9)
 [ ] Drop SUPABASE_JWT_SECRET from conftest + .env.example
 [ ] Add SQLALCHEMY_DATABASE_URI to .env.example
 [ ] Standardize storage bucket name to "resumes"
@@ -340,6 +378,12 @@ TECH DEBT (DEFERRED — see TECH_DEBT.md)                                   [ ]
     _slugify length cap, _sanitize_filename .rstrip bug, websockets upper bound,
     pytz upper bound, dead deps python-jose+passlib, get_current_user_email
     _ensure_user_row, ignoreBuildErrors flags)
+[x] grant_monthly_to_all not idempotent — RESOLVED 2026-05-29 by replacing
+    Celery beat task with Supabase pg_cron + SQL function. SQL function uses
+    per-(user,month) external_ref blocked by DB unique constraint.
+[ ] Frontend vitest function coverage gate capped at 72% (target 75%) —
+    bullet-highlight.tsx (33%), resume-upload-dropzone.tsx (50%), rewrite-modal.tsx (70%)
+[ ] use-resume.ts lines coverage 54% — additional mutations (rewriteBullet, createVersion) untested
 
 ================================================================================
 DEFERRED PILLARS (NOT SCHEDULED)
