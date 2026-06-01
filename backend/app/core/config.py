@@ -164,22 +164,6 @@ class Settings(BaseSettings):
                 raise ValueError("OPENAI_API_KEY is required when AI features are enabled in production")
         return v
 
-    @property
-    def CELERY_BROKER_URL(self) -> str:
-        """
-        Backward compatibility for legacy Celery configuration.
-        Returns dummy value since we now use Supabase task queue.
-        """
-        return "memory://"  # In-memory broker for compatibility
-
-    @property
-    def CELERY_RESULT_BACKEND(self) -> str:
-        """
-        Backward compatibility for legacy Celery configuration.
-        Returns dummy value since we now use Supabase task queue.
-        """
-        return "cache+memory://"  # In-memory backend for compatibility
-
     OPENAI_MODEL: str = "gpt-4o-mini"
     """OpenAI model to use for text generation (optimized for cost-efficiency)"""
 

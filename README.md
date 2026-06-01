@@ -36,7 +36,7 @@ For engineers who refuse generic AI bullets.
 
 ### Credit system
 - 10 welcome credits on first sign-in (auto-granted via `_ensure_user_row()`)
-- 20 free credits / month (auto-granted on the 1st via Celery beat)
+- 20 free credits / month (auto-granted on the 1st via Supabase **pg_cron** → `grant_monthly_credits()`)
 - Stripe webhook for top-ups (idempotent via `external_ref`)
 - Per-operation cost: evaluate = 1, tailor = 2, rewrite = 0, apply = 0, export = 1
 
@@ -52,8 +52,9 @@ For engineers who refuse generic AI bullets.
 - Typography: **Humane** (display + nav), **Fraunces** (serif headings), **Geist Sans** (body / UI)
 
 ### Backend
-- FastAPI 0.104 + SQLAlchemy 2.0 + Pydantic v2
-- OpenAI 1.56 (`gpt-4o-2024-08-06` for eval/rewrite/tailor, `gpt-4o-mini` for extraction)
+- FastAPI + SQLAlchemy 2.0 + Pydantic v2 (loosened `>=` pins with major-version ceilings)
+- OpenAI (`gpt-4o-2024-08-06` for eval/rewrite/tailor, `gpt-4o-mini` for extraction)
+- Schema-enforced LLM responses via `client.beta.chat.completions.parse()` with typed Pydantic models
 - Tenacity retries on `RateLimitError` / `APIConnectionError` / `APITimeoutError`
 - Hallucination guard (regex) rejects unprompted digits incl. scientific notation + `x` multipliers
 
@@ -61,8 +62,8 @@ For engineers who refuse generic AI bullets.
 - Supabase Postgres + Row-Level Security on every user-owned table
 - Supabase Storage (private bucket, signed URLs)
 - Supabase Auth (ES256 JWT via JWKS — migrated from HS256)
-- Redis + Celery (beat + worker) for monthly grants, async tasks
-- Railway deploy targets
+- Supabase pg_cron for the monthly credit grant (no Redis / Celery — see `docs/supabase-pg-cron-setup.md`)
+- Railway deploy targets (`main` branch = production; no separate staging)
 
 ---
 
@@ -135,6 +136,12 @@ NEXT_PUBLIC_GOOGLE_CLIENT_ID=...
 ```
 
 URL-encode special characters in your Postgres password (`@` → `%40`, `#` → `%23`, etc.) OR set a password without special chars.
+
+**Production (Railway):** use Supabase **session pooler** URI, not direct connection:
+```
+SQLALCHEMY_DATABASE_URI=postgresql://postgres.<ref>:<pwd>@aws-0-<region>.pooler.supabase.com:5432/postgres
+```
+Direct connection (`db.<ref>.supabase.co:5432`) resolves to IPv6 only — Railway containers can't reach it. Get the exact URI from Supabase Dashboard → Project Settings → Database → "Session pooler" tab.
 
 ### DB bootstrap on a fresh Supabase project
 

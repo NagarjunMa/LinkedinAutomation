@@ -31,10 +31,6 @@ PyJWT>=2.8,<3
 python-jose[cryptography]>=3.3,<4
 passlib[bcrypt]>=1.7.4,<2
 
-# ── Background tasks ──────────────────────────────────────────────────────
-celery>=5.3,<6
-redis>=5.0,<7
-
 # ── HTTP clients ──────────────────────────────────────────────────────────
 requests>=2.31,<3
 aiohttp>=3.10,<4
