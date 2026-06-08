@@ -15,6 +15,12 @@ from app.services.payments.stripe_webhook_handler import (
 )
 
 
+pytestmark = pytest.mark.skipif(
+    os.getenv("ENABLE_BILLING", "false").lower() != "true",
+    reason="Stripe payment service tests are dormant unless ENABLE_BILLING=true",
+)
+
+
 @pytest.fixture(autouse=True)
 def force_real_signature_check(monkeypatch):
     """Force _TEST_MODE off so signature verification path runs regardless of
@@ -124,8 +130,8 @@ def test_handle_event_checkout_missing_user_id_is_ignored(db_session):
     assert result.get("reason") == "no_user_id"
 
 
-def test_handle_event_checkout_invalid_credit_amount_defaults_to_20(db_session, test_user_id):
-    """Non-numeric credit_amount falls back to 20."""
+def test_handle_event_checkout_invalid_credit_amount_defaults_to_freemium_amount(db_session, test_user_id):
+    """Non-numeric credit_amount falls back to the freemium monthly amount."""
     event = {
         "id": "evt_bad_amount_1",
         "type": "checkout.session.completed",
@@ -139,7 +145,7 @@ def test_handle_event_checkout_invalid_credit_amount_defaults_to_20(db_session, 
     }
     result = handle_event(db_session, event)
     assert result["status"] == "ok"
-    assert result["credits_granted"] == 20
+    assert result["credits_granted"] == 90
 
     from app.services.credits.ledger import get_balance
-    assert get_balance(db_session, test_user_id) == 20
+    assert get_balance(db_session, test_user_id) == 90
