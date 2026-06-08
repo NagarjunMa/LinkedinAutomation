@@ -64,7 +64,7 @@ def create_profile(
 ):
     """Create a new user profile"""
     try:
-        profile = ProfileService.create_profile(db, user_id, profile_data)
+        ProfileService.create_profile(db, user_id, profile_data)
         # Return with stats
         return ProfileService.get_profile_with_stats(db, user_id)
     except Exception as e:

@@ -19,12 +19,12 @@ export default function CreditsPage() {
             <p className="text-4xl font-bold" data-testid="credits-balance">{data.balance}</p>
           )}
           <p className="text-xs opacity-60 mt-2">
-            Evaluate: 1 credit · Tailor: 2 credits · Rewrite: 0 credits
+            90 free credits refresh every month. Evaluate: 1 credit · Tailor: 2 credits · Apply: 0 credits · Export: 1 credit
           </p>
         </CardContent>
       </Card>
       <p className="text-xs opacity-60">
-        Top-up via Stripe is coming in a later release.
+        Credits refresh monthly during the freemium launch.
       </p>
     </div>
   );

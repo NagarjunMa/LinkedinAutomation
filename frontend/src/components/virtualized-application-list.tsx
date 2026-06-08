@@ -1,7 +1,7 @@
 "use client"
 
-import { memo, forwardRef } from 'react'
-import { FixedSizeList } from 'react-window'
+import { memo, type ReactElement } from 'react'
+import { List, type RowComponentProps } from 'react-window'
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -36,15 +36,10 @@ interface Application {
     extractedAt?: string;
 }
 
-interface ApplicationItemProps {
-    index: number;
-    style: React.CSSProperties;
-    data: {
-        applications: Application[];
-        getStatusBadge: (status: ApplicationStatus) => React.ReactNode;
-        onViewJob: (url: string) => void;
-        onViewDetails: (application: Application) => void;
-    };
+interface ApplicationRowProps {
+    applications: Application[];
+    onViewJob: (url: string) => void;
+    onViewDetails: (application: Application) => void;
 }
 
 const getStatusBadge = (status: ApplicationStatus) => {
@@ -65,14 +60,19 @@ const getStatusBadge = (status: ApplicationStatus) => {
 }
 
 // Virtualized application item component
-const ApplicationItem = memo(forwardRef<HTMLDivElement, ApplicationItemProps>(
-    function ApplicationItem({ index, style, data }, ref) {
-        const { applications, onViewJob, onViewDetails } = data;
+function ApplicationItem({
+    index,
+    style,
+    ariaAttributes,
+    applications,
+    onViewJob,
+    onViewDetails,
+}: RowComponentProps<ApplicationRowProps>): ReactElement | null {
         const application = applications[index];
 
         if (!application) {
             return (
-                <div ref={ref} style={style} className="p-2">
+                <div {...ariaAttributes} style={style} className="p-2">
                     <Card className="hover:shadow-lg transition-shadow animate-pulse bg-white rounded-[32px] border border-[#3b3b3b]/5">
                         <CardContent className="p-6">
                             <div className="h-20 bg-[#f0eff2] rounded-xl"></div>
@@ -83,7 +83,7 @@ const ApplicationItem = memo(forwardRef<HTMLDivElement, ApplicationItemProps>(
         }
 
         return (
-            <div ref={ref} style={style} className="p-2">
+            <div {...ariaAttributes} style={style} className="p-2">
                 <Card className="group bg-white rounded-[32px] border border-[#3b3b3b]/5 shadow-sm hover:shadow-xl transition-all hover:border-[#3b3b3b]/20">
                     <CardContent className="p-6">
                         <div className="flex items-start justify-between">
@@ -164,8 +164,7 @@ const ApplicationItem = memo(forwardRef<HTMLDivElement, ApplicationItemProps>(
                 </Card>
             </div>
         );
-    }
-));
+}
 
 interface VirtualizedApplicationListProps {
     applications: Application[];
@@ -180,27 +179,20 @@ export const VirtualizedApplicationList = memo(function VirtualizedApplicationLi
     onViewDetails,
     height = 600
 }: VirtualizedApplicationListProps) {
-    const itemData = {
-        applications,
-        getStatusBadge,
-        onViewJob,
-        onViewDetails
-    };
-
     // Calculate item height: base height + padding + margins
     const itemHeight = 200; // Approximate height per application card
 
     return (
         <div className="border rounded-lg overflow-hidden">
-            <FixedSizeList
-                height={height}
-                itemCount={applications.length}
-                itemSize={itemHeight}
-                itemData={itemData}
-                overscanCount={5} // Render 5 extra items for smooth scrolling
-            >
-                {ApplicationItem}
-            </FixedSizeList>
+            <List
+                defaultHeight={height}
+                rowComponent={ApplicationItem}
+                rowCount={applications.length}
+                rowHeight={itemHeight}
+                rowProps={{ applications, onViewJob, onViewDetails } satisfies ApplicationRowProps}
+                overscanCount={5}
+                style={{ height }}
+            />
         </div>
     );
 });

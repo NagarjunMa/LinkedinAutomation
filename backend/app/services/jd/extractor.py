@@ -1,10 +1,9 @@
 import os
-import json
 import logging
 from openai import AsyncOpenAI, RateLimitError, APIConnectionError, APITimeoutError
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from app.schemas.jd import JDExtraction
-from app.core.llm_logging import measure, estimate_cost, log_cost
+from app.core.llm_logging import measure, log_cost
 
 _client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 logger = logging.getLogger("llm")

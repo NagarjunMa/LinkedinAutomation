@@ -250,7 +250,7 @@ def client(db_session: Session, test_user_id: str, tmp_path):
         from app.main import app
 
     import app.db.session as _session_mod
-    from app.core.auth import get_current_user_id
+    from app.core.auth import get_current_user_id, get_authenticated_user_id
     from app.db.session import get_db
 
     # Override engine to one that matches db_session's engine.
@@ -267,6 +267,7 @@ def client(db_session: Session, test_user_id: str, tmp_path):
 
     app.dependency_overrides[get_db] = _override_get_db
     app.dependency_overrides[get_current_user_id] = _override_get_current_user_id
+    app.dependency_overrides[get_authenticated_user_id] = _override_get_current_user_id
 
     # Patch UPLOAD_DIR to use tmp_path so tests don't write to the project tree.
     try:
@@ -295,6 +296,7 @@ def client(db_session: Session, test_user_id: str, tmp_path):
     # Restore overrides
     app.dependency_overrides.pop(get_db, None)
     app.dependency_overrides.pop(get_current_user_id, None)
+    app.dependency_overrides.pop(get_authenticated_user_id, None)
     if resumes_v2_mod is not None and original_upload_dir is not None:
         resumes_v2_mod.UPLOAD_DIR = original_upload_dir
     # Restore storage singleton

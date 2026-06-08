@@ -5,13 +5,12 @@ Provides comprehensive security headers, rate limiting, and request validation
 
 import time
 import uuid
-import hashlib
 import logging
-from typing import Dict, Optional, List, Callable
+from typing import Dict, Optional, List
 from collections import defaultdict, deque
 from datetime import datetime, timedelta
 
-from fastapi import Request, Response, HTTPException, status
+from fastapi import Request, Response, status
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.responses import JSONResponse
 import ipaddress
@@ -181,7 +180,6 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         current_time = time.time()
         hour_ago = current_time - 3600
-        minute_ago = current_time - 60
 
         for client_id in list(self.request_counts.keys()):
             # Clean requests older than 1 hour
@@ -207,7 +205,6 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         """Check if request should be rate limited"""
         current_time = time.time()
         minute_ago = current_time - 60
-        hour_ago = current_time - 3600
 
         # Count requests in the last minute and hour
         requests_last_minute = sum(

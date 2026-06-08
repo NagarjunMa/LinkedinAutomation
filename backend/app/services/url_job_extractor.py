@@ -1,7 +1,6 @@
 import logging
 import requests
 import json
-import re
 from typing import Dict, Any, Optional
 from urllib.parse import urlparse
 from datetime import datetime

@@ -16,14 +16,12 @@ from sqlalchemy import text
 
 from app.core.config import settings
 from app.api.v1.api import api_router
-from app.core.logging import setup_logging
 from app.models.job import Base
 from app.db.session import engine
-from app.middleware.security import create_security_middleware_stack
 # from app.core.error_handlers import setup_error_handlers
 
 # Setup enhanced logging system
-from app.core.enhanced_logging import setup_enhanced_logging, health_monitor, log_security_event, validate_railway_config
+from app.core.enhanced_logging import setup_enhanced_logging, health_monitor, validate_railway_config
 
 # Initialize enhanced logging
 enhanced_logger = setup_enhanced_logging()

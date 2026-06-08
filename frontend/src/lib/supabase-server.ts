@@ -6,8 +6,8 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
 // Server client for server-side operations
-export const createServerSupabaseClient = () => {
-  const cookieStore = cookies()
+export const createServerSupabaseClient = async () => {
+  const cookieStore = await cookies()
 
   return createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
@@ -36,8 +36,8 @@ export const createServerSupabaseClient = () => {
 }
 
 // Server client with response cookie handling for API routes
-export const createServerSupabaseClientWithResponse = (response: Response) => {
-  const cookieStore = cookies()
+export const createServerSupabaseClientWithResponse = async (response: Response) => {
+  const cookieStore = await cookies()
 
   return createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
@@ -83,7 +83,7 @@ export const createServerSupabaseClientWithResponse = (response: Response) => {
 // Server-side auth utilities
 export const getServerSession = async () => {
   try {
-    const supabase = createServerSupabaseClient()
+    const supabase = await createServerSupabaseClient()
     const { data: { session }, error } = await supabase.auth.getSession()
 
     if (error) {
@@ -105,7 +105,7 @@ export const getServerSession = async () => {
 }
 
 export const getServerUser = async () => {
-  const supabase = createServerSupabaseClient()
+  const supabase = await createServerSupabaseClient()
   const { data: { user }, error } = await supabase.auth.getUser()
   if (error) throw error
   return user
@@ -113,10 +113,9 @@ export const getServerUser = async () => {
 
 // Verify OTP for email verification
 export const verifyOtp = async (tokenHash: string, type: string) => {
-  const supabase = createServerSupabaseClient()
+  const supabase = await createServerSupabaseClient()
   const { data, error } = await supabase.auth.verifyOtp({
     token_hash: tokenHash,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     type: type as any
   })
   if (error) throw error

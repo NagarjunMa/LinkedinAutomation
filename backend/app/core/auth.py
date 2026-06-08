@@ -9,8 +9,9 @@ them, and verify access tokens against the matching `kid`.
 import jwt
 import logging
 import os
+from datetime import datetime, timezone
 from typing import Optional
-from fastapi import HTTPException, Security, Depends
+from fastapi import HTTPException, Security, Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt import PyJWTError, PyJWKClient
 from functools import lru_cache
@@ -18,6 +19,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.core.config import settings
 
 security = HTTPBearer(auto_error=False)
 
@@ -48,36 +50,38 @@ def decode_supabase_jwt(token: str) -> dict:
 
 
 def _ensure_user_row(db: Session, user_id: str, email: str) -> None:
-    """Upsert a ``users`` row for *user_id* and grant welcome credits on first contact.
+    """Upsert a ``users`` row for *user_id* and grant this month's freemium credits.
 
-    Idempotent: if the row already exists this is a no-op.  The welcome credit
-    grant uses ``external_ref="welcome:<user_id>"`` which is UNIQUE-constrained
-    in the credit_ledger table, so a duplicate grant attempt is silently ignored.
+    The credit grant uses ``external_ref="monthly:YYYY-MM:<user_id>"`` which is
+    UNIQUE-constrained in the credit_ledger table, so duplicate first-contact or
+    monthly backfill attempts are safely ignored.
     """
     from app.models.user import User
     from app.services.credits.ledger import grant_monthly
 
     existing = db.query(User).filter(User.user_id == user_id).first()
-    if existing:
-        return
+    if not existing:
+        try:
+            db.add(User(user_id=user_id, email=email))
+            db.commit()
+        except IntegrityError:
+            db.rollback()
 
-    # First contact — create the users row.
+    period = datetime.now(timezone.utc).strftime("%Y-%m")
+    external_ref = f"monthly:{period}:{user_id}"
     try:
-        db.add(User(user_id=user_id, email=email))
+        grant_monthly(
+            db,
+            user_id=user_id,
+            amount=settings.FREEMIUM_MONTHLY_CREDITS,
+            external_ref=external_ref,
+        )
         db.commit()
     except IntegrityError:
         db.rollback()
-        return  # Another concurrent request created the row; skip welcome grant
-
-    # Grant 10 welcome credits.
-    try:
-        grant_monthly(db, user_id=user_id, amount=10,
-                      external_ref=f"welcome:{user_id}")
-        db.commit()
     except Exception as exc:
-        # Don't fail auth if the grant fails (e.g. duplicate external_ref).
         db.rollback()
-        _auth_logger.warning("Welcome credit grant failed for %s: %s", user_id, exc)
+        _auth_logger.warning("Freemium credit grant failed for %s: %s", user_id, exc)
 
 
 def get_current_user_id(
@@ -86,8 +90,8 @@ def get_current_user_id(
 ) -> str:
     """Decode JWT, ensure a ``users`` row exists, and return the user ID.
 
-    On first contact for a new OAuth user the row is created and 10 welcome
-    credits are granted atomically before the user_id is returned.
+    On first contact for a new OAuth user the row is created and the current
+    monthly freemium credits are granted before the user_id is returned.
     """
     if not credentials:
         raise HTTPException(status_code=401, detail="Authorization token required")
@@ -164,3 +168,14 @@ def get_authenticated_user_id(
     email = payload.get("email") or f"{user_id}@unknown.local"
     _ensure_user_row(db, user_id, email)
     return user_id
+
+
+def require_path_user_matches_current(
+    request: Request,
+    current_user_id: str = Depends(get_current_user_id),
+) -> str:
+    """Require auth and reject routes whose path user_id targets another user."""
+    path_user_id = request.path_params.get("user_id")
+    if path_user_id and path_user_id != current_user_id:
+        raise HTTPException(status_code=403, detail="User mismatch")
+    return current_user_id

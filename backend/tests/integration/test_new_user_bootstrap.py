@@ -1,7 +1,7 @@
-"""Integration tests: new-user bootstrap — welcome credits + empty profile.
+"""Integration tests: new-user bootstrap — freemium credits + empty profile.
 
 These tests verify that:
-1. _ensure_user_row creates a users row + grants 10 welcome credits on
+1. _ensure_user_row creates a users row + grants 90 monthly credits on
    first call, and is idempotent on subsequent calls.
 2. GET /api/v1/user-profiles/{user_id} returns 200 with exists=False for
    a user that has no UserProfile row yet.
@@ -20,8 +20,8 @@ from app.core.auth import _ensure_user_row
 # ---------------------------------------------------------------------------
 
 
-def test_ensure_user_row_creates_user_and_grants_welcome_credits(db_session: Session):
-    """First call should insert users row and grant 10 credits."""
+def test_ensure_user_row_creates_user_and_grants_monthly_credits(db_session: Session):
+    """First call should insert users row and grant 90 monthly credits."""
     user_id = "new-user-bootstrap-1"
     email = "bootstrap1@example.com"
 
@@ -34,7 +34,7 @@ def test_ensure_user_row_creates_user_and_grants_welcome_credits(db_session: Ses
     assert user.email == email
 
     balance = get_balance(db_session, user_id)
-    assert balance == 10, f"Expected 10 welcome credits, got {balance}"
+    assert balance == 90, f"Expected 90 monthly freemium credits, got {balance}"
 
 
 def test_ensure_user_row_is_idempotent(db_session: Session):
@@ -46,11 +46,11 @@ def test_ensure_user_row_is_idempotent(db_session: Session):
     _ensure_user_row(db_session, user_id, email)  # second call — must be no-op
 
     balance = get_balance(db_session, user_id)
-    assert balance == 10, f"Expected 10 credits after idempotent call, got {balance}"
+    assert balance == 90, f"Expected 90 credits after idempotent call, got {balance}"
 
 
-def test_ensure_user_row_skips_existing_user(db_session: Session):
-    """If the users row already exists, credits must not be granted again."""
+def test_ensure_user_row_backfills_existing_user_current_month(db_session: Session):
+    """Existing users receive the current monthly grant if it is missing."""
     user_id = "existing-user-no-grant"
     email = "existing@example.com"
 
@@ -61,9 +61,10 @@ def test_ensure_user_row_skips_existing_user(db_session: Session):
     db_session.commit()
 
     _ensure_user_row(db_session, user_id, email)
+    _ensure_user_row(db_session, user_id, email)
 
     balance = get_balance(db_session, user_id)
-    assert balance == 5, f"Expected balance to stay at 5, got {balance}"
+    assert balance == 95, f"Expected existing 5 credits + 90 monthly credits, got {balance}"
 
 
 # ---------------------------------------------------------------------------

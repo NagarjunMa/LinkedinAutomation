@@ -1,22 +1,16 @@
-   import path from 'path';
-   import { fileURLToPath } from 'url';
-   import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs';
 
-   const __filename = fileURLToPath(import.meta.url);
-   const __dirname = path.dirname(__filename);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-   /** @type {import('next').NextConfig} */
-   const nextConfig = {
-    reactStrictMode: true,
-    typescript: {
-      // Build errors will show as warnings but won't block builds
-      ignoreBuildErrors: true,
-    },
-    eslint: {
-      // Show ESLint warnings/errors but don't block builds in development
-      ignoreDuringBuilds: true,
-      dirs: ['src'], // Only lint src directory, not node_modules
-    },
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  reactStrictMode: true,
+  turbopack: {
+    root: __dirname,
+  },
     images: {
       remotePatterns: [
         { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },

@@ -9,7 +9,7 @@ export const runtime = 'nodejs'
  */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createServerSupabaseClient()
+    const supabase = await createServerSupabaseClient()
     const { data: { session }, error } = await supabase.auth.getSession()
 
     // Get all cookies for debugging

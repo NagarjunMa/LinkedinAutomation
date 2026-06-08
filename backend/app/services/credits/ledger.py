@@ -108,11 +108,11 @@ def refund(db: Session, user_id: str, amount: int, reason: str) -> CreditLedger:
 def grant_monthly(
     db: Session,
     user_id: str,
-    amount: int = 20,
+    amount: int = 90,
     external_ref: str | None = None,
 ) -> CreditLedger:
-    """Grant *amount* credits to *user_id* (monthly top-up or manual grant).
+    """Grant *amount* credits to *user_id* (monthly allowance or manual grant).
 
-    *external_ref* may be set to a Stripe charge / invoice ID for idempotency.
+    *external_ref* should be set for idempotency.
     """
     return _append(db, user_id, amount, "grant", external_ref=external_ref)

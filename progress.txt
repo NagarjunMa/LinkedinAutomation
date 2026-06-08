@@ -194,7 +194,7 @@ Frontend:
 [x] PreviewPanel vitest component tests (5/5 pass)
 
 Auth + onboarding:
-[x] _ensure_user_row() auto-creates User + grants 10 welcome credits
+[x] _ensure_user_row() auto-creates User + grants monthly freemium credits
 [x] IntegrityError guard for TOCTOU race on concurrent first sign-in
 [x] Remove test_user_123 unauthenticated fallback (security)
 [x] Profile bootstrap returns empty defaults (not 404) for new users
@@ -351,8 +351,8 @@ PRE-DEPLOY CHECKLIST  (main = production, no staging)                     [~]
     SUPABASE_SERVICE_ROLE_KEY, OPENAI_API_KEY (verified booting 2026-05-27)
 [x] Backend live on api.prismpro.live
 [ ] Apply Alembic migrations on production Postgres (alembic upgrade head)
-[ ] Configure Railway env vars: STRIPE_API_KEY, STRIPE_WEBHOOK_SECRET, ADMIN_USER_IDS
-[ ] Set up Stripe webhook endpoint in Stripe dashboard (point at api.prismpro.live/api/v1/webhooks/stripe)
+[ ] Configure Railway env vars: FREEMIUM_MONTHLY_CREDITS=90, ENABLE_BILLING=false, ADMIN_USER_IDS
+[ ] Keep Stripe webhook disabled for freemium launch (ENABLE_BILLING=false)
 [ ] Enable pg_cron extension + schedule monthly-credit-grant (one-time SQL,
     see docs/supabase-pg-cron-setup.md)
 [ ] Update Google OAuth callback URL in Google Cloud Console (new Supabase project)

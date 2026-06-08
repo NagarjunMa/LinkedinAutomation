@@ -398,7 +398,7 @@ export default function OnboardingPage() {
                                 </div>
 
                                 <div className="text-xs text-muted-foreground p-3 bg-muted/30 rounded-md">
-                                    <strong>What happens next:</strong> You will land on your Resume workspace. Upload your resume to get your first ATS score and recruiter-grade feedback. Your 5 complimentary credits are waiting.
+                                    <strong>What happens next:</strong> You will land on your Resume workspace. Upload your resume to get your first ATS score and recruiter-grade feedback. Your 90 free monthly credits are waiting.
                                 </div>
                             </div>
                         )}

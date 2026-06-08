@@ -95,7 +95,7 @@ def _extract_experience(block: str) -> list[ExperienceEntry]:
     entries: list[ExperienceEntry] = []
     if not block:
         return entries
-    lines = [l for l in block.splitlines() if l.strip()]
+    lines = [line for line in block.splitlines() if line.strip()]
     current_role: ExperienceEntry | None = None
     role_pattern = re.compile(r"(\d{4})\s*[-–—]\s*(\d{4}|present|now)", re.I)
     for line in lines:
@@ -118,7 +118,7 @@ def _extract_experience(block: str) -> list[ExperienceEntry]:
 def _extract_education(block: str) -> list[EducationEntry]:
     if not block:
         return []
-    lines = [l.strip() for l in block.splitlines() if l.strip()]
+    lines = [line.strip() for line in block.splitlines() if line.strip()]
     out: list[EducationEntry] = []
     for line in lines:
         out.append(EducationEntry(school=line, degree=None, dates=None))

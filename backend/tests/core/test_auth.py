@@ -11,13 +11,15 @@ from unittest.mock import patch
 from fastapi import HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
 
+from datetime import datetime, timezone
+
 from app.core.auth import _ensure_user_row, get_current_user_id, get_current_user_email
 from app.models.user import User
 from app.models.credit_ledger import CreditLedger
 
 
-def test_ensure_user_row_creates_user_and_grants_welcome_credits(db_session, test_user_id):
-    """First-time sign-in creates User row + 10 welcome credits (reason='grant')."""
+def test_ensure_user_row_creates_user_and_grants_monthly_credits(db_session, test_user_id):
+    """First-time sign-in creates User row + 90 monthly freemium credits."""
     new_user_id = "brand-new-user"
     _ensure_user_row(db_session, new_user_id, "new@example.com")
     # _ensure_user_row commits internally; no extra commit needed
@@ -28,25 +30,23 @@ def test_ensure_user_row_creates_user_and_grants_welcome_credits(db_session, tes
 
     ledger_entries = db_session.query(CreditLedger).filter_by(user_id=new_user_id).all()
     assert len(ledger_entries) == 1
-    assert ledger_entries[0].delta == 10
-    # grant_monthly uses reason="grant" (not "welcome_grant")
+    assert ledger_entries[0].delta == 90
     assert ledger_entries[0].reason == "grant"
-    # external_ref encodes the intent
-    assert ledger_entries[0].external_ref == f"welcome:{new_user_id}"
+    period = datetime.now(timezone.utc).strftime("%Y-%m")
+    assert ledger_entries[0].external_ref == f"monthly:{period}:{new_user_id}"
 
 
 def test_ensure_user_row_idempotent_on_existing_user(db_session, test_user_id):
-    """Repeat call on existing user returns immediately without adding credits."""
+    """Repeat call on existing user does not duplicate this month's credits."""
     # First call: user already exists (created by test_user_id fixture)
     _ensure_user_row(db_session, test_user_id, "existing@example.com")
 
     # Second call: also no-op
     _ensure_user_row(db_session, test_user_id, "existing@example.com")
 
-    # test_user_id fixture does NOT grant credits, and _ensure_user_row should
-    # skip the welcome grant because the user row already exists.
     ledger_entries = db_session.query(CreditLedger).filter_by(user_id=test_user_id).all()
-    assert len(ledger_entries) == 0
+    assert len(ledger_entries) == 1
+    assert ledger_entries[0].delta == 90
 
 
 def test_ensure_user_row_handles_integrity_error_race(db_session):

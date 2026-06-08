@@ -10,8 +10,8 @@
     "skipLibCheck": true,
     // Balanced strictness - catch bugs but allow flexibility
     "strict": false,
-    "strictNullChecks": true,  // Prevents null/undefined crashes
-    "noImplicitAny": false,    // Allow 'any' when needed for complex APIs
+    "strictNullChecks": true, // Prevents null/undefined crashes
+    "noImplicitAny": false, // Allow 'any' when needed for complex APIs
     "strictFunctionTypes": false, // Too restrictive for React patterns
     "noEmit": true,
     "esModuleInterop": true,
@@ -19,7 +19,7 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "incremental": true,
     "plugins": [
       {
@@ -37,7 +37,8 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "next.config.mjs"
+    "next.config.mjs",
+    ".next/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"
