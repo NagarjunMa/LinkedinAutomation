@@ -76,7 +76,8 @@ google-api-python-client>=2.108,<3
 python-dotenv>=1.0,<2
 
 # ── Test ──────────────────────────────────────────────────────────────────
+pytest>=9.0.3,<10
 respx>=0.20,<1
-pytest-asyncio>=0.21,<1
-pytest-cov>=5,<7
-syrupy>=4.6,<5
+pytest-asyncio>=1.4,<2
+pytest-cov>=7,<8
+syrupy>=5.3,<6
