@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { server, http, HttpResponse } from '@/test-utils/msw-server';
 import { resumeV2Api } from '@/app/lib/api/resume-v2';
 
@@ -34,6 +34,40 @@ describe('resumeV2Api.upload', () => {
     );
     const file = new File(['bad'], 'bad.exe', { type: 'application/octet-stream' });
     await expect(resumeV2Api.upload(file)).rejects.toThrow();
+  });
+
+  it('falls back to localhost when API URL env is absent', async () => {
+    const originalApiUrl = process.env.NEXT_PUBLIC_API_URL;
+    delete process.env.NEXT_PUBLIC_API_URL;
+    vi.resetModules();
+
+    const { resumeV2Api: freshApi } = await import('@/app/lib/api/resume-v2');
+    server.use(
+      http.post('http://localhost:8000/api/v1/resumes/upload', () => {
+        return HttpResponse.json({
+          resume_document_id: 'fallback-doc',
+          contact: { name: 'Test User', email: null, phone: null, links: [] },
+          summary: null,
+          experience: [],
+          education: [],
+          skills: { hard: [], soft: [] },
+          projects: [],
+          certifications: [],
+          raw_text: 'test',
+        });
+      })
+    );
+
+    const file = new File(['pdf content'], 'resume.pdf', { type: 'application/pdf' });
+    const result = await freshApi.upload(file);
+
+    expect(result.resume_document_id).toBe('fallback-doc');
+    if (originalApiUrl === undefined) {
+      delete process.env.NEXT_PUBLIC_API_URL;
+    } else {
+      process.env.NEXT_PUBLIC_API_URL = originalApiUrl;
+    }
+    vi.resetModules();
   });
 });
 

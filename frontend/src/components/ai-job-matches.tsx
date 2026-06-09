@@ -51,7 +51,6 @@ export function AIJobMatches({ userId, minScore = 70, limit = 10 }: AIJobMatches
 
     useEffect(() => {
         fetchJobMatches()
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [userId, minScore, limit])
 
     const fetchJobMatches = async () => {
@@ -373,4 +372,4 @@ export function AIJobMatches({ userId, minScore = 70, limit = 10 }: AIJobMatches
             )}
         </div>
     )
-} 
+}

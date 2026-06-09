@@ -18,7 +18,7 @@ depends_on = None
 
 
 GRANT_FN_SQL = """
-CREATE OR REPLACE FUNCTION grant_monthly_credits(p_amount integer DEFAULT 20)
+CREATE OR REPLACE FUNCTION grant_monthly_credits(p_amount integer DEFAULT 90)
 RETURNS integer AS $$
 DECLARE
   v_period text := to_char(NOW() AT TIME ZONE 'UTC', 'YYYY-MM');

@@ -56,7 +56,6 @@ export function DiffView({ resumeId, plan, onApplied, onAcceptedChangesChange }:
   // Notify parent whenever the accepted change set changes
   useEffect(() => {
     onAcceptedChangesChange?.(buildChangeSet());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sel]);
 
   const onApply = async () => {

@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion, type Variants, useReducedMotion } from 'framer-motion';
 import {
   ArrowRight,
   Upload,
@@ -20,7 +20,7 @@ import { useTheme } from '@/contexts/theme-context';
 function useMotionVariants() {
   const reduce = useReducedMotion();
 
-  const fadeIn = reduce
+  const fadeIn: Variants = reduce
     ? { hidden: { opacity: 1 }, visible: { opacity: 1 } }
     : {
         hidden: { opacity: 0 },
@@ -30,7 +30,7 @@ function useMotionVariants() {
         }
       };
 
-  const fadeInUp = reduce
+  const fadeInUp: Variants = reduce
     ? { hidden: { opacity: 1, y: 0 }, visible: { opacity: 1, y: 0 } }
     : {
         hidden: { opacity: 0, y: 20 },
@@ -41,7 +41,7 @@ function useMotionVariants() {
         }
       };
 
-  const staggerContainer = reduce
+  const staggerContainer: Variants = reduce
     ? { hidden: { opacity: 1 }, visible: { opacity: 1 } }
     : {
         hidden: { opacity: 0 },
@@ -51,7 +51,7 @@ function useMotionVariants() {
         }
       };
 
-  const scrollReveal = reduce
+  const scrollReveal: Variants = reduce
     ? { hidden: { opacity: 1, y: 0 }, visible: { opacity: 1, y: 0 } }
     : {
         hidden: { opacity: 0, y: 16 },
@@ -130,7 +130,7 @@ const FEATURES = [
   },
   {
     title: 'Transparent credit system',
-    desc: '20 free credits per month covers two full evaluation-and-tailor cycles. Top up as needed, no subscription lock-in.'
+    desc: '90 free credits per month covers about 30 JD tailor-and-export workflows during the freemium launch.'
   }
 ];
 
@@ -153,7 +153,7 @@ const FAQS = [
   },
   {
     q: 'How are credits priced?',
-    a: "Every account starts with 20 free credits per month. One full evaluation-and-tailor cycle costs 10 credits. Top-up packs are available; pricing is shown in the dashboard."
+    a: "Every account receives 90 free credits per month during the freemium launch. A JD tailor-and-export workflow costs 3 credits: 2 to tailor and 1 to export."
   },
   {
     q: 'Is my resume data stored securely?',
@@ -228,7 +228,7 @@ const SplitHeading: React.FC<SplitHeadingProps> = ({ number, label, title, subti
 // ── Page ───────────────────────────────────────────────────────────────────
 export default function LandingPage() {
   const { isDark } = useTheme();
-  const { fadeIn, fadeInUp, staggerContainer, scrollReveal, reduce } = useMotionVariants();
+  const { fadeIn, fadeInUp, staggerContainer, scrollReveal } = useMotionVariants();
 
   const viewport = { once: true, margin: '-80px' } as const;
   const borderFaint = isDark ? 'border-foreground/10' : 'border-foreground/10';
@@ -391,7 +391,7 @@ export default function LandingPage() {
               }}
             >
               {[...Array(2)].flatMap((_, dupIdx) =>
-                ['Stripe', 'Razorpay', 'Flipkart', 'Spotify', 'Amazon', 'Thoughtworks', 'Atlassian', 'Zerodha', 'Cloudflare'].map((name) => (
+                ['Figma', 'Razorpay', 'Flipkart', 'Spotify', 'Amazon', 'Thoughtworks', 'Atlassian', 'Zerodha', 'Cloudflare'].map((name) => (
                   <span
                     key={`${dupIdx}-${name}`}
                     className="text-foreground/40 uppercase shrink-0"
@@ -650,7 +650,7 @@ export default function LandingPage() {
                 number="05"
                 label="PRICING"
                 title={<>Freemium +<br />credits. <em className="font-normal italic">No</em><br />surprises.</>}
-                subtitle="Start for free. Pay only when you need more evaluations or exports."
+                subtitle="Start free with a monthly allowance built for real job-search volume."
               />
             </motion.div>
 
@@ -675,7 +675,7 @@ export default function LandingPage() {
                   className="text-foreground font-normal mb-1 leading-none"
                   style={frauncesStyle('clamp(36px, 4vw, 56px)', 400, '-0.02em')}
                 >
-                  20 credits
+                  90 credits
                 </div>
                 <div
                   className="text-foreground/80 mb-8"
@@ -685,7 +685,7 @@ export default function LandingPage() {
                 </div>
                 <ul className="space-y-3">
                   {[
-                    '2 full evaluation-and-tailor cycles',
+                    'About 30 JD tailor-and-export workflows',
                     'ATS raw-text simulator',
                     'All 6 PDF export templates',
                     'JD diff with per-change accept'
@@ -703,7 +703,7 @@ export default function LandingPage() {
                 </ul>
               </motion.div>
 
-              {/* Credit top-up */}
+              {/* Freemium launch */}
               <motion.div
                 initial="hidden"
                 whileInView="visible"
@@ -715,26 +715,25 @@ export default function LandingPage() {
                   className="uppercase text-foreground/80 mb-6"
                   style={humaneStyle(15, 700, '0.2em')}
                 >
-                  TOP-UP
+                  LAUNCH
                 </div>
                 <div
                   className="text-foreground font-normal mb-1 leading-none"
                   style={frauncesStyle('clamp(36px, 4vw, 56px)', 400, '-0.02em')}
                 >
-                  Buy credits
+                  Freemium first
                 </div>
                 <div
                   className="text-foreground/80 mb-8"
                   style={humaneStyle(19, 500, '0')}
                 >
-                  when you need them — no subscription
+                  paid plans are on hold
                 </div>
                 <p
                   className="text-foreground/85 leading-relaxed mb-8"
                   style={humaneStyle(19, 500, '0')}
                 >
-                  {/* REPLACE: Add real pricing tiers when Stripe integration ships */}
-                  Credit pack pricing will be shown in-dashboard. Top-ups are one-time purchases — no recurring charge, no lock-in.
+                  We are keeping the launch freemium-only while we validate the resume and JD workflow with real users.
                 </p>
                 <Link href="/login">
                   <button

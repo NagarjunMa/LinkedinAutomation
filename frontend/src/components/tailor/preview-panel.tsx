@@ -65,7 +65,7 @@ export function PreviewPanel({
       if (status === 402 || message.toLowerCase().includes('credit')) {
         toast({
           title: 'Need more credits',
-          description: 'Add credits in /dashboard/credits to export.',
+          description: 'Credits refresh monthly during the freemium launch.',
           variant: 'destructive',
         });
       } else {

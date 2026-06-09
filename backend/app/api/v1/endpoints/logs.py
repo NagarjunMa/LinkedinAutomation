@@ -9,7 +9,6 @@ from typing import Optional, Dict, Any, List
 from datetime import datetime
 import logging
 import json
-import time
 from app.core.enhanced_logging import enhanced_logger
 from app.core.rate_limiter import RateLimiter
 
@@ -149,7 +148,7 @@ async def log_frontend_error(
         # Log the logging error (meta!)
         backend_logger = logging.getLogger('backend.logging')
         backend_logger.error(
-            f"Failed to process frontend log entry",
+            "Failed to process frontend log entry",
             extra={
                 'error': str(e),
                 'error_id': log_entry.errorId,

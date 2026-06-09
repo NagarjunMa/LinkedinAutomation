@@ -1,16 +1,16 @@
-from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
+import logging
 
 from app.db.session import get_db
-from app.models.job import UserProfile
+from app.models.job import JobListing, UserProfile
 from app.services.resume_parser import resume_parser
 from app.services.job_scorer import job_scorer
 from app.services.smart_job_scorer import smart_job_scorer
-from app.core.ai_service import ai_service
 from datetime import datetime
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 @router.post("/upload-resume/{user_id}")
 async def upload_resume(
@@ -25,12 +25,12 @@ async def upload_resume(
     try:
         # Parse resume file using AI
         parsed_data = await resume_parser.parse_resume_file(file)
-        
+
         # Check if user profile already exists
         existing_profile = db.query(UserProfile).filter(
             UserProfile.user_id == user_id
         ).first()
-        
+
         if existing_profile:
             # Update existing profile
             _update_profile_from_parsed_data(existing_profile, parsed_data)
@@ -45,7 +45,7 @@ async def upload_resume(
             db.add(profile)
             db.commit()
             db.refresh(profile)
-        
+
         return {
             "success": True,
             "message": "Resume uploaded and parsed successfully",
@@ -60,7 +60,7 @@ async def upload_resume(
                 "ai_summary": profile.ai_profile_summary
             }
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -75,10 +75,10 @@ async def get_user_profile(
     Get user profile information
     """
     profile = db.query(UserProfile).filter(UserProfile.user_id == user_id).first()
-    
+
     if not profile:
         raise HTTPException(status_code=404, detail="User profile not found")
-    
+
     return {
         "user_id": profile.user_id,
         "personal_info": {
@@ -144,10 +144,10 @@ async def update_user_profile(
     Update user profile information
     """
     profile = db.query(UserProfile).filter(UserProfile.user_id == user_id).first()
-    
+
     if not profile:
         raise HTTPException(status_code=404, detail="User profile not found")
-    
+
     # Update fields that are provided
     if "personal_info" in profile_data:
         personal = profile_data["personal_info"]
@@ -161,7 +161,7 @@ async def update_user_profile(
             profile.location = personal["location"]
         if "work_authorization" in personal:
             profile.work_authorization = personal["work_authorization"]
-    
+
     if "preferences" in profile_data:
         prefs = profile_data["preferences"]
         if "desired_roles" in prefs:
@@ -178,11 +178,11 @@ async def update_user_profile(
             profile.job_types = prefs["job_types"]
         if "company_size_preference" in prefs:
             profile.company_size_preference = prefs["company_size_preference"]
-    
+
     profile.updated_at = datetime.utcnow()
     db.commit()
     db.refresh(profile)
-    
+
     return {"success": True, "message": "Profile updated successfully"}
 
 @router.get("/matches/{user_id}")
@@ -199,14 +199,14 @@ async def get_job_matches(
     profile = db.query(UserProfile).filter(UserProfile.user_id == user_id).first()
     if not profile:
         raise HTTPException(status_code=404, detail="User profile not found")
-    
+
     # Get top matches using smart job scorer for better performance
     matches = smart_job_scorer.get_filtered_job_matches(
         user_id=user_id,
         limit=limit,
         min_score=min_score
     )
-    
+
     return {
         "user_id": user_id,
         "total_matches": len(matches),
@@ -229,10 +229,10 @@ async def score_new_jobs(
     profile = db.query(UserProfile).filter(UserProfile.user_id == user_id).first()
     if not profile:
         raise HTTPException(status_code=404, detail="User profile not found")
-    
+
     # Score jobs using job scorer service
     scored_jobs = await job_scorer.score_jobs_for_user(user_id, job_limit, days_back)
-    
+
     return {
         "user_id": user_id,
         "jobs_scored": len(scored_jobs),
@@ -253,12 +253,12 @@ async def parse_resume_text(
     try:
         # Parse resume text using AI
         parsed_data = await resume_parser.update_profile_from_text(resume_text)
-        
+
         # Check if user profile already exists
         existing_profile = db.query(UserProfile).filter(
             UserProfile.user_id == user_id
         ).first()
-        
+
         if existing_profile:
             # Update existing profile
             _update_profile_from_parsed_data(existing_profile, parsed_data)
@@ -272,7 +272,7 @@ async def parse_resume_text(
             db.add(profile)
             db.commit()
             db.refresh(profile)
-        
+
         return {
             "success": True,
             "message": "Resume text parsed successfully",
@@ -283,7 +283,7 @@ async def parse_resume_text(
                 "ai_summary": profile.ai_profile_summary
             }
         }
-        
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error parsing resume text: {str(e)}")
 
@@ -297,7 +297,7 @@ async def list_users(
     List all users with profiles (for admin/testing)
     """
     profiles = db.query(UserProfile).offset(skip).limit(limit).all()
-    
+
     return {
         "users": [
             {
@@ -325,7 +325,7 @@ def _create_profile_from_parsed_data(user_id: str, parsed_data: dict) -> UserPro
     education = parsed_data.get("education", {})
     preferences = parsed_data.get("preferences", {})
     ai_insights = parsed_data.get("ai_insights", {})
-    
+
     profile = UserProfile(
         user_id=user_id,
         # Personal info
@@ -334,46 +334,46 @@ def _create_profile_from_parsed_data(user_id: str, parsed_data: dict) -> UserPro
         phone=personal.get("phone", ""),
         location=personal.get("location", ""),
         work_authorization=personal.get("work_authorization", ""),
-        
+
         # Professional summary
         years_of_experience=professional.get("years_of_experience", 0.0),
         career_level=professional.get("career_level", "entry"),
         professional_summary=professional.get("summary", ""),
-        
+
         # Skills
         programming_languages=skills.get("programming_languages", []),
         frameworks_libraries=skills.get("frameworks_libraries", []),
         tools_platforms=skills.get("tools_platforms", []),
         soft_skills=skills.get("soft_skills", []),
-        
+
         # Experience
         job_titles=experience.get("job_titles", []),
         companies=experience.get("companies", []),
         industries=experience.get("industries", []),
         experience_descriptions=experience.get("descriptions", []),
-        
+
         # Education
         degrees=education.get("degrees", []),
         institutions=education.get("institutions", []),
         graduation_years=education.get("graduation_years", []),
         relevant_coursework=education.get("coursework", []),
-        
+
         # Preferences
         desired_roles=preferences.get("desired_roles", []),
         preferred_locations=preferences.get("preferred_locations", []),
         salary_range_min=preferences.get("salary_range_min", 0),
         salary_range_max=preferences.get("salary_range_max", 0),
         job_types=preferences.get("job_types", ["Full-time"]),
-        
+
         # AI insights
         ai_profile_summary=ai_insights.get("profile_summary", ""),
         ai_strengths=ai_insights.get("strengths", []),
         ai_improvement_areas=ai_insights.get("improvement_areas", []),
         ai_career_advice=ai_insights.get("career_advice", ""),
-        
+
         last_resume_upload=datetime.utcnow()
     )
-    
+
     return profile
 
 def _update_profile_from_parsed_data(profile: UserProfile, parsed_data: dict) -> None:
@@ -383,11 +383,8 @@ def _update_profile_from_parsed_data(profile: UserProfile, parsed_data: dict) ->
     personal = parsed_data.get("personal_info", {})
     professional = parsed_data.get("professional_summary", {})
     skills = parsed_data.get("skills", {})
-    experience = parsed_data.get("experience", {})
-    education = parsed_data.get("education", {})
-    preferences = parsed_data.get("preferences", {})
     ai_insights = parsed_data.get("ai_insights", {})
-    
+
     # Update fields (keep existing if new data is empty)
     if personal.get("full_name"):
         profile.full_name = personal["full_name"]
@@ -399,7 +396,7 @@ def _update_profile_from_parsed_data(profile: UserProfile, parsed_data: dict) ->
         profile.location = personal["location"]
     if personal.get("work_authorization"):
         profile.work_authorization = personal["work_authorization"]
-    
+
     # Professional info
     if professional.get("years_of_experience"):
         profile.years_of_experience = professional["years_of_experience"]
@@ -407,7 +404,7 @@ def _update_profile_from_parsed_data(profile: UserProfile, parsed_data: dict) ->
         profile.career_level = professional["career_level"]
     if professional.get("summary"):
         profile.professional_summary = professional["summary"]
-    
+
     # Skills (merge with existing)
     if skills.get("programming_languages"):
         profile.programming_languages = list(set(
@@ -425,7 +422,7 @@ def _update_profile_from_parsed_data(profile: UserProfile, parsed_data: dict) ->
         profile.soft_skills = list(set(
             (profile.soft_skills or []) + skills["soft_skills"]
         ))
-    
+
     # Update AI insights
     if ai_insights.get("profile_summary"):
         profile.ai_profile_summary = ai_insights["profile_summary"]
@@ -444,10 +441,10 @@ async def update_user_preferences(user_id: str, preferences: dict, db: Session =
     try:
         # Find existing profile
         profile = db.query(UserProfile).filter(UserProfile.user_id == user_id).first()
-        
+
         if not profile:
             raise HTTPException(status_code=404, detail="User profile not found")
-        
+
         # Update preferences
         if "desired_roles" in preferences:
             profile.desired_roles = preferences["desired_roles"]
@@ -463,19 +460,19 @@ async def update_user_preferences(user_id: str, preferences: dict, db: Session =
             profile.company_size_preference = preferences["company_size_preference"]
         if "work_authorization" in preferences:
             profile.work_authorization = preferences["work_authorization"]
-        
+
         # Set updated timestamp
         profile.updated_at = datetime.utcnow()
-        
+
         db.commit()
         db.refresh(profile)
-        
+
         return {
             "message": "Preferences updated successfully",
             "user_id": user_id,
             "preferences_updated": True
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -498,12 +495,12 @@ async def trigger_user_scoring(user_id: str, db: Session = Depends(get_db)):
         profile = db.query(UserProfile).filter(UserProfile.user_id == user_id).first()
         if not profile:
             raise HTTPException(status_code=404, detail="User profile not found")
-        
+
         # Trigger background scoring
         result = smart_job_scorer.trigger_full_scoring_for_new_user(user_id)
-        
+
         return result
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -518,7 +515,7 @@ async def get_scoring_status(user_id: str, db: Session = Depends(get_db)):
     try:
         status = smart_job_scorer.get_user_scoring_status(user_id)
         return status
-        
+
     except Exception as e:
         logger.error(f"Error getting scoring status for user {user_id}: {e}")
         raise HTTPException(status_code=500, detail="Error fetching scoring status")
@@ -533,11 +530,11 @@ async def clear_user_scores(user_id: str, db: Session = Depends(get_db)):
         profile = db.query(UserProfile).filter(UserProfile.user_id == user_id).first()
         if not profile:
             raise HTTPException(status_code=404, detail="User profile not found")
-        
+
         result = smart_job_scorer.clear_user_scores(user_id)
-        
+
         return result
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -555,13 +552,13 @@ async def trigger_job_scoring(job_id: int, db: Session = Depends(get_db)):
         job = db.query(JobListing).filter(JobListing.id == job_id).first()
         if not job:
             raise HTTPException(status_code=404, detail="Job not found")
-        
+
         result = smart_job_scorer.trigger_scoring_for_new_job(job_id)
-        
+
         return result
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error triggering scoring for job {job_id}: {e}")
-        raise HTTPException(status_code=500, detail="Error triggering job scoring") 
+        raise HTTPException(status_code=500, detail="Error triggering job scoring")

@@ -12,6 +12,12 @@ import pytest
 from fastapi.testclient import TestClient
 
 
+pytestmark = pytest.mark.skipif(
+    os.getenv("ENABLE_BILLING", "false").lower() != "true",
+    reason="Stripe webhooks are dormant unless ENABLE_BILLING=true",
+)
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

@@ -59,7 +59,6 @@ export function RewriteModal(props: RewriteModalProps) {
         },
       },
     );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, bullet?.id]);
 
   if (!bullet) return null;

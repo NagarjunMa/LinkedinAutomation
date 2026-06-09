@@ -1,14 +1,11 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import func
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any
 from datetime import datetime
 
 from app.models.job import UserProfile
-from app.models.profile import UserSettings, ProfileChangeHistory
-from app.models import User, Resume, JobApplication
+from app.models import Resume, JobApplication
 from app.schemas.profile import (
-    UserProfileCreate, UserProfileUpdate, UserSettingsCreate, UserSettingsUpdate,
-    NotificationSettingsUpdate, EmailTrackingSettingsUpdate, PrivacySettingsUpdate
+    UserProfileCreate, UserProfileUpdate
 )
 
 

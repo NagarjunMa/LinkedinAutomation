@@ -4,7 +4,7 @@ import logging
 from openai import AsyncOpenAI, RateLimitError, APIConnectionError, APITimeoutError
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from app.schemas.resume_v2 import ResumeDocumentJSON, EvaluationReport
-from app.core.llm_logging import measure, estimate_cost, log_cost
+from app.core.llm_logging import measure, log_cost
 
 logger = logging.getLogger("llm")
 

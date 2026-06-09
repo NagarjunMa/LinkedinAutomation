@@ -1,5 +1,4 @@
 import os
-import json
 import logging
 from itertools import chain
 from openai import AsyncOpenAI, RateLimitError, APIConnectionError, APITimeoutError
@@ -7,7 +6,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_excep
 from app.schemas.resume_v2 import ResumeDocumentJSON
 from app.schemas.jd import JDExtraction, DiffPlan
 from app.services.resume.hallucination_guard import check_no_unprompted_numbers, HallucinationError
-from app.core.llm_logging import measure, estimate_cost, log_cost
+from app.core.llm_logging import measure, log_cost
 
 
 _client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))

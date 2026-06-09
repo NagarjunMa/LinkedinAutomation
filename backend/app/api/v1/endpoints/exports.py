@@ -23,6 +23,7 @@ from app.schemas.resume_export import Country, ExportRequest, ExportResponse, Ro
 from app.services.pdf.renderer import PdfRenderTimeout, render_pdf_from_doc
 
 router = APIRouter(prefix="/exports", tags=["exports"])
+_EXPORT_SEMAPHORE = asyncio.Semaphore(3)
 
 _SAFE_CHARS = re.compile(r"[^a-zA-Z0-9._-]")
 _DEFAULT_FILENAME = "resume.pdf"
@@ -135,16 +136,27 @@ async def create_export(
         try:
             # Run sync Playwright renderer in a thread pool to avoid
             # "sync_playwright inside asyncio loop" error in async endpoints.
-            loop = asyncio.get_running_loop()
-            pdf_bytes = await loop.run_in_executor(
-                None,
-                functools.partial(
-                    render_pdf_from_doc,
-                    doc_json,
-                    country=country_enum.value,
-                    role=role_enum.value,
-                ),
-            )
+            try:
+                await asyncio.wait_for(_EXPORT_SEMAPHORE.acquire(), timeout=1)
+            except asyncio.TimeoutError as exc:
+                raise HTTPException(
+                    status_code=429,
+                    detail="PDF export capacity is busy; please retry shortly",
+                ) from exc
+
+            try:
+                loop = asyncio.get_running_loop()
+                pdf_bytes = await loop.run_in_executor(
+                    None,
+                    functools.partial(
+                        render_pdf_from_doc,
+                        doc_json,
+                        country=country_enum.value,
+                        role=role_enum.value,
+                    ),
+                )
+            finally:
+                _EXPORT_SEMAPHORE.release()
         except PdfRenderTimeout as exc:
             db.add(ResumeExport(
                 id=export_id,

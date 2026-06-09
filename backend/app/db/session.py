@@ -1,7 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
-import os
 
 _database_uri = settings.SQLALCHEMY_DATABASE_URI
 _is_sqlite = _database_uri.startswith("sqlite")

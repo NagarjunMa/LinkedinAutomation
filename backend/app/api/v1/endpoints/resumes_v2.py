@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.core.auth import get_current_user_id
+from app.core.config import settings
 from app.models.resume_document import ResumeDocument, ResumeVersion
 from app.models.resume_evaluation_v2 import ResumeEvaluationV2
 from app.schemas.resume_v2 import ResumeDocumentJSON, ChangeItem
@@ -51,6 +52,8 @@ async def upload_resume(
         raise HTTPException(status_code=400, detail="Only PDF and DOCX files are supported")
 
     content = await file.read()
+    if len(content) > settings.MAX_UPLOAD_SIZE:
+        raise HTTPException(status_code=413, detail="File exceeds maximum upload size")
     try:
         doc_json = parse_resume(content, file.filename)
     except ValueError as exc:

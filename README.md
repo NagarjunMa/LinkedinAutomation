@@ -35,9 +35,8 @@ For engineers who refuse generic AI bullets.
 - 1 credit per export
 
 ### Credit system
-- 10 welcome credits on first sign-in (auto-granted via `_ensure_user_row()`)
-- 20 free credits / month (auto-granted on the 1st via Supabase **pg_cron** → `grant_monthly_credits()`)
-- Stripe webhook for top-ups (idempotent via `external_ref`)
+- 90 free credits / month (auto-granted via `_ensure_user_row()` and Supabase **pg_cron** → `grant_monthly_credits()`)
+- Billing is disabled for the freemium launch; Stripe routes stay dormant behind `ENABLE_BILLING=true`
 - Per-operation cost: evaluate = 1, tailor = 2, rewrite = 0, apply = 0, export = 1
 
 ---
@@ -81,7 +80,7 @@ For engineers who refuse generic AI bullets.
 | GET | `/exports/{id}` | 0 | Refresh signed URL |
 | GET | `/analytics/jd-progress` | 0 | Per-JD funnel counts |
 | GET | `/credits/balance` | 0 | Current balance |
-| POST | `/webhooks/stripe` | — | Idempotent Stripe credit grants |
+| POST | `/webhooks/stripe` | — | Billing-gated webhook, disabled for freemium launch |
 | GET | `/admin/metrics/cost-per-user` | — | Admin allowlist gated |
 
 Legacy job-tracking routes (`/jobs`, `/job-extraction`, `/profiles`, `/user-profiles`, `/logs`) are kept and demoted.
@@ -122,8 +121,8 @@ SUPABASE_ANON_KEY=sb_publishable_xxxxx
 SUPABASE_SERVICE_ROLE_KEY=sb_secret_xxxxx
 SUPABASE_STORAGE_BUCKET=resume
 OPENAI_API_KEY=sk-proj-xxxxx
-STRIPE_API_KEY=sk_test_xxxxx           # optional pre-launch
-STRIPE_WEBHOOK_SECRET=test             # set "test" locally to bypass sig check
+FREEMIUM_MONTHLY_CREDITS=90
+ENABLE_BILLING=false
 ADMIN_USER_IDS=user-id-1,user-id-2     # comma-separated; for admin/metrics endpoint
 ```
 

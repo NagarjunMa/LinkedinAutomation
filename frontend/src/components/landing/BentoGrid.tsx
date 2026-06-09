@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { motion, useInView, useReducedMotion } from 'framer-motion';
+import { motion, type Variants, useInView, useReducedMotion } from 'framer-motion';
 
 interface BentoGridProps {
   isDark: boolean;
@@ -69,7 +69,7 @@ const CARDS = [
   {
     num: '06',
     title: 'Transparent Credit System',
-    desc: '20 free credits every month — enough to evaluate and tailor your resume twice. Top up when you need more.',
+    desc: '90 free credits every month — enough for about 30 JD tailor-and-export workflows during the freemium launch.',
     span: 'md:col-span-1',
     creditBar: 60,
   },
@@ -80,14 +80,14 @@ export const BentoGrid: React.FC<BentoGridProps> = ({ isDark: _isDark }) => {
   const isInView = useInView(ref, { once: true, amount: 0.1 });
   const reduce = useReducedMotion();
 
-  const fadeInUp = reduce
+  const fadeInUp: Variants = reduce
     ? { hidden: { opacity: 1, y: 0 }, visible: { opacity: 1, y: 0 } }
     : {
         hidden: { opacity: 0, y: 16 },
         visible: { opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] } }
       };
 
-  const staggerContainer = reduce
+  const staggerContainer: Variants = reduce
     ? { hidden: { opacity: 1 }, visible: { opacity: 1 } }
     : {
         hidden: { opacity: 0 },

@@ -4,7 +4,7 @@
  */
 
 import React from 'react'
-import { motion } from 'framer-motion'
+import { motion, type HTMLMotionProps } from 'framer-motion'
 import { cn } from '@/lib/utils'
 
 // Base skeleton component with animation
@@ -12,7 +12,7 @@ export function Skeleton({
   className,
   delay = 0,
   ...props
-}: React.HTMLAttributes<HTMLDivElement> & { delay?: number }) {
+}: Omit<HTMLMotionProps<"div">, "ref" | "transition"> & { delay?: number }) {
   return (
     <motion.div
       initial={{ opacity: 0.6 }}

@@ -18,6 +18,7 @@ describe('useUploadResume', () => {
       http.post('http://localhost:8000/api/v1/resumes/upload', () => {
         return HttpResponse.json({
           resume_id: 'r-1',
+          resume_document_id: 'r-1',
           parsed: { contact: { name: 'Alice' } },
           filename: 'resume.pdf',
         });
@@ -33,7 +34,7 @@ describe('useUploadResume', () => {
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.resume_id).toBe('r-1');
+    expect(result.current.data?.resume_document_id).toBe('r-1');
   });
 
   it('surfaces upload errors as mutation error', async () => {
