@@ -54,6 +54,16 @@ jobs:
           pip install ruff==0.5.0
           ruff check app/ --select=E,F --ignore=E501,E402
 
+      - name: Migration smoke (Postgres clean DB)
+        env:
+          OPENAI_API_KEY: test
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/prism_test"
+          SQLALCHEMY_DATABASE_URI: "postgresql://postgres:postgres@localhost:5432/prism_test"
+          SUPABASE_URL: https://test.supabase.co
+          SUPABASE_ANON_KEY: test
+          SUPABASE_SERVICE_ROLE_KEY: test
+        run: python -m alembic upgrade head
+
       - name: Run tests (SQLite default — fast)
         env:
           OPENAI_API_KEY: test
@@ -88,6 +98,10 @@ jobs:
         run: |
           pip install pip-audit==2.9.0
           pip-audit -r requirements.txt
+
+      - name: Docker build
+        working-directory: .
+        run: docker build -t prism-backend-ci ./backend
 
   frontend:
     name: Frontend (lint + build + types)
@@ -128,9 +142,32 @@ jobs:
       - name: Production dependency audit
         run: npm audit --omit=dev --audit-level=high
 
+      - name: Docker build
+        working-directory: .
+        run: |
+          docker build \
+            --build-arg NEXT_PUBLIC_API_URL=https://api.example.com \
+            --build-arg NEXT_PUBLIC_SUPABASE_URL=https://test.supabase.co \
+            --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=test \
+            -t prism-frontend-ci ./frontend
+
       - name: Upload frontend coverage
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: frontend-coverage
           path: frontend/coverage/cobertura-coverage.xml
+
+  secret-scan:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: TruffleHog verified scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          extra_args: --only-verified

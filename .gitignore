@@ -4,6 +4,7 @@
 
 # Application-specific
 /logs/
+backend/uploads/
 
 # Environment files (commit only explicit examples)
 .env*

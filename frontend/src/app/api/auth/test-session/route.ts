@@ -8,6 +8,10 @@ export const runtime = 'nodejs'
  * GET /api/auth/test-session
  */
 export async function GET(request: NextRequest) {
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
+
   try {
     const supabase = await createServerSupabaseClient()
     const { data: { session }, error } = await supabase.auth.getSession()

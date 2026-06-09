@@ -172,6 +172,57 @@ def _create_sqlite_tables(engine) -> None:
         sa.Column("last_resume_upload", sa.DateTime),
     )
 
+    sa.Table(
+        "job_listings",
+        meta,
+        sa.Column("id", sa.Integer, primary_key=True, autoincrement=True),
+        sa.Column("title", sa.String(255), nullable=False),
+        sa.Column("company", sa.String(255), nullable=False),
+        sa.Column("location", sa.String(255)),
+        sa.Column("description", sa.Text),
+        sa.Column("requirements", sa.Text),
+        sa.Column("job_type", sa.String(50)),
+        sa.Column("experience_level", sa.String(50)),
+        sa.Column("salary_range", sa.String(100)),
+        sa.Column("skills", JSON),
+        sa.Column("application_url", sa.Text),
+        sa.Column("source", sa.String(50)),
+        sa.Column("source_url", sa.Text),
+        sa.Column("is_active", sa.Boolean, default=True),
+        sa.Column("posted_date", sa.DateTime),
+        sa.Column("extracted_date", sa.DateTime),
+        sa.Column("applied", sa.Boolean, default=False),
+        sa.Column("applied_date", sa.DateTime),
+        sa.Column("application_status", sa.String(50), default="pending"),
+        sa.Column("application_notes", sa.Text),
+        sa.Column("application_context", sa.Text),
+        sa.Column("compatibility_score", sa.Float),
+        sa.Column("ai_insights", sa.Text),
+    )
+
+    sa.Table(
+        "job_applications",
+        meta,
+        sa.Column("id", sa.Integer, primary_key=True, autoincrement=True),
+        sa.Column("user_id", sa.String(100), nullable=False, index=True),
+        sa.Column("job_id", sa.Integer, sa.ForeignKey("job_listings.id"), nullable=False, index=True),
+        sa.Column("application_status", sa.String(50), default="interested", index=True),
+        sa.Column("application_source", sa.String(100)),
+        sa.Column("application_date", sa.DateTime),
+        sa.Column("external_application_id", sa.String(255)),
+        sa.Column("application_url", sa.String(1000)),
+        sa.Column("source_url", sa.String(1000)),
+        sa.Column("extraction_metadata", JSON),
+        sa.Column("user_notes", sa.Text),
+        sa.Column("follow_up_date", sa.Date),
+        sa.Column("interview_date", sa.DateTime),
+        sa.Column("company_response", sa.Boolean, default=False),
+        sa.Column("response_date", sa.DateTime),
+        sa.Column("rejection_reason", sa.String(500)),
+        sa.Column("created_at", sa.DateTime),
+        sa.Column("updated_at", sa.DateTime),
+    )
+
     meta.create_all(bind=engine)
 
 
@@ -252,6 +303,7 @@ def client(db_session: Session, test_user_id: str, tmp_path):
     import app.db.session as _session_mod
     from app.core.auth import get_current_user_id, get_authenticated_user_id
     from app.db.session import get_db
+    from app.db.rls_session import get_db as get_rls_db
 
     # Override engine to one that matches db_session's engine.
     _original_engine = _session_mod.engine
@@ -266,6 +318,7 @@ def client(db_session: Session, test_user_id: str, tmp_path):
         return test_user_id
 
     app.dependency_overrides[get_db] = _override_get_db
+    app.dependency_overrides[get_rls_db] = _override_get_db
     app.dependency_overrides[get_current_user_id] = _override_get_current_user_id
     app.dependency_overrides[get_authenticated_user_id] = _override_get_current_user_id
 
@@ -295,6 +348,7 @@ def client(db_session: Session, test_user_id: str, tmp_path):
 
     # Restore overrides
     app.dependency_overrides.pop(get_db, None)
+    app.dependency_overrides.pop(get_rls_db, None)
     app.dependency_overrides.pop(get_current_user_id, None)
     app.dependency_overrides.pop(get_authenticated_user_id, None)
     if resumes_v2_mod is not None and original_upload_dir is not None:

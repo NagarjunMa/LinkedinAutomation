@@ -21,6 +21,21 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+
+def _jobs_for_user(db: Session, user_id: str):
+    return (
+        db.query(JobListing)
+        .join(JobApplication, JobApplication.job_id == JobListing.id)
+        .filter(JobApplication.user_id == user_id)
+    )
+
+
+def _get_user_job_or_404(db: Session, job_id: int, user_id: str) -> JobListing:
+    job = _jobs_for_user(db, user_id).filter(JobListing.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return job
+
 @router.get("/", response_model=List[JobListingResponse])
 async def get_jobs(
     db: Session = Depends(get_db),
@@ -40,7 +55,7 @@ async def get_jobs(
     """
     Retrieve job listings with optional filtering, sorting, and pagination
     """
-    query = db.query(JobListing)
+    query = _jobs_for_user(db, user_id)
 
     # Apply filters
     if title:
@@ -80,11 +95,13 @@ async def get_job_counts(
     location: Optional[str] = None,
     job_type: Optional[str] = None,
     experience_level: Optional[str] = None,
+    user_id: str = Depends(get_authenticated_user_id),
 ):
     """
     Get job counts for pagination and stats
     """
-    query = db.query(JobListing)
+    set_current_user(user_id)
+    query = _jobs_for_user(db, user_id)
 
     # Apply same filters as get_jobs
     if title:
@@ -110,14 +127,18 @@ async def get_job_counts(
     return {
         "total": total_count,
         "applied": applied_count,
-        "pending": pending_count
+        "pending": pending_count,
+        "total_jobs": total_count,
+        "applied_count": applied_count,
+        "pending_count": pending_count,
     }
 
 @router.get("/stats", response_model=JobStats)
 async def get_job_stats(
     db: Session = Depends(get_db),
     time_range: TimeRange = Query(default=TimeRange.LAST_30_DAYS, description="Time range for stats"),
-    custom_days: Optional[int] = Query(default=None, description="Custom number of days for stats")
+    custom_days: Optional[int] = Query(default=None, description="Custom number of days for stats"),
+    user_id: str = Depends(get_authenticated_user_id),
 ):
     """
     Get job statistics including:
@@ -125,7 +146,8 @@ async def get_job_stats(
     - Time-range specific graph data
     """
     # Get overall totals (regardless of time range)
-    overall_stats = db.query(
+    set_current_user(user_id)
+    overall_stats = _jobs_for_user(db, user_id).with_entities(
         func.count(JobListing.id).label('total_jobs'),
         func.sum(cast(JobListing.applied, Integer)).label('total_applied')
     ).first()
@@ -150,7 +172,7 @@ async def get_job_stats(
     start_date = end_date - timedelta(days=days)
 
     # Get time-range specific data for the graph
-    daily_stats = db.query(
+    daily_stats = _jobs_for_user(db, user_id).with_entities(
         cast(JobListing.extracted_date, Date).label('date'),
         func.count(JobListing.id).label('jobs_extracted'),
         func.sum(cast(JobListing.applied, Integer)).label('jobs_applied'),
@@ -203,7 +225,7 @@ async def get_job_stats(
         })
 
     # Get period totals (just for the selected time range)
-    period_stats = db.query(
+    period_stats = _jobs_for_user(db, user_id).with_entities(
         func.count(JobListing.id).label('period_jobs'),
         func.sum(cast(JobListing.applied, Integer)).label('period_applied')
     ).filter(
@@ -229,7 +251,8 @@ async def get_job_stats(
 @router.get("/recent-applications")
 async def get_recent_applications(
     limit: int = Query(default=5, ge=1, le=50),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_authenticated_user_id),
 ):
     """
     Get recent job applications, ordered by application date
@@ -237,6 +260,8 @@ async def get_recent_applications(
     # Query JobApplication table to get actual applications with job details
     recent_apps = db.query(JobApplication, JobListing).join(
         JobListing, JobApplication.job_id == JobListing.id
+    ).filter(
+        JobApplication.user_id == user_id
     ).order_by(
         desc(JobApplication.application_date)
     ).limit(limit).all()
@@ -261,13 +286,22 @@ async def get_recent_applications(
 @router.post("/", response_model=JobListingResponse)
 async def create_job(
     job: JobListingCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_authenticated_user_id),
 ):
     """
     Create a new job listing
     """
     db_job = JobListing(**job.dict())
     db.add(db_job)
+    db.flush()
+    db.add(JobApplication(
+        user_id=user_id,
+        job_id=db_job.id,
+        application_status="interested",
+        application_source="manual",
+        source_url=db_job.source_url,
+    ))
     db.commit()
     db.refresh(db_job)
     return db_job
@@ -275,28 +309,25 @@ async def create_job(
 @router.get("/{job_id}", response_model=JobListingResponse)
 async def get_job(
     job_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_authenticated_user_id),
 ):
     """
     Retrieve a specific job listing by ID
     """
-    job = db.query(JobListing).filter(JobListing.id == job_id).first()
-    if not job:
-        raise HTTPException(status_code=404, detail="Job not found")
-    return job
+    return _get_user_job_or_404(db, job_id, user_id)
 
 @router.put("/{job_id}", response_model=JobListingResponse)
 async def update_job(
     job_id: int,
     job_update: JobListingUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_authenticated_user_id),
 ):
     """
     Update a job listing
     """
-    db_job = db.query(JobListing).filter(JobListing.id == job_id).first()
-    if not db_job:
-        raise HTTPException(status_code=404, detail="Job not found")
+    db_job = _get_user_job_or_404(db, job_id, user_id)
 
     for field, value in job_update.dict(exclude_unset=True).items():
         setattr(db_job, field, value)
@@ -308,14 +339,13 @@ async def update_job(
 @router.delete("/{job_id}")
 async def delete_job(
     job_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_authenticated_user_id),
 ):
     """
     Delete a job listing
     """
-    db_job = db.query(JobListing).filter(JobListing.id == job_id).first()
-    if not db_job:
-        raise HTTPException(status_code=404, detail="Job not found")
+    db_job = _get_user_job_or_404(db, job_id, user_id)
 
     db.delete(db_job)
     db.commit()
@@ -324,7 +354,8 @@ async def delete_job(
 @router.post("/scrape", response_model=List[JobListingResponse])
 async def scrape_jobs(
     query: dict,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_authenticated_user_id),
 ):
     """
     Scrape jobs from LinkedIn based on search parameters
@@ -345,14 +376,13 @@ async def scrape_jobs(
 async def update_job_status(
     job_id: int,
     status_update: dict,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_authenticated_user_id),
 ):
     """
     Update job application status
     """
-    db_job = db.query(JobListing).filter(JobListing.id == job_id).first()
-    if not db_job:
-        raise HTTPException(status_code=404, detail="Job not found")
+    db_job = _get_user_job_or_404(db, job_id, user_id)
 
     if "applied" in status_update:
         db_job.applied = status_update["applied"]
@@ -376,10 +406,8 @@ async def update_job_application_status(
     Update comprehensive job application status with the new status system
     """
     try:
-        # Find the job
-        db_job = db.query(JobListing).filter(JobListing.id == job_id).first()
-        if not db_job:
-            raise HTTPException(status_code=404, detail="Job not found")
+        # Find a job visible to the authenticated user.
+        db_job = _get_user_job_or_404(db, job_id, user_id)
 
         # Find or create job application record
         application = db.query(JobApplication).filter(
@@ -457,6 +485,8 @@ async def update_job_application_status(
             "updated_at": application.updated_at.isoformat() if application.updated_at else None
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error updating job application status: {e}")
         db.rollback()
@@ -475,6 +505,7 @@ async def apply_to_job(
     try:
         if user_id != current_user_id:
             raise HTTPException(status_code=403, detail="User mismatch")
+        _get_user_job_or_404(db, job_id, current_user_id)
         # Check if already applied
         existing = db.query(JobApplication).filter(
             JobApplication.user_id == user_id,
@@ -512,6 +543,8 @@ async def apply_to_job(
             "status": "applied"
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error tracking job application: {e}")
         db.rollback()
@@ -523,10 +556,13 @@ async def get_user_applications(
     status: str = None,
     page: int = 1,
     limit: int = 10,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user_id: str = Depends(get_authenticated_user_id),
 ):
     """Get user's applied jobs from JobApplication table with pagination"""
     try:
+        if user_id != current_user_id:
+            raise HTTPException(status_code=403, detail="User mismatch")
         # Query JobApplication table for user's applications
         query = db.query(JobApplication).filter(JobApplication.user_id == user_id)
 
@@ -588,6 +624,8 @@ async def get_user_applications(
             "total_pages": (total_count + limit - 1) // limit
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error fetching applications: {e}")
         raise HTTPException(status_code=500, detail="Error fetching applications")
@@ -598,11 +636,15 @@ async def update_application_status(
     status: str = Form(...),  # interested, applied, interviewed, rejected, hired
     notes: str = Form(""),
     follow_up_date: str = Form(""),  # YYYY-MM-DD format
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_authenticated_user_id),
 ):
     """Update application status"""
     try:
-        application = db.query(JobApplication).filter(JobApplication.id == application_id).first()
+        application = db.query(JobApplication).filter(
+            JobApplication.id == application_id,
+            JobApplication.user_id == user_id,
+        ).first()
 
         if not application:
             raise HTTPException(status_code=404, detail="Application not found")
