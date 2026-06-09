@@ -1,11 +1,13 @@
 .DEFAULT_GOAL := help
-.PHONY: help install dev backend frontend test test-backend test-frontend lint build clean stop migrate seed shell-backend logs
+.PHONY: help install setup verify verify-ci dev backend frontend test test-backend test-frontend test-agents test-golden test-smoke lint lint-backend lint-frontend typecheck build audit audit-backend audit-frontend clean stop migrate shell-backend logs
 
 BACKEND_DIR  := backend
 FRONTEND_DIR := frontend
 BACKEND_PORT := 8000
 FRONTEND_PORT := 3000
 PYTHON       := python3.11
+BACKEND_TEST_ENV := OPENAI_API_KEY=test SUPABASE_URL=https://test.supabase.co SUPABASE_ANON_KEY=test SUPABASE_JWT_SECRET=test SUPABASE_SERVICE_ROLE_KEY=test DATABASE_URL=sqlite:///:memory:
+FRONTEND_BUILD_ENV := NEXT_PUBLIC_API_URL=https://api.example.com NEXT_PUBLIC_SUPABASE_URL=https://test.supabase.co NEXT_PUBLIC_SUPABASE_ANON_KEY=test
 
 help: ## Show this help
 	@echo "Prism Pro — make targets"
@@ -15,6 +17,20 @@ help: ## Show this help
 install: ## Install backend + frontend dependencies
 	cd $(BACKEND_DIR) && $(PYTHON) -m pip install -r requirements.txt
 	cd $(FRONTEND_DIR) && npm install
+
+setup: install ## Zero-to-running: install deps + install Playwright Chromium
+	cd $(BACKEND_DIR) && $(PYTHON) -m playwright install --with-deps chromium
+	@echo ""
+	@echo "Setup complete. Next:"
+	@echo "  make verify     - sanity-check agents without LLM (no API key needed)"
+	@echo "  make dev        - boot backend + frontend"
+
+verify: test-smoke test-agents ## One-shot sanity check (no LLM, no API keys required)
+	@echo ""
+	@echo "All agent paths verified against mocked OpenAI + real fixtures."
+	@echo "To exercise the real LLM, run:  make test-golden"
+
+verify-ci: lint test audit ## Run strict local checks that mirror CI except Docker/Postgres services
 
 dev: ## Run backend + frontend together (Ctrl+C stops both)
 	@echo "→ backend  http://localhost:$(BACKEND_PORT)"
@@ -33,17 +49,42 @@ frontend: ## Run frontend only
 test: test-backend test-frontend ## Run all tests
 
 test-backend: ## Run backend pytest (ignores golden snapshots)
-	cd $(BACKEND_DIR) && $(PYTHON) -m pytest tests/ --ignore=tests/golden -v
+	cd $(BACKEND_DIR) && $(BACKEND_TEST_ENV) $(PYTHON) -m pytest tests/ --ignore=tests/golden -v --maxfail=5 --cov-fail-under=80
 
-test-frontend: ## Run frontend lint + type check + build
-	cd $(FRONTEND_DIR) && npm run lint && npx tsc --noEmit && npm run build
+test-agents: ## Run only agent service tests (evaluator, rewriter, extractor, tailor, hallucination_guard) - no LLM
+	cd $(BACKEND_DIR) && $(BACKEND_TEST_ENV) $(PYTHON) -m pytest tests/services/resume tests/services/jd -v -o addopts=""
 
-lint: ## Lint backend (ruff) + frontend (next lint)
-	cd $(BACKEND_DIR) && ruff check app/ --select=E,F --ignore=E501,E402 || true
+test-smoke: ## Boot the FastAPI app + assert routes register (no DB, no LLM)
+	cd $(BACKEND_DIR) && $(BACKEND_TEST_ENV) $(PYTHON) -m pytest tests/test_smoke.py -v -o addopts=""
+
+test-golden: ## Run golden snapshots against REAL OpenAI (requires OPENAI_API_KEY) - costs about $0.05
+	@if [ -z "$$OPENAI_API_KEY" ]; then echo "OPENAI_API_KEY not set — skipping"; exit 1; fi
+	cd $(BACKEND_DIR) && RUN_GOLDEN=1 $(PYTHON) -m pytest tests/golden -v
+
+test-frontend: ## Run frontend lint + type check + build + unit coverage
+	cd $(FRONTEND_DIR) && npm run lint && npx tsc --noEmit && $(FRONTEND_BUILD_ENV) npm run build && npm run test:coverage
+
+lint: lint-backend lint-frontend ## Lint backend (ruff) + frontend
+
+lint-backend: ## Lint backend with ruff
+	cd $(BACKEND_DIR) && $(PYTHON) -m ruff check app/ --select=E,F --ignore=E501,E402
+
+lint-frontend: ## Lint frontend with ESLint
 	cd $(FRONTEND_DIR) && npm run lint
 
+typecheck: ## Type-check frontend
+	cd $(FRONTEND_DIR) && npx tsc --noEmit
+
 build: ## Build frontend production bundle
-	cd $(FRONTEND_DIR) && npm run build
+	cd $(FRONTEND_DIR) && $(FRONTEND_BUILD_ENV) npm run build
+
+audit: audit-backend audit-frontend ## Run backend + frontend dependency audits
+
+audit-backend: ## Run backend dependency audit
+	cd $(BACKEND_DIR) && $(PYTHON) -m pip_audit -r requirements.txt
+
+audit-frontend: ## Run frontend production dependency audit
+	cd $(FRONTEND_DIR) && npm audit --omit=dev --audit-level=high
 
 clean: ## Wipe build artifacts + caches
 	rm -rf $(FRONTEND_DIR)/.next $(FRONTEND_DIR)/node_modules/.cache
