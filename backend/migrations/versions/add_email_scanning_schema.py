@@ -7,7 +7,6 @@ Create Date: 2025-01-27 10:00:00.000000
 """
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = 'email_scanning_001'
@@ -57,7 +56,7 @@ def upgrade():
         sa.Column('status_update_applied', sa.Boolean(), default=False),
         sa.Column('parsed_data', sa.JSON(), nullable=True),
         sa.ForeignKeyConstraint(['user_id'], ['users.user_id'], ondelete='CASCADE'),
-        sa.ForeignKeyConstraint(['job_id'], ['job_listings.id'], nullable=True),
+        sa.ForeignKeyConstraint(['job_id'], ['job_listings.id']),
         sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_processed_emails_user_id'), 'processed_emails', ['user_id'], unique=False)

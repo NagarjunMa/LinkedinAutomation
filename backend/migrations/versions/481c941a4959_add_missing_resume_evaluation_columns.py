@@ -27,14 +27,14 @@ def upgrade() -> None:
     op.add_column('resume_evaluations', sa.Column('market_positioning', sa.JSON(), nullable=True))
     op.add_column('resume_evaluations', sa.Column('evaluation_prompt', sa.Text(), nullable=True))
     
-    # Update the data type of existing columns to match the model
-    op.alter_column('resume_evaluations', 'overall_score', type_=sa.Integer())
-    op.alter_column('resume_evaluations', 'ats_compliance_score', type_=sa.Integer())
-    op.alter_column('resume_evaluations', 'content_quality_score', type_=sa.Integer())
-    
-    # Update strengths and improvements to be JSON instead of ARRAY
-    op.alter_column('resume_evaluations', 'strengths', type_=sa.JSON())
-    op.alter_column('resume_evaluations', 'improvements', type_=sa.JSON())
+    # Update the data type of existing columns to match the model.
+    op.execute("ALTER TABLE resume_evaluations ALTER COLUMN overall_score TYPE INTEGER USING overall_score::integer")
+    op.execute("ALTER TABLE resume_evaluations ALTER COLUMN ats_compliance_score TYPE INTEGER USING ats_compliance_score::integer")
+    op.execute("ALTER TABLE resume_evaluations ALTER COLUMN content_quality_score TYPE INTEGER USING content_quality_score::integer")
+
+    # Update strengths and improvements to be JSON instead of ARRAY.
+    op.execute("ALTER TABLE resume_evaluations ALTER COLUMN strengths TYPE JSON USING to_json(strengths)")
+    op.execute("ALTER TABLE resume_evaluations ALTER COLUMN improvements TYPE JSON USING to_json(improvements)")
     
     # Make the new integer columns NOT NULL after adding them
     op.alter_column('resume_evaluations', 'experience_points_score', nullable=False)

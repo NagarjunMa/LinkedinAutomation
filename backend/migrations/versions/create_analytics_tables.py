@@ -7,11 +7,10 @@ Create Date: 2024-10-12 22:30:00.000000
 """
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = 'analytics_tables_001'
-down_revision = None  # Update this with the latest migration ID
+down_revision = 'initial_core_schema'
 branch_labels = None
 depends_on = None
 
