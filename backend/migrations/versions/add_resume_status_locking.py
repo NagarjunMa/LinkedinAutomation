@@ -7,11 +7,10 @@ Create Date: 2024-10-05 12:00:00.000000
 """
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = 'add_resume_status_locking'
-down_revision = None  # Update this to the latest revision ID
+down_revision = 'add_resume_models_manual'
 branch_labels = None
 depends_on = None
 

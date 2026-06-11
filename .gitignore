@@ -4,6 +4,13 @@
 
 # Application-specific
 /logs/
+backend/uploads/
+
+# Environment files (commit only explicit examples)
+.env*
+!.env.example
+!backend/.env.example
+!frontend/.env.example
 
 # =============================================================================
 # PYTHON
@@ -383,4 +390,3 @@ $RECYCLE.BIN/
 .env.production
 .DS_Store
 .lefthook-local.yml
-

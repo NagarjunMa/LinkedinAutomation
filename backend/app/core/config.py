@@ -9,10 +9,10 @@ Configuration is loaded from environment variables with sensible defaults for de
 For production deployment, ensure all required environment variables are set.
 """
 
-from typing import List, Optional, Union, Any
+from typing import List, Optional, Union
 import json
 from pydantic_settings import BaseSettings
-from pydantic import AnyHttpUrl, validator
+from pydantic import validator
 
 
 class Settings(BaseSettings):
@@ -38,6 +38,12 @@ class Settings(BaseSettings):
 
     DEBUG: bool = False
     """Enable debug mode for detailed error messages - disabled by default to reduce SQL logging"""
+
+    FREEMIUM_MONTHLY_CREDITS: int = 90
+    """Monthly freemium credit allowance. 90 credits covers ~30 JD tailor+export workflows."""
+
+    ENABLE_BILLING: bool = False
+    """Enable paid billing/webhook routes. Kept disabled for the freemium launch."""
 
     # ==========================================
     # Security Configuration
@@ -129,7 +135,7 @@ class Settings(BaseSettings):
     This is a privileged secret key — only use on the backend.
     """
 
-    SUPABASE_STORAGE_BUCKET: str = "resume-exports"
+    SUPABASE_STORAGE_BUCKET: str = "resumes"
     """
     Supabase storage bucket name for PDF exports.
     """

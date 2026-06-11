@@ -1,4 +1,4 @@
-from datetime import datetime, date
+from datetime import datetime
 from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, ForeignKey, JSON, Float, Index, Date
 from sqlalchemy.orm import relationship
 from app.db.base_class import Base
@@ -142,7 +142,6 @@ class JobApplication(Base):
         return f"<JobApplication {self.user_id}:{self.job_id}:{self.application_status}>"
 
 # Add indexes for better performance
-from sqlalchemy import Index
 
 # Composite indexes for efficient queries
 Index('idx_job_applications_user_status', JobApplication.user_id, JobApplication.application_status)

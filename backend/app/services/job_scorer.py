@@ -1,7 +1,6 @@
 import asyncio
 import logging
 from typing import List, Dict, Any, Optional
-from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 
 from app.core.ai_service import ai_service
@@ -100,7 +99,7 @@ class JobScoringService:
         """
         Score a batch of jobs concurrently - JobScore functionality disabled
         """
-        logger.info(f"Job batch scoring disabled - JobScore model removed")
+        logger.info("Job batch scoring disabled - JobScore model removed")
         return []
     
     async def _score_single_job(

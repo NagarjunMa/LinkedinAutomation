@@ -224,7 +224,6 @@ export function AppliedJobsList({ userId, limit = 10 }: AppliedJobsListProps) {
 
     useEffect(() => {
         fetchApplications()
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [userId, page, refreshAppliedJobsKey])
 
     // Refresh function to be called when tab is opened
@@ -245,7 +244,6 @@ export function AppliedJobsList({ userId, limit = 10 }: AppliedJobsListProps) {
         return () => {
             document.removeEventListener('visibilitychange', handleVisibilityChange)
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     const fetchApplications = async () => {
@@ -385,7 +383,7 @@ const styles = `
   -ms-overflow-style: none;  /* Internet Explorer 10+ */
   scrollbar-width: none;  /* Firefox */
 }
-.scrollbar-hide::-webkit-scrollbar { 
+.scrollbar-hide::-webkit-scrollbar {
   display: none;  /* Safari and Chrome */
 }
 `
@@ -395,4 +393,4 @@ if (typeof document !== 'undefined') {
     const styleSheet = document.createElement("style")
     styleSheet.innerText = styles
     document.head.appendChild(styleSheet)
-} 
+}

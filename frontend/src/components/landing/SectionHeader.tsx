@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect } from 'react';
-import { motion, useAnimation, useInView } from 'framer-motion';
+import { motion, type Variants, useAnimation, useInView } from 'framer-motion';
 
 interface SectionHeaderProps {
   title: string;
@@ -10,7 +10,7 @@ interface SectionHeaderProps {
   number?: string; // e.g. "01"
 }
 
-const fadeInUp = {
+const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 16 },
   visible: {
     opacity: 1,

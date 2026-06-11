@@ -4,13 +4,9 @@ Prevents abuse and controls costs for expensive AI operations.
 """
 
 import logging
-from typing import Optional
 from fastapi import Request, HTTPException
-from fastapi.responses import JSONResponse
 import time
 from collections import defaultdict, deque
-from datetime import datetime, timedelta
-import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +43,7 @@ class RateLimiter:
                     ip_requests.popleft()
             self.last_cleanup = current_time
 
-    def check_rate_limit(
+    def check_endpoint_rate_limit(
         self,
         user_id: str,
         endpoint: str,
@@ -201,7 +197,7 @@ def rate_limit_decorator(endpoint_name: str):
             })
 
             # Check rate limit
-            if not rate_limiter.check_rate_limit(
+            if not rate_limiter.check_endpoint_rate_limit(
                 user_id,
                 endpoint_name,
                 config["max_requests"],
@@ -254,7 +250,7 @@ def check_ai_rate_limit(user_id: str, operation: str) -> None:
         "error_message": "Rate limit exceeded. Please try again later."
     })
 
-    if not rate_limiter.check_rate_limit(
+    if not rate_limiter.check_endpoint_rate_limit(
         user_id,
         operation,
         config["max_requests"],

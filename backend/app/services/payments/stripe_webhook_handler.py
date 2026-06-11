@@ -80,7 +80,7 @@ def _handle_checkout_completed(db: Session, event: Any, event_id: str) -> dict:
     """Grant credits for a successful checkout session.
 
     Reads ``user_id`` and ``credit_amount`` from the session's metadata.
-    Falls back to 20 credits if ``credit_amount`` is absent.
+    Falls back to 90 credits if ``credit_amount`` is absent.
     """
     # Support both dict (test mode) and Stripe object (production)
     if isinstance(event, dict):
@@ -96,9 +96,9 @@ def _handle_checkout_completed(db: Session, event: Any, event_id: str) -> dict:
         return {"status": "ignored", "reason": "no_user_id"}
 
     try:
-        amount = int(metadata.get("credit_amount", 20))
+        amount = int(metadata.get("credit_amount", 90))
     except (ValueError, TypeError):
-        amount = 20
+        amount = 90
 
     # Idempotency check
     if _is_already_processed(db, event_id):

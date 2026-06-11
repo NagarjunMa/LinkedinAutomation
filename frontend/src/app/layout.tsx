@@ -156,7 +156,7 @@ export default function RootLayout({
                 "@type": "Offer",
                 "price": "0",
                 "priceCurrency": "USD",
-                "description": "Freemium — 20 free credits per month; top-up credits available"
+                "description": "Freemium — 90 free credits per month during launch"
               },
               "author": {
                 "@type": "Organization",

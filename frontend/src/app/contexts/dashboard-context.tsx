@@ -58,7 +58,10 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
             }
 
             // 2. Fetch applications and profile in parallel (less critical)
-            const secondaryPromises = [
+            const secondaryPromises: [
+                Promise<RecentApplication[]>,
+                Promise<UserProfile | null>
+            ] = [
                 fetchRecentApplications().catch(error => {
                     console.warn('Applications fetch failed:', error)
                     return []
@@ -181,4 +184,4 @@ export function useDashboard() {
         throw new Error('useDashboard must be used within a DashboardProvider')
     }
     return context
-} 
+}

@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     const response = NextResponse.redirect(`${origin}${next}`)
 
     // Create Supabase client with response cookie handling
-    const supabase = createServerSupabaseClientWithResponse(response)
+    const supabase = await createServerSupabaseClientWithResponse(response)
 
     try {
       // More detailed logging for PKCE debugging

@@ -1,6 +1,6 @@
 import io
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from fastapi import UploadFile, HTTPException
 import PyPDF2
 from docx import Document

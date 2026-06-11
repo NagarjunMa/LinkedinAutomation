@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
 from contextvars import ContextVar
 from typing import Optional
@@ -19,7 +19,10 @@ def get_db():
         # Set the current user ID for RLS policies
         user_id = current_user_id.get()
         if user_id:
-            db.execute(text(f"SET app.current_user_id = '{user_id}'"))
+            db.execute(
+                text("SELECT set_config('app.current_user_id', :user_id, false)"),
+                {"user_id": user_id},
+            )
             db.commit()  # Commit the setting change
 
         yield db
@@ -28,4 +31,4 @@ def get_db():
 
 def set_current_user(user_id: str):
     """Set the current user for RLS policies"""
-    current_user_id.set(user_id) 
+    current_user_id.set(user_id)

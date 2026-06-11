@@ -1,22 +1,20 @@
-   import path from 'path';
-   import { fileURLToPath } from 'url';
-   import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs';
 
-   const __filename = fileURLToPath(import.meta.url);
-   const __dirname = path.dirname(__filename);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const isProduction = process.env.NODE_ENV === 'production';
+const apiOrigin = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const supabaseOrigin = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 
-   /** @type {import('next').NextConfig} */
-   const nextConfig = {
-    reactStrictMode: true,
-    typescript: {
-      // Build errors will show as warnings but won't block builds
-      ignoreBuildErrors: true,
-    },
-    eslint: {
-      // Show ESLint warnings/errors but don't block builds in development
-      ignoreDuringBuilds: true,
-      dirs: ['src'], // Only lint src directory, not node_modules
-    },
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  reactStrictMode: true,
+  output: 'standalone',
+  turbopack: {
+    root: __dirname,
+  },
     images: {
       remotePatterns: [
         { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
@@ -52,7 +50,7 @@
   // Performance and bundle optimization
   compiler: {
     // Remove console.log in production
-    removeConsole: process.env.NODE_ENV === 'production' ? {
+    removeConsole: isProduction ? {
       exclude: ['error', 'warn'],
     } : false,
   },
@@ -69,11 +67,11 @@
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://api.fontshare.com https://fonts.googleapis.com https://www.googletagmanager.com",
+              `script-src 'self' 'unsafe-inline'${isProduction ? '' : " 'unsafe-eval'"} https://api.fontshare.com https://fonts.googleapis.com https://www.googletagmanager.com`,
               "style-src 'self' 'unsafe-inline' https://api.fontshare.com https://fonts.googleapis.com",
               "font-src 'self' https://api.fontshare.com https://fonts.gstatic.com data:",
-              "img-src 'self' data: blob: https: http:",
-              `connect-src 'self' http://localhost:8000 https://linkedinautomation-production-7ae9.up.railway.app https://api.prismpro.live https://api.supabase.io ${process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://foytemzinonzkufkstqf.supabase.co'} https://*.supabase.co https://fonts.googleapis.com https://api.fontshare.com https://accounts.google.com`,
+              `img-src 'self' data: blob: https:${isProduction ? '' : ' http:'}`,
+              `connect-src 'self' ${apiOrigin} ${supabaseOrigin} https://*.supabase.co https://fonts.googleapis.com https://api.fontshare.com https://accounts.google.com`,
               "frame-src 'self' https://www.google.com",
               "object-src 'none'",
               "base-uri 'self'",
@@ -103,7 +101,7 @@
             value: 'strict-origin-when-cross-origin'
           },
           // HSTS (Force HTTPS in production)
-          ...(process.env.NODE_ENV === 'production' ? [{
+          ...(isProduction ? [{
             key: 'Strict-Transport-Security',
             value: 'max-age=31536000; includeSubDomains; preload'
           }] : []),

@@ -370,7 +370,7 @@ export function ResumeImprovementModal({ resume, open, onOpenChange }: ResumeImp
                               Priority {index + 1}
                             </div>
                             <span className="text-xs text-orange-600">
-                              Estimated impact: +{Math.floor(Math.random() * 10) + 8} points
+                              Estimated impact: +{8 + (index % 10)} points
                             </span>
                           </div>
                         </div>

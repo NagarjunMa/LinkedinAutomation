@@ -24,7 +24,7 @@ Run **once** in the Supabase SQL editor:
 SELECT cron.schedule(
   'monthly-credit-grant',
   '0 0 1 * *',           -- midnight UTC, 1st of every month
-  $$SELECT grant_monthly_credits(20)$$
+  $$SELECT grant_monthly_credits(90)$$
 );
 ```
 
@@ -39,9 +39,20 @@ SELECT * FROM cron.job WHERE jobname = 'monthly-credit-grant';
 After the next scheduled tick (or invoke manually for testing):
 
 ```sql
-SELECT grant_monthly_credits(20);   -- returns count of users credited
+SELECT grant_monthly_credits(90);   -- returns count of users credited
 SELECT * FROM credit_ledger WHERE reason = 'grant' ORDER BY created_at DESC LIMIT 5;
 ```
+
+## Existing-user backfill
+
+Run this once before launch, and rerun safely if needed:
+
+```sql
+SELECT grant_monthly_credits(90);
+```
+
+The monthly `external_ref` unique constraint prevents duplicate grants for users
+who already received the current month's freemium allowance.
 
 ## Idempotency model
 

@@ -46,7 +46,7 @@ const sections = [
                     </li>
                 </ol>
                 <p className="text-sm font-medium mt-4">
-                    New users receive <strong>5 complimentary evaluation credits</strong> on signup. See the Credits section for details.
+                    New users receive <strong>90 free monthly credits</strong> on signup. See the Credits section for details.
                 </p>
             </div>
         ),
@@ -159,11 +159,11 @@ const sections = [
                 </ul>
                 <h4 className="font-bold text-sm uppercase tracking-wider mt-6 mb-2">Checking your balance</h4>
                 <p>
-                    Your current credit balance is always visible in the sidebar. Go to <strong>Credits</strong> for a full usage history and top-up options.
+                    Your current credit balance is always visible in the sidebar. Go to <strong>Credits</strong> for your monthly allowance and usage details.
                 </p>
                 <h4 className="font-bold text-sm uppercase tracking-wider mt-6 mb-2">Free tier</h4>
                 <p>
-                    New accounts receive <strong>5 evaluation credits</strong> at signup. These do not expire and cover your initial resume assessment and first JD tailoring session.
+                    New accounts receive <strong>90 free credits every month</strong>. That covers about 30 JD tailor-and-export workflows during the freemium launch.
                 </p>
             </div>
         ),
@@ -223,7 +223,7 @@ const sections = [
                     Resume Polish evaluates your resume in isolation — it scores your bullets, checks ATS compliance, and suggests general improvements. JD Tailoring compares your resume against a specific job description and generates a targeted variant for that role. For best results, Polish first, then Tailor for each application.
                 </FaqItem>
                 <FaqItem q="I ran out of credits. What can I do?">
-                    You can top up credits from the Credits page. If you believe you were charged incorrectly, contact <a href="mailto:support@prismpro.live" className="underline underline-offset-2">support@prismpro.live</a>.
+                    Credits refresh monthly during the freemium launch. If you believe your balance is incorrect, contact <a href="mailto:support@prismpro.live" className="underline underline-offset-2">support@prismpro.live</a>.
                 </FaqItem>
             </div>
         ),

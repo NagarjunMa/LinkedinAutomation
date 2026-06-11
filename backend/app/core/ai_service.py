@@ -1,7 +1,7 @@
 from openai import AsyncOpenAI
 import json
 import logging
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Optional
 from app.core.config import settings
 from app.core.enhanced_logging import log_openai_request, log_openai_error
 

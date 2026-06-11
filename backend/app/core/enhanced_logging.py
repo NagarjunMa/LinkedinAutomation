@@ -8,7 +8,7 @@ import json
 import sys
 import os
 from datetime import datetime
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from functools import wraps
 import time
 import traceback
@@ -358,6 +358,7 @@ def validate_railway_config():
         'SUPABASE_URL': 'Database connection',
         'SQLALCHEMY_DATABASE_URI': 'SQLAlchemy database',
         'SUPABASE_SERVICE_ROLE_KEY': 'Supabase Storage + admin ops',
+        'CORS_ORIGINS': 'Production CORS allowlist',
     }
 
     missing_vars = []

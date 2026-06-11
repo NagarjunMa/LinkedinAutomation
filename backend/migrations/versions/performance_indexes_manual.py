@@ -27,13 +27,21 @@ def upgrade():
         unique=False
     )
 
-    # Composite index for user-specific applied job queries
-    op.create_index(
-        'idx_job_listings_user_applied_date',
-        'job_listings',
-        ['user_id', 'applied', sa.text('extracted_date DESC')],
-        unique=False,
-        postgresql_where=sa.text('user_id IS NOT NULL')
+    # Legacy job ownership moved from job_listings.user_id to job_applications.
+    op.execute(
+        """
+        DO $$
+        BEGIN
+            IF EXISTS (
+                SELECT 1 FROM information_schema.columns
+                WHERE table_name = 'job_listings' AND column_name = 'user_id'
+            ) THEN
+                CREATE INDEX IF NOT EXISTS idx_job_listings_user_applied_date
+                ON job_listings (user_id, applied, extracted_date DESC)
+                WHERE user_id IS NOT NULL;
+            END IF;
+        END $$;
+        """
     )
 
     # Index for application status filtering
@@ -87,5 +95,5 @@ def downgrade():
     op.drop_index('idx_job_listings_compatibility_score', table_name='job_listings')
     op.drop_index('idx_job_applications_user_job_date', table_name='job_applications')
     op.drop_index('idx_job_listings_status_date', table_name='job_listings')
-    op.drop_index('idx_job_listings_user_applied_date', table_name='job_listings')
+    op.execute("DROP INDEX IF EXISTS idx_job_listings_user_applied_date")
     op.drop_index('idx_job_listings_extracted_date_desc', table_name='job_listings')

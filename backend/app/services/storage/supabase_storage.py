@@ -4,17 +4,17 @@ This module provides StorageClient with upload/download/signed_url/delete.
 It intentionally does not reuse app.core.supabase_storage (Phase 2 helper)
 to keep services/ decoupled from core/; both co-exist for one release.
 """
-import os
 from supabase import create_client, Client
+from app.core.config import settings
 from app.services.storage.exceptions import StorageUploadError, StorageDownloadError
 
 
 class StorageClient:
     def __init__(self, bucket_name: str | None = None):
-        self.bucket_name = bucket_name or os.getenv("SUPABASE_STORAGE_BUCKET", "resumes")
+        self.bucket_name = bucket_name or settings.SUPABASE_STORAGE_BUCKET
         self._client: Client = create_client(
-            os.getenv("SUPABASE_URL", "https://placeholder.supabase.co"),
-            os.getenv("SUPABASE_SERVICE_ROLE_KEY", "placeholder"),
+            settings.SUPABASE_URL,
+            settings.SUPABASE_SERVICE_ROLE_KEY,
         )
 
     def _bucket(self):

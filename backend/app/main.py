@@ -16,14 +16,11 @@ from sqlalchemy import text
 
 from app.core.config import settings
 from app.api.v1.api import api_router
-from app.core.logging import setup_logging
-from app.models.job import Base
 from app.db.session import engine
-from app.middleware.security import create_security_middleware_stack
 # from app.core.error_handlers import setup_error_handlers
 
 # Setup enhanced logging system
-from app.core.enhanced_logging import setup_enhanced_logging, health_monitor, log_security_event, validate_railway_config
+from app.core.enhanced_logging import setup_enhanced_logging, health_monitor, validate_railway_config
 
 # Initialize enhanced logging
 enhanced_logger = setup_enhanced_logging()
@@ -47,8 +44,6 @@ async def lifespan(app: FastAPI):
 
     # Shutdown
     logger.info("Shutting down application...")
-
-Base.metadata.create_all(bind=engine)
 
 # Determine if running in production
 is_production = os.getenv("ENVIRONMENT", "development").lower() == "production"
@@ -105,7 +100,7 @@ security_config = {
     'rate_limit': {
         'requests_per_minute': 100 if is_production else 1000,
         'requests_per_hour': 2000 if is_production else 10000,
-        'burst_size': 20 if is_production else 50,
+        'burst_size': 20 if is_production else 1000,
         'whitelist_ips': [
             '127.0.0.1',
             '::1',
@@ -140,6 +135,7 @@ security_config = {
 
 # Add basic security headers middleware
 from starlette.middleware.base import BaseHTTPMiddleware
+from app.middleware.security import RateLimitMiddleware, RequestValidationMiddleware
 
 class BasicSecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
@@ -158,15 +154,10 @@ class BasicSecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 app.add_middleware(BasicSecurityHeadersMiddleware)
 
-# Temporarily disable complex security middleware stack due to middleware chaining issue
-# create_security_middleware_stack(
-#     app,
-#     enable_rate_limiting=True,
-#     enable_request_validation=True,
-#     enable_security_headers=True,
-#     enable_request_logging=True,
-#     **security_config
-# )
+# Activate request protection without the older body-logging middleware. These
+# middlewares do not consume request bodies, so uploads remain safe.
+app.add_middleware(RequestValidationMiddleware, **security_config["validation"])
+app.add_middleware(RateLimitMiddleware, **security_config["rate_limit"])
 
 # Include API router
 app.include_router(api_router, prefix="/api/v1")
@@ -233,4 +224,4 @@ async def root():
         "message": "Welcome to JobFlow Pro - AI-Powered Job Extraction & Management API",
         "docs_url": "/docs",
         "redoc_url": "/redoc"
-    } 
+    }

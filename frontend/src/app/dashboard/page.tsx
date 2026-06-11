@@ -3,7 +3,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import {
-    FileText,
     Wand2,
     Coins,
     Briefcase,
