@@ -1,4 +1,5 @@
 import { createBrowserClient } from '@supabase/ssr'
+import { getBrowserAppOrigin } from './url'
 
 // Supabase configuration
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -111,21 +112,7 @@ export const createClient = () => {
 
 // Get the correct redirect URL based on environment
 const getRedirectUrl = () => {
-  // Use environment variable if available, otherwise fall back to production URL
-  const productionUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://linkedinautomation-production-83d0.up.railway.app'
-
-  // In production, always use the production URL
-  if (process.env.NODE_ENV === 'production') {
-    return `${productionUrl}/api/auth/callback`
-  }
-
-  // In development, use the current origin
-  if (typeof window !== 'undefined') {
-    return `${window.location.origin}/api/auth/callback`
-  }
-
-  // Fallback for SSR
-  return 'http://localhost:3000/api/auth/callback'
+  return `${getBrowserAppOrigin()}/api/auth/callback`
 }
 
 // Auth utilities for client-side use

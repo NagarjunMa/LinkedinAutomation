@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClientWithResponse } from '@/lib/supabase-server'
+import { getConfiguredAppOrigin } from '@/lib/url'
 
 export const runtime = 'nodejs'
 
@@ -10,7 +11,7 @@ export async function GET(request: NextRequest) {
   const next = requestUrl.searchParams.get('next') ?? '/dashboard'
 
   // Use configured frontend URL in production, fallback to request origin in dev
-  const origin = process.env.NEXT_PUBLIC_FRONTEND_URL || process.env.NEXT_PUBLIC_SITE_URL || requestUrl.origin
+  const origin = getConfiguredAppOrigin(requestUrl.origin)
 
   console.log('Auth callback received:', { code: !!code, error_param, origin })
 
