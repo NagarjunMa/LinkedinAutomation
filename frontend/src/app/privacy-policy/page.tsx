@@ -3,9 +3,11 @@
 import React from 'react';
 import { Navigation } from '@/components/landing/Navigation';
 import { useTheme } from '@/contexts/theme-context';
+import { getConfiguredAppOrigin } from '@/lib/url';
 
 export default function PrivacyPolicy() {
     const { isDark } = useTheme();
+    const appOrigin = getConfiguredAppOrigin();
 
     return (
         <div className={`min-h-screen ${isDark ? 'bg-[#0a0a0a] text-[#f0eff2]' : 'bg-[#f0eff2] text-[#0a0a0a]'} transition-colors duration-300 font-sans`}>
@@ -20,7 +22,7 @@ export default function PrivacyPolicy() {
                         This Privacy Notice for Prism Pro ("we," "us," or "our"), describes how and why we might access, collect, store, use, and/or share ("process") your personal information when you use our services ("Services"), including when you:
                     </p>
                     <ul className="list-disc pl-6 space-y-2">
-                        <li>Visit our website at <a href="https://www.prismpro.live" className="underline hover:text-blue-500">https://www.prismpro.live</a> or any website of ours that links to this Privacy Notice</li>
+                        <li>Visit our website at <a href={appOrigin} className="underline hover:text-blue-500">{appOrigin}</a> or any website of ours that links to this Privacy Notice</li>
                         <li>Use Prism Pro. Prism Pro is an AI-powered LinkedIn automation and job search management platform. Students and job seekers use Prism Pro to extract job listings, track applications, and tailor resumes.</li>
                         <li>Engage with us in other related ways, including any marketing or events</li>
                     </ul>

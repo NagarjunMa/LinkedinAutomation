@@ -7,6 +7,7 @@ import { Providers } from "@/components/ui/providers"
 import { AuthProvider } from "@/contexts/auth-context"
 import { ThemeProvider } from "@/contexts/theme-context"
 import ErrorBoundary, { PageErrorFallback } from "@/components/error-boundary"
+import { getConfiguredAppOrigin } from "@/lib/url"
 
 // ── Humane variable typeface — editorial display / UI font ─────────────────
 // Loaded via next/font/local for optimal performance (no FOUT/FOIT).
@@ -58,6 +59,8 @@ const ibmPlexSans = IBM_Plex_Sans({
   display: "swap",
 })
 
+const appOrigin = getConfiguredAppOrigin()
+
 export const metadata: Metadata = {
   title: {
     default: "Prism Pro — Recruiter-Grade Resume Prep",
@@ -84,14 +87,14 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL('https://prismpro.live'),
+  metadataBase: new URL(appOrigin),
   alternates: {
     canonical: '/',
   },
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://prismpro.live',
+    url: appOrigin,
     title: 'Prism Pro — Recruiter-Grade Resume Prep',
     description: 'Recruiter-grade resume tailoring and JD matching for experienced engineers and product professionals. Used by SWEs, Data Scientists, and PMs targeting roles in the US and India.',
     siteName: 'Prism Pro',
@@ -149,7 +152,7 @@ export default function RootLayout({
               "@type": "SoftwareApplication",
               "name": "Prism Pro",
               "description": "Recruiter-grade resume tailoring platform. Professionals use Prism Pro to evaluate and tailor their resumes to job descriptions, prepare for ATS systems, and export polished, country-aware PDF resumes.",
-              "url": "https://prismpro.live",
+              "url": appOrigin,
               "applicationCategory": "BusinessApplication",
               "operatingSystem": "Web Browser",
               "offers": {
