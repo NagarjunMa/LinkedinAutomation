@@ -1,7 +1,8 @@
 import { MetadataRoute } from 'next'
+import { getConfiguredAppOrigin } from '@/lib/url'
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://prismpro.live'
+  const baseUrl = getConfiguredAppOrigin()
 
   return [
     {
