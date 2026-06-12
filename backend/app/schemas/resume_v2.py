@@ -31,6 +31,7 @@ class ExperienceEntry(BaseModel):
 class EducationEntry(BaseModel):
     school: str
     degree: Optional[str] = None
+    location: Optional[str] = None
     dates: Optional[str] = None
     gpa: Optional[str] = None
 

@@ -58,22 +58,58 @@ def _simulate_pdf(content: bytes) -> ATSResult:
 
 
 def _detect_columns(page) -> int:
-    """Cluster word x-positions into bins. >1 cluster = multi-column."""
+    """Detect repeated side-by-side text bands separated by a stable gutter."""
+    return 2 if _column_confidence(page) >= 0.65 else 1
+
+
+def _column_confidence(page) -> float:
     words = page.extract_words()
     if not words:
-        return 1
-    xs = sorted(w["x0"] for w in words)
-    if not xs:
-        return 1
+        return 0.0
     width = page.width
-    half = width / 2
-    left = sum(1 for x in xs if x < half)
-    right = sum(1 for x in xs if x >= half)
-    # If both halves have ≥30% of words, it's two-column
-    total = len(xs)
-    if left / total > 0.3 and right / total > 0.3:
-        return 2
-    return 1
+    min_gutter = width * 0.18
+    min_side_words = 2
+    line_tolerance = 3
+
+    lines: dict[int, list[dict]] = {}
+    for word in words:
+        key = round(float(word["top"]) / line_tolerance)
+        lines.setdefault(key, []).append(word)
+
+    split_lines = 0
+    candidate_lines = 0
+    gutters: list[tuple[float, float]] = []
+    for line_words in lines.values():
+        if len(line_words) < min_side_words * 2:
+            continue
+        candidate_lines += 1
+        ordered = sorted(line_words, key=lambda w: float(w["x0"]))
+        gaps = [
+            (float(right["x0"]) - float(left["x1"]), float(left["x1"]), float(right["x0"]))
+            for left, right in zip(ordered, ordered[1:])
+        ]
+        if not gaps:
+            continue
+        gap, left_edge, right_edge = max(gaps, key=lambda item: item[0])
+        if gap < min_gutter:
+            continue
+        left_count = sum(1 for word in ordered if float(word["x1"]) <= left_edge)
+        right_count = sum(1 for word in ordered if float(word["x0"]) >= right_edge)
+        if left_count >= min_side_words and right_count >= min_side_words:
+            split_lines += 1
+            gutters.append((left_edge, right_edge))
+
+    if candidate_lines < 6 or split_lines < 4:
+        return 0.0
+    if not gutters:
+        return 0.0
+
+    gutter_centers = [(left + right) / 2 for left, right in gutters]
+    center_avg = sum(gutter_centers) / len(gutter_centers)
+    spread = max(abs(center - center_avg) for center in gutter_centers)
+    stability = max(0.0, 1.0 - spread / (width * 0.15))
+    prevalence = split_lines / candidate_lines
+    return min(1.0, prevalence * 0.75 + stability * 0.25)
 
 
 def _simulate_docx(content: bytes) -> ATSResult:
