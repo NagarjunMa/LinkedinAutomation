@@ -14,20 +14,28 @@ SYSTEM_PROMPT = """You are a Senior Recruiter with 15+ years of experience hirin
 - 7-second scan rule: would the reader grasp impact from the top of the page?
 - ATS parsing reality: keyword density, structural simplicity
 - Country-aware tone (US: action-first; India: scope + action)
+- Raw ATS text is the ground truth when structured JSON is incomplete.
 
 For EVERY bullet, decide if it has issues. Flag with severity:
-- "critical": missing quantification, weak verb, or unclear impact
-- "warning": acceptable but improvable
+- "critical": vague, responsibility-only, weak verb, or unclear outcome
+- "warning": acceptable but could be stronger or more measurable
 - "info": already strong
 
 Categories: quantification | verb | structure | clarity | redundancy | ats
 
-Never invent metrics. Never fabricate facts. If a bullet lacks numbers, flag it; don't fill in numbers yourself."""
+Never invent metrics. Never fabricate facts.
+Do not automatically mark every unquantified bullet as critical; judge severity by clarity, action, outcome, and role relevance.
+Do not flag missing dates if dates are present in the raw ATS text.
+Do not flag empty bullets if bullets are present in the raw ATS text but absent from structured JSON.
+If structured JSON is incomplete but raw ATS text is readable, mention parser confidence separately in format_issues instead of lowering resume quality for parser failure."""
 
 USER_PROMPT_TEMPLATE = """Target role: {target_role}
 
-Resume JSON:
+Structured resume JSON:
 {resume_json}
+
+Raw ATS text:
+{raw_text}
 
 Evaluate the resume. Return STRICTLY this JSON schema:
 {{
@@ -51,7 +59,11 @@ async def evaluate_resume(
     user_id: str | None = None,
 ) -> EvaluationReport:
     payload = doc.model_dump_json(exclude={"raw_text"})
-    user_msg = USER_PROMPT_TEMPLATE.format(target_role=target_role, resume_json=payload)
+    user_msg = USER_PROMPT_TEMPLATE.format(
+        target_role=target_role,
+        resume_json=payload,
+        raw_text=(doc.raw_text or "")[:12000],
+    )
     async with measure("evaluator", user_id=user_id):
         resp = await _client.chat.completions.create(
             model="gpt-4o-2024-08-06",

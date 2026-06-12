@@ -18,7 +18,7 @@ def make_doc():
             bullets=[Bullet(id="b1", text="Did stuff", raw_text="Did stuff"),
                      Bullet(id="b2", text="Improved performance 30%", raw_text="...")])],
         skills=Skills(hard=["Python"]),
-        raw_text="...",
+        raw_text="A B\nSWE at Acme 2022-2024\n• Improved performance 30%",
     )
 
 
@@ -115,6 +115,46 @@ async def test_evaluator_logs_user_id(caplog):
     assert any("u1" in m for m in messages), (
         f"Expected 'u1' in llm log records; got: {messages}"
     )
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_evaluator_prompt_includes_raw_text_and_parser_guardrails():
+    captured = []
+    mock_payload = {
+        "id": "x", "object": "chat.completion", "created": 0, "model": "gpt-4o-2024-08-06",
+        "choices": [{
+            "index": 0, "finish_reason": "stop",
+            "message": {"role": "assistant",
+                "content": json.dumps({
+                    "overall_score": 80,
+                    "bullet_flags": [],
+                    "format_issues": [],
+                    "summary_critique": None,
+                    "skill_gaps": [],
+                })}
+        }],
+        "usage": {"prompt_tokens": 100, "completion_tokens": 50, "total_tokens": 150},
+    }
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured.append(json.loads(request.content))
+        return httpx.Response(200, json=mock_payload)
+
+    respx.route(url=OPENAI_URL).mock(side_effect=handler)
+
+    await evaluate_resume(make_doc(), target_role="SWE")
+
+    assert captured
+    messages = captured[0]["messages"]
+    system_prompt = messages[0]["content"]
+    user_prompt = messages[1]["content"]
+    assert "Raw ATS text is the ground truth" in system_prompt
+    assert "Do not flag missing dates if dates are present in the raw ATS text" in system_prompt
+    assert "Do not flag empty bullets if bullets are present in the raw ATS text" in system_prompt
+    assert "Structured resume JSON:" in user_prompt
+    assert "Raw ATS text:" in user_prompt
+    assert "SWE at Acme 2022-2024" in user_prompt
 
 
 @pytest.mark.asyncio
