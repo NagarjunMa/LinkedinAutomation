@@ -27,14 +27,15 @@ export const resumeApi = {
         }
 
         const data = await response.json();
+        const resumeId = data.resume_document_id || data.id;
         return {
-            id: data.id,
-            filename: data.original_filename,
-            original_filename: data.original_filename,
-            file_size: data.file_size,
-            file_type: data.file_type,
-            uploaded_at: data.uploaded_at,
-            evaluation_status: data.evaluation_status,
+            id: resumeId,
+            filename: data.original_filename || file.name,
+            original_filename: data.original_filename || file.name,
+            file_size: data.file_size || file.size,
+            file_type: data.file_type || file.name.split('.').pop() || 'unknown',
+            uploaded_at: data.uploaded_at || new Date().toISOString(),
+            evaluation_status: data.evaluation_status || 'pending',
         };
     },
 

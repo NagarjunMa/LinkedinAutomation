@@ -45,6 +45,63 @@ def test_upload_resume_rejects_unsupported_type(client: TestClient, auth_headers
     assert resp.status_code == 400
 
 
+@patch("app.api.v1.endpoints.resumes_v2.get_storage")
+def test_list_and_get_resume_documents_for_profile_page(mock_get_storage, client: TestClient, auth_headers):
+    storage = MagicMock()
+    storage.upload.return_value = "test-user-1/abc123_simple.pdf"
+    mock_get_storage.return_value = storage
+
+    with FIXTURE.open("rb") as f:
+        upload = client.post(
+            "/api/v1/resumes/upload",
+            files={"file": ("simple.pdf", f, "application/pdf")},
+            headers=auth_headers,
+        )
+    assert upload.status_code == 201, upload.text
+    doc_id = upload.json()["resume_document_id"]
+
+    list_response = client.get("/api/v1/resumes/list", headers=auth_headers)
+
+    assert list_response.status_code == 200, list_response.text
+    list_data = list_response.json()
+    assert list_data["total_count"] == 1
+    assert list_data["resumes"][0]["id"] == doc_id
+    assert list_data["resumes"][0]["resume_document_id"] == doc_id
+    assert list_data["resumes"][0]["original_filename"] == "simple.pdf"
+    assert list_data["resumes"][0]["evaluation_status"] == "pending"
+
+    detail_response = client.get(f"/api/v1/resumes/{doc_id}", headers=auth_headers)
+
+    assert detail_response.status_code == 200, detail_response.text
+    detail_data = detail_response.json()
+    assert detail_data["resume"]["id"] == doc_id
+    assert detail_data["evaluation"] is None
+
+
+@patch("app.api.v1.endpoints.resumes_v2.get_storage")
+def test_delete_resume_document_removes_v2_rows(mock_get_storage, client: TestClient, auth_headers):
+    storage = MagicMock()
+    storage.upload.return_value = "test-user-1/abc123_simple.pdf"
+    mock_get_storage.return_value = storage
+
+    with FIXTURE.open("rb") as f:
+        upload = client.post(
+            "/api/v1/resumes/upload",
+            files={"file": ("simple.pdf", f, "application/pdf")},
+            headers=auth_headers,
+        )
+    assert upload.status_code == 201, upload.text
+    doc_id = upload.json()["resume_document_id"]
+
+    delete_response = client.delete(f"/api/v1/resumes/{doc_id}", headers=auth_headers)
+
+    assert delete_response.status_code == 204, delete_response.text
+    storage.delete.assert_called_once_with("test-user-1/abc123_simple.pdf")
+    list_response = client.get("/api/v1/resumes/list", headers=auth_headers)
+    assert list_response.status_code == 200
+    assert list_response.json()["total_count"] == 0
+
+
 # ---------------------------------------------------------------------------
 # Helpers for OpenAI mocking
 # ---------------------------------------------------------------------------

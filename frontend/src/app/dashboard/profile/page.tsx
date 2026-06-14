@@ -79,8 +79,8 @@ export default function ProfilePage() {
           title: userProfile.career_level || 'Professional'
         },
         stats: {
-          applications: userProfile.total_applications || 0,
-          experiences: userProfile.work_experiences?.length || 0
+          applications: userProfile.total_resume_evaluations || userProfile.total_applications || 0,
+          experiences: userProfile.work_experiences?.length || userProfile.job_titles?.length || 0
         },
         resumes: resumeData.resumes.map((r: ResumeFile) => ({
           id: r.id,
@@ -133,8 +133,8 @@ export default function ProfilePage() {
       }
 
       await profileApi.updateProfile(userId, {
-        desired_roles: editedPrefs.roles,
-        preferred_locations: editedPrefs.locations,
+        desired_roles: editedPrefs.roles.filter(Boolean),
+        preferred_locations: editedPrefs.locations.filter(Boolean),
         salary_range_min: minSalary,
         salary_range_max: maxSalary
       });

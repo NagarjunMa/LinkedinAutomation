@@ -18,6 +18,8 @@ from app.core.auth import get_current_user_id
 from app.core.config import settings
 from app.models.resume_document import ResumeDocument, ResumeVersion
 from app.models.resume_evaluation_v2 import ResumeEvaluationV2
+from app.models.jd_evaluation import JDEvaluation
+from app.models.resume_export import ResumeExport
 from app.schemas.resume_v2 import ResumeDocumentJSON, ChangeItem
 from app.services.resume.parser import parse_resume
 from app.services.resume.evaluator import evaluate_resume
@@ -86,6 +88,155 @@ async def upload_resume(
     db.commit()
 
     return {"resume_document_id": doc_id, **doc_json.model_dump()}
+
+
+# ---------------------------------------------------------------------------
+# Profile compatibility: list/detail/delete v2 resume documents
+# ---------------------------------------------------------------------------
+
+@router.get("/list")
+async def list_resumes(
+    db: Session = Depends(get_db),
+    current_user_id: str = Depends(get_current_user_id),
+):
+    docs = (
+        db.query(ResumeDocument)
+        .filter(ResumeDocument.user_id == current_user_id)
+        .order_by(ResumeDocument.created_at.desc())
+        .all()
+    )
+    latest_eval_by_doc: dict[str, ResumeEvaluationV2] = {}
+    if docs:
+        evaluations = (
+            db.query(ResumeEvaluationV2)
+            .filter(
+                ResumeEvaluationV2.user_id == current_user_id,
+                ResumeEvaluationV2.resume_document_id.in_([doc.id for doc in docs]),
+            )
+            .order_by(ResumeEvaluationV2.created_at.desc())
+            .all()
+        )
+        for evaluation in evaluations:
+            latest_eval_by_doc.setdefault(evaluation.resume_document_id, evaluation)
+
+    return {
+        "resumes": [
+            _resume_list_item(
+                doc,
+                evaluation=latest_eval_by_doc.get(doc.id),
+                is_primary=index == 0,
+            )
+            for index, doc in enumerate(docs)
+        ],
+        "total_count": len(docs),
+        "totalCount": len(docs),
+    }
+
+
+@router.get("/{resume_document_id}")
+async def get_resume(
+    resume_document_id: str,
+    db: Session = Depends(get_db),
+    current_user_id: str = Depends(get_current_user_id),
+):
+    doc_row = db.get(ResumeDocument, resume_document_id)
+    if not doc_row or doc_row.user_id != current_user_id:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    evaluation = (
+        db.query(ResumeEvaluationV2)
+        .filter(
+            ResumeEvaluationV2.user_id == current_user_id,
+            ResumeEvaluationV2.resume_document_id == resume_document_id,
+        )
+        .order_by(ResumeEvaluationV2.created_at.desc())
+        .first()
+    )
+    return {
+        "resume": _resume_list_item(doc_row, evaluation=evaluation, is_primary=False),
+        "evaluation": _evaluation_payload(evaluation) if evaluation else None,
+    }
+
+
+@router.delete("/{resume_document_id}", status_code=204)
+async def delete_resume(
+    resume_document_id: str,
+    db: Session = Depends(get_db),
+    current_user_id: str = Depends(get_current_user_id),
+):
+    doc_row = db.get(ResumeDocument, resume_document_id)
+    if not doc_row or doc_row.user_id != current_user_id:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    storage_path = doc_row.storage_path or doc_row.file_path
+    try:
+        get_storage().delete(storage_path)
+    except Exception:
+        # Database state is authoritative for the app; stale storage objects can
+        # be cleaned by an admin job without keeping the profile UI blocked.
+        pass
+
+    db.query(ResumeExport).filter(
+        ResumeExport.user_id == current_user_id,
+        ResumeExport.resume_document_id == resume_document_id,
+    ).delete(synchronize_session=False)
+    db.query(JDEvaluation).filter(
+        JDEvaluation.user_id == current_user_id,
+        JDEvaluation.resume_document_id == resume_document_id,
+    ).delete(synchronize_session=False)
+    db.query(ResumeEvaluationV2).filter(
+        ResumeEvaluationV2.user_id == current_user_id,
+        ResumeEvaluationV2.resume_document_id == resume_document_id,
+    ).delete(synchronize_session=False)
+    db.query(ResumeVersion).filter(
+        ResumeVersion.resume_document_id == resume_document_id,
+    ).delete(synchronize_session=False)
+    db.delete(doc_row)
+    db.commit()
+    return None
+
+
+def _resume_list_item(
+    doc: ResumeDocument,
+    evaluation: ResumeEvaluationV2 | None = None,
+    is_primary: bool = False,
+) -> dict:
+    created = doc.created_at.isoformat() if doc.created_at else None
+    return {
+        "id": doc.id,
+        "resume_document_id": doc.id,
+        "filename": doc.original_filename,
+        "original_filename": doc.original_filename,
+        "file_size": 0,
+        "file_type": doc.file_type,
+        "uploaded_at": created,
+        "evaluation_status": "completed" if evaluation else "pending",
+        "is_primary": is_primary,
+        "evaluation_result": _evaluation_payload(evaluation) if evaluation else None,
+    }
+
+
+def _evaluation_payload(evaluation: ResumeEvaluationV2 | None) -> dict | None:
+    if not evaluation:
+        return None
+    return {
+        "id": evaluation.id,
+        "resume_id": evaluation.resume_document_id,
+        "resume_document_id": evaluation.resume_document_id,
+        "overall_score": evaluation.overall_score,
+        "ats_score": evaluation.ats_parseability,
+        "ats_compliance_score": evaluation.ats_parseability,
+        "content_quality_score": evaluation.overall_score,
+        "experience_points_score": evaluation.overall_score,
+        "job_relevance_score": evaluation.overall_score,
+        "quality_checks_score": evaluation.overall_score,
+        "strengths": [],
+        "improvements": [],
+        "ats_compatibility": "good" if evaluation.ats_parseability >= 80 else "fair",
+        "detailed_feedback": evaluation.summary_critique,
+        "keyword_analysis": {"relevant": [], "missing": [], "score": 0},
+        "created_at": evaluation.created_at.isoformat() if evaluation.created_at else None,
+    }
 
 
 # ---------------------------------------------------------------------------

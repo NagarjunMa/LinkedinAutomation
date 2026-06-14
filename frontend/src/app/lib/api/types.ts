@@ -139,6 +139,8 @@ export interface UserProfile {
     last_resume_upload?: string;
     total_applications: number;
     total_resumes: number;
+    total_resume_versions?: number;
+    total_resume_evaluations?: number;
     profile_completion: number;
 }
 

@@ -52,7 +52,7 @@ def get_profile(
     profile_data = ProfileService.get_profile_with_stats(db, user_id)
     if not profile_data:
         return {"user_id": user_id, **_EMPTY_PROFILE_DEFAULTS}
-    profile_data["exists"] = True
+    profile_data.setdefault("exists", True)
     return profile_data
 
 
