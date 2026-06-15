@@ -98,6 +98,13 @@ def _create_sqlite_tables(engine) -> None:
         sa.Column("jd_evaluation_id", sa.String, sa.ForeignKey("jd_evaluations.id"), nullable=True, index=True),
         sa.Column("accepted_at", sa.DateTime, nullable=True),
         sa.Column("template_id", sa.String, nullable=True),
+        sa.Column("company_name", sa.String, nullable=True),
+        sa.Column("target_role_title", sa.String, nullable=True),
+        sa.Column("role_category", sa.String, nullable=True),
+        sa.Column("seniority", sa.String, nullable=True),
+        sa.Column("country_hint", sa.String, nullable=True),
+        sa.Column("match_score", sa.Integer, nullable=True),
+        sa.Column("source_jd_text", sa.Text, nullable=True),
     )
 
     sa.Table(
@@ -122,7 +129,7 @@ def _create_sqlite_tables(engine) -> None:
         sa.Column("resume_version_id", sa.String, nullable=True),
         sa.Column("country", sa.String(2), nullable=False),
         sa.Column("role_template", sa.String(8), nullable=False),
-        sa.Column("storage_path", sa.String, nullable=False),
+        sa.Column("storage_path", sa.String, nullable=True),
         sa.Column("status", sa.String(16), nullable=False, server_default="succeeded"),
         sa.Column("render_ms", sa.Integer, nullable=True),
         sa.Column("file_size_bytes", sa.Integer, nullable=True),

@@ -17,7 +17,10 @@ import {
   CheckCircle2,
   Plus,
   Trash2,
-  AlertTriangle
+  AlertTriangle,
+  Download,
+  Eye,
+  Search
 } from 'lucide-react';
 import { INITIAL_PROFILE_DATA } from './constants';
 import { JobPreferences, ProfileData } from './types';
@@ -25,6 +28,8 @@ import { useAuth } from '@/contexts/auth-context';
 import { profileApi } from '@/app/lib/api/profile';
 import { resumeApi } from '@/app/lib/api/resume';
 import { ResumeFile } from '@/app/lib/api/types';
+import { tailoredResumesApi } from '@/app/lib/api/tailored-resumes';
+import type { TailoredResumeDetail, TailoredResumeListItem } from '@/app/lib/api/types-v2';
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import {
@@ -46,6 +51,11 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [isEditingPrefs, setIsEditingPrefs] = useState(false);
   const [editedPrefs, setEditedPrefs] = useState<JobPreferences>(INITIAL_PROFILE_DATA.preferences);
+  const [tailoredResumes, setTailoredResumes] = useState<TailoredResumeListItem[]>([]);
+  const [tailoredSearch, setTailoredSearch] = useState('');
+  const [selectedTailoredResume, setSelectedTailoredResume] = useState<TailoredResumeDetail | null>(null);
+  const [tailoredDialogOpen, setTailoredDialogOpen] = useState(false);
+  const [tailoredLoadingId, setTailoredLoadingId] = useState<string | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; resumeId: string | null; fileName: string }>({
     open: false,
     resumeId: null,
@@ -65,9 +75,10 @@ export default function ProfilePage() {
       const userId = user.id;
 
       // Parallel fetch
-      const [userProfile, resumeData] = await Promise.all([
+      const [userProfile, resumeData, tailoredResumeData] = await Promise.all([
         profileApi.getProfile(userId),
-        resumeApi.listResumes()
+        resumeApi.listResumes(),
+        tailoredResumesApi.list()
       ]);
 
       // Transform Data
@@ -100,6 +111,7 @@ export default function ProfilePage() {
 
       setData({ ...transformedData, referralBlueprint: '' });
       setEditedPrefs(transformedData.preferences);
+      setTailoredResumes(tailoredResumeData);
 
     } catch (error) {
       console.error('Error fetching profile data:', error);
@@ -211,6 +223,56 @@ export default function ProfilePage() {
 
   const cancelDeleteResume = () => {
     setDeleteDialog({ open: false, resumeId: null, fileName: '' });
+  };
+
+  const filteredTailoredResumes = tailoredResumes.filter((item) => {
+    const query = tailoredSearch.trim().toLowerCase();
+    if (!query) return true;
+    return [
+      item.company_name,
+      item.target_role_title,
+      item.role_category,
+      item.source_filename,
+    ].some((value) => value?.toLowerCase().includes(query));
+  });
+
+  const handleOpenTailoredResume = async (versionId: string) => {
+    try {
+      setTailoredLoadingId(versionId);
+      const detail = await tailoredResumesApi.get(versionId);
+      setSelectedTailoredResume(detail);
+      setTailoredDialogOpen(true);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load tailored resume';
+      toast({ title: 'Error', description: message, variant: 'destructive' });
+    } finally {
+      setTailoredLoadingId(null);
+    }
+  };
+
+  const handleDownloadTailoredResume = async (item: TailoredResumeListItem) => {
+    try {
+      setTailoredLoadingId(item.version_id);
+      const filename = `${item.company_name || 'tailored-resume'}-${item.role_category || 'resume'}.pdf`;
+      const blob = await tailoredResumesApi.downloadPdf(item.version_id, {
+        template_id: item.template_id || undefined,
+        filename,
+      });
+      const objectUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = objectUrl;
+      anchor.download = filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(objectUrl);
+      toast({ title: 'Downloaded', description: '1 credit used for PDF generation.' });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Download failed';
+      toast({ title: 'Download failed', description: message, variant: 'destructive' });
+    } finally {
+      setTailoredLoadingId(null);
+    }
   };
 
   if (loading) {
@@ -385,6 +447,92 @@ export default function ProfilePage() {
           </motion.div>
         </div>
 
+        {/* Tailored Resume Library */}
+        <motion.section
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: LeicaBezier, delay: 0.55 }}
+          className="mb-32"
+        >
+          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-8">
+            <SectionLabel icon={<Briefcase size={14} />} label="Tailored Resume Library" />
+            <div className="relative w-full md:w-80">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground/30" />
+              <input
+                value={tailoredSearch}
+                onChange={(event) => setTailoredSearch(event.target.value)}
+                placeholder="Search company or role"
+                className="w-full bg-transparent border border-foreground/10 pl-9 pr-3 py-2 text-xs font-mono outline-none focus:border-foreground/40"
+              />
+            </div>
+          </div>
+
+          <div className="border border-foreground/5 overflow-hidden">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-foreground/5 bg-foreground/[0.02]">
+                  <th className="py-4 px-6 text-[9px] uppercase tracking-widest font-bold text-foreground/40">Company</th>
+                  <th className="py-4 px-6 text-[9px] uppercase tracking-widest font-bold text-foreground/40">Role</th>
+                  <th className="py-4 px-6 text-[9px] uppercase tracking-widest font-bold text-foreground/40">Match</th>
+                  <th className="py-4 px-6 text-[9px] uppercase tracking-widest font-bold text-foreground/40">Changes</th>
+                  <th className="py-4 px-6 text-[9px] uppercase tracking-widest font-bold text-foreground/40">Saved</th>
+                  <th className="py-4 px-6 text-[9px] uppercase tracking-widest font-bold text-foreground/40 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredTailoredResumes.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-8 text-center text-[10px] uppercase tracking-widest text-foreground/40">
+                      No tailored resumes saved
+                    </td>
+                  </tr>
+                ) : (
+                  filteredTailoredResumes.map((item) => (
+                    <tr key={item.version_id} className="border-b border-foreground/5 hover:bg-card/40 dark:hover:bg-card/20 transition-colors">
+                      <td className="py-5 px-6 text-sm font-medium text-foreground">
+                        {item.company_name || 'Unknown company'}
+                      </td>
+                      <td className="py-5 px-6">
+                        <div className="text-sm text-foreground">{item.target_role_title || item.role_category || 'Target role'}</div>
+                        <div className="text-[10px] uppercase tracking-widest text-foreground/30">{item.source_filename}</div>
+                      </td>
+                      <td className="py-5 px-6 font-mono text-sm font-bold">{item.match_score ?? '--'}</td>
+                      <td className="py-5 px-6 font-mono text-xs text-foreground/60">{item.accepted_change_count}</td>
+                      <td className="py-5 px-6 font-mono text-xs text-foreground/40">
+                        {item.accepted_at || item.created_at ? new Date(item.accepted_at || item.created_at || '').toLocaleDateString() : '--'}
+                      </td>
+                      <td className="py-5 px-6">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleOpenTailoredResume(item.version_id)}
+                            disabled={tailoredLoadingId === item.version_id}
+                            aria-label="Review tailored resume"
+                          >
+                            <Eye size={14} />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDownloadTailoredResume(item)}
+                            disabled={tailoredLoadingId === item.version_id}
+                            aria-label="Download tailored resume"
+                          >
+                            <Download size={14} />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </motion.section>
+
         {/* Resume Ledger Section */}
         <motion.section
           initial={{ opacity: 0, y: 30 }}
@@ -486,6 +634,64 @@ export default function ProfilePage() {
           <p className="text-[10px] tracking-widest text-foreground/30 uppercase">© 2026 Prism Pro</p>
         </footer>
       </div>
+
+      {/* Tailored Resume Detail Dialog */}
+      <Dialog open={tailoredDialogOpen} onOpenChange={setTailoredDialogOpen}>
+        <DialogContent className="max-h-[86vh] overflow-y-auto sm:max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedTailoredResume?.company_name || 'Tailored Resume'}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedTailoredResume?.target_role_title || selectedTailoredResume?.role_category || 'Role details unavailable'}
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedTailoredResume && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                <div className="border border-foreground/10 p-3">
+                  <p className="uppercase tracking-widest text-foreground/40 mb-1">Match</p>
+                  <p className="font-mono font-bold">{selectedTailoredResume.match_score ?? '--'}</p>
+                </div>
+                <div className="border border-foreground/10 p-3">
+                  <p className="uppercase tracking-widest text-foreground/40 mb-1">Changes</p>
+                  <p className="font-mono font-bold">{selectedTailoredResume.accepted_change_count}</p>
+                </div>
+                <div className="border border-foreground/10 p-3">
+                  <p className="uppercase tracking-widest text-foreground/40 mb-1">Seniority</p>
+                  <p className="font-mono font-bold">{selectedTailoredResume.seniority || '--'}</p>
+                </div>
+                <div className="border border-foreground/10 p-3">
+                  <p className="uppercase tracking-widest text-foreground/40 mb-1">Template</p>
+                  <p className="font-mono font-bold">{selectedTailoredResume.template_id || '--'}</p>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-[10px] uppercase tracking-widest font-bold text-foreground/50 mb-3">Resume JSON</h3>
+                <pre className="max-h-72 overflow-auto rounded-sm border border-foreground/10 bg-foreground/[0.02] p-4 text-xs">
+                  {JSON.stringify(selectedTailoredResume.resume_json, null, 2)}
+                </pre>
+              </div>
+
+              <div>
+                <h3 className="text-[10px] uppercase tracking-widest font-bold text-foreground/50 mb-3">Accepted Changes</h3>
+                <pre className="max-h-48 overflow-auto rounded-sm border border-foreground/10 bg-foreground/[0.02] p-4 text-xs">
+                  {JSON.stringify(selectedTailoredResume.accepted_changes, null, 2)}
+                </pre>
+              </div>
+
+              <div>
+                <h3 className="text-[10px] uppercase tracking-widest font-bold text-foreground/50 mb-3">Source JD</h3>
+                <p className="max-h-48 overflow-auto whitespace-pre-wrap rounded-sm border border-foreground/10 bg-foreground/[0.02] p-4 text-xs leading-relaxed">
+                  {selectedTailoredResume.source_jd_text || 'No source JD stored.'}
+                </p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialog.open} onOpenChange={(open) => !open && cancelDeleteResume()}>

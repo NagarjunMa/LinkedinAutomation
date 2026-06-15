@@ -17,9 +17,10 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
+import { server, http, HttpResponse } from '@/test-utils/msw-server';
 import type { DiffPlan } from '@/app/lib/api';
 
 // Mock hooks to avoid network calls and Radix portal issues
@@ -50,6 +51,11 @@ const mockPlan: DiffPlan = {
       new: 'Shipped Python services',
       reason: 'JD wants Python',
       placeholders: [],
+      options: [
+        { option_id: 'conservative', text: 'Shipped Python services', reason: 'Safe', placeholders: [] },
+        { option_id: 'impact', text: 'Shipped Python services with measurable impact', reason: 'Impact', placeholders: [] },
+        { option_id: 'keyword', text: 'Built Python backend services', reason: 'Keyword', placeholders: [] },
+      ],
     },
     {
       bullet_id: 'b2',
@@ -57,6 +63,11 @@ const mockPlan: DiffPlan = {
       new: 'Built React dashboards',
       reason: 'JD wants React',
       placeholders: [],
+      options: [
+        { option_id: 'conservative', text: 'Built React dashboards', reason: 'Safe', placeholders: [] },
+        { option_id: 'impact', text: 'Built React dashboards for operational visibility', reason: 'Impact', placeholders: [] },
+        { option_id: 'keyword', text: 'Developed React frontend dashboards', reason: 'Keyword', placeholders: [] },
+      ],
     },
   ],
   summary_rewrite: { old: 'Old summary', new: 'New summary', reason: 'tone' },
@@ -111,9 +122,8 @@ describe('DiffView', () => {
 
   it('renders all bullet diffs', () => {
     renderDiffView();
-    // ChangeCard renders the `after` prop in an emerald-highlighted paragraph
-    expect(screen.getByText('Shipped Python services')).toBeInTheDocument();
-    expect(screen.getByText('Built React dashboards')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Shipped Python services')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Built React dashboards')).toBeInTheDocument();
   });
 
   it('calls onAcceptedChangesChange when a bullet checkbox is toggled', () => {
@@ -130,6 +140,104 @@ describe('DiffView', () => {
     const lastCall = handler.mock.calls[handler.mock.calls.length - 1][0] as Array<{ bullet_id?: string }>;
     expect(lastCall.some((c: { bullet_id?: string }) => c.bullet_id === 'b1')).toBe(false);
     expect(lastCall.some((c: { bullet_id?: string }) => c.bullet_id === 'b2')).toBe(true);
+  });
+
+  it('uses edited pointer text in accepted changes', () => {
+    const handler = vi.fn();
+    renderDiffView({ onAcceptedChangesChange: handler });
+
+    const pointerText = screen.getByDisplayValue('Shipped Python services');
+    fireEvent.change(pointerText, { target: { value: 'Edited Python pointer' } });
+
+    const lastCall = handler.mock.calls[handler.mock.calls.length - 1][0] as Array<{ bullet_id?: string; new_text?: string }>;
+    expect(lastCall.find((c) => c.bullet_id === 'b1')?.new_text).toBe('Edited Python pointer');
+  });
+
+  it('supports clear all and option selection', () => {
+    const handler = vi.fn();
+    renderDiffView({ onAcceptedChangesChange: handler });
+
+    fireEvent.change(screen.getAllByLabelText('Pointer option')[0], {
+      target: { value: 'impact' },
+    });
+    let lastCall = handler.mock.calls[handler.mock.calls.length - 1][0] as Array<{ bullet_id?: string; new_text?: string }>;
+    expect(lastCall.find((c) => c.bullet_id === 'b1')?.new_text).toBe('Shipped Python services with measurable impact');
+
+    fireEvent.click(screen.getByRole('button', { name: /clear all/i }));
+    lastCall = handler.mock.calls[handler.mock.calls.length - 1][0] as Array<{ bullet_id?: string }>;
+    expect(lastCall.some((c) => c.bullet_id === 'b1')).toBe(false);
+    expect(lastCall.some((c) => c.bullet_id === 'b2')).toBe(false);
+  });
+
+  it('resets all pointer selections and edited text', () => {
+    const handler = vi.fn();
+    renderDiffView({ onAcceptedChangesChange: handler });
+
+    fireEvent.change(screen.getAllByLabelText('Pointer option')[0], {
+      target: { value: 'impact' },
+    });
+    fireEvent.change(screen.getByDisplayValue('Shipped Python services with measurable impact'), {
+      target: { value: 'Edited impact pointer' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /clear all/i }));
+    fireEvent.click(screen.getByRole('button', { name: /reset all/i }));
+
+    expect(screen.getByDisplayValue('Shipped Python services')).toBeInTheDocument();
+    const lastCall = handler.mock.calls[handler.mock.calls.length - 1][0] as Array<{ bullet_id?: string; new_text?: string }>;
+    expect(lastCall.find((c) => c.bullet_id === 'b1')?.new_text).toBe('Shipped Python services');
+    expect(lastCall.some((c) => c.bullet_id === 'b2')).toBe(true);
+  });
+
+  it('regenerates options for a single pointer', async () => {
+    server.use(
+      http.post('http://localhost:8000/api/v1/jd/jd-1/bullets/b1/options', () => {
+        return HttpResponse.json({
+          bullet_id: 'b1',
+          old: 'Did stuff',
+          new: 'Regenerated Python pointer',
+          reason: 'Regenerated',
+          placeholders: [],
+          options: [
+            { option_id: 'conservative', text: 'Regenerated Python pointer', reason: 'Safe', placeholders: [] },
+            { option_id: 'impact', text: 'Regenerated impact pointer', reason: 'Impact', placeholders: [] },
+            { option_id: 'keyword', text: 'Regenerated keyword pointer', reason: 'Keyword', placeholders: [] },
+          ],
+        });
+      })
+    );
+    renderDiffView({ jdEvaluationId: 'jd-1' });
+
+    fireEvent.click(screen.getAllByRole('button', { name: /regenerate pointer/i })[0]);
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('Regenerated Python pointer')).toBeInTheDocument();
+    });
+  });
+
+  it('keeps the existing pointer text when regeneration fails', async () => {
+    server.use(
+      http.post('http://localhost:8000/api/v1/jd/jd-1/bullets/b1/options', () => {
+        return HttpResponse.json({ detail: 'LLM unavailable' }, { status: 503 });
+      })
+    );
+    renderDiffView({ jdEvaluationId: 'jd-1' });
+
+    fireEvent.click(screen.getAllByRole('button', { name: /regenerate pointer/i })[0]);
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('Shipped Python services')).toBeInTheDocument();
+    });
+  });
+
+  it('applies selected changes when the internal apply button is visible', async () => {
+    const onApplied = vi.fn();
+    renderDiffView({ onAcceptedChangesChange: undefined, onApplied });
+
+    fireEvent.click(screen.getByTestId('apply-changes'));
+
+    await waitFor(() => {
+      expect(onApplied).toHaveBeenCalledWith('ver-001');
+    });
   });
 
   it('renders match score via JdAnalysisPanel', () => {

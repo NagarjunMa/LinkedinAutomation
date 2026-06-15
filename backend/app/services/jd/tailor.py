@@ -4,7 +4,7 @@ from itertools import chain
 from openai import AsyncOpenAI, RateLimitError, APIConnectionError, APITimeoutError
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from app.schemas.resume_v2 import ResumeDocumentJSON
-from app.schemas.jd import JDExtraction, DiffPlan
+from app.schemas.jd import BulletDiff, BulletOption, JDExtraction, DiffPlan
 from app.services.resume.hallucination_guard import check_no_unprompted_numbers, HallucinationError
 from app.core.llm_logging import measure, log_cost
 
@@ -20,7 +20,13 @@ Return a DiffPlan JSON object with these EXACT fields (all required, even when e
 - must_have_coverage_missing: ARRAY of skill name strings (empty array if none)
 - good_to_have_coverage_found: ARRAY of skill name strings (empty array if none)
 - good_to_have_coverage_missing: ARRAY of skill name strings (empty array if none)
-- bullets: ARRAY of BulletDiff objects {bullet_id, old, new, reason, placeholders: []} (empty array if no rewrites)
+- bullets: ARRAY of BulletDiff objects {bullet_id, old, new, reason, placeholders: [], options: []} (empty array if no rewrites)
+  - new must match the recommended option text for backward compatibility.
+  - options must contain exactly 3 choices when rewriting a bullet:
+    1. option_id "conservative": clear, low-risk rewrite close to the original evidence.
+    2. option_id "impact": impact-focused rewrite using only verified metrics or placeholders.
+    3. option_id "keyword": JD keyword-aligned rewrite using only resume-supported skills.
+  - Every option object must be {option_id, text, reason, placeholders: []}.
 - skills_reorder: OBJECT {new_order: [str], rationale: str} or null. Do NOT return the raw skills dict — use the new_order/rationale shape.
 - summary_rewrite: OBJECT {old: str|null, new: str, reason: str} or null. Do NOT return a bare string — wrap in the object shape.
 - suggested_additions: ARRAY of {section: str, item: str, reason: str} (empty array if none)
@@ -38,6 +44,37 @@ JD Requirements JSON:
 {jd_json}
 
 Produce the DiffPlan."""
+
+OPTIONS_SYSTEM = """You generate three safe alternatives for one resume bullet against one JD.
+
+Return a BulletDiff JSON object with:
+- bullet_id
+- old
+- new
+- reason
+- placeholders
+- options
+
+Rules:
+- Return exactly three options with option_id values: conservative, impact, keyword.
+- Set new to the recommended option text.
+- NEVER fabricate numbers/metrics. Use placeholders like [X%], [N users].
+- NEVER add a skill the candidate has no evidence of.
+- Keep each option as one resume bullet."""
+
+OPTIONS_USER = """Bullet id:
+{bullet_id}
+
+Original bullet:
+{original}
+
+Resume JSON:
+{resume_json}
+
+JD Requirements JSON:
+{jd_json}
+
+Generate exactly three alternatives."""
 
 
 @retry(stop=stop_after_attempt(3),
@@ -75,13 +112,82 @@ async def tailor_resume_to_jd(
         for b in item.bullets
     }
     for diff in plan.bullets:
+        if not diff.options:
+            diff.options = [
+                BulletOption(
+                    option_id="recommended",
+                    text=diff.new,
+                    reason=diff.reason,
+                    placeholders=diff.placeholders,
+                )
+            ]
         original = bullet_lookup.get(diff.bullet_id, diff.old)
+        candidates = [(diff.new, diff.placeholders)] + [
+            (option.text, option.placeholders) for option in diff.options
+        ]
+        for rewritten, placeholders in candidates:
+            try:
+                check_no_unprompted_numbers(
+                    original=original,
+                    rewritten=rewritten,
+                    placeholders=[p.model_dump() for p in placeholders],
+                )
+            except HallucinationError as e:
+                raise HallucinationError(f"Bullet {diff.bullet_id}: {e}")
+    return plan
+
+
+@retry(stop=stop_after_attempt(3),
+       wait=wait_exponential(multiplier=1, min=1, max=10),
+       retry=retry_if_exception_type((RateLimitError, APIConnectionError, APITimeoutError)))
+async def generate_bullet_options(
+    *,
+    doc: ResumeDocumentJSON,
+    jd: JDExtraction,
+    bullet_id: str,
+    original: str,
+    user_id: str | None = None,
+) -> BulletDiff:
+    """Generate three JD-aware alternatives for one bullet."""
+    user = OPTIONS_USER.format(
+        bullet_id=bullet_id,
+        original=original,
+        resume_json=doc.model_dump_json(exclude={"raw_text"}),
+        jd_json=jd.model_dump_json(),
+    )
+    async with measure("tailor_options", user_id=user_id):
+        resp = await _client.beta.chat.completions.parse(
+            model="gpt-4o-2024-08-06",
+            response_format=BulletDiff,
+            messages=[{"role": "system", "content": OPTIONS_SYSTEM},
+                      {"role": "user", "content": user}],
+            temperature=0.4,
+        )
+    log_cost("tailor_options", resp.usage, user_id=user_id)
+    diff = resp.choices[0].message.parsed
+    if diff is None:
+        raise ValueError("OpenAI returned no parsed content for bullet options")
+    if not diff.options:
+        diff.options = [
+            BulletOption(
+                option_id="recommended",
+                text=diff.new,
+                reason=diff.reason,
+                placeholders=diff.placeholders,
+            )
+        ]
+    diff.bullet_id = bullet_id
+    diff.old = original
+    candidates = [(diff.new, diff.placeholders)] + [
+        (option.text, option.placeholders) for option in diff.options
+    ]
+    for rewritten, placeholders in candidates:
         try:
             check_no_unprompted_numbers(
                 original=original,
-                rewritten=diff.new,
-                placeholders=[p.model_dump() for p in diff.placeholders],
+                rewritten=rewritten,
+                placeholders=[p.model_dump() for p in placeholders],
             )
         except HallucinationError as e:
             raise HallucinationError(f"Bullet {diff.bullet_id}: {e}")
-    return plan
+    return diff

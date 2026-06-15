@@ -90,3 +90,27 @@ describe('jdApi.applyTailor', () => {
     ).rejects.toThrow();
   });
 });
+
+describe('jdApi.regenerateBulletOptions', () => {
+  it('posts to the bullet options endpoint and returns regenerated options', async () => {
+    server.use(
+      http.post('http://localhost:8000/api/v1/jd/jd-1/bullets/b1/options', () => {
+        return HttpResponse.json({
+          bullet_id: 'b1',
+          old: 'Did stuff',
+          new: 'Built Python services',
+          reason: 'JD wants Python',
+          placeholders: [],
+          options: [
+            { option_id: 'conservative', text: 'Built Python services', reason: 'Safe', placeholders: [] },
+            { option_id: 'impact', text: 'Built Python services with impact', reason: 'Impact', placeholders: [] },
+          ],
+        });
+      })
+    );
+
+    const result = await jdApi.regenerateBulletOptions('jd-1', 'b1');
+    expect(result.bullet_id).toBe('b1');
+    expect(result.options?.[1].text).toContain('impact');
+  });
+});

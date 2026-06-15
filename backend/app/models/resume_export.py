@@ -11,7 +11,7 @@ class ResumeExport(Base):
     resume_version_id = Column(String, ForeignKey("resume_versions.id"), nullable=True)
     country = Column(String(2), nullable=False)
     role_template = Column(String(8), nullable=False)
-    storage_path = Column(String, nullable=False)
+    storage_path = Column(String, nullable=True)
     status = Column(String(16), nullable=False, default="succeeded")
     render_ms = Column(Integer, nullable=True)
     file_size_bytes = Column(Integer, nullable=True)
