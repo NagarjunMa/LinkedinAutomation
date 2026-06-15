@@ -19,6 +19,7 @@ Return a JSON object matching the JDExtraction schema EXACTLY:
 - country_hint: "US" | "IN" | "other"
 - red_flags: ARRAY of strings
 - company_name: best-effort extraction of the hiring company's name from the JD body. If the JD is a blind recruiter post and the company is not named, return null.
+- job_title: best-effort extraction of the human-readable role title from the JD, such as "Senior Backend Engineer". If unclear, return null.
 
 If a field has no items, return an EMPTY ARRAY []. Never use a dict where an array is required.
 Every item in must_have / good_to_have MUST be an object with all three fields populated."""

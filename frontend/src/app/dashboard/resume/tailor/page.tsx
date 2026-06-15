@@ -91,6 +91,7 @@ export default function TailorPage() {
               <DiffView
                 key={result.jd_evaluation_id}
                 resumeId={resumeId}
+                jdEvaluationId={result.jd_evaluation_id}
                 plan={result.diff_plan}
                 onApplied={() => {
                   // legacy path — not used when onAcceptedChangesChange is set

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, Text, ForeignKey
+from sqlalchemy import Column, String, DateTime, Text, Integer, ForeignKey
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.sql import func
 from app.db.base_class import Base
@@ -29,3 +29,10 @@ class ResumeVersion(Base):
     jd_evaluation_id = Column(String, ForeignKey("jd_evaluations.id"), nullable=True, index=True)
     accepted_at = Column(DateTime(timezone=True), nullable=True)
     template_id = Column(String, nullable=True)
+    company_name = Column(String, nullable=True)
+    target_role_title = Column(String, nullable=True)
+    role_category = Column(String, nullable=True)
+    seniority = Column(String, nullable=True)
+    country_hint = Column(String, nullable=True)
+    match_score = Column(Integer, nullable=True)
+    source_jd_text = Column(Text, nullable=True)

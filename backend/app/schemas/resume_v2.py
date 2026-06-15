@@ -106,6 +106,7 @@ class ApplyTailorResponse(BaseModel):
     version_id: str
     preview_html: str
     company_name: Optional[str]
+    target_role_title: Optional[str] = None
     suggested_template: str
     filename_hint: str
     warning: Optional[str] = None

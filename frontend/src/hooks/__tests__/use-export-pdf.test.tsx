@@ -16,15 +16,18 @@ describe('useExportPdf', () => {
   beforeEach(() => {
     // Reset the anchor click spy before each test
     HTMLAnchorElement.prototype.click = vi.fn();
+    URL.createObjectURL = vi.fn(() => 'blob:test-export');
+    URL.revokeObjectURL = vi.fn();
   });
 
-  it('triggers download on success', async () => {
+  it('triggers blob download on success', async () => {
     server.use(
-      http.post('http://localhost:8000/api/v1/exports', () => {
-        return HttpResponse.json({
-          export_id: 'exp-1',
-          signed_url: 'https://example.com/file.pdf',
-          filename: 'resume.pdf',
+      http.post('http://localhost:8000/api/v1/tailored-resumes/ver-1/download', async ({ request }) => {
+        const body = await request.json() as Record<string, unknown>;
+        expect(body.template_id).toBe('us-swe');
+        expect(body.filename).toBe('resume');
+        return new HttpResponse('%PDF-test', {
+          headers: { 'Content-Type': 'application/pdf' },
         });
       })
     );
@@ -40,12 +43,14 @@ describe('useExportPdf', () => {
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(URL.createObjectURL).toHaveBeenCalled();
     expect(HTMLAnchorElement.prototype.click).toHaveBeenCalled();
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:test-export');
   });
 
   it('surfaces 402 insufficient credits as error', async () => {
     server.use(
-      http.post('http://localhost:8000/api/v1/exports', () => {
+      http.post('http://localhost:8000/api/v1/tailored-resumes/v/download', () => {
         return HttpResponse.json({ detail: 'Insufficient credits' }, { status: 402 });
       })
     );

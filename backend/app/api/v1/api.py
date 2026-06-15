@@ -6,6 +6,7 @@ from app.api.v1.endpoints import resumes_v2
 from app.api.v1.endpoints import jd
 from app.api.v1.endpoints import credits
 from app.api.v1.endpoints import exports
+from app.api.v1.endpoints import tailored_resumes
 from app.api.v1.endpoints import webhooks
 from app.api.v1.endpoints import admin_metrics
 from app.api.v1.endpoints import analytics
@@ -46,6 +47,7 @@ api_router.include_router(jd.router)
 api_router.include_router(credits.router)
 # Phase-2 new routes
 api_router.include_router(exports.router)
+api_router.include_router(tailored_resumes.router)
 # Phase-4 new routes. Billing is dormant for the freemium launch.
 if settings.ENABLE_BILLING:
     api_router.include_router(webhooks.router)

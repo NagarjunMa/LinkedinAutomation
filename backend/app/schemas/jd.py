@@ -17,6 +17,7 @@ class JDExtraction(BaseModel):
     country_hint: Literal["US", "IN", "other"]
     red_flags: List[str] = Field(default_factory=list)
     company_name: Optional[str] = None
+    job_title: Optional[str] = None
 
 
 class BulletPlaceholder(BaseModel):
@@ -31,12 +32,20 @@ class BulletPlaceholder(BaseModel):
     what: str
 
 
+class BulletOption(BaseModel):
+    option_id: str
+    text: str
+    reason: str
+    placeholders: List[BulletPlaceholder] = Field(default_factory=list)
+
+
 class BulletDiff(BaseModel):
     bullet_id: str
     old: str
     new: str
     reason: str
     placeholders: List[BulletPlaceholder] = Field(default_factory=list)
+    options: List[BulletOption] = Field(default_factory=list)
 
 
 class SkillsReorder(BaseModel):

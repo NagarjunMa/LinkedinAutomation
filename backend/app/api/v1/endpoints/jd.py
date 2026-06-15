@@ -11,11 +11,12 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.core.auth import get_current_user_id
 from app.services.jd.extractor import extract_jd_requirements
-from app.services.jd.tailor import tailor_resume_to_jd
+from app.services.jd.tailor import generate_bullet_options, tailor_resume_to_jd
 from app.services.resume.hallucination_guard import HallucinationError
 from app.models.resume_document import ResumeDocument, ResumeVersion
 from app.models.jd_evaluation import JDEvaluation
 from app.schemas.resume_v2 import ResumeDocumentJSON, ApplyTailorRequest, ApplyTailorResponse
+from app.schemas.jd import BulletDiff, JDExtraction
 from app.middleware.credits import credit_transaction
 from app.api.v1.endpoints.resumes_v2 import apply_changes
 
@@ -46,6 +47,14 @@ def _slugify(text: str) -> str:
     slug = re.sub(r"-+", "-", slug)
     slug = slug.strip("-")
     return slug or "user"
+
+
+def _find_bullet_text(doc: ResumeDocumentJSON, bullet_id: str) -> Optional[str]:
+    for item in [*doc.experience, *doc.projects]:
+        for bullet in item.bullets:
+            if bullet.id == bullet_id:
+                return bullet.text
+    return None
 
 
 class AnalyzeRequest(BaseModel):
@@ -141,6 +150,8 @@ async def apply_tailor(
 
     # Determine the template_id to persist (use override if provided)
     template_id = body.template_id or suggested_template
+    company_name: Optional[str] = ext_req.get("company_name")
+    target_role_title: Optional[str] = ext_req.get("job_title") or role_category
 
     # Split suggested_template e.g. "us-swe" into country_code + role_code
     country_code, role_code = suggested_template.split("-")
@@ -159,6 +170,13 @@ async def apply_tailor(
         jd_evaluation_id=jd_evaluation_id,
         accepted_at=now,
         template_id=template_id,
+        company_name=company_name,
+        target_role_title=target_role_title,
+        role_category=role_category,
+        seniority=ext_req.get("seniority"),
+        country_hint=country_hint,
+        match_score=jd_row.match_score,
+        source_jd_text=jd_row.jd_text,
     )
     db.add(version)
     db.commit()
@@ -178,7 +196,6 @@ async def apply_tailor(
         warning = f"Preview render failed: {exc}"
 
     # Compute filename hint
-    company_name: Optional[str] = ext_req.get("company_name")
     contact_name = new_doc.contact.name or ""
     parts = []
     if contact_name:
@@ -192,7 +209,42 @@ async def apply_tailor(
         version_id=version_id,
         preview_html=preview_html,
         company_name=company_name,
+        target_role_title=target_role_title,
         suggested_template=suggested_template,
         filename_hint=filename_hint,
         warning=warning,
     )
+
+
+@router.post("/{jd_evaluation_id}/bullets/{bullet_id}/options", response_model=BulletDiff)
+async def regenerate_bullet_options(
+    jd_evaluation_id: str,
+    bullet_id: str,
+    db: Session = Depends(get_db),
+    current_user_id: str = Depends(get_current_user_id),
+):
+    """Regenerate three zero-credit options for one JD-tailored bullet."""
+    jd_row = db.get(JDEvaluation, jd_evaluation_id)
+    if not jd_row or jd_row.user_id != current_user_id:
+        raise HTTPException(status_code=404, detail="JD evaluation not found")
+
+    doc_row = db.get(ResumeDocument, jd_row.resume_document_id)
+    if not doc_row or doc_row.user_id != current_user_id:
+        raise HTTPException(status_code=404, detail="Resume document not found")
+
+    doc = ResumeDocumentJSON.model_validate(doc_row.parsed_json)
+    original = _find_bullet_text(doc, bullet_id)
+    if original is None:
+        raise HTTPException(status_code=404, detail="Bullet not found")
+
+    try:
+        jd = JDExtraction.model_validate(jd_row.extracted_requirements)
+        return await generate_bullet_options(
+            doc=doc,
+            jd=jd,
+            bullet_id=bullet_id,
+            original=original,
+            user_id=current_user_id,
+        )
+    except HallucinationError as exc:
+        raise HTTPException(status_code=422, detail=f"Rewrite rejected: {exc}") from exc

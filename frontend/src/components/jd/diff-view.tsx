@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChangeCard } from './change-card';
 import { useCreateVersion } from '@/hooks/use-resume';
 import { useToast } from '@/components/ui/use-toast';
-import type { DiffPlan, ChangeItem } from '@/app/lib/api';
+import { jdApi } from '@/app/lib/api';
+import type { BulletOption, DiffPlan, ChangeItem } from '@/app/lib/api';
 
 type Selection = {
   bullets: Record<string, boolean>;
@@ -14,15 +15,48 @@ type Selection = {
   summaryRewrite: boolean;
 };
 
+type PointerState = {
+  options: BulletOption[];
+  selectedOptionId: string;
+  text: string;
+};
+
 export interface DiffViewProps {
   resumeId: string;
+  jdEvaluationId?: string;
   plan: DiffPlan;
   onApplied: (versionId: string) => void;
   /** When provided the internal Apply button is hidden; the parent drives Apply. */
   onAcceptedChangesChange?: (items: ChangeItem[]) => void;
 }
 
-export function DiffView({ resumeId, plan, onApplied, onAcceptedChangesChange }: DiffViewProps) {
+function defaultOptions(diff: DiffPlan['bullets'][number]): BulletOption[] {
+  return diff.options && diff.options.length > 0
+    ? diff.options
+    : [{
+        option_id: 'recommended',
+        text: diff.new,
+        reason: diff.reason,
+        placeholders: diff.placeholders,
+      }];
+}
+
+function buildPointerState(plan: DiffPlan): Record<string, PointerState> {
+  return Object.fromEntries(plan.bullets.map((bullet) => {
+    const options = defaultOptions(bullet);
+    const selected = options[0];
+    return [
+      bullet.bullet_id,
+      {
+        options,
+        selectedOptionId: selected.option_id,
+        text: selected.text,
+      },
+    ];
+  }));
+}
+
+export function DiffView({ resumeId, jdEvaluationId, plan, onApplied, onAcceptedChangesChange }: DiffViewProps) {
   const { toast } = useToast();
   const createVersion = useCreateVersion();
   const initial: Selection = useMemo(() => ({
@@ -31,12 +65,25 @@ export function DiffView({ resumeId, plan, onApplied, onAcceptedChangesChange }:
     summaryRewrite: !!plan.summary_rewrite,
   }), [plan]);
   const [sel, setSel] = useState<Selection>(initial);
+  const [pointerState, setPointerState] = useState<Record<string, PointerState>>(
+    () => buildPointerState(plan)
+  );
+  const [regeneratingBulletId, setRegeneratingBulletId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setSel(initial);
+    setPointerState(buildPointerState(plan));
+  }, [initial, plan]);
 
   const buildChangeSet = (): ChangeItem[] => {
     const out: ChangeItem[] = [];
     for (const b of plan.bullets) {
       if (sel.bullets[b.bullet_id]) {
-        out.push({ type: 'bullet_update', bullet_id: b.bullet_id, new_text: b.new });
+        out.push({
+          type: 'bullet_update',
+          bullet_id: b.bullet_id,
+          new_text: pointerState[b.bullet_id]?.text || b.new,
+        });
       }
     }
     if (sel.skillsReorder && plan.skills_reorder) {
@@ -56,7 +103,84 @@ export function DiffView({ resumeId, plan, onApplied, onAcceptedChangesChange }:
   // Notify parent whenever the accepted change set changes
   useEffect(() => {
     onAcceptedChangesChange?.(buildChangeSet());
-  }, [sel]);
+  }, [sel, pointerState]);
+
+  const setAll = (accepted: boolean) => {
+    setSel((current) => ({
+      ...current,
+      bullets: Object.fromEntries(Object.keys(current.bullets).map((id) => [id, accepted])),
+      skillsReorder: plan.skills_reorder ? accepted : false,
+      summaryRewrite: plan.summary_rewrite ? accepted : false,
+    }));
+  };
+
+  const resetAll = () => {
+    setSel(initial);
+    setPointerState(buildPointerState(plan));
+  };
+
+  const selectOption = (bulletId: string, optionId: string) => {
+    setPointerState((current) => {
+      const state = current[bulletId];
+      const option = state?.options.find((item) => item.option_id === optionId);
+      if (!state || !option) return current;
+      return {
+        ...current,
+        [bulletId]: {
+          ...state,
+          selectedOptionId: optionId,
+          text: option.text,
+        },
+      };
+    });
+  };
+
+  const editPointerText = (bulletId: string, text: string) => {
+    setPointerState((current) => ({
+      ...current,
+      [bulletId]: {
+        ...current[bulletId],
+        text,
+      },
+    }));
+  };
+
+  const resetPointer = (bulletId: string) => {
+    const bullet = plan.bullets.find((item) => item.bullet_id === bulletId);
+    if (!bullet) return;
+    const options = defaultOptions(bullet);
+    setPointerState((current) => ({
+      ...current,
+      [bulletId]: {
+        options,
+        selectedOptionId: options[0].option_id,
+        text: options[0].text,
+      },
+    }));
+  };
+
+  const regeneratePointer = async (bulletId: string) => {
+    if (!jdEvaluationId) return;
+    try {
+      setRegeneratingBulletId(bulletId);
+      const regenerated = await jdApi.regenerateBulletOptions(jdEvaluationId, bulletId);
+      const options = defaultOptions(regenerated);
+      setPointerState((current) => ({
+        ...current,
+        [bulletId]: {
+          options,
+          selectedOptionId: options[0].option_id,
+          text: options[0].text,
+        },
+      }));
+      toast({ title: 'Pointer regenerated', description: 'Three new options are ready.' });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Regenerate failed';
+      toast({ title: 'Regenerate failed', description: message, variant: 'destructive' });
+    } finally {
+      setRegeneratingBulletId(null);
+    }
+  };
 
   const onApply = async () => {
     const cs = buildChangeSet();
@@ -77,31 +201,54 @@ export function DiffView({ resumeId, plan, onApplied, onAcceptedChangesChange }:
     <Card>
       <CardHeader className="flex flex-row justify-between items-center">
         <CardTitle>Proposed changes</CardTitle>
-        {!onAcceptedChangesChange && (
-          <Button
-            onClick={onApply}
-            disabled={acceptedCount === 0 || createVersion.isPending}
-            data-testid="apply-changes"
-          >
-            {createVersion.isPending ? 'Saving…' : `Apply ${acceptedCount}`}
+        <div className="flex flex-wrap items-center gap-2">
+          <Button type="button" variant="outline" size="sm" onClick={() => setAll(true)}>
+            Select all
           </Button>
-        )}
+          <Button type="button" variant="outline" size="sm" onClick={() => setAll(false)}>
+            Clear all
+          </Button>
+          <Button type="button" variant="ghost" size="sm" onClick={resetAll}>
+            Reset all
+          </Button>
+          {!onAcceptedChangesChange && (
+            <Button
+              onClick={onApply}
+              disabled={acceptedCount === 0 || createVersion.isPending}
+              data-testid="apply-changes"
+            >
+              {createVersion.isPending ? 'Saving...' : `Apply ${acceptedCount}`}
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        {plan.bullets.map((b) => (
-          <ChangeCard
-            key={b.bullet_id}
-            testId={`change-bullet-${b.bullet_id}`}
-            title="Bullet rewrite"
-            reason={b.reason}
-            before={b.old}
-            after={b.new}
-            accepted={!!sel.bullets[b.bullet_id]}
-            onToggle={(v) =>
-              setSel((s) => ({ ...s, bullets: { ...s.bullets, [b.bullet_id]: v } }))
-            }
-          />
-        ))}
+        {plan.bullets.map((b) => {
+          const state = pointerState[b.bullet_id];
+          const selectedOption = state?.options.find((option) => option.option_id === state.selectedOptionId);
+          return (
+            <ChangeCard
+              key={b.bullet_id}
+              testId={`change-bullet-${b.bullet_id}`}
+              title="Bullet rewrite"
+              reason={selectedOption?.reason || b.reason}
+              before={b.old}
+              after={state?.text || b.new}
+              accepted={!!sel.bullets[b.bullet_id]}
+              options={state?.options}
+              selectedOptionId={state?.selectedOptionId}
+              editedText={state?.text || b.new}
+              regenerating={regeneratingBulletId === b.bullet_id}
+              onToggle={(v) =>
+                setSel((s) => ({ ...s, bullets: { ...s.bullets, [b.bullet_id]: v } }))
+              }
+              onOptionChange={(optionId) => selectOption(b.bullet_id, optionId)}
+              onTextChange={(text) => editPointerText(b.bullet_id, text)}
+              onReset={() => resetPointer(b.bullet_id)}
+              onRegenerate={jdEvaluationId ? () => regeneratePointer(b.bullet_id) : undefined}
+            />
+          );
+        })}
         {plan.skills_reorder && (
           <ChangeCard
             testId="change-skills"

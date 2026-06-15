@@ -15,3 +15,4 @@ export { resumeV2Api } from './resume-v2';
 export { jdApi } from './jd';
 export { creditsApi } from './credits';
 export { exportsApi } from './exports';
+export { tailoredResumesApi } from './tailored-resumes';

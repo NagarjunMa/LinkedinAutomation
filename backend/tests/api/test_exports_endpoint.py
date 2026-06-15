@@ -69,6 +69,29 @@ def test_get_export_returns_fresh_signed_url(
     assert resp.json()["download_url"].startswith("https://")
 
 
+def test_download_export_returns_pdf_bytes(
+    client, auth_headers, user_with_credits, uploaded_resume_doc,
+    mock_pdf_render, mock_supabase_upload, mock_signed_url,
+):
+    from unittest.mock import patch
+
+    created = client.post(
+        "/api/v1/exports",
+        json={"resume_document_id": uploaded_resume_doc.id, "country": "US", "role_template": "swe"},
+        headers=auth_headers,
+    )
+    assert created.status_code == 201, created.text
+    export_id = created.json()["export_id"]
+
+    with patch("app.api.v1.endpoints.exports.download_pdf", return_value=b"%PDF-download"):
+        resp = client.get(f"/api/v1/exports/{export_id}/download", headers=auth_headers)
+
+    assert resp.status_code == 200
+    assert resp.headers["content-type"] == "application/pdf"
+    assert resp.headers["content-disposition"].startswith("attachment;")
+    assert resp.content == b"%PDF-download"
+
+
 def test_get_export_404_for_missing_id(client, auth_headers, user_with_credits):
     resp = client.get("/api/v1/exports/does-not-exist", headers=auth_headers)
     assert resp.status_code == 404

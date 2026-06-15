@@ -67,6 +67,7 @@ def _seed_jd_evaluation(
         "country_hint": country_hint,
         "red_flags": [],
         "company_name": company_name,
+        "job_title": "Senior Backend Engineer",
     }
     diff_plan = {
         "match_score": 80,
@@ -148,6 +149,13 @@ def test_apply_happy_path_returns_apply_tailor_response(
     assert version.jd_evaluation_id == jd_id
     assert version.accepted_at is not None
     assert version.resume_document_id == doc_id
+    assert version.company_name == "Acme Corp"
+    assert version.target_role_title == "Senior Backend Engineer"
+    assert version.role_category == "SWE"
+    assert version.seniority == "mid"
+    assert version.country_hint == "US"
+    assert version.match_score == 80
+    assert version.source_jd_text == "Senior Python role."
 
 
 def test_apply_returns_404_for_unknown_jd(
@@ -185,6 +193,40 @@ def test_apply_does_not_debit_credits(
 
     after = get_balance(db_session, test_user_id)
     assert after == before, f"Credits changed: {before} → {after}"
+
+
+def test_regenerate_bullet_options_returns_three_options(
+    client: TestClient, auth_headers, db_session, test_user_id
+):
+    from unittest.mock import AsyncMock, patch
+    from app.schemas.jd import BulletDiff, BulletOption
+
+    doc_id = _seed_resume_doc(db_session, test_user_id)
+    jd_id = _seed_jd_evaluation(db_session, test_user_id, doc_id)
+    diff = BulletDiff(
+        bullet_id="b1",
+        old="Cut latency 38%.",
+        new="Improved backend latency by 38%.",
+        reason="Aligns with backend JD.",
+        placeholders=[],
+        options=[
+            BulletOption(option_id="conservative", text="Cut latency 38%.", reason="Safe", placeholders=[]),
+            BulletOption(option_id="impact", text="Improved backend latency by 38%.", reason="Impact", placeholders=[]),
+            BulletOption(option_id="keyword", text="Optimized Python backend latency by 38%.", reason="Keyword", placeholders=[]),
+        ],
+    )
+
+    with patch("app.api.v1.endpoints.jd.generate_bullet_options", new=AsyncMock(return_value=diff)):
+        resp = client.post(
+            f"/api/v1/jd/{jd_id}/bullets/b1/options",
+            headers=auth_headers,
+        )
+
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["bullet_id"] == "b1"
+    assert len(body["options"]) == 3
+    assert body["options"][0]["option_id"] == "conservative"
 
 
 # ---------------------------------------------------------------------------

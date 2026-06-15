@@ -3,7 +3,7 @@ import { server, http, HttpResponse } from '@/test-utils/msw-server';
 import { exportsApi } from '@/app/lib/api/exports';
 
 describe('exportsApi.exportPdf', () => {
-  it('posts resume_version_id + template_id and returns signed_url', async () => {
+  it('posts resume_version_id + template_id and returns download_url', async () => {
     server.use(
       http.post('http://localhost:8000/api/v1/exports', async ({ request }) => {
         const body = await request.json() as Record<string, unknown>;
@@ -11,7 +11,7 @@ describe('exportsApi.exportPdf', () => {
         expect(body.template_id).toBe('us-swe');
         return HttpResponse.json({
           export_id: 'exp-1',
-          signed_url: 'https://storage.example.com/resumes/resume-acme.pdf?token=abc',
+          download_url: 'https://storage.example.com/resumes/resume-acme.pdf?token=abc',
           filename: 'resume-acme.pdf',
         });
       })
@@ -21,7 +21,7 @@ describe('exportsApi.exportPdf', () => {
       template_id: 'us-swe',
     });
     expect(result.export_id).toBe('exp-1');
-    expect(result.signed_url).toContain('storage.example.com');
+    expect(result.download_url).toContain('storage.example.com');
     expect(result.filename).toBe('resume-acme.pdf');
   });
 
@@ -33,7 +33,7 @@ describe('exportsApi.exportPdf', () => {
         expect(body.template_id).toBeUndefined();
         return HttpResponse.json({
           export_id: 'exp-2',
-          signed_url: 'https://storage.example.com/resumes/resume.pdf?token=xyz',
+          download_url: 'https://storage.example.com/resumes/resume.pdf?token=xyz',
           filename: 'resume.pdf',
         });
       })
@@ -62,5 +62,38 @@ describe('exportsApi.exportPdf', () => {
     await expect(
       exportsApi.exportPdf({ resume_version_id: 'nonexistent' })
     ).rejects.toThrow();
+  });
+
+  it('downloads exported PDF bytes through the authenticated API route', async () => {
+    server.use(
+      http.get('http://localhost:8000/api/v1/exports/exp-1/download', () => {
+        return new HttpResponse('%PDF-test', {
+          headers: { 'Content-Type': 'application/pdf' },
+        });
+      })
+    );
+
+    const blob = await exportsApi.downloadPdf('exp-1');
+    expect(blob.type).toBe('application/pdf');
+  });
+
+  it('throws parsed API errors from the authenticated download route', async () => {
+    server.use(
+      http.get('http://localhost:8000/api/v1/exports/exp-missing/download', () => {
+        return HttpResponse.json({ detail: 'export not found' }, { status: 404 });
+      })
+    );
+
+    await expect(exportsApi.downloadPdf('exp-missing')).rejects.toThrow('export not found');
+  });
+
+  it('throws plain-text API errors from the authenticated download route', async () => {
+    server.use(
+      http.get('http://localhost:8000/api/v1/exports/exp-failed/download', () => {
+        return new HttpResponse('download failed', { status: 500 });
+      })
+    );
+
+    await expect(exportsApi.downloadPdf('exp-failed')).rejects.toThrow('download failed');
   });
 });

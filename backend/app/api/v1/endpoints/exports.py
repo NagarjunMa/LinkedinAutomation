@@ -9,11 +9,12 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user_id
 from app.core.config import settings
-from app.core.supabase_storage import signed_url, upload_pdf
+from app.core.supabase_storage import download_pdf, signed_url, upload_pdf
 from app.db.session import get_db
 from app.middleware.credits import credit_transaction
 from app.models.resume_document import ResumeDocument, ResumeVersion
@@ -222,4 +223,30 @@ async def get_export(
         expires_at=expires_at,
         country=row.country,
         role_template=row.role_template,
+    )
+
+
+@router.get("/{export_id}/download")
+async def download_export(
+    export_id: str,
+    db: Session = Depends(get_db),
+    current_user_id: str = Depends(get_current_user_id),
+):
+    row = db.get(ResumeExport, export_id)
+    if not row or row.user_id != current_user_id or row.status != "succeeded":
+        raise HTTPException(status_code=404, detail="Export not found")
+
+    try:
+        pdf_bytes = download_pdf(row.storage_path)
+    except Exception as exc:
+        raise HTTPException(status_code=404, detail="Export file not found") from exc
+
+    filename = _sanitize_filename(f"resume-{export_id}.pdf")
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Cache-Control": "private, no-store",
+        },
     )

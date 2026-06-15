@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render } from '@testing-library/react';
+import { fireEvent, render } from '@testing-library/react';
 import React from 'react';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { BulletHighlight } from '@/components/resume/bullet-highlight';
@@ -70,5 +70,20 @@ describe('BulletHighlight', () => {
     const li = container.querySelector('li');
     expect(li).not.toBeNull();
     expect(li!.getAttribute('data-severity')).toBe('info');
+  });
+
+  it('renders unflagged bullets and calls onClick with the bullet id', () => {
+    const onClick = vi.fn();
+    const { container } = render(
+      <TooltipProvider>
+        <BulletHighlight bullet={baseBullet} onClick={onClick} />
+      </TooltipProvider>
+    );
+
+    const li = container.querySelector('li');
+    expect(li).not.toBeNull();
+    expect(li!.getAttribute('data-severity')).toBe('none');
+    fireEvent.click(li!);
+    expect(onClick).toHaveBeenCalledWith('b1');
   });
 });

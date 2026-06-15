@@ -133,6 +133,15 @@ export interface JDExtraction {
   primary_role_category: RoleCategory;
   country_hint: CountryHint;
   red_flags: string[];
+  company_name?: string | null;
+  job_title?: string | null;
+}
+
+export interface BulletOption {
+  option_id: string;
+  text: string;
+  reason: string;
+  placeholders: Placeholder[];
 }
 
 export interface BulletDiff {
@@ -141,6 +150,7 @@ export interface BulletDiff {
   new: string;
   reason: string;
   placeholders: Placeholder[];
+  options?: BulletOption[];
 }
 
 export interface SkillsReorder {
@@ -193,9 +203,34 @@ export interface ApplyTailorResponse {
   version_id: string;
   preview_html: string;
   company_name: string | null;
+  target_role_title?: string | null;
   suggested_template: string;
   filename_hint: string;
   warning?: string;
+}
+
+export interface TailoredResumeListItem {
+  version_id: string;
+  resume_document_id: string;
+  source_filename: string;
+  company_name: string | null;
+  target_role_title: string | null;
+  role_category: string | null;
+  seniority: string | null;
+  country_hint: string | null;
+  match_score: number | null;
+  template_id: string | null;
+  accepted_change_count: number;
+  created_at: string | null;
+  accepted_at: string | null;
+}
+
+export interface TailoredResumeDetail extends TailoredResumeListItem {
+  resume_json: ResumeDocumentJSON;
+  source_jd_text: string | null;
+  extracted_requirements: Record<string, unknown>;
+  diff_plan: Record<string, unknown>;
+  accepted_changes: ChangeItem[];
 }
 
 export interface AnalyticsJdProgress {
@@ -224,6 +259,9 @@ export interface ExportPdfRequest {
 
 export interface ExportPdfResponse {
   export_id: string;
-  signed_url: string;
+  download_url: string;
+  expires_at?: string;
+  country?: string;
+  role_template?: string;
   filename: string;
 }
