@@ -1,11 +1,13 @@
 import pytest
-import sys
 import os
+import uuid
+from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
+from sqlalchemy.orm import sessionmaker
 from app.services.credits.ledger import (
     get_balance, debit, refund, grant_monthly, InsufficientCredits
 )
-from app.models.credit_ledger import CreditLedger
+from app.models.user import User
 
 # ---------------------------------------------------------------------------
 # Basic ledger operations
@@ -98,27 +100,55 @@ def test_concurrent_debit_prevented(db_session: Session, test_user_id: str):
     "postgres" not in os.getenv("DATABASE_URL", ""),
     reason="requires Postgres for SELECT FOR UPDATE on users row",
 )
-def test_concurrent_debits_do_not_double_spend(db_session: Session, test_user_id: str):
+def test_concurrent_debits_do_not_double_spend():
     """Two threads each try to debit 3 from a balance of 5.
     With the correct users-row lock, exactly one succeeds and one gets
     InsufficientCredits (5 - 3 = 2 < 3).
     """
+    database_url = os.environ["DATABASE_URL"]
+    engine = create_engine(database_url, pool_pre_ping=True)
+    SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+    user_id = f"concurrent-user-{uuid.uuid4()}"
+
     import threading
-    grant_monthly(db_session, user_id=test_user_id, amount=5)
-    db_session.commit()
+
+    with SessionLocal() as setup:
+        setup.add(User(user_id=user_id, email=f"{user_id}@example.com"))
+        setup.commit()
+        grant_monthly(setup, user_id=user_id, amount=5)
+        setup.commit()
 
     errors = []
+    results = []
+    barrier = threading.Barrier(2)
 
     def do_debit():
+        session = SessionLocal()
         try:
-            debit(db_session, user_id=test_user_id, amount=3, reason="test")
-            db_session.commit()
-        except Exception as e:
+            barrier.wait(timeout=5)
+            debit(session, user_id=user_id, amount=3, reason="test")
+            session.commit()
+            results.append("ok")
+        except InsufficientCredits as e:
+            session.rollback()
             errors.append(e)
+        except Exception as e:
+            session.rollback()
+            errors.append(e)
+        finally:
+            session.close()
 
     t1 = threading.Thread(target=do_debit)
     t2 = threading.Thread(target=do_debit)
     t1.start(); t2.start()
     t1.join(); t2.join()
 
+    unexpected = [e for e in errors if not isinstance(e, InsufficientCredits)]
+    assert unexpected == []
+    assert results.count("ok") == 1
     assert sum(isinstance(e, InsufficientCredits) for e in errors) == 1
+
+    with SessionLocal() as check:
+        assert get_balance(check, user_id) == 2
+
+    engine.dispose()
