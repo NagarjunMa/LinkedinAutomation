@@ -7,6 +7,20 @@ const __dirname = path.dirname(__filename);
 const isProduction = process.env.NODE_ENV === 'production';
 const apiOrigin = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const supabaseOrigin = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const noStoreHeaders = [
+  {
+    key: 'Cache-Control',
+    value: 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0'
+  },
+  {
+    key: 'Pragma',
+    value: 'no-cache'
+  },
+  {
+    key: 'Expires',
+    value: '0'
+  }
+];
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -58,6 +72,21 @@ const nextConfig = {
   // Enhanced Security Headers
   async headers() {
     return [
+      {
+        // Authenticated app shells must not be cached across deploys. Cached
+        // HTML/RSC payloads can reference stale Next action IDs after Railway
+        // replaces the running frontend image.
+        source: '/dashboard/:path*',
+        headers: noStoreHeaders
+      },
+      {
+        source: '/login',
+        headers: noStoreHeaders
+      },
+      {
+        source: '/api/auth/:path*',
+        headers: noStoreHeaders
+      },
       {
         // Apply security headers to all routes
         source: '/(.*)',
