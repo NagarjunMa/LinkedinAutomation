@@ -1,7 +1,7 @@
 # Multi-stage Dockerfile for Railway deployment
 # This will build both frontend and backend in one container
 
-FROM node:18-alpine AS frontend-builder
+FROM node:22-alpine AS frontend-builder
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm ci
@@ -41,5 +41,6 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# Start the application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Start the application. The backend start script applies Alembic migrations
+# first so deployed code and database schema stay in sync.
+CMD ["sh", "scripts/start.sh"]
