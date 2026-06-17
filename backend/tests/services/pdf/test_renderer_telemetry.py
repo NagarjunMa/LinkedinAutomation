@@ -13,6 +13,7 @@ def test_render_pdf_emits_structured_log(caplog, monkeypatch):
 
     monkeypatch.setattr(renderer, "_render_html_to_pdf_bytes", fake_render_bytes)
     monkeypatch.setattr(renderer, "_assert_pdf_has_visible_content", lambda pdf: None)
+    monkeypatch.setattr(renderer, "get_pdf_page_count", lambda pdf: 1)
 
     renderer.render_pdf_from_doc(make_resume(), country="US", role="swe")
     records = [r for r in caplog.records if r.name == "pdf_render"]
@@ -28,6 +29,7 @@ def test_render_pdf_emits_structured_log(caplog, monkeypatch):
     assert payload["render_ms"] >= 0
     assert isinstance(payload["file_size_bytes"], int)
     assert payload["file_size_bytes"] > 0
+    assert payload["page_count"] == 1
     assert payload["status"] == "succeeded"
 
 
@@ -78,6 +80,7 @@ def test_render_pdf_emits_telemetry_with_fallback(caplog, monkeypatch):
     monkeypatch.setattr(renderer, "render_html_only", flaky_render_html)
     monkeypatch.setattr(renderer, "_render_html_to_pdf_bytes", fake_render_bytes)
     monkeypatch.setattr(renderer, "_assert_pdf_has_visible_content", lambda pdf: None)
+    monkeypatch.setattr(renderer, "get_pdf_page_count", lambda pdf: 1)
 
     renderer.render_pdf_from_doc(make_resume(), country="IN", role="ds")
 

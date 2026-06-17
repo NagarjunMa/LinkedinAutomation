@@ -201,19 +201,17 @@ export default function ProfilePage() {
 
     try {
       await resumeApi.deleteResume(deleteDialog.resumeId);
-      setData(prev => ({
-        ...prev,
-        resumes: prev.resumes.filter(r => r.id !== deleteDialog.resumeId)
-      }));
+      await fetchData();
       toast({
         title: "Success",
-        description: "Resume deleted successfully",
+        description: "Uploaded resume deleted successfully",
       });
     } catch (error) {
       console.error('Error deleting resume:', error);
+      const message = error instanceof Error ? error.message : "Failed to delete uploaded resume";
       toast({
         title: "Error",
-        description: "Failed to delete resume",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -329,7 +327,7 @@ export default function ProfilePage() {
           className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-24 border-y border-foreground/5 py-10"
         >
           <StatItem label="Resume Evaluations" value={data.stats.applications} />
-          <StatItem label="Resume Versions" value={data.resumes.length} />
+          <StatItem label="Uploaded Resumes" value={data.resumes.length} />
           <StatItem label="Work Experience Entries" value={data.stats.experiences} />
         </motion.section>
 
@@ -541,7 +539,7 @@ export default function ProfilePage() {
           className="mb-32"
         >
           <div className="flex justify-between items-end mb-8">
-            <SectionLabel icon={<FileText size={14} />} label="Resume Versions" />
+            <SectionLabel icon={<FileText size={14} />} label="Uploaded Resumes" />
             <div className="relative">
               <input
                 type="file"
@@ -699,7 +697,7 @@ export default function ProfilePage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-red-500" />
-              Delete Resume
+              Delete Uploaded Resume
             </DialogTitle>
             <DialogDescription className="text-muted-foreground">
               Are you sure you want to delete <strong>{deleteDialog.fileName}</strong>? This action cannot be undone.
