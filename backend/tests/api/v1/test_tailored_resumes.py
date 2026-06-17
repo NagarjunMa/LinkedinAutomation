@@ -120,6 +120,9 @@ def test_tailored_resume_download_renders_json_debits_and_does_not_store_pdf(
     with patch(
         "app.api.v1.endpoints.tailored_resumes.render_pdf_from_doc",
         return_value=b"%PDF-tailored",
+    ), patch(
+        "app.api.v1.endpoints.tailored_resumes.get_pdf_page_count",
+        return_value=1,
     ):
         resp = client.post(
             f"/api/v1/tailored-resumes/{version.id}/download",
@@ -129,6 +132,7 @@ def test_tailored_resume_download_renders_json_debits_and_does_not_store_pdf(
 
     assert resp.status_code == 200, resp.text
     assert resp.headers["content-type"] == "application/pdf"
+    assert resp.headers["x-resume-page-count"] == "1"
     assert resp.content == b"%PDF-tailored"
     assert get_balance(db_session, test_user_id) == before - 1
 

@@ -25,6 +25,7 @@ def test_render_pdf_retries_once_on_timeout(monkeypatch):
 
     monkeypatch.setattr(renderer, "_render_html_to_pdf_bytes", fake_render_bytes)
     monkeypatch.setattr(renderer, "_assert_pdf_has_visible_content", lambda pdf: None)
+    monkeypatch.setattr(renderer, "get_pdf_page_count", lambda pdf: 1)
     pdf = renderer.render_pdf_from_doc(make_resume(), country="US", role="swe")
     assert pdf.startswith(b"%PDF-")
     assert calls["n"] == 2
@@ -47,6 +48,7 @@ def test_render_pdf_falls_back_to_us_swe_on_template_error(monkeypatch):
     monkeypatch.setattr(template_engine, "render_html_only", flaky_render_html)
     monkeypatch.setattr(renderer, "render_html_only", flaky_render_html)
     monkeypatch.setattr(renderer, "_assert_pdf_has_visible_content", lambda pdf: None)
+    monkeypatch.setattr(renderer, "get_pdf_page_count", lambda pdf: 1)
     pdf = renderer.render_pdf_from_doc(make_resume(), country="IN", role="ds")
     assert pdf.startswith(b"%PDF-")
     assert ("IN", "ds") in calls["templates"]
@@ -72,3 +74,17 @@ def test_render_pdf_rejects_suspiciously_small_blank_output(monkeypatch):
 
     with pytest.raises(renderer.BlankPdfError):
         renderer.render_pdf_from_doc(make_resume(), country="US", role="swe")
+
+
+def test_get_pdf_page_count_reads_rendered_pages():
+    from io import BytesIO
+    from PyPDF2 import PdfWriter
+    from app.services.pdf import renderer
+
+    writer = PdfWriter()
+    writer.add_blank_page(width=612, height=792)
+    writer.add_blank_page(width=612, height=792)
+    out = BytesIO()
+    writer.write(out)
+
+    assert renderer.get_pdf_page_count(out.getvalue()) == 2

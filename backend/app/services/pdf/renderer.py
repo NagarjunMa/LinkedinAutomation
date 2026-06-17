@@ -98,6 +98,15 @@ def _assert_pdf_has_visible_content(pdf: bytes) -> None:
         raise BlankPdfError("PDF output has no extractable text")
 
 
+def get_pdf_page_count(pdf: bytes) -> int:
+    """Return the page count for a rendered PDF."""
+    try:
+        reader = PdfReader(BytesIO(pdf))
+        return len(reader.pages)
+    except Exception as exc:
+        raise BlankPdfError("PDF page count could not be read") from exc
+
+
 def render_pdf_from_doc(
     doc: ResumeDocumentJSON,
     country: str,
@@ -110,6 +119,7 @@ def render_pdf_from_doc(
     status = "succeeded"
     fallback_used = False
     pdf: bytes = b""
+    page_count: Optional[int] = None
     try:
         # Stage 1: template
         try:
@@ -129,6 +139,7 @@ def render_pdf_from_doc(
                 status = "timed_out"
                 raise PdfRenderTimeout(f"PDF render timed out after retry (>{t}s)") from exc
         _assert_pdf_has_visible_content(pdf)
+        page_count = get_pdf_page_count(pdf)
         return pdf
     except Exception:
         if status == "succeeded":
@@ -146,6 +157,7 @@ def render_pdf_from_doc(
                     "role": role,
                     "render_ms": render_ms,
                     "file_size_bytes": size,
+                    "page_count": page_count,
                     "status": status,
                     "fallback_used": fallback_used,
                 }
