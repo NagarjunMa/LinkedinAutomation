@@ -140,3 +140,36 @@ def test_tailored_resume_download_renders_json_debits_and_does_not_store_pdf(
     assert export.storage_path is None
     assert export.status == "succeeded"
     assert export.file_size_bytes == len(b"%PDF-tailored")
+
+
+def test_tailored_resume_download_refunds_on_blank_pdf(
+    client, auth_headers, db_session, test_user_id, user_with_credits
+):
+    from app.models.resume_export import ResumeExport
+    from app.services.credits.ledger import get_balance
+    from app.services.pdf.renderer import BlankPdfError
+
+    version = _seed_tailored_resume(db_session, test_user_id)
+    before = get_balance(db_session, test_user_id)
+
+    with patch(
+        "app.api.v1.endpoints.tailored_resumes.render_pdf_from_doc",
+        side_effect=BlankPdfError("blank output"),
+    ):
+        resp = client.post(
+            f"/api/v1/tailored-resumes/{version.id}/download",
+            json={"template_id": "us-swe", "filename": "acme.pdf"},
+            headers=auth_headers,
+        )
+
+    assert resp.status_code == 500
+    assert "blank" in resp.json()["detail"].lower()
+    assert get_balance(db_session, test_user_id) == before
+    export = (
+        db_session.query(ResumeExport)
+        .filter(ResumeExport.resume_version_id == version.id)
+        .one()
+    )
+    assert export.status == "errored"
+    assert export.storage_path is None
+    assert "blank" in export.error_message

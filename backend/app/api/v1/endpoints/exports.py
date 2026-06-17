@@ -21,7 +21,7 @@ from app.models.resume_document import ResumeDocument, ResumeVersion
 from app.models.resume_export import ResumeExport
 from app.schemas.resume_v2 import ResumeDocumentJSON
 from app.schemas.resume_export import Country, ExportRequest, ExportResponse, RoleTemplate
-from app.services.pdf.renderer import PdfRenderTimeout, render_pdf_from_doc
+from app.services.pdf.renderer import BlankPdfError, PdfRenderTimeout, render_pdf_from_doc
 
 router = APIRouter(prefix="/exports", tags=["exports"])
 _EXPORT_SEMAPHORE = asyncio.Semaphore(3)
@@ -158,7 +158,7 @@ async def create_export(
                 )
             finally:
                 _EXPORT_SEMAPHORE.release()
-        except PdfRenderTimeout as exc:
+        except (BlankPdfError, PdfRenderTimeout) as exc:
             db.add(ResumeExport(
                 id=export_id,
                 user_id=current_user_id,
@@ -167,10 +167,15 @@ async def create_export(
                 country=country_enum.value,
                 role_template=role_enum.value,
                 storage_path=storage_path,
-                status="timed_out",
+                status="timed_out" if isinstance(exc, PdfRenderTimeout) else "errored",
                 error_message=str(exc),
             ))
-            raise HTTPException(status_code=500, detail="PDF render timed out; please retry") from exc
+            detail = (
+                "PDF render timed out; please retry"
+                if isinstance(exc, PdfRenderTimeout)
+                else "PDF render produced a blank file; please retry"
+            )
+            raise HTTPException(status_code=500, detail=detail) from exc
 
         # Persist the audit row BEFORE asking for a signed URL. If signed_url()
         # fails after upload_pdf() succeeds, we'd otherwise leak an untracked

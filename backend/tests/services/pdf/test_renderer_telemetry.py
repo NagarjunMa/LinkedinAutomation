@@ -12,6 +12,7 @@ def test_render_pdf_emits_structured_log(caplog, monkeypatch):
         return b"%PDF-test-pdf-content"
 
     monkeypatch.setattr(renderer, "_render_html_to_pdf_bytes", fake_render_bytes)
+    monkeypatch.setattr(renderer, "_assert_pdf_has_visible_content", lambda pdf: None)
 
     renderer.render_pdf_from_doc(make_resume(), country="US", role="swe")
     records = [r for r in caplog.records if r.name == "pdf_render"]
@@ -62,7 +63,7 @@ def test_render_pdf_emits_telemetry_with_fallback(caplog, monkeypatch):
     caplog.set_level(logging.INFO, logger="pdf_render")
 
     calls = {"templates": []}
-    original_render_html = template_engine.render_html
+    original_render_html = template_engine.render_html_only
 
     def flaky_render_html(doc, country, role):
         calls["templates"].append((country, role))
@@ -73,9 +74,10 @@ def test_render_pdf_emits_telemetry_with_fallback(caplog, monkeypatch):
     def fake_render_bytes(html, timeout_s):
         return b"%PDF-test"
 
-    monkeypatch.setattr(template_engine, "render_html", flaky_render_html)
-    monkeypatch.setattr(renderer, "render_html", flaky_render_html)
+    monkeypatch.setattr(template_engine, "render_html_only", flaky_render_html)
+    monkeypatch.setattr(renderer, "render_html_only", flaky_render_html)
     monkeypatch.setattr(renderer, "_render_html_to_pdf_bytes", fake_render_bytes)
+    monkeypatch.setattr(renderer, "_assert_pdf_has_visible_content", lambda pdf: None)
 
     renderer.render_pdf_from_doc(make_resume(), country="IN", role="ds")
 
