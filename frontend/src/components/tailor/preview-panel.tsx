@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
 import { useExportPdf } from '@/hooks/use-export-pdf';
 import { APIError } from '@/app/lib/api/config';
@@ -42,6 +43,8 @@ export function PreviewPanel({
   const [filename, setFilename] = useState(filenameHint);
   const exportMut = useExportPdf();
   const { toast } = useToast();
+  const pageLabel = template.startsWith('in-') ? 'A4' : 'Letter';
+  const pageAspect = template.startsWith('in-') ? 'aspect-[210/297]' : 'aspect-[8.5/11]';
 
   // Re-sync when a new Apply result lands
   useEffect(() => {
@@ -75,15 +78,31 @@ export function PreviewPanel({
   };
 
   return (
-    <aside className="sticky top-24 h-[calc(100vh-8rem)] flex flex-col gap-4">
-      <div className="flex-1 overflow-hidden border border-border rounded-md bg-card">
+    <aside className="sticky top-24 h-[calc(100vh-8rem)] min-h-[680px] flex flex-col gap-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">
+            Resume Preview
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Scaled page view before download
+          </p>
+        </div>
+        <Badge variant="outline">{pageLabel}</Badge>
+      </div>
+
+      <div className="flex-1 overflow-auto border border-border rounded-md bg-muted/30 p-4">
         {previewHtml ? (
-          <iframe
-            srcDoc={previewHtml}
-            sandbox="allow-same-origin"
-            className="w-full h-full"
-            title="Resume preview"
-          />
+          <div
+            className={`mx-auto h-full max-h-full w-auto max-w-full overflow-hidden bg-white shadow-sm ring-1 ring-border ${pageAspect}`}
+          >
+            <iframe
+              srcDoc={previewHtml}
+              sandbox="allow-same-origin"
+              className="h-full w-full bg-white"
+              title="Resume preview"
+            />
+          </div>
         ) : (
           <div className="h-full flex items-center justify-center text-sm text-muted-foreground p-6 text-center">
             {warning ?? 'Apply changes to see preview'}

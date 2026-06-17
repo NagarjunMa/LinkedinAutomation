@@ -66,6 +66,12 @@ describe('PreviewPanel', () => {
     const iframe = screen.getByTitle('Resume preview') as HTMLIFrameElement;
     expect(iframe).toBeInTheDocument();
     expect(iframe.getAttribute('srcdoc')).toBe('<p>Resume content</p>');
+    expect(screen.getByText('Letter')).toBeInTheDocument();
+  });
+
+  it('shows A4 label for India templates', () => {
+    renderPanel({ suggestedTemplate: 'in-swe' });
+    expect(screen.getByText('A4')).toBeInTheDocument();
   });
 
   it('shows fallback message when previewHtml is empty', () => {

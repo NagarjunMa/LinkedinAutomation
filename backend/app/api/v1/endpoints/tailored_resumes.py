@@ -22,7 +22,7 @@ from app.models.jd_evaluation import JDEvaluation
 from app.models.resume_document import ResumeDocument, ResumeVersion
 from app.models.resume_export import ResumeExport
 from app.schemas.resume_v2 import ResumeDocumentJSON
-from app.services.pdf.renderer import PdfRenderTimeout, render_pdf_from_doc
+from app.services.pdf.renderer import BlankPdfError, PdfRenderTimeout, render_pdf_from_doc
 
 router = APIRouter(prefix="/tailored-resumes", tags=["tailored-resumes"])
 _DOWNLOAD_SEMAPHORE = asyncio.Semaphore(3)
@@ -167,7 +167,7 @@ async def download_tailored_resume(
                 )
             finally:
                 _DOWNLOAD_SEMAPHORE.release()
-        except PdfRenderTimeout as exc:
+        except (BlankPdfError, PdfRenderTimeout) as exc:
             db.add(ResumeExport(
                 id=str(uuid.uuid4()),
                 user_id=current_user_id,
@@ -176,10 +176,15 @@ async def download_tailored_resume(
                 country=country_str,
                 role_template=role_str,
                 storage_path=None,
-                status="timed_out",
+                status="timed_out" if isinstance(exc, PdfRenderTimeout) else "errored",
                 error_message=str(exc),
             ))
-            raise HTTPException(status_code=500, detail="PDF render timed out; please retry") from exc
+            detail = (
+                "PDF render timed out; please retry"
+                if isinstance(exc, PdfRenderTimeout)
+                else "PDF render produced a blank file; please retry"
+            )
+            raise HTTPException(status_code=500, detail=detail) from exc
 
         db.add(ResumeExport(
             id=str(uuid.uuid4()),

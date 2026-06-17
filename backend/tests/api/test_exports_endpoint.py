@@ -53,6 +53,32 @@ def test_export_refunds_credit_on_render_timeout(
     assert after == starting, "credit must be refunded on hard render failure"
 
 
+def test_export_refunds_credit_on_blank_pdf(
+    client, auth_headers, user_with_credits, uploaded_resume_doc
+):
+    from unittest.mock import patch
+    from app.services.pdf.renderer import BlankPdfError
+
+    starting = client.get("/api/v1/credits/balance", headers=auth_headers).json()["balance"]
+    with patch(
+        "app.api.v1.endpoints.exports.render_pdf_from_doc",
+        side_effect=BlankPdfError("blank output"),
+    ):
+        resp = client.post(
+            "/api/v1/exports",
+            json={
+                "resume_document_id": uploaded_resume_doc.id,
+                "country": "US",
+                "role_template": "swe",
+            },
+            headers=auth_headers,
+        )
+    assert resp.status_code == 500
+    assert "blank" in resp.json()["detail"].lower()
+    after = client.get("/api/v1/credits/balance", headers=auth_headers).json()["balance"]
+    assert after == starting
+
+
 def test_get_export_returns_fresh_signed_url(
     client, auth_headers, user_with_credits, uploaded_resume_doc,
     mock_pdf_render, mock_supabase_upload, mock_signed_url,

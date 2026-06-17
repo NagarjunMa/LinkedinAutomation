@@ -16,8 +16,10 @@ from __future__ import annotations
 import logging
 import threading
 import time
+from io import BytesIO
 from typing import Optional
 
+from PyPDF2 import PdfReader
 from playwright.sync_api import (
     Browser,
     TimeoutError as PWTimeout,
@@ -26,7 +28,7 @@ from playwright.sync_api import (
 
 from app.core.config import settings
 from app.schemas.resume_v2 import ResumeDocumentJSON
-from app.services.pdf.template_engine import render_html
+from app.services.pdf.template_engine import render_html_only
 
 _log = logging.getLogger("pdf_render")
 
@@ -35,7 +37,12 @@ class PdfRenderTimeout(Exception):
     pass
 
 
+class BlankPdfError(Exception):
+    pass
+
+
 _thread_local = threading.local()
+_MIN_VISIBLE_PDF_BYTES = 2000
 
 
 def _get_browser() -> Browser:
@@ -65,6 +72,32 @@ def _render_html_to_pdf_bytes(html: str, timeout_s: int) -> bytes:
         context.close()
 
 
+def _assert_pdf_has_visible_content(pdf: bytes) -> None:
+    """Reject valid-but-empty PDF output before it reaches users.
+
+    Chromium can return a syntactically valid blank PDF when the rendering
+    environment is broken, most commonly missing fonts in slim Linux images.
+    The user's failed download was 836 bytes with a zero-length page stream,
+    so size plus text extraction gives us a cheap production guardrail.
+    """
+    if not pdf.startswith(b"%PDF-"):
+        raise BlankPdfError("PDF renderer returned non-PDF bytes")
+    if len(pdf) < _MIN_VISIBLE_PDF_BYTES:
+        raise BlankPdfError(f"PDF output is suspiciously small ({len(pdf)} bytes)")
+
+    try:
+        reader = PdfReader(BytesIO(pdf))
+        text = "\n".join(page.extract_text() or "" for page in reader.pages).strip()
+    except Exception:
+        # Some valid PDFs extract poorly. Size still protects against the
+        # zero-content Chromium failure, so do not fail large outputs on parser
+        # limitations alone.
+        return
+
+    if not text:
+        raise BlankPdfError("PDF output has no extractable text")
+
+
 def render_pdf_from_doc(
     doc: ResumeDocumentJSON,
     country: str,
@@ -80,11 +113,11 @@ def render_pdf_from_doc(
     try:
         # Stage 1: template
         try:
-            html = render_html(doc, country, role)
+            html = render_html_only(doc, country, role)
         except Exception:
             # Template-engine failure → fall back to a known-good template.
             fallback_used = True
-            html = render_html(doc, "US", "swe")
+            html = render_html_only(doc, "US", "swe")
 
         # Stage 2: PDF render with one retry on timeout.
         try:
@@ -95,6 +128,7 @@ def render_pdf_from_doc(
             except PWTimeout as exc:
                 status = "timed_out"
                 raise PdfRenderTimeout(f"PDF render timed out after retry (>{t}s)") from exc
+        _assert_pdf_has_visible_content(pdf)
         return pdf
     except Exception:
         if status == "succeeded":
