@@ -3,6 +3,7 @@ import os
 os.environ.setdefault("OPENAI_API_KEY", "test")
 
 import json
+import uuid
 import pytest
 import respx
 import httpx
@@ -100,6 +101,112 @@ def test_delete_resume_document_removes_v2_rows(mock_get_storage, client: TestCl
     list_response = client.get("/api/v1/resumes/list", headers=auth_headers)
     assert list_response.status_code == 200
     assert list_response.json()["total_count"] == 0
+
+
+@patch("app.api.v1.endpoints.resumes_v2.get_storage")
+def test_delete_resume_document_removes_dependent_rows(
+    mock_get_storage, client: TestClient, auth_headers, db_session, test_user_id
+):
+    from app.models.jd_evaluation import JDEvaluation
+    from app.models.resume_document import ResumeVersion
+    from app.models.resume_evaluation_v2 import ResumeEvaluationV2
+    from app.models.resume_export import ResumeExport
+
+    storage = MagicMock()
+    storage.upload.return_value = "test-user-1/abc123_simple.pdf"
+    mock_get_storage.return_value = storage
+
+    with FIXTURE.open("rb") as f:
+        upload = client.post(
+            "/api/v1/resumes/upload",
+            files={"file": ("simple.pdf", f, "application/pdf")},
+            headers=auth_headers,
+        )
+    assert upload.status_code == 201, upload.text
+    doc_id = upload.json()["resume_document_id"]
+    parsed_json = upload.json()
+    parsed_json.pop("resume_document_id")
+
+    jd_id = str(uuid.uuid4())
+    version_id = str(uuid.uuid4())
+    export_id = str(uuid.uuid4())
+    evaluation_id = str(uuid.uuid4())
+    db_session.add(
+        ResumeEvaluationV2(
+            id=evaluation_id,
+            resume_document_id=doc_id,
+            user_id=test_user_id,
+            overall_score=92,
+            bullet_flags=[],
+            format_issues=[],
+            summary_critique=None,
+            ats_parseability=96,
+            ats_raw_text="Resume text",
+            model_version="test",
+        )
+    )
+    db_session.add(
+        JDEvaluation(
+            id=jd_id,
+            user_id=test_user_id,
+            resume_document_id=doc_id,
+            jd_text="Backend engineer role",
+            extracted_requirements={
+                "must_have": [],
+                "good_to_have": [],
+                "soft_skills": [],
+                "seniority": "senior",
+                "primary_role_category": "SWE",
+                "country_hint": "US",
+                "red_flags": [],
+            },
+            diff_plan={
+                "match_score": 88,
+                "must_have_coverage_found": [],
+                "must_have_coverage_missing": [],
+                "good_to_have_coverage_found": [],
+                "good_to_have_coverage_missing": [],
+                "bullets": [],
+                "skills_reorder": None,
+                "summary_rewrite": None,
+                "suggested_additions": [],
+            },
+            match_score=88,
+        )
+    )
+    db_session.add(
+        ResumeVersion(
+            id=version_id,
+            resume_document_id=doc_id,
+            change_set=[],
+            parsed_json=parsed_json,
+            jd_evaluation_id=jd_id,
+            template_id="us-swe",
+            company_name="Acme",
+        )
+    )
+    db_session.add(
+        ResumeExport(
+            id=export_id,
+            user_id=test_user_id,
+            resume_document_id=doc_id,
+            resume_version_id=version_id,
+            country="US",
+            role_template="swe",
+            storage_path=None,
+            status="succeeded",
+            file_size_bytes=1234,
+        )
+    )
+    db_session.commit()
+
+    delete_response = client.delete(f"/api/v1/resumes/{doc_id}", headers=auth_headers)
+
+    assert delete_response.status_code == 204, delete_response.text
+    assert db_session.get(ResumeEvaluationV2, evaluation_id) is None
+    assert db_session.get(ResumeExport, export_id) is None
+    assert db_session.get(ResumeVersion, version_id) is None
+    assert db_session.get(JDEvaluation, jd_id) is None
 
 
 # ---------------------------------------------------------------------------

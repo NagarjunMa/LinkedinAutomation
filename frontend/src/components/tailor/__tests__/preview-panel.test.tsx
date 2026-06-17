@@ -65,7 +65,8 @@ describe('PreviewPanel', () => {
     renderPanel({ previewHtml: '<p>Resume content</p>' });
     const iframe = screen.getByTitle('Resume preview') as HTMLIFrameElement;
     expect(iframe).toBeInTheDocument();
-    expect(iframe.getAttribute('srcdoc')).toBe('<p>Resume content</p>');
+    expect(iframe.getAttribute('srcdoc')).toContain('<p>Resume content</p>');
+    expect(iframe.getAttribute('srcdoc')).toContain('data-prism-preview-page');
     expect(screen.getByText('Letter')).toBeInTheDocument();
   });
 

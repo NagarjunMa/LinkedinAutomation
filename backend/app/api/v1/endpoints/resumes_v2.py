@@ -180,16 +180,16 @@ async def delete_resume(
         ResumeExport.user_id == current_user_id,
         ResumeExport.resume_document_id == resume_document_id,
     ).delete(synchronize_session=False)
-    db.query(JDEvaluation).filter(
-        JDEvaluation.user_id == current_user_id,
-        JDEvaluation.resume_document_id == resume_document_id,
-    ).delete(synchronize_session=False)
     db.query(ResumeEvaluationV2).filter(
         ResumeEvaluationV2.user_id == current_user_id,
         ResumeEvaluationV2.resume_document_id == resume_document_id,
     ).delete(synchronize_session=False)
     db.query(ResumeVersion).filter(
         ResumeVersion.resume_document_id == resume_document_id,
+    ).delete(synchronize_session=False)
+    db.query(JDEvaluation).filter(
+        JDEvaluation.user_id == current_user_id,
+        JDEvaluation.resume_document_id == resume_document_id,
     ).delete(synchronize_session=False)
     db.delete(doc_row)
     db.commit()

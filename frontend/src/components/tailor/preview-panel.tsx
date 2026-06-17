@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -32,6 +32,18 @@ interface PreviewPanelProps {
   warning?: string;
 }
 
+function buildPreviewSrcDoc(html: string, template: string): string {
+  if (!html) return html;
+  const pageCss = template.startsWith('in-')
+    ? 'body { padding: 0.55in 0.55in !important; }'
+    : 'body { padding: 0.5in 0.55in !important; }';
+  const style = `<style data-prism-preview-page>@media screen { html { background: #fff; } ${pageCss} }</style>`;
+  if (/<\/head>/i.test(html)) {
+    return html.replace(/<\/head>/i, `${style}</head>`);
+  }
+  return `${style}${html}`;
+}
+
 export function PreviewPanel({
   versionId,
   previewHtml,
@@ -45,6 +57,10 @@ export function PreviewPanel({
   const { toast } = useToast();
   const pageLabel = template.startsWith('in-') ? 'A4' : 'Letter';
   const pageAspect = template.startsWith('in-') ? 'aspect-[210/297]' : 'aspect-[8.5/11]';
+  const previewSrcDoc = useMemo(
+    () => buildPreviewSrcDoc(previewHtml, template),
+    [previewHtml, template]
+  );
 
   // Re-sync when a new Apply result lands
   useEffect(() => {
@@ -94,10 +110,10 @@ export function PreviewPanel({
       <div className="flex-1 overflow-auto border border-border rounded-md bg-muted/30 p-4">
         {previewHtml ? (
           <div
-            className={`mx-auto h-full max-h-full w-auto max-w-full overflow-hidden bg-white shadow-sm ring-1 ring-border ${pageAspect}`}
+            className={`mx-auto w-full max-w-[560px] overflow-hidden bg-white shadow-sm ring-1 ring-border ${pageAspect}`}
           >
             <iframe
-              srcDoc={previewHtml}
+              srcDoc={previewSrcDoc}
               sandbox="allow-same-origin"
               className="h-full w-full bg-white"
               title="Resume preview"

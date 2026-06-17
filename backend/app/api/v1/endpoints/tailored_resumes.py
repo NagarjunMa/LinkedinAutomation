@@ -22,7 +22,12 @@ from app.models.jd_evaluation import JDEvaluation
 from app.models.resume_document import ResumeDocument, ResumeVersion
 from app.models.resume_export import ResumeExport
 from app.schemas.resume_v2 import ResumeDocumentJSON
-from app.services.pdf.renderer import BlankPdfError, PdfRenderTimeout, render_pdf_from_doc
+from app.services.pdf.renderer import (
+    BlankPdfError,
+    PdfRenderTimeout,
+    get_pdf_page_count,
+    render_pdf_from_doc,
+)
 
 router = APIRouter(prefix="/tailored-resumes", tags=["tailored-resumes"])
 _DOWNLOAD_SEMAPHORE = asyncio.Semaphore(3)
@@ -206,5 +211,6 @@ async def download_tailored_resume(
         headers={
             "Content-Disposition": f'attachment; filename="{filename}"',
             "Cache-Control": "private, no-store",
+            "X-Resume-Page-Count": str(get_pdf_page_count(pdf_bytes)),
         },
     )
