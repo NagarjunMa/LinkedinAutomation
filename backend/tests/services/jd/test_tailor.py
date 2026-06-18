@@ -47,6 +47,9 @@ async def test_tailor_returns_diff_plan():
     plan = await tailor_resume_to_jd(doc, jd)
     assert plan.match_score == 75
     assert plan.bullets[0].bullet_id == "b1"
+    assert plan.content_budget is not None
+    assert plan.content_budget.target_max_pages == 1
+    assert plan.bullet_fit[0].bullet_id == "b1"
 
 
 @pytest.mark.asyncio

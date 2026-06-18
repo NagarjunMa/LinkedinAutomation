@@ -65,6 +65,25 @@ class SuggestedAddition(BaseModel):
     reason: str
 
 
+class BulletFitSignal(BaseModel):
+    bullet_id: str
+    relevance_score: int = Field(ge=0, le=100)
+    evidence_level: Literal["high", "medium", "low"]
+    recommendation: Literal["keep", "rewrite", "consider_trim"]
+    matched_requirements: List[str] = Field(default_factory=list)
+    noise_flags: List[str] = Field(default_factory=list)
+    rationale: str
+
+
+class ContentBudget(BaseModel):
+    source_page_estimate: float = Field(ge=1)
+    target_max_pages: int = Field(ge=1, le=2)
+    recommended_bullet_budget: int = Field(ge=1)
+    current_bullet_count: int = Field(ge=0)
+    page_fit_risk: Literal["low", "medium", "high"]
+    guidance: str
+
+
 class DiffPlan(BaseModel):
     match_score: int = Field(ge=0, le=100)
     must_have_coverage_found: List[str]
@@ -75,3 +94,5 @@ class DiffPlan(BaseModel):
     skills_reorder: Optional[SkillsReorder] = None
     summary_rewrite: Optional[SummaryRewrite] = None
     suggested_additions: List[SuggestedAddition] = Field(default_factory=list)
+    bullet_fit: List[BulletFitSignal] = Field(default_factory=list)
+    content_budget: Optional[ContentBudget] = None

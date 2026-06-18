@@ -6,6 +6,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_excep
 from app.schemas.resume_v2 import ResumeDocumentJSON
 from app.schemas.jd import BulletDiff, BulletOption, JDExtraction, DiffPlan
 from app.services.resume.hallucination_guard import check_no_unprompted_numbers, HallucinationError
+from app.services.resume.content_fit import enrich_diff_plan_with_content_fit
 from app.core.llm_logging import measure, log_cost
 
 
@@ -134,7 +135,7 @@ async def tailor_resume_to_jd(
                 )
             except HallucinationError as e:
                 raise HallucinationError(f"Bullet {diff.bullet_id}: {e}")
-    return plan
+    return enrich_diff_plan_with_content_fit(doc, jd, plan)
 
 
 @retry(stop=stop_after_attempt(3),

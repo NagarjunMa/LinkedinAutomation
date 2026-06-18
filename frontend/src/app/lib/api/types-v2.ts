@@ -153,6 +153,28 @@ export interface BulletDiff {
   options?: BulletOption[];
 }
 
+export type BulletFitRecommendation = 'keep' | 'rewrite' | 'consider_trim';
+export type BulletFitEvidenceLevel = 'high' | 'medium' | 'low';
+
+export interface BulletFitSignal {
+  bullet_id: string;
+  relevance_score: number;
+  evidence_level: BulletFitEvidenceLevel;
+  recommendation: BulletFitRecommendation;
+  matched_requirements: string[];
+  noise_flags: string[];
+  rationale: string;
+}
+
+export interface ContentBudget {
+  source_page_estimate: number;
+  target_max_pages: number;
+  recommended_bullet_budget: number;
+  current_bullet_count: number;
+  page_fit_risk: 'low' | 'medium' | 'high';
+  guidance: string;
+}
+
 export interface SkillsReorder {
   new_order: string[];
   rationale: string;
@@ -180,6 +202,8 @@ export interface DiffPlan {
   skills_reorder: SkillsReorder | null;
   summary_rewrite: SummaryRewrite | null;
   suggested_additions: SuggestedAddition[];
+  bullet_fit?: BulletFitSignal[];
+  content_budget?: ContentBudget | null;
 }
 
 export interface JDAnalyzeResponse {
