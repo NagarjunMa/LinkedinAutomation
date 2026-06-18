@@ -99,6 +99,10 @@ export function DiffView({ resumeId, jdEvaluationId, plan, onApplied, onAccepted
     Object.values(sel.bullets).filter(Boolean).length +
     (sel.skillsReorder ? 1 : 0) +
     (sel.summaryRewrite ? 1 : 0);
+  const fitByBulletId = useMemo(
+    () => Object.fromEntries((plan.bullet_fit || []).map((item) => [item.bullet_id, item])),
+    [plan.bullet_fit]
+  );
 
   // Notify parent whenever the accepted change set changes
   useEffect(() => {
@@ -223,6 +227,19 @@ export function DiffView({ resumeId, jdEvaluationId, plan, onApplied, onAccepted
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
+        {plan.content_budget && (
+          <div className="rounded-sm border bg-muted/30 p-3 text-xs text-muted-foreground">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="font-semibold uppercase tracking-wide text-foreground">
+                Resume fit target: {plan.content_budget.target_max_pages} page{plan.content_budget.target_max_pages === 1 ? '' : 's'}
+              </span>
+              <span className="uppercase">
+                {plan.content_budget.current_bullet_count}/{plan.content_budget.recommended_bullet_budget} bullet budget · {plan.content_budget.page_fit_risk} risk
+              </span>
+            </div>
+            <p className="mt-1">{plan.content_budget.guidance}</p>
+          </div>
+        )}
         {plan.bullets.map((b) => {
           const state = pointerState[b.bullet_id];
           const selectedOption = state?.options.find((option) => option.option_id === state.selectedOptionId);
@@ -239,6 +256,7 @@ export function DiffView({ resumeId, jdEvaluationId, plan, onApplied, onAccepted
               selectedOptionId={state?.selectedOptionId}
               editedText={state?.text || b.new}
               regenerating={regeneratingBulletId === b.bullet_id}
+              fitSignal={fitByBulletId[b.bullet_id]}
               onToggle={(v) =>
                 setSel((s) => ({ ...s, bullets: { ...s.bullets, [b.bullet_id]: v } }))
               }

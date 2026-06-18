@@ -77,6 +77,34 @@ const mockPlan: DiffPlan = {
   good_to_have_coverage_found: [],
   good_to_have_coverage_missing: [],
   suggested_additions: [],
+  content_budget: {
+    source_page_estimate: 1.1,
+    target_max_pages: 1,
+    recommended_bullet_budget: 12,
+    current_bullet_count: 14,
+    page_fit_risk: 'medium',
+    guidance: 'Keep only the strongest JD-matched bullets.',
+  },
+  bullet_fit: [
+    {
+      bullet_id: 'b1',
+      relevance_score: 82,
+      evidence_level: 'high',
+      recommendation: 'keep',
+      matched_requirements: ['Python'],
+      noise_flags: [],
+      rationale: 'Strong overlap with this JD.',
+    },
+    {
+      bullet_id: 'b2',
+      relevance_score: 38,
+      evidence_level: 'low',
+      recommendation: 'consider_trim',
+      matched_requirements: [],
+      noise_flags: ['no_jd_requirement_match'],
+      rationale: 'Limited JD overlap.',
+    },
+  ],
 };
 
 const mockExtraction = {
@@ -124,6 +152,9 @@ describe('DiffView', () => {
     renderDiffView();
     expect(screen.getByDisplayValue('Shipped Python services')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Built React dashboards')).toBeInTheDocument();
+    expect(screen.getByText(/Resume fit target: 1 page/i)).toBeInTheDocument();
+    expect(screen.getByText(/keep · 82/i)).toBeInTheDocument();
+    expect(screen.getByText(/consider trim · 38/i)).toBeInTheDocument();
   });
 
   it('calls onAcceptedChangesChange when a bullet checkbox is toggled', () => {

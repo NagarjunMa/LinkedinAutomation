@@ -4,7 +4,7 @@ import { RefreshCw, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
-import type { BulletOption } from '@/app/lib/api';
+import type { BulletFitSignal, BulletOption } from '@/app/lib/api';
 
 export interface ChangeCardProps {
   title: string;
@@ -21,11 +21,17 @@ export interface ChangeCardProps {
   onTextChange?: (text: string) => void;
   onReset?: () => void;
   onRegenerate?: () => void;
+  fitSignal?: BulletFitSignal;
   testId?: string;
 }
 
 export function ChangeCard(props: ChangeCardProps) {
   const editable = props.onTextChange && props.editedText !== undefined;
+  const fitTone = props.fitSignal?.recommendation === 'keep'
+    ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700'
+    : props.fitSignal?.recommendation === 'rewrite'
+      ? 'border-amber-500/30 bg-amber-500/10 text-amber-700'
+      : 'border-red-500/30 bg-red-500/10 text-red-700';
   return (
     <div
       data-testid={props.testId}
@@ -38,7 +44,14 @@ export function ChangeCard(props: ChangeCardProps) {
       />
       <div className="flex-1 space-y-1">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-xs uppercase opacity-70">{props.title}</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-xs uppercase opacity-70">{props.title}</p>
+            {props.fitSignal && (
+              <span className={`rounded-sm border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide ${fitTone}`}>
+                {props.fitSignal.recommendation.replace('_', ' ')} · {props.fitSignal.relevance_score}
+              </span>
+            )}
+          </div>
           {(props.options?.length || props.onRegenerate || props.onReset) && (
             <div className="flex flex-wrap items-center gap-2">
               {props.options && props.options.length > 0 && (
@@ -96,7 +109,20 @@ export function ChangeCard(props: ChangeCardProps) {
         ) : (
           <p className="text-sm bg-emerald-500/10 p-2 rounded">{props.after}</p>
         )}
-        <p className="text-xs opacity-60">{props.reason}</p>
+        <div className="space-y-1">
+          <p className="text-xs opacity-60">{props.reason}</p>
+          {props.fitSignal && (
+            <p className="text-xs opacity-70">
+              {props.fitSignal.rationale}
+              {props.fitSignal.matched_requirements.length > 0
+                ? ` Matched: ${props.fitSignal.matched_requirements.join(', ')}.`
+                : ''}
+              {props.fitSignal.noise_flags.length > 0
+                ? ` Flags: ${props.fitSignal.noise_flags.join(', ')}.`
+                : ''}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
