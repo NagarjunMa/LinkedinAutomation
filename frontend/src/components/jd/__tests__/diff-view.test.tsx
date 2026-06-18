@@ -200,6 +200,29 @@ describe('DiffView', () => {
     expect(lastCall.some((c) => c.bullet_id === 'b2')).toBe(false);
   });
 
+  it('selects recommended pointers and trims low-fit changes', () => {
+    const handler = vi.fn();
+    renderDiffView({ onAcceptedChangesChange: handler });
+
+    fireEvent.click(screen.getByRole('button', { name: /recommended/i }));
+
+    const lastCall = handler.mock.calls[handler.mock.calls.length - 1][0] as Array<{ bullet_id?: string; type: string }>;
+    expect(lastCall.some((c) => c.bullet_id === 'b1')).toBe(true);
+    expect(lastCall.some((c) => c.bullet_id === 'b2')).toBe(false);
+    expect(lastCall.some((c) => c.type === 'summary_update')).toBe(true);
+  });
+
+  it('selects only high-fit bullet rewrites for one-page tightening', () => {
+    const handler = vi.fn();
+    renderDiffView({ onAcceptedChangesChange: handler });
+
+    fireEvent.click(screen.getByRole('button', { name: /high fit only/i }));
+
+    const lastCall = handler.mock.calls[handler.mock.calls.length - 1][0] as Array<{ bullet_id?: string; type: string }>;
+    expect(lastCall).toHaveLength(1);
+    expect(lastCall[0]).toMatchObject({ type: 'bullet_update', bullet_id: 'b1' });
+  });
+
   it('resets all pointer selections and edited text', () => {
     const handler = vi.fn();
     renderDiffView({ onAcceptedChangesChange: handler });
