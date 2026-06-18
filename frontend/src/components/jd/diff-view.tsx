@@ -56,6 +56,33 @@ function buildPointerState(plan: DiffPlan): Record<string, PointerState> {
   }));
 }
 
+function buildFitSelection(plan: DiffPlan, mode: 'recommended' | 'high-fit'): Record<string, boolean> {
+  const fitByBulletId = Object.fromEntries((plan.bullet_fit || []).map((item) => [item.bullet_id, item]));
+  const scoredBullets = plan.bullets
+    .map((bullet) => ({
+      bullet,
+      fit: fitByBulletId[bullet.bullet_id],
+    }))
+    .sort((a, b) => (b.fit?.relevance_score || 0) - (a.fit?.relevance_score || 0));
+
+  const selectedEntries = scoredBullets.map(({ bullet, fit }) => {
+    if (!fit) return [bullet.bullet_id, true] as const;
+    if (mode === 'high-fit') {
+      return [bullet.bullet_id, fit.recommendation === 'keep'] as const;
+    }
+    return [bullet.bullet_id, fit.recommendation !== 'consider_trim'] as const;
+  });
+
+  if (selectedEntries.some(([, accepted]) => accepted)) {
+    return Object.fromEntries(selectedEntries);
+  }
+
+  const fallbackId = scoredBullets[0]?.bullet.bullet_id;
+  return Object.fromEntries(
+    selectedEntries.map(([id]) => [id, id === fallbackId])
+  );
+}
+
 export function DiffView({ resumeId, jdEvaluationId, plan, onApplied, onAcceptedChangesChange }: DiffViewProps) {
   const { toast } = useToast();
   const createVersion = useCreateVersion();
@@ -103,6 +130,14 @@ export function DiffView({ resumeId, jdEvaluationId, plan, onApplied, onAccepted
     () => Object.fromEntries((plan.bullet_fit || []).map((item) => [item.bullet_id, item])),
     [plan.bullet_fit]
   );
+  const fitSummary = useMemo(() => {
+    const signals = plan.bullet_fit || [];
+    return {
+      keep: signals.filter((item) => item.recommendation === 'keep').length,
+      rewrite: signals.filter((item) => item.recommendation === 'rewrite').length,
+      trim: signals.filter((item) => item.recommendation === 'consider_trim').length,
+    };
+  }, [plan.bullet_fit]);
 
   // Notify parent whenever the accepted change set changes
   useEffect(() => {
@@ -115,6 +150,15 @@ export function DiffView({ resumeId, jdEvaluationId, plan, onApplied, onAccepted
       bullets: Object.fromEntries(Object.keys(current.bullets).map((id) => [id, accepted])),
       skillsReorder: plan.skills_reorder ? accepted : false,
       summaryRewrite: plan.summary_rewrite ? accepted : false,
+    }));
+  };
+
+  const selectByFit = (mode: 'recommended' | 'high-fit') => {
+    setSel((current) => ({
+      ...current,
+      bullets: buildFitSelection(plan, mode),
+      skillsReorder: plan.skills_reorder ? mode === 'recommended' : false,
+      summaryRewrite: plan.summary_rewrite ? mode === 'recommended' : false,
     }));
   };
 
@@ -206,6 +250,12 @@ export function DiffView({ resumeId, jdEvaluationId, plan, onApplied, onAccepted
       <CardHeader className="flex flex-row justify-between items-center">
         <CardTitle>Proposed changes</CardTitle>
         <div className="flex flex-wrap items-center gap-2">
+          <Button type="button" variant="outline" size="sm" onClick={() => selectByFit('recommended')}>
+            Recommended
+          </Button>
+          <Button type="button" variant="outline" size="sm" onClick={() => selectByFit('high-fit')}>
+            High fit only
+          </Button>
           <Button type="button" variant="outline" size="sm" onClick={() => setAll(true)}>
             Select all
           </Button>
@@ -238,6 +288,11 @@ export function DiffView({ resumeId, jdEvaluationId, plan, onApplied, onAccepted
               </span>
             </div>
             <p className="mt-1">{plan.content_budget.guidance}</p>
+            {(fitSummary.keep + fitSummary.rewrite + fitSummary.trim) > 0 && (
+              <p className="mt-2 uppercase tracking-wide">
+                {fitSummary.keep} keep · {fitSummary.rewrite} rewrite · {fitSummary.trim} trim candidate{fitSummary.trim === 1 ? '' : 's'}
+              </p>
+            )}
           </div>
         )}
         {plan.bullets.map((b) => {
