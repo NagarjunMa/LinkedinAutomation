@@ -155,6 +155,7 @@ describe('DiffView', () => {
     expect(screen.getByText(/Resume fit target: 1 page/i)).toBeInTheDocument();
     expect(screen.getByText(/keep · 82/i)).toBeInTheDocument();
     expect(screen.getByText(/consider trim · 38/i)).toBeInTheDocument();
+    expect(screen.getByTestId('one-page-guardrail')).toHaveTextContent(/low-fit pointer is still selected/i);
   });
 
   it('calls onAcceptedChangesChange when a bullet checkbox is toggled', () => {
@@ -210,6 +211,7 @@ describe('DiffView', () => {
     expect(lastCall.some((c) => c.bullet_id === 'b1')).toBe(true);
     expect(lastCall.some((c) => c.bullet_id === 'b2')).toBe(false);
     expect(lastCall.some((c) => c.type === 'summary_update')).toBe(true);
+    expect(screen.getByTestId('one-page-guardrail')).toHaveTextContent(/starts above the one-page bullet budget/i);
   });
 
   it('selects only high-fit bullet rewrites for one-page tightening', () => {
