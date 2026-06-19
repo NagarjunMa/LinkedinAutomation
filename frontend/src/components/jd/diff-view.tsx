@@ -138,6 +138,26 @@ export function DiffView({ resumeId, jdEvaluationId, plan, onApplied, onAccepted
       trim: signals.filter((item) => item.recommendation === 'consider_trim').length,
     };
   }, [plan.bullet_fit]);
+  const selectionGuardrail = useMemo(() => {
+    const selectedBulletIds = Object.entries(sel.bullets)
+      .filter(([, accepted]) => accepted)
+      .map(([id]) => id);
+    const selectedTrimCount = selectedBulletIds.filter(
+      (id) => fitByBulletId[id]?.recommendation === 'consider_trim'
+    ).length;
+    const onePageTarget = plan.content_budget?.target_max_pages === 1;
+    const startsOverBudget = Boolean(
+      plan.content_budget &&
+      plan.content_budget.current_bullet_count > plan.content_budget.recommended_bullet_budget
+    );
+    return {
+      selectedBulletCount: selectedBulletIds.length,
+      selectedTrimCount,
+      onePageTarget,
+      startsOverBudget,
+      shouldWarn: onePageTarget && (selectedTrimCount > 0 || startsOverBudget),
+    };
+  }, [fitByBulletId, plan.content_budget, sel.bullets]);
 
   // Notify parent whenever the accepted change set changes
   useEffect(() => {
@@ -292,6 +312,29 @@ export function DiffView({ resumeId, jdEvaluationId, plan, onApplied, onAccepted
               <p className="mt-2 uppercase tracking-wide">
                 {fitSummary.keep} keep · {fitSummary.rewrite} rewrite · {fitSummary.trim} trim candidate{fitSummary.trim === 1 ? '' : 's'}
               </p>
+            )}
+            {selectionGuardrail.shouldWarn ? (
+              <div
+                data-testid="one-page-guardrail"
+                className="mt-3 rounded-sm border border-amber-500/30 bg-amber-500/10 p-2 text-amber-700"
+              >
+                <p className="font-semibold uppercase tracking-wide">One-page guardrail</p>
+                <p className="mt-1">
+                  {selectionGuardrail.selectedTrimCount > 0
+                    ? `${selectionGuardrail.selectedTrimCount} low-fit pointer${selectionGuardrail.selectedTrimCount === 1 ? ' is' : 's are'} still selected. Use Recommended or High fit only before applying a one-page resume.`
+                    : 'This resume starts above the one-page bullet budget. Use High fit only if the preview still spills into a second page.'}
+                </p>
+              </div>
+            ) : (
+              <div
+                data-testid="one-page-guardrail"
+                className="mt-3 rounded-sm border border-emerald-500/30 bg-emerald-500/10 p-2 text-emerald-700"
+              >
+                <p className="font-semibold uppercase tracking-wide">Selection fit</p>
+                <p className="mt-1">
+                  {selectionGuardrail.selectedBulletCount} selected pointer{selectionGuardrail.selectedBulletCount === 1 ? '' : 's'} are aligned with the current page target.
+                </p>
+              </div>
             )}
           </div>
         )}
