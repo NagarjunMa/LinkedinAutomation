@@ -425,10 +425,12 @@ export default function ApplicationsPage() {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <JobURLExtractor
-                            userId={user?.id || "demo_user"}
-                            onJobExtracted={handleJobExtracted}
-                        />
+                        {user?.id && (
+                            <JobURLExtractor
+                                userId={user.id}
+                                onJobExtracted={handleJobExtracted}
+                            />
+                        )}
                     </CardContent>
                 </Card>
             )}

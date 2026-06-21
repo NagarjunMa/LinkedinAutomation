@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/components/ui/use-toast"
+import { useAuth } from "@/contexts/auth-context"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -45,6 +46,7 @@ export function JobsTab() {
     })
     const { toast } = useToast()
     const { updateJobApplication, refreshAppliedJobs } = useDashboard()
+    const { user } = useAuth()
 
     useEffect(() => {
         const loadJobs = async () => {
@@ -126,7 +128,7 @@ export function JobsTab() {
                 </TabsList>
 
                 <TabsContent value="applied">
-                    <AppliedJobsList userId="demo_user" limit={15} />
+                    {user?.id ? <AppliedJobsList userId={user.id} limit={15} /> : null}
                 </TabsContent>
 
                 <TabsContent value="available">

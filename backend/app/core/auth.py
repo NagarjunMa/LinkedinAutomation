@@ -179,3 +179,15 @@ def require_path_user_matches_current(
     if path_user_id and path_user_id != current_user_id:
         raise HTTPException(status_code=403, detail="User mismatch")
     return current_user_id
+
+
+def require_admin_user(current_user_id: str = Depends(get_current_user_id)) -> str:
+    """Require the authenticated user to be present in ADMIN_USER_IDS."""
+    admins = {
+        user_id.strip()
+        for user_id in os.getenv("ADMIN_USER_IDS", "").split(",")
+        if user_id.strip()
+    }
+    if current_user_id not in admins:
+        raise HTTPException(status_code=403, detail="Admin only")
+    return current_user_id

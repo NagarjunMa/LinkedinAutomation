@@ -71,6 +71,42 @@ def test_cleanup_all_rejects_non_admin(client: TestClient, monkeypatch):
     assert response.json()["detail"] == "Admin only"
 
 
+def test_legacy_profiles_users_rejects_non_admin(client: TestClient, monkeypatch):
+    monkeypatch.setenv("ADMIN_USER_IDS", "admin-user")
+
+    response = client.get("/api/v1/profiles/users")
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Admin only"
+
+
+def test_legacy_score_new_job_rejects_non_admin(client: TestClient, monkeypatch):
+    monkeypatch.setenv("ADMIN_USER_IDS", "admin-user")
+
+    response = client.post("/api/v1/profiles/score-new-job/1")
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Admin only"
+
+
+def test_metrics_rejects_non_admin(client: TestClient, monkeypatch):
+    monkeypatch.setenv("ADMIN_USER_IDS", "admin-user")
+
+    response = client.get("/metrics")
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Admin only"
+
+
+def test_metrics_allows_admin(client: TestClient, test_user_id: str, monkeypatch):
+    monkeypatch.setenv("ADMIN_USER_IDS", test_user_id)
+
+    response = client.get("/metrics")
+
+    assert response.status_code == 200
+    assert response.json()["system"]["python_version"]
+
+
 def test_stripe_webhook_route_hidden_when_billing_disabled(client: TestClient):
     response = client.post("/api/v1/webhooks/stripe", content=b"{}")
 

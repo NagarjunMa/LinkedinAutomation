@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 # in os.environ. See TECH_DEBT.md for the longer-term settings.X migration.
 load_dotenv()
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
@@ -15,6 +15,7 @@ import os
 from sqlalchemy import text
 
 from app.core.config import settings
+from app.core.auth import require_admin_user
 from app.api.v1.api import api_router
 from app.db.session import engine
 # from app.core.error_handlers import setup_error_handlers
@@ -194,7 +195,7 @@ async def health_check():
         )
 
 @app.get("/metrics")
-async def get_metrics():
+async def get_metrics(_: str = Depends(require_admin_user)):
     """Detailed metrics endpoint for monitoring"""
     try:
         metrics = health_monitor.get_health_metrics()

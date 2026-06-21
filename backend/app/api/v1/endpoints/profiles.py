@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 import logging
 
 from app.db.session import get_db
+from app.core.auth import require_admin_user
 from app.models.job import JobListing, UserProfile
 from app.services.resume_parser import resume_parser
 from app.services.job_scorer import job_scorer
@@ -291,7 +292,8 @@ async def parse_resume_text(
 async def list_users(
     skip: int = 0,
     limit: int = 100,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: str = Depends(require_admin_user),
 ):
     """
     List all users with profiles (for admin/testing)
@@ -542,7 +544,11 @@ async def clear_user_scores(user_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Error clearing job scores")
 
 @router.post("/score-new-job/{job_id}")
-async def trigger_job_scoring(job_id: int, db: Session = Depends(get_db)):
+async def trigger_job_scoring(
+    job_id: int,
+    db: Session = Depends(get_db),
+    _: str = Depends(require_admin_user),
+):
     """
     Trigger scoring of a new job against all existing users
     Use when adding new jobs to the system
