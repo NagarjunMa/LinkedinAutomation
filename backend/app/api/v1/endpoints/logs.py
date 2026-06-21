@@ -11,6 +11,7 @@ import logging
 import json
 from app.core.enhanced_logging import enhanced_logger
 from app.core.rate_limiter import RateLimiter
+from app.core.auth import decode_supabase_jwt
 
 router = APIRouter()
 security = HTTPBearer(auto_error=False)
@@ -81,6 +82,19 @@ def get_logger() -> logging.Logger:
     """Get the frontend logger instance"""
     return logging.getLogger('frontend')
 
+
+def get_verified_log_user_id(
+    credentials: Optional[HTTPAuthorizationCredentials],
+) -> Optional[str]:
+    """Return the JWT subject for log attribution, ignoring caller-supplied IDs."""
+    if not credentials:
+        return None
+    try:
+        payload = decode_supabase_jwt(credentials.credentials)
+    except Exception:
+        return None
+    return payload.get("sub")
+
 @router.post("/frontend", response_model=LogResponse)
 async def log_frontend_error(
     log_entry: FrontendLogSchema,
@@ -103,13 +117,14 @@ async def log_frontend_error(
 
     try:
         frontend_logger = get_logger()
+        verified_user_id = get_verified_log_user_id(credentials)
 
         # Create log context
         log_context = {
             'frontend_error': True,
             'error_id': log_entry.errorId,
             'client_ip': client_ip,
-            'user_id': log_entry.userId,
+            'user_id': verified_user_id,
             'session_id': log_entry.sessionId,
             'url': log_entry.url,
             'user_agent': log_entry.userAgent,
@@ -119,8 +134,8 @@ async def log_frontend_error(
             'metadata': log_entry.metadata
         }
 
-        # Add authentication context if available
-        if credentials:
+        # Add authentication context if available and verified
+        if verified_user_id:
             log_context['authenticated'] = True
 
         # Log based on level
@@ -185,6 +200,7 @@ async def log_frontend_errors_batch(
     processed = 0
     errors = []
     frontend_logger = get_logger()
+    verified_user_id = get_verified_log_user_id(credentials)
 
     for log_entry in batch.logs:
         try:
@@ -194,7 +210,7 @@ async def log_frontend_errors_batch(
                 'batch_processing': True,
                 'error_id': log_entry.errorId,
                 'client_ip': client_ip,
-                'user_id': log_entry.userId,
+                'user_id': verified_user_id,
                 'session_id': log_entry.sessionId,
                 'url': log_entry.url,
                 'user_agent': log_entry.userAgent,
@@ -204,7 +220,7 @@ async def log_frontend_errors_batch(
                 'metadata': log_entry.metadata
             }
 
-            if credentials:
+            if verified_user_id:
                 log_context['authenticated'] = True
 
             # Log based on level

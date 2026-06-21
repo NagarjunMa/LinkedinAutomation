@@ -4,35 +4,21 @@ GET /admin/metrics/cost-per-user
     Returns aggregated debit amounts per user from the credit_ledger table.
     Gated by require_admin dependency (ADMIN_USER_IDS env var allowlist).
 """
-import os
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import func, case
 
 from app.db.session import get_db
-from app.core.auth import get_current_user_id
+from app.core.auth import require_admin_user
 from app.models.credit_ledger import CreditLedger
 
 router = APIRouter(prefix="/admin/metrics", tags=["admin"])
 
 
-def require_admin(user_id: str = Depends(get_current_user_id)) -> str:
-    """Dependency that enforces admin access via ADMIN_USER_IDS env var.
-
-    Reads ADMIN_USER_IDS at request time (not import time) so that
-    monkeypatch works correctly in tests.
-    """
-    raw = os.getenv("ADMIN_USER_IDS", "")
-    admins = {u.strip() for u in raw.split(",") if u.strip()}
-    if user_id not in admins:
-        raise HTTPException(status_code=403, detail="Admin only")
-    return user_id
-
-
 @router.get("/cost-per-user")
 def cost_per_user(
     db: Session = Depends(get_db),
-    _: str = Depends(require_admin),
+    _: str = Depends(require_admin_user),
 ):
     """Return per-user total debit amounts from the credit ledger.
 
