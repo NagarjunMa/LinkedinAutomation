@@ -180,6 +180,11 @@ export interface BulletFitSignal {
   matched_requirements: string[];
   noise_flags: string[];
   rationale: string;
+  why_stronger?: string;
+  matched_jd_phrases?: string[];
+  source_resume_evidence?: string[];
+  page_cost?: 'low' | 'medium' | 'high';
+  truth_risk?: 'low' | 'medium' | 'high';
 }
 
 export interface ContentBudget {

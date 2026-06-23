@@ -73,6 +73,11 @@ class BulletFitSignal(BaseModel):
     matched_requirements: List[str] = Field(default_factory=list)
     noise_flags: List[str] = Field(default_factory=list)
     rationale: str
+    why_stronger: str = ""
+    matched_jd_phrases: List[str] = Field(default_factory=list)
+    source_resume_evidence: List[str] = Field(default_factory=list)
+    page_cost: Literal["low", "medium", "high"] = "low"
+    truth_risk: Literal["low", "medium", "high"] = "low"
 
 
 class ContentBudget(BaseModel):

@@ -94,6 +94,11 @@ const mockPlan: DiffPlan = {
       matched_requirements: ['Python'],
       noise_flags: [],
       rationale: 'Strong overlap with this JD.',
+      why_stronger: 'Strong pointer because it directly supports Python with resume-backed evidence.',
+      matched_jd_phrases: ['Build Python services'],
+      source_resume_evidence: ['Did stuff'],
+      page_cost: 'low',
+      truth_risk: 'low',
     },
     {
       bullet_id: 'b2',
@@ -103,6 +108,11 @@ const mockPlan: DiffPlan = {
       matched_requirements: [],
       noise_flags: ['no_jd_requirement_match'],
       rationale: 'Limited JD overlap.',
+      why_stronger: 'Weak pointer for this JD because it does not clearly support a listed requirement.',
+      matched_jd_phrases: [],
+      source_resume_evidence: ['Worked on UI'],
+      page_cost: 'low',
+      truth_risk: 'high',
     },
   ],
 };
@@ -155,6 +165,10 @@ describe('DiffView', () => {
     expect(screen.getByText(/Resume fit target: 1 page/i)).toBeInTheDocument();
     expect(screen.getByText(/keep · 82/i)).toBeInTheDocument();
     expect(screen.getByText(/consider trim · 38/i)).toBeInTheDocument();
+    expect(screen.getByText(/directly supports Python/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Page cost: low/i)[0]).toBeInTheDocument();
+    expect(screen.getByText(/Truth risk: high/i)).toBeInTheDocument();
+    expect(screen.getByText(/Build Python services/i)).toBeInTheDocument();
     expect(screen.getByTestId('one-page-guardrail')).toHaveTextContent(/low-fit pointer is still selected/i);
   });
 
