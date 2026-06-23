@@ -222,7 +222,7 @@ GOOGLE_CLIENT_SECRET=your_client_secret
 GOOGLE_REDIRECT_URI=http://localhost:8000/api/v1/email-agent/oauth/callback
 
 # OpenAI
-OPENAPI_KEY=your_openai_api_key
+OPENAI_API_KEY=your_openai_api_key
 EMAIL_CLASSIFICATION_MODEL=gpt-4o-mini
 
 # Database
@@ -317,4 +317,4 @@ For issues and questions:
 
 ---
 
-**🎉 The Email-Driven Job Status Automation System is now fully implemented and ready for production use!** 
+**🎉 The Email-Driven Job Status Automation System is now fully implemented and ready for production use!**

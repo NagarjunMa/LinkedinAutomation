@@ -6,6 +6,7 @@ Provides comprehensive security headers, rate limiting, and request validation
 import time
 import uuid
 import logging
+import hashlib
 from typing import Dict, Optional, List
 from collections import defaultdict, deque
 from datetime import datetime, timedelta
@@ -119,7 +120,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         burst_size: int = 10,
         whitelist_ips: Optional[List[str]] = None,
         blacklist_ips: Optional[List[str]] = None,
-        rate_limit_by_user: bool = True
+        rate_limit_by_user: bool = True,
+        route_limits: Optional[Dict[str, Dict[str, int]]] = None,
     ):
         super().__init__(app)
         self.requests_per_minute = requests_per_minute
@@ -128,6 +130,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.whitelist_ips = set(whitelist_ips or [])
         self.blacklist_ips = set(blacklist_ips or [])
         self.rate_limit_by_user = rate_limit_by_user
+        self.route_limits = route_limits or {}
 
         # Rate limiting storage
         self.request_counts: Dict[str, deque] = defaultdict(deque)
@@ -144,11 +147,15 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         if self.rate_limit_by_user and hasattr(request.state, 'user_id'):
             return f"user:{request.state.user_id}"
 
-        # Fall back to IP address
-        forwarded_for = request.headers.get("X-Forwarded-For")
-        if forwarded_for:
-            return forwarded_for.split(",")[0].strip()
+        # Auth dependencies run after middleware, so use a hash of the bearer
+        # token as the stable authenticated caller key without logging secrets.
+        authorization = request.headers.get("Authorization", "")
+        if authorization.lower().startswith("bearer "):
+            token_hash = hashlib.sha256(authorization.encode("utf-8")).hexdigest()[:32]
+            return f"token:{token_hash}"
 
+        # Fall back to the direct peer. Do not trust client-supplied
+        # X-Forwarded-For here; proxy-aware identity needs a trusted proxy list.
         return request.client.host if request.client else "unknown"
 
     def _is_whitelisted(self, client_ip: str) -> bool:
@@ -201,7 +208,30 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         self.last_cleanup = current_time
 
-    def _check_rate_limit(self, client_id: str) -> bool:
+    def _get_limits_for_path(self, path: str) -> tuple[int, int, int, Optional[str]]:
+        matched_prefix = None
+        matched_config = None
+        for prefix, config in self.route_limits.items():
+            if path.startswith(prefix) and (matched_prefix is None or len(prefix) > len(matched_prefix)):
+                matched_prefix = prefix
+                matched_config = config
+        if not matched_config:
+            return self.requests_per_minute, self.requests_per_hour, self.burst_size, None
+        return (
+            matched_config.get("requests_per_minute", self.requests_per_minute),
+            matched_config.get("requests_per_hour", self.requests_per_hour),
+            matched_config.get("burst_size", self.burst_size),
+            matched_prefix,
+        )
+
+    def _check_rate_limit(
+        self,
+        client_id: str,
+        *,
+        requests_per_minute: int,
+        requests_per_hour: int,
+        burst_size: int,
+    ) -> bool:
         """Check if request should be rate limited"""
         current_time = time.time()
         minute_ago = current_time - 60
@@ -214,17 +244,17 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         requests_last_hour = len(self.request_counts[client_id])
 
         # Check burst limit
-        if requests_last_minute >= self.burst_size:
+        if requests_last_minute >= burst_size:
             logger.warning(f"Burst limit exceeded for {client_id}: {requests_last_minute} requests/minute")
             return False
 
         # Check minute limit
-        if requests_last_minute >= self.requests_per_minute:
+        if requests_last_minute >= requests_per_minute:
             logger.warning(f"Rate limit exceeded for {client_id}: {requests_last_minute} requests/minute")
             return False
 
         # Check hour limit
-        if requests_last_hour >= self.requests_per_hour:
+        if requests_last_hour >= requests_per_hour:
             logger.warning(f"Hour limit exceeded for {client_id}: {requests_last_hour} requests/hour")
             return False
 
@@ -238,7 +268,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self._cleanup_old_requests()
 
         client_ip = request.client.host if request.client else "unknown"
-        client_id = self._get_client_identifier(request)
+        base_client_id = self._get_client_identifier(request)
+        requests_per_minute, requests_per_hour, burst_size, route_prefix = self._get_limits_for_path(request.url.path)
+        client_id = f"{base_client_id}:route:{route_prefix}" if route_prefix else base_client_id
 
         # Check blacklist
         if self._is_blacklisted(client_ip):
@@ -266,7 +298,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                     del self.blocked_ips[client_ip]
 
             # Check rate limits
-            if not self._check_rate_limit(client_id):
+            if not self._check_rate_limit(
+                client_id,
+                requests_per_minute=requests_per_minute,
+                requests_per_hour=requests_per_hour,
+                burst_size=burst_size,
+            ):
                 # Block IP if too many violations
                 self.burst_counts[client_id] += 1
                 if self.burst_counts[client_id] > 5:  # 5 violations = temporary block
@@ -282,7 +319,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                     },
                     headers={
                         "Retry-After": "60",
-                        "X-RateLimit-Limit": str(self.requests_per_minute),
+                        "X-RateLimit-Limit": str(requests_per_minute),
                         "X-RateLimit-Remaining": "0",
                         "X-RateLimit-Reset": str(int(time.time() + 60))
                     }
@@ -296,12 +333,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         # Add rate limiting headers
         minute_ago = time.time() - 60
-        remaining_requests = max(0, self.requests_per_minute - sum(
+        remaining_requests = max(0, requests_per_minute - sum(
             1 for req_time in self.request_counts[client_id]
             if req_time > minute_ago
         ))
 
-        response.headers["X-RateLimit-Limit"] = str(self.requests_per_minute)
+        response.headers["X-RateLimit-Limit"] = str(requests_per_minute)
         response.headers["X-RateLimit-Remaining"] = str(remaining_requests)
         response.headers["X-RateLimit-Reset"] = str(int(time.time() + 60))
 
@@ -361,10 +398,21 @@ class RequestValidationMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         # Check request size
         content_length = request.headers.get("Content-Length")
-        if content_length and int(content_length) > self.max_request_size:
+        try:
+            parsed_content_length = int(content_length) if content_length else 0
+        except ValueError:
+            return JSONResponse(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                content={
+                    "error": "Invalid Content-Length header",
+                    "request_id": getattr(request.state, 'request_id', str(uuid.uuid4()))
+                }
+            )
+
+        if parsed_content_length > self.max_request_size:
             logger.warning(f"Request too large: {content_length} bytes from {request.client.host}")
             return JSONResponse(
-                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                status_code=status.HTTP_413_CONTENT_TOO_LARGE,
                 content={
                     "error": "Request entity too large",
                     "max_size": self.max_request_size,

@@ -14,7 +14,7 @@ from app.schemas.job import (
 )
 from app.services.job_cleanup_service import JobCleanupService
 # LinkedIn scraper removed - using job aggregator instead
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import logging
 
 logger = logging.getLogger(__name__)
@@ -159,7 +159,7 @@ async def get_job_stats(
     success_rate = (total_applied / total_jobs * 100) if total_jobs > 0 else 0
 
     # Calculate date range for graph data
-    end_date = datetime.utcnow()
+    end_date = datetime.now(timezone.utc)
     if custom_days is not None:
         days = custom_days
     else:
@@ -351,7 +351,7 @@ async def delete_job(
     db.commit()
     return {"message": "Job deleted successfully"}
 
-@router.post("/scrape", response_model=List[JobListingResponse])
+@router.post("/scrape", response_model=List[JobListingResponse], include_in_schema=False)
 async def scrape_jobs(
     query: dict,
     db: Session = Depends(get_db),
@@ -370,7 +370,7 @@ async def scrape_jobs(
     #     db.commit()
 
     #     return jobs
-    raise HTTPException(status_code=501, detail="Scraping functionality is not yet implemented")
+    raise HTTPException(status_code=410, detail="This legacy scrape endpoint is no longer supported")
 
 @router.put("/{job_id}/status", response_model=JobListingResponse)
 async def update_job_status(
@@ -389,7 +389,7 @@ async def update_job_status(
 
         # Set applied_date timestamp when marking as applied
         if status_update["applied"]:
-            db_job.applied_date = datetime.utcnow()
+            db_job.applied_date = datetime.now(timezone.utc)
 
     db.commit()
     db.refresh(db_job)
@@ -426,7 +426,7 @@ async def update_job_application_status(
                 user_notes=status_update.get("notes"),
                 extraction_metadata={
                     "status_update_method": "modal",
-                    "updated_at": datetime.utcnow().isoformat()
+                    "updated_at": datetime.now(timezone.utc).isoformat()
                 }
             )
             db.add(application)
@@ -434,14 +434,14 @@ async def update_job_application_status(
             # Update existing application
             application.application_status = status_update.get("status", "pending")
             application.user_notes = status_update.get("notes")
-            application.updated_at = datetime.utcnow()
+            application.updated_at = datetime.now(timezone.utc)
 
             # Update extraction metadata
             if not application.extraction_metadata:
                 application.extraction_metadata = {}
             application.extraction_metadata.update({
                 "status_update_method": "modal",
-                "updated_at": datetime.utcnow().isoformat()
+                "updated_at": datetime.now(timezone.utc).isoformat()
             })
 
         # Update job listing with new status
@@ -458,9 +458,9 @@ async def update_job_application_status(
                         applied_date = status_update["date"]
                     db_job.applied_date = applied_date
                 except ValueError:
-                    db_job.applied_date = datetime.utcnow()
+                    db_job.applied_date = datetime.now(timezone.utc)
             else:
-                db_job.applied_date = datetime.utcnow()
+                db_job.applied_date = datetime.now(timezone.utc)
 
         # Update job with new status fields
         if hasattr(db_job, 'application_status'):
@@ -518,10 +518,10 @@ async def apply_to_job(
             else:
                 # Update to applied status
                 existing.application_status = "applied"
-                existing.application_date = datetime.utcnow()
+                existing.application_date = datetime.now(timezone.utc)
                 existing.application_source = application_source
                 existing.user_notes = notes
-                existing.updated_at = datetime.utcnow()
+                existing.updated_at = datetime.now(timezone.utc)
         else:
             # Create new application record
             application = JobApplication(
@@ -651,7 +651,7 @@ async def update_application_status(
 
         # Update status
         application.application_status = status
-        application.updated_at = datetime.utcnow()
+        application.updated_at = datetime.now(timezone.utc)
 
         if notes:
             application.user_notes = notes
@@ -664,7 +664,7 @@ async def update_application_status(
         if status in ["interviewed", "rejected", "hired"]:
             application.company_response = True
             if not application.response_date:
-                application.response_date = datetime.utcnow()
+                application.response_date = datetime.now(timezone.utc)
 
         db.commit()
         db.refresh(application)
@@ -686,13 +686,14 @@ async def update_application_status(
 # JOB CLEANUP ENDPOINTS
 # =====================================================
 
-@router.get("/cleanup/stats")
+@router.get("/cleanup/stats", include_in_schema=False)
 async def get_cleanup_stats(
     days_old: int = Query(default=20, ge=1, le=365, description="Number of days to check for old jobs"),
     user_id: str = Depends(get_authenticated_user_id),
     db: Session = Depends(get_db)
 ):
-    """Get statistics about jobs that would be cleaned up"""
+    """Deprecated cleanup preview endpoint."""
+    raise HTTPException(status_code=410, detail="This legacy cleanup endpoint is no longer supported")
     try:
         set_current_user(user_id)
         cleanup_service = JobCleanupService(db)
@@ -701,13 +702,14 @@ async def get_cleanup_stats(
         logger.error(f"Error getting cleanup stats: {e}")
         raise HTTPException(status_code=500, detail="Error getting cleanup statistics")
 
-@router.post("/cleanup/execute")
+@router.post("/cleanup/execute", include_in_schema=False)
 async def execute_cleanup(
     days_old: int = Query(default=20, ge=1, le=365, description="Number of days after which to delete old jobs"),
     user_id: str = Depends(get_authenticated_user_id),
     db: Session = Depends(get_db)
 ):
-    """Execute cleanup of old jobs that haven't been applied to"""
+    """Deprecated cleanup execution endpoint."""
+    raise HTTPException(status_code=410, detail="This legacy cleanup endpoint is no longer supported")
     try:
         set_current_user(user_id)
         cleanup_service = JobCleanupService(db)
@@ -722,13 +724,14 @@ async def execute_cleanup(
         logger.error(f"Error executing cleanup: {e}")
         raise HTTPException(status_code=500, detail="Error executing cleanup")
 
-@router.post("/cleanup/execute-all")
+@router.post("/cleanup/execute-all", include_in_schema=False)
 async def execute_cleanup_all(
     days_old: int = Query(default=20, ge=1, le=365, description="Number of days after which to delete old jobs"),
     user_id: str = Depends(get_authenticated_user_id),
     db: Session = Depends(get_db)
 ):
-    """Execute cleanup for all users (admin function)"""
+    """Deprecated cleanup-all endpoint."""
+    raise HTTPException(status_code=410, detail="This legacy cleanup endpoint is no longer supported")
     try:
         import os
         admins = {u.strip() for u in os.getenv("ADMIN_USER_IDS", "").split(",") if u.strip()}

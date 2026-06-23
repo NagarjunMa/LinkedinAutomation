@@ -19,7 +19,7 @@ import time
 from io import BytesIO
 from typing import Optional
 
-from PyPDF2 import PdfReader
+from pypdf import PdfReader
 from playwright.sync_api import (
     Browser,
     TimeoutError as PWTimeout,

@@ -78,7 +78,7 @@ def test_render_pdf_rejects_suspiciously_small_blank_output(monkeypatch):
 
 def test_get_pdf_page_count_reads_rendered_pages():
     from io import BytesIO
-    from PyPDF2 import PdfWriter
+    from pypdf import PdfWriter
     from app.services.pdf import renderer
 
     writer = PdfWriter()

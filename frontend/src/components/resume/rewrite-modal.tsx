@@ -2,7 +2,7 @@
 "use client";
 import { useEffect, useState } from 'react';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -69,6 +69,9 @@ export function RewriteModal(props: RewriteModalProps) {
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Rewrite bullet</DialogTitle>
+          <DialogDescription>
+            Review the suggested rewrite, fill any placeholders, and accept it only when it reflects your actual experience.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">

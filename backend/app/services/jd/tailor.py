@@ -1,16 +1,15 @@
-import os
 import logging
 from itertools import chain
-from openai import AsyncOpenAI, RateLimitError, APIConnectionError, APITimeoutError
+from openai import RateLimitError, APIConnectionError, APITimeoutError
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from app.schemas.resume_v2 import ResumeDocumentJSON
 from app.schemas.jd import BulletDiff, BulletOption, JDExtraction, DiffPlan
 from app.services.resume.hallucination_guard import check_no_unprompted_numbers, HallucinationError
 from app.services.resume.content_fit import enrich_diff_plan_with_content_fit
 from app.core.llm_logging import measure, log_cost
+from app.core.openai_client import get_openai_client
 
 
-_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 logger = logging.getLogger("llm")
 
 TAILOR_SYSTEM = """You tailor a candidate's resume to a specific JD as a senior recruiter would.
@@ -92,7 +91,7 @@ async def tailor_resume_to_jd(
         jd_json=jd.model_dump_json(),
     )
     async with measure("tailor", user_id=user_id):
-        resp = await _client.beta.chat.completions.parse(
+        resp = await get_openai_client().beta.chat.completions.parse(
             model="gpt-4o-2024-08-06",
             response_format=DiffPlan,
             messages=[{"role": "system", "content": TAILOR_SYSTEM},
@@ -157,7 +156,7 @@ async def generate_bullet_options(
         jd_json=jd.model_dump_json(),
     )
     async with measure("tailor_options", user_id=user_id):
-        resp = await _client.beta.chat.completions.parse(
+        resp = await get_openai_client().beta.chat.completions.parse(
             model="gpt-4o-2024-08-06",
             response_format=BulletDiff,
             messages=[{"role": "system", "content": OPTIONS_SYSTEM},

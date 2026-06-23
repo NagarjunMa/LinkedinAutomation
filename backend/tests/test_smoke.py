@@ -39,3 +39,26 @@ def test_phase2_export_routes_registered_in_openapi(client: TestClient):
     assert "/api/v1/exports/{export_id}" in paths, (
         f"/api/v1/exports/{{export_id}} not found. Available paths: {sorted(paths)}"
     )
+
+
+def test_mvp_public_api_surface_excludes_unsupported_legacy_routes(client: TestClient):
+    """Deprecated/demo routes must not be presented as launch-supported APIs."""
+    resp = client.get("/openapi.json")
+    assert resp.status_code == 200
+    paths = resp.json()["paths"]
+
+    unsupported_paths = {
+        "/api/v1/jobs/extract-from-url",
+        "/api/v1/jobs/extract-multiple-urls",
+        "/api/v1/jobs/extraction-stats/{user_id}",
+        "/api/v1/jobs/domain-info",
+        "/api/v1/jobs/test-extraction",
+        "/api/v1/jobs/scrape",
+        "/api/v1/jobs/cleanup/stats",
+        "/api/v1/jobs/cleanup/execute",
+        "/api/v1/jobs/cleanup/execute-all",
+    }
+
+    assert unsupported_paths.isdisjoint(paths), (
+        f"Unsupported legacy routes are still advertised: {sorted(unsupported_paths.intersection(paths))}"
+    )

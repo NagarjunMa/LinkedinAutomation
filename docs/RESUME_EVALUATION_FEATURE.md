@@ -182,7 +182,7 @@ def _get_custom_evaluation_prompt(self, industry: str, role: str) -> str:
 ### Environment Variables
 ```bash
 # AI Service
-OPENAPI_KEY=your_openai_api_key
+OPENAI_API_KEY=your_openai_api_key
 OPENAI_MODEL=gpt-4o-mini
 
 # File Storage
@@ -281,9 +281,9 @@ logger.info(f"AI response: {ai_response}")
 ## Contributing
 
 ### Development Setup
-1. Install dependencies: `pip install -r requirements.txt`
+1. Install dependencies: `pip install -r requirements.lock`
 2. Set up database: `alembic upgrade head`
-3. Configure AI service: Set `OPENAPI_KEY`
+3. Configure AI service: Set `OPENAI_API_KEY`
 4. Run backend: `uvicorn app.main:app --reload`
 5. Test frontend: `npm run dev`
 

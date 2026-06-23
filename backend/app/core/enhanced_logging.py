@@ -7,7 +7,7 @@ import logging.handlers
 import json
 import sys
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any
 from functools import wraps
 import time
@@ -23,7 +23,7 @@ class RailwayOptimizedFormatter(logging.Formatter):
 
     def format(self, record):
         log_entry = {
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "level": record.levelname,
             "logger": record.name,
             "message": record.getMessage(),
@@ -419,7 +419,7 @@ class HealthMonitor:
             "total_requests": self.request_count,
             "total_errors": self.error_count,
             "error_rate": self.error_count / max(self.request_count, 1),
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
     def log_health_status(self):

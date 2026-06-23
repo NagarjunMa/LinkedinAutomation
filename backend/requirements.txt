@@ -1,14 +1,11 @@
 # ─────────────────────────────────────────────────────────────────────────
 # Prism Pro backend dependencies
 #
-# Pinning policy:
-#   - `>=X.Y,<MAJOR+1` for libraries with stable APIs within a major
-#   - `>=X.Y` (no ceiling) for trusted small libraries with rare breakage
-#   - Strict `==X.Y.Z` only for libraries with known regressions OR
-#     when reproducibility on a specific patch is required
+# Compatibility copy of the top-level dependency ranges.
+# Maintain requirements.in and install requirements.lock for CI/production.
 #
-# To pin exactly for production deploy, run:
-#   pip-compile requirements.txt -o requirements.lock
+# To refresh the production lock:
+#   pip-compile requirements.in -o requirements.lock
 # ─────────────────────────────────────────────────────────────────────────
 
 # ── Web framework + ASGI ──────────────────────────────────────────────────
@@ -43,7 +40,7 @@ openai>=1.56,<2
 tenacity>=8.2,<10
 
 # ── PDF + DOCX parsing ────────────────────────────────────────────────────
-PyPDF2>=3.0,<4
+pypdf>=5.0,<7
 PyMuPDF>=1.23,<2
 pdfplumber>=0.11,<1
 python-docx>=1.1,<2

@@ -1,7 +1,7 @@
 /**
  * Dashboard Loading Component
  * Provides immediate visual feedback while dashboard data loads.
- * Optimized for Next.js 14 App Router streaming patterns.
+ * Optimized for current Next.js App Router streaming patterns.
  */
 
 "use client";

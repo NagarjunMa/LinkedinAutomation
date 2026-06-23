@@ -1,6 +1,6 @@
 from datetime import datetime, date
 from typing import List, Optional, Dict
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr
 
 
 class WorkExperience(BaseModel):
@@ -10,8 +10,7 @@ class WorkExperience(BaseModel):
     start_date: date
     end_date: Optional[date] = None  # None means current job
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class Education(BaseModel):
@@ -22,8 +21,7 @@ class Education(BaseModel):
     start_date: date
     end_date: Optional[date] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserProfileBase(BaseModel):
@@ -100,8 +98,7 @@ class UserProfileResponse(UserProfileBase):
     total_resumes: int = 0
     profile_completion: int = 0
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserSettingsBase(BaseModel):
@@ -137,8 +134,7 @@ class UserSettingsResponse(UserSettingsBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ProfileChangeHistoryResponse(BaseModel):
@@ -149,8 +145,7 @@ class ProfileChangeHistoryResponse(BaseModel):
     new_value: Optional[str] = None
     changed_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class NotificationSettingsUpdate(BaseModel):

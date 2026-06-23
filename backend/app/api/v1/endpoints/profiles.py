@@ -8,7 +8,7 @@ from app.models.job import JobListing, UserProfile
 from app.services.resume_parser import resume_parser
 from app.services.job_scorer import job_scorer
 from app.services.smart_job_scorer import smart_job_scorer
-from datetime import datetime
+from datetime import datetime, timezone
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -35,8 +35,8 @@ async def upload_resume(
         if existing_profile:
             # Update existing profile
             _update_profile_from_parsed_data(existing_profile, parsed_data)
-            existing_profile.updated_at = datetime.utcnow()
-            existing_profile.last_resume_upload = datetime.utcnow()
+            existing_profile.updated_at = datetime.now(timezone.utc)
+            existing_profile.last_resume_upload = datetime.now(timezone.utc)
             db.commit()
             db.refresh(existing_profile)
             profile = existing_profile
@@ -180,7 +180,7 @@ async def update_user_profile(
         if "company_size_preference" in prefs:
             profile.company_size_preference = prefs["company_size_preference"]
 
-    profile.updated_at = datetime.utcnow()
+    profile.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(profile)
 
@@ -263,7 +263,7 @@ async def parse_resume_text(
         if existing_profile:
             # Update existing profile
             _update_profile_from_parsed_data(existing_profile, parsed_data)
-            existing_profile.updated_at = datetime.utcnow()
+            existing_profile.updated_at = datetime.now(timezone.utc)
             db.commit()
             db.refresh(existing_profile)
             profile = existing_profile
@@ -373,7 +373,7 @@ def _create_profile_from_parsed_data(user_id: str, parsed_data: dict) -> UserPro
         ai_improvement_areas=ai_insights.get("improvement_areas", []),
         ai_career_advice=ai_insights.get("career_advice", ""),
 
-        last_resume_upload=datetime.utcnow()
+        last_resume_upload=datetime.now(timezone.utc)
     )
 
     return profile
@@ -464,7 +464,7 @@ async def update_user_preferences(user_id: str, preferences: dict, db: Session =
             profile.work_authorization = preferences["work_authorization"]
 
         # Set updated timestamp
-        profile.updated_at = datetime.utcnow()
+        profile.updated_at = datetime.now(timezone.utc)
 
         db.commit()
         db.refresh(profile)

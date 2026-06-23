@@ -56,14 +56,14 @@ GOOGLE_CLIENT_SECRET=your_client_secret_here
 GOOGLE_REDIRECT_URI=http://localhost:8000/api/v1/email-agent/oauth/callback
 
 # OpenAI Configuration (for email classification)
-OPENAPI_KEY=your_openai_api_key_here
+OPENAI_API_KEY=your_openai_api_key_here
 ```
 
 ## Step 3: Install Dependencies
 
 ```bash
 cd backend
-pip install -r requirements.txt
+pip install -r requirements.lock
 ```
 
 ## Step 4: Database Migration
@@ -118,7 +118,7 @@ npm run dev
 **Solution**: The application now includes the `openid` scope by default. This is required for proper OAuth flow.
 
 ### Error: "Failed to exchange code for tokens"
-**Solution**: 
+**Solution**:
 1. Verify your redirect URI matches exactly
 2. Check that your client ID and secret are correct
 3. Ensure the OAuth consent screen is configured properly
@@ -156,4 +156,4 @@ If you encounter issues:
 1. Check the application logs
 2. Verify your Google Cloud Console configuration
 3. Ensure all environment variables are set correctly
-4. Test with the provided test script 
+4. Test with the provided test script
