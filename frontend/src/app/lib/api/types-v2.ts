@@ -158,6 +158,17 @@ export interface BulletOption {
   text: string;
   reason: string;
   placeholders: Placeholder[];
+  truth_check?: BulletTruthCheck;
+}
+
+export interface BulletTruthCheck {
+  numeric_claims: 'verified' | 'placeholder_used';
+  new_skill_status: 'none' | 'resume_supported';
+  unsupported_claims: string[];
+  placeholders_used: string[];
+  source_evidence: string[];
+  verified_numbers: string[];
+  verified_skills: string[];
 }
 
 export interface BulletDiff {
@@ -167,6 +178,7 @@ export interface BulletDiff {
   reason: string;
   placeholders: Placeholder[];
   options?: BulletOption[];
+  truth_check?: BulletTruthCheck;
 }
 
 export type BulletFitRecommendation = 'keep' | 'rewrite' | 'consider_trim';

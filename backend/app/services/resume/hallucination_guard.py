@@ -12,7 +12,7 @@ Known limitation — written-number bypass:
     level rather than in this post-hoc regex check.
 """
 import re
-from typing import List
+from typing import Iterable, List
 
 
 class HallucinationError(Exception):
@@ -29,6 +29,10 @@ _NUMBER_RE = re.compile(r"\b\d+(?:[.,]\d+)?(?:[eE][+-]?\d+)?[%xXkKmMbB]?\b")
 
 def _extract_numbers(text: str) -> set:
     return set(m.group(0) for m in _NUMBER_RE.finditer(text))
+
+
+def _contains_phrase(text: str, phrase: str) -> bool:
+    return phrase.lower() in text.lower()
 
 
 def check_no_unprompted_numbers(
@@ -49,3 +53,62 @@ def check_no_unprompted_numbers(
         raise HallucinationError(
             f"Rewritten bullet introduced numbers not in original: {sorted(leaked)}"
         )
+
+
+def analyze_rewrite_truth(
+    *,
+    original: str,
+    rewritten: str,
+    placeholders: List[dict],
+    jd_skill_terms: Iterable[str] = (),
+    resume_supported_skill_terms: Iterable[str] = (),
+) -> dict:
+    """Return truth-check metadata or raise on unsupported claims.
+
+    This intentionally stays conservative. It proves only the things the app can
+    verify cheaply at rewrite time: numeric claims and explicit JD skill names.
+    Unsupported broader claims still rely on the LLM prompt and user review.
+    """
+    check_no_unprompted_numbers(
+        original=original,
+        rewritten=rewritten,
+        placeholders=placeholders,
+    )
+
+    redacted = rewritten
+    placeholder_tokens: list[str] = []
+    for ph in placeholders:
+        token = ph["token"]
+        placeholder_tokens.append(token)
+        redacted = redacted.replace(token, "")
+
+    orig_nums = _extract_numbers(original)
+    new_nums = _extract_numbers(redacted)
+    verified_numbers = sorted(new_nums & orig_nums)
+    numeric_claims = "placeholder_used" if placeholder_tokens else "verified"
+
+    supported = {term for term in resume_supported_skill_terms if term}
+    introduced_skills = [
+        term
+        for term in jd_skill_terms
+        if term and _contains_phrase(rewritten, term) and not _contains_phrase(original, term)
+    ]
+    unsupported_skills = [
+        term
+        for term in introduced_skills
+        if not any(_contains_phrase(supported_term, term) for supported_term in supported)
+    ]
+    if unsupported_skills:
+        raise HallucinationError(
+            f"Rewritten bullet introduced unsupported JD skills: {sorted(set(unsupported_skills))}"
+        )
+
+    return {
+        "numeric_claims": numeric_claims,
+        "new_skill_status": "resume_supported" if introduced_skills else "none",
+        "unsupported_claims": [],
+        "placeholders_used": placeholder_tokens,
+        "source_evidence": [original] if original else [],
+        "verified_numbers": verified_numbers,
+        "verified_skills": sorted(set(introduced_skills)),
+    }

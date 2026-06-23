@@ -51,8 +51,31 @@ const mockPlan: DiffPlan = {
       new: 'Shipped Python services',
       reason: 'JD wants Python',
       placeholders: [],
+      truth_check: {
+        numeric_claims: 'verified',
+        new_skill_status: 'resume_supported',
+        unsupported_claims: [],
+        placeholders_used: [],
+        source_evidence: ['Did stuff'],
+        verified_numbers: [],
+        verified_skills: ['Python'],
+      },
       options: [
-        { option_id: 'conservative', text: 'Shipped Python services', reason: 'Safe', placeholders: [] },
+        {
+          option_id: 'conservative',
+          text: 'Shipped Python services',
+          reason: 'Safe',
+          placeholders: [],
+          truth_check: {
+            numeric_claims: 'verified',
+            new_skill_status: 'resume_supported',
+            unsupported_claims: [],
+            placeholders_used: [],
+            source_evidence: ['Did stuff'],
+            verified_numbers: [],
+            verified_skills: ['Python'],
+          },
+        },
         { option_id: 'impact', text: 'Shipped Python services with measurable impact', reason: 'Impact', placeholders: [] },
         { option_id: 'keyword', text: 'Built Python backend services', reason: 'Keyword', placeholders: [] },
       ],
@@ -169,6 +192,10 @@ describe('DiffView', () => {
     expect(screen.getAllByText(/Page cost: low/i)[0]).toBeInTheDocument();
     expect(screen.getByText(/Truth risk: high/i)).toBeInTheDocument();
     expect(screen.getByText(/Build Python services/i)).toBeInTheDocument();
+    expect(screen.getByText(/AI truth check/i)).toBeInTheDocument();
+    expect(screen.getByText(/Numbers: verified/i)).toBeInTheDocument();
+    expect(screen.getByText(/Skills: resume supported/i)).toBeInTheDocument();
+    expect(screen.getByText(/Verified skills: Python/i)).toBeInTheDocument();
     expect(screen.getByTestId('one-page-guardrail')).toHaveTextContent(/low-fit pointer is still selected/i);
   });
 
@@ -267,8 +294,31 @@ describe('DiffView', () => {
           new: 'Regenerated Python pointer',
           reason: 'Regenerated',
           placeholders: [],
+          truth_check: {
+            numeric_claims: 'placeholder_used',
+            new_skill_status: 'resume_supported',
+            unsupported_claims: [],
+            placeholders_used: ['[N users]'],
+            source_evidence: ['Did stuff'],
+            verified_numbers: [],
+            verified_skills: ['Python'],
+          },
           options: [
-            { option_id: 'conservative', text: 'Regenerated Python pointer', reason: 'Safe', placeholders: [] },
+            {
+              option_id: 'conservative',
+              text: 'Regenerated Python pointer',
+              reason: 'Safe',
+              placeholders: [],
+              truth_check: {
+                numeric_claims: 'placeholder_used',
+                new_skill_status: 'resume_supported',
+                unsupported_claims: [],
+                placeholders_used: ['[N users]'],
+                source_evidence: ['Did stuff'],
+                verified_numbers: [],
+                verified_skills: ['Python'],
+              },
+            },
             { option_id: 'impact', text: 'Regenerated impact pointer', reason: 'Impact', placeholders: [] },
             { option_id: 'keyword', text: 'Regenerated keyword pointer', reason: 'Keyword', placeholders: [] },
           ],
@@ -282,6 +332,7 @@ describe('DiffView', () => {
     await waitFor(() => {
       expect(screen.getByDisplayValue('Regenerated Python pointer')).toBeInTheDocument();
     });
+    expect(screen.getByText(/Placeholders: \[N users\]/i)).toBeInTheDocument();
   });
 
   it('keeps the existing pointer text when regeneration fails', async () => {

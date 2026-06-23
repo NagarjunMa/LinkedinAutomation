@@ -4,7 +4,7 @@ import { RefreshCw, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
-import type { BulletFitSignal, BulletOption } from '@/app/lib/api';
+import type { BulletFitSignal, BulletOption, BulletTruthCheck } from '@/app/lib/api';
 
 export interface ChangeCardProps {
   title: string;
@@ -22,6 +22,7 @@ export interface ChangeCardProps {
   onReset?: () => void;
   onRegenerate?: () => void;
   fitSignal?: BulletFitSignal;
+  truthCheck?: BulletTruthCheck;
   testId?: string;
 }
 
@@ -29,6 +30,12 @@ function signalTone(value?: 'low' | 'medium' | 'high') {
   if (value === 'high') return 'border-red-500/30 bg-red-500/10 text-red-700';
   if (value === 'medium') return 'border-amber-500/30 bg-amber-500/10 text-amber-700';
   return 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700';
+}
+
+function truthTone(value?: 'verified' | 'placeholder_used' | 'none' | 'resume_supported') {
+  if (value === 'placeholder_used') return 'border-amber-500/30 bg-amber-500/10 text-amber-700';
+  if (value === 'resume_supported' || value === 'verified') return 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700';
+  return 'border-muted bg-muted/40 text-muted-foreground';
 }
 
 export function ChangeCard(props: ChangeCardProps) {
@@ -117,6 +124,36 @@ export function ChangeCard(props: ChangeCardProps) {
         )}
         <div className="space-y-1">
           <p className="text-xs opacity-60">{props.reason}</p>
+          {props.truthCheck && (
+            <div className="space-y-2 rounded-sm border border-emerald-500/30 bg-emerald-500/5 p-3 text-xs">
+              <p className="font-semibold uppercase tracking-wide text-emerald-700">
+                AI truth check
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <span className={`rounded-sm border px-2 py-1 font-semibold uppercase tracking-wide ${truthTone(props.truthCheck.numeric_claims)}`}>
+                  Numbers: {props.truthCheck.numeric_claims.replace('_', ' ')}
+                </span>
+                <span className={`rounded-sm border px-2 py-1 font-semibold uppercase tracking-wide ${truthTone(props.truthCheck.new_skill_status)}`}>
+                  Skills: {props.truthCheck.new_skill_status.replace('_', ' ')}
+                </span>
+                {props.truthCheck.placeholders_used.length > 0 && (
+                  <span className="rounded-sm border border-amber-500/30 bg-amber-500/10 px-2 py-1 font-semibold uppercase tracking-wide text-amber-700">
+                    Placeholders: {props.truthCheck.placeholders_used.join(', ')}
+                  </span>
+                )}
+                {props.truthCheck.verified_skills.length > 0 && (
+                  <span className="rounded-sm border border-blue-500/30 bg-blue-500/10 px-2 py-1 font-semibold uppercase tracking-wide text-blue-700">
+                    Verified skills: {props.truthCheck.verified_skills.join(', ')}
+                  </span>
+                )}
+              </div>
+              {props.truthCheck.source_evidence.length > 0 && (
+                <p className="text-muted-foreground">
+                  Source proof: {props.truthCheck.source_evidence[0]}
+                </p>
+              )}
+            </div>
+          )}
           {props.fitSignal && (
             <div className="space-y-2 rounded-sm border border-border/70 bg-muted/30 p-3 text-xs">
               <p className="font-medium text-foreground">

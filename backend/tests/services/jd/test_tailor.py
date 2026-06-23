@@ -50,6 +50,10 @@ async def test_tailor_returns_diff_plan():
     assert plan.content_budget is not None
     assert plan.content_budget.target_max_pages == 1
     assert plan.bullet_fit[0].bullet_id == "b1"
+    assert plan.bullets[0].truth_check.numeric_claims == "verified"
+    assert plan.bullets[0].truth_check.new_skill_status == "resume_supported"
+    assert plan.bullets[0].truth_check.verified_skills == ["Python"]
+    assert plan.bullets[0].truth_check.source_evidence == ["Did stuff"]
 
 
 @pytest.mark.asyncio
@@ -83,6 +87,43 @@ async def test_tailor_blocks_hallucinated_numbers_in_bullet():
         skills=Skills(hard=[]), raw_text="...")
     jd = JDExtraction(
         must_have=[], good_to_have=[], soft_skills=[], seniority="mid",
+        primary_role_category="SWE", country_hint="US", red_flags=[])
+    from app.services.resume.hallucination_guard import HallucinationError
+    with pytest.raises(HallucinationError):
+        await tailor_resume_to_jd(doc, jd)
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_tailor_blocks_unsupported_jd_skill_in_bullet():
+    payload = {
+        "id": "x", "object": "chat.completion", "created": 0, "model": "gpt-4o-2024-08-06",
+        "choices": [{"index": 0, "finish_reason": "stop",
+            "message": {"role": "assistant", "content": json.dumps({
+                "match_score": 60,
+                "must_have_coverage_found": [],
+                "must_have_coverage_missing": ["Kubernetes"],
+                "good_to_have_coverage_found": [],
+                "good_to_have_coverage_missing": [],
+                "bullets": [{"bullet_id": "b1", "old": "Built backend APIs",
+                             "new": "Built Kubernetes-backed backend APIs",
+                             "reason": "JD calls for Kubernetes",
+                             "placeholders": []}],
+                "skills_reorder": None,
+                "summary_rewrite": None,
+                "suggested_additions": []
+            })}}],
+        "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
+    }
+    respx.route(url=OPENAI_URL).mock(
+        return_value=httpx.Response(200, json=payload))
+    doc = ResumeDocumentJSON(
+        contact=Contact(name="B"), experience=[ExperienceEntry(
+            company="Corp", role="Dev", bullets=[Bullet(id="b1", text="Built backend APIs", raw_text="Built backend APIs")])],
+        skills=Skills(hard=["Python"]), raw_text="Built backend APIs")
+    jd = JDExtraction(
+        must_have=[Requirement(skill="Kubernetes", evidence_from_jd="Kubernetes platform work", type="technical")],
+        good_to_have=[], soft_skills=[], seniority="mid",
         primary_role_category="SWE", country_hint="US", red_flags=[])
     from app.services.resume.hallucination_guard import HallucinationError
     with pytest.raises(HallucinationError):

@@ -3,8 +3,8 @@ from itertools import chain
 from openai import RateLimitError, APIConnectionError, APITimeoutError
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from app.schemas.resume_v2 import ResumeDocumentJSON
-from app.schemas.jd import BulletDiff, BulletOption, JDExtraction, DiffPlan
-from app.services.resume.hallucination_guard import check_no_unprompted_numbers, HallucinationError
+from app.schemas.jd import BulletDiff, BulletOption, JDExtraction, DiffPlan, BulletTruthCheck
+from app.services.resume.hallucination_guard import analyze_rewrite_truth, HallucinationError
 from app.services.resume.content_fit import enrich_diff_plan_with_content_fit
 from app.core.llm_logging import measure, log_cost
 from app.core.openai_client import get_openai_client
@@ -77,6 +77,48 @@ JD Requirements JSON:
 Generate exactly three alternatives."""
 
 
+def _jd_skill_terms(jd: JDExtraction) -> list[str]:
+    return [req.skill for req in [*jd.must_have, *jd.good_to_have] if req.skill]
+
+
+def _resume_supported_skill_terms(doc: ResumeDocumentJSON) -> list[str]:
+    bullet_text = [
+        b.text
+        for item in chain(doc.experience, doc.projects)
+        for b in item.bullets
+    ]
+    return [
+        *doc.skills.hard,
+        *doc.skills.soft,
+        doc.raw_text or "",
+        *bullet_text,
+    ]
+
+
+def _attach_truth_checks(
+    *,
+    diff: BulletDiff,
+    original: str,
+    jd_skill_terms: list[str],
+    resume_supported_skill_terms: list[str],
+) -> None:
+    candidates = [(diff, diff.new, diff.placeholders)] + [
+        (option, option.text, option.placeholders) for option in diff.options
+    ]
+    for target, rewritten, placeholders in candidates:
+        try:
+            truth = analyze_rewrite_truth(
+                original=original,
+                rewritten=rewritten,
+                placeholders=[p.model_dump() for p in placeholders],
+                jd_skill_terms=jd_skill_terms,
+                resume_supported_skill_terms=resume_supported_skill_terms,
+            )
+        except HallucinationError as e:
+            raise HallucinationError(f"Bullet {diff.bullet_id}: {e}")
+        target.truth_check = BulletTruthCheck.model_validate(truth)
+
+
 @retry(stop=stop_after_attempt(3),
        wait=wait_exponential(multiplier=1, min=1, max=10),
        retry=retry_if_exception_type((RateLimitError, APIConnectionError, APITimeoutError)))
@@ -111,6 +153,8 @@ async def tailor_resume_to_jd(
         for item in chain(doc.experience, doc.projects)
         for b in item.bullets
     }
+    jd_terms = _jd_skill_terms(jd)
+    resume_terms = _resume_supported_skill_terms(doc)
     for diff in plan.bullets:
         if not diff.options:
             diff.options = [
@@ -122,18 +166,12 @@ async def tailor_resume_to_jd(
                 )
             ]
         original = bullet_lookup.get(diff.bullet_id, diff.old)
-        candidates = [(diff.new, diff.placeholders)] + [
-            (option.text, option.placeholders) for option in diff.options
-        ]
-        for rewritten, placeholders in candidates:
-            try:
-                check_no_unprompted_numbers(
-                    original=original,
-                    rewritten=rewritten,
-                    placeholders=[p.model_dump() for p in placeholders],
-                )
-            except HallucinationError as e:
-                raise HallucinationError(f"Bullet {diff.bullet_id}: {e}")
+        _attach_truth_checks(
+            diff=diff,
+            original=original,
+            jd_skill_terms=jd_terms,
+            resume_supported_skill_terms=resume_terms,
+        )
     return enrich_diff_plan_with_content_fit(doc, jd, plan)
 
 
@@ -178,16 +216,10 @@ async def generate_bullet_options(
         ]
     diff.bullet_id = bullet_id
     diff.old = original
-    candidates = [(diff.new, diff.placeholders)] + [
-        (option.text, option.placeholders) for option in diff.options
-    ]
-    for rewritten, placeholders in candidates:
-        try:
-            check_no_unprompted_numbers(
-                original=original,
-                rewritten=rewritten,
-                placeholders=[p.model_dump() for p in placeholders],
-            )
-        except HallucinationError as e:
-            raise HallucinationError(f"Bullet {diff.bullet_id}: {e}")
+    _attach_truth_checks(
+        diff=diff,
+        original=original,
+        jd_skill_terms=_jd_skill_terms(jd),
+        resume_supported_skill_terms=_resume_supported_skill_terms(doc),
+    )
     return diff
