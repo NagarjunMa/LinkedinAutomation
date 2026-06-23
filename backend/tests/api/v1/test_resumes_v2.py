@@ -227,6 +227,24 @@ def mock_openai_eval():
                 "role": "assistant",
                 "content": json.dumps({
                     "overall_score": 60,
+                    "readiness_label": "minor_edits",
+                    "score_breakdown": {
+                        "content_quality": 70,
+                        "role_fit": 65,
+                        "evidence_strength": 55,
+                        "recruiter_readability": 68,
+                    },
+                    "score_explanation": [
+                        {
+                            "category": "evidence_strength",
+                            "score": 55,
+                            "reason": "Most bullets lack measurable outcomes.",
+                            "evidence": ["Built API", "Improved performance 30%"],
+                            "before_applying_action": "Add verified scope or outcome to weak bullets.",
+                        }
+                    ],
+                    "top_actions_before_applying": ["Add verified scope or outcome to weak bullets."],
+                    "parser_confidence": "high",
                     "bullet_flags": [
                         {
                             "bullet_id": "b1",
@@ -310,6 +328,9 @@ def test_evaluate_resume_returns_report_and_debits(
     assert resp.status_code == 200, resp.text
     data = resp.json()
     assert "overall_score" in data
+    assert data["readiness_label"] == "minor_edits"
+    assert data["score_breakdown"]["evidence_strength"] == 55
+    assert data["top_actions_before_applying"]
     assert "ats_parseability" in data
     assert "ats_raw_text" in data
 

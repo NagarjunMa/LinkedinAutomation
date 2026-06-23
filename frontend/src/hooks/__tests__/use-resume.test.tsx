@@ -67,7 +67,21 @@ describe('useEvaluateResume', () => {
         return HttpResponse.json({
           evaluation_id: 'e-1',
           overall_score: 75,
-          bullets: [],
+          readiness_label: 'minor_edits',
+          score_breakdown: {
+            content_quality: 76,
+            role_fit: 72,
+            evidence_strength: 70,
+            recruiter_readability: 82,
+          },
+          score_explanation: [],
+          top_actions_before_applying: [],
+          parser_confidence: 'high',
+          bullet_flags: [],
+          format_issues: [],
+          summary_critique: null,
+          ats_parseability: 88,
+          ats_raw_text: 'raw',
         });
       })
     );

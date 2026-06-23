@@ -210,6 +210,33 @@ export interface ResumeEvaluation {
     // Legacy/Compatibility
     overall_score: number;
     max_score?: number;
+    readiness_label?: 'ready' | 'minor_edits' | 'needs_work';
+    score_breakdown?: {
+        content_quality: number;
+        role_fit: number;
+        evidence_strength: number;
+        recruiter_readability: number;
+    };
+    score_explanation?: Array<{
+        category: 'content_quality' | 'role_fit' | 'evidence_strength' | 'recruiter_readability';
+        score: number;
+        reason: string;
+        evidence: string[];
+        before_applying_action: string;
+    }>;
+    top_actions_before_applying?: string[];
+    parser_confidence?: 'high' | 'medium' | 'low';
+    bullet_flags?: Array<{
+        bullet_id: string;
+        severity: 'critical' | 'warning' | 'info';
+        reason: string;
+        category: string;
+    }>;
+    format_issues?: Array<{
+        type: string;
+        location: string;
+        fix_hint: string;
+    }>;
     ats_compliance_score: number;
     content_quality_score: number;
     experience_points_score: number;

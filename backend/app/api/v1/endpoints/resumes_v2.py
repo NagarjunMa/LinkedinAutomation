@@ -219,22 +219,45 @@ def _resume_list_item(
 def _evaluation_payload(evaluation: ResumeEvaluationV2 | None) -> dict | None:
     if not evaluation:
         return None
+    score_breakdown = evaluation.score_breakdown or {
+        "content_quality": evaluation.overall_score,
+        "role_fit": evaluation.overall_score,
+        "evidence_strength": evaluation.overall_score,
+        "recruiter_readability": evaluation.overall_score,
+    }
+    score_explanation = evaluation.score_explanation or []
+    top_actions = evaluation.top_actions_before_applying or []
     return {
         "id": evaluation.id,
         "resume_id": evaluation.resume_document_id,
         "resume_document_id": evaluation.resume_document_id,
         "overall_score": evaluation.overall_score,
+        "readiness_label": evaluation.readiness_label or "needs_work",
+        "score_breakdown": score_breakdown,
+        "score_explanation": score_explanation,
+        "top_actions_before_applying": top_actions,
+        "parser_confidence": evaluation.parser_confidence or "medium",
+        "bullet_flags": evaluation.bullet_flags or [],
+        "format_issues": evaluation.format_issues or [],
         "ats_score": evaluation.ats_parseability,
         "ats_compliance_score": evaluation.ats_parseability,
-        "content_quality_score": evaluation.overall_score,
-        "experience_points_score": evaluation.overall_score,
-        "job_relevance_score": evaluation.overall_score,
-        "quality_checks_score": evaluation.overall_score,
-        "strengths": [],
-        "improvements": [],
+        "content_quality_score": score_breakdown.get("content_quality", evaluation.overall_score),
+        "experience_points_score": score_breakdown.get("evidence_strength", evaluation.overall_score),
+        "job_relevance_score": score_breakdown.get("role_fit", evaluation.overall_score),
+        "quality_checks_score": score_breakdown.get("recruiter_readability", evaluation.overall_score),
+        "strengths": [
+            item.get("reason", "")
+            for item in score_explanation
+            if item.get("score", 0) >= 80 and item.get("reason")
+        ][:3],
+        "improvements": top_actions,
         "ats_compatibility": "good" if evaluation.ats_parseability >= 80 else "fair",
         "detailed_feedback": evaluation.summary_critique,
-        "keyword_analysis": {"relevant": [], "missing": [], "score": 0},
+        "keyword_analysis": {
+            "relevant": [],
+            "missing": [],
+            "score": score_breakdown.get("role_fit", 0),
+        },
         "created_at": evaluation.created_at.isoformat() if evaluation.created_at else None,
     }
 
@@ -280,6 +303,11 @@ async def evaluate(
             overall_score=report.overall_score,
             bullet_flags=[f.model_dump() for f in report.bullet_flags],
             format_issues=[i.model_dump() for i in (report.format_issues + ats.format_issues)],
+            readiness_label=report.readiness_label,
+            score_breakdown=report.score_breakdown.model_dump(),
+            score_explanation=[item.model_dump() for item in report.score_explanation],
+            top_actions_before_applying=report.top_actions_before_applying,
+            parser_confidence=report.parser_confidence,
             summary_critique=report.summary_critique,
             ats_parseability=ats.parseability_score,
             ats_raw_text=ats.raw_text,
@@ -289,6 +317,11 @@ async def evaluate(
         result_payload = {
             "evaluation_id": eval_row.id,
             "overall_score": report.overall_score,
+            "readiness_label": report.readiness_label,
+            "score_breakdown": report.score_breakdown.model_dump(),
+            "score_explanation": [item.model_dump() for item in report.score_explanation],
+            "top_actions_before_applying": report.top_actions_before_applying,
+            "parser_confidence": report.parser_confidence,
             "bullet_flags": [f.model_dump() for f in report.bullet_flags],
             "format_issues": [i.model_dump() for i in (report.format_issues + ats.format_issues)],
             "summary_critique": report.summary_critique,

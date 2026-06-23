@@ -27,7 +27,16 @@ Never invent metrics. Never fabricate facts.
 Do not automatically mark every unquantified bullet as critical; judge severity by clarity, action, outcome, and role relevance.
 Do not flag missing dates if dates are present in the raw ATS text.
 Do not flag empty bullets if bullets are present in the raw ATS text but absent from structured JSON.
-If structured JSON is incomplete but raw ATS text is readable, mention parser confidence separately in format_issues instead of lowering resume quality for parser failure."""
+If structured JSON is incomplete but raw ATS text is readable, set parser_confidence lower and explain the parser concern separately instead of lowering resume quality for parser failure.
+
+Scoring rules:
+- overall_score is a calibrated recruiter readiness score, not an average of parser warnings.
+- score_breakdown.content_quality measures clarity, structure, action verbs, and concise writing.
+- score_breakdown.role_fit measures alignment with the target role using only evidence in the resume.
+- score_breakdown.evidence_strength measures quantified outcomes, scope, complexity, and proof.
+- score_breakdown.recruiter_readability measures 7-second scan value, signal density, and noise.
+- score_explanation must cite resume evidence or clearly say what is missing. Never use generic canned evidence.
+- top_actions_before_applying should be the 1-5 highest-impact fixes a user should make before applying."""
 
 USER_PROMPT_TEMPLATE = """Target role: {target_role}
 
@@ -40,6 +49,25 @@ Raw ATS text:
 Evaluate the resume. Return STRICTLY this JSON schema:
 {{
   "overall_score": int 0-100,
+  "readiness_label": "ready" | "minor_edits" | "needs_work",
+  "score_breakdown": {{
+    "content_quality": int 0-100,
+    "role_fit": int 0-100,
+    "evidence_strength": int 0-100,
+    "recruiter_readability": int 0-100
+  }},
+  "score_explanation": [
+    {{
+      "category": "content_quality" | "role_fit" | "evidence_strength" | "recruiter_readability",
+      "score": int 0-100,
+      "reason": str,
+      "evidence": [str, ...],
+      "before_applying_action": str
+    }},
+    ...
+  ],
+  "top_actions_before_applying": [str, ...],
+  "parser_confidence": "high" | "medium" | "low",
   "bullet_flags": [{{"bullet_id": str, "severity": str, "reason": str, "category": str}}, ...],
   "format_issues": [{{"type": str, "location": str, "fix_hint": str}}, ...],
   "summary_critique": str or null,

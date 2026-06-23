@@ -20,6 +20,16 @@ function makeEvaluation(
   return {
     evaluation_id: 'eval-001',
     overall_score: 80,
+    readiness_label: 'minor_edits',
+    score_breakdown: {
+      content_quality: 80,
+      role_fit: 80,
+      evidence_strength: 80,
+      recruiter_readability: 80,
+    },
+    score_explanation: [],
+    top_actions_before_applying: [],
+    parser_confidence: 'high',
     bullet_flags: [],
     format_issues: [],
     summary_critique: null,

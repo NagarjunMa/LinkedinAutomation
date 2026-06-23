@@ -80,6 +80,22 @@ export interface FormatIssue {
 export interface EvaluationResponse {
   evaluation_id: string;
   overall_score: number;
+  readiness_label: 'ready' | 'minor_edits' | 'needs_work';
+  score_breakdown: {
+    content_quality: number;
+    role_fit: number;
+    evidence_strength: number;
+    recruiter_readability: number;
+  };
+  score_explanation: Array<{
+    category: 'content_quality' | 'role_fit' | 'evidence_strength' | 'recruiter_readability';
+    score: number;
+    reason: string;
+    evidence: string[];
+    before_applying_action: string;
+  }>;
+  top_actions_before_applying: string[];
+  parser_confidence: 'high' | 'medium' | 'low';
   bullet_flags: BulletFlag[];
   format_issues: FormatIssue[];
   summary_critique: string | null;

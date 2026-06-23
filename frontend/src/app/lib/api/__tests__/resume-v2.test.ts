@@ -80,6 +80,24 @@ describe('resumeV2Api.evaluate', () => {
         return HttpResponse.json({
           evaluation_id: 'eval-1',
           overall_score: 78,
+          readiness_label: 'minor_edits',
+          score_breakdown: {
+            content_quality: 80,
+            role_fit: 72,
+            evidence_strength: 68,
+            recruiter_readability: 76,
+          },
+          score_explanation: [
+            {
+              category: 'evidence_strength',
+              score: 68,
+              reason: 'Some bullets need stronger evidence.',
+              evidence: ['Improved latency'],
+              before_applying_action: 'Add verified scope.',
+            },
+          ],
+          top_actions_before_applying: ['Add verified scope.'],
+          parser_confidence: 'high',
           bullet_flags: [],
           format_issues: [],
           summary_critique: null,
@@ -91,6 +109,7 @@ describe('resumeV2Api.evaluate', () => {
     const result = await resumeV2Api.evaluate('rdoc-1', 'Senior SWE');
     expect(result.evaluation_id).toBe('eval-1');
     expect(result.overall_score).toBe(78);
+    expect(result.score_breakdown.evidence_strength).toBe(68);
   });
 
   it('throws on 500', async () => {
