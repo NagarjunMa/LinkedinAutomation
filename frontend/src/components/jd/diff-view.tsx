@@ -355,6 +355,7 @@ export function DiffView({ resumeId, jdEvaluationId, plan, onApplied, onAccepted
               editedText={state?.text || b.new}
               regenerating={regeneratingBulletId === b.bullet_id}
               fitSignal={fitByBulletId[b.bullet_id]}
+              truthCheck={selectedOption?.truth_check || b.truth_check}
               onToggle={(v) =>
                 setSel((s) => ({ ...s, bullets: { ...s.bullets, [b.bullet_id]: v } }))
               }

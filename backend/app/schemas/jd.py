@@ -32,11 +32,24 @@ class BulletPlaceholder(BaseModel):
     what: str
 
 
+class BulletTruthCheck(BaseModel):
+    numeric_claims: Literal["verified", "placeholder_used"]
+    new_skill_status: Literal["none", "resume_supported"]
+    unsupported_claims: List[str] = Field(default_factory=list)
+    placeholders_used: List[str] = Field(default_factory=list)
+    source_evidence: List[str] = Field(default_factory=list)
+    verified_numbers: List[str] = Field(default_factory=list)
+    verified_skills: List[str] = Field(default_factory=list)
+
+
 class BulletOption(BaseModel):
     option_id: str
     text: str
     reason: str
     placeholders: List[BulletPlaceholder] = Field(default_factory=list)
+    truth_check: BulletTruthCheck = Field(
+        default_factory=lambda: BulletTruthCheck(numeric_claims="verified", new_skill_status="none")
+    )
 
 
 class BulletDiff(BaseModel):
@@ -46,6 +59,9 @@ class BulletDiff(BaseModel):
     reason: str
     placeholders: List[BulletPlaceholder] = Field(default_factory=list)
     options: List[BulletOption] = Field(default_factory=list)
+    truth_check: BulletTruthCheck = Field(
+        default_factory=lambda: BulletTruthCheck(numeric_claims="verified", new_skill_status="none")
+    )
 
 
 class SkillsReorder(BaseModel):
