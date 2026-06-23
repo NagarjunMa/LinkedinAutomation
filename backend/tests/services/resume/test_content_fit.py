@@ -59,9 +59,22 @@ def test_scores_highly_relevant_bullet_and_flags_noise():
 
     assert by_id["b1"].recommendation == "keep"
     assert by_id["b1"].matched_requirements == ["Python", "React", "AWS"]
+    assert by_id["b1"].matched_jd_phrases == [
+        "Build Python services",
+        "Frontend React experience",
+        "Cloud deployment on AWS",
+    ]
+    assert by_id["b1"].source_resume_evidence == [
+        "Built Python and React services on AWS for customer workflows"
+    ]
+    assert by_id["b1"].page_cost == "low"
+    assert by_id["b1"].truth_risk == "low"
+    assert "directly supports Python, React, AWS" in by_id["b1"].why_stronger
     assert by_id["b2"].recommendation == "consider_trim"
     assert "no_jd_requirement_match" in by_id["b2"].noise_flags
     assert "responsibility_only" in by_id["b2"].noise_flags
+    assert by_id["b2"].truth_risk == "high"
+    assert by_id["b2"].matched_jd_phrases == []
 
 
 def test_content_budget_targets_one_page_for_short_resume():

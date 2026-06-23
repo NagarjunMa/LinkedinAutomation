@@ -81,6 +81,51 @@ def _all_bullets(doc: ResumeDocumentJSON) -> list[Bullet]:
     ]
 
 
+def _page_cost(text: str) -> str:
+    words = len(text.split())
+    if words > 34:
+        return "high"
+    if words > 24:
+        return "medium"
+    return "low"
+
+
+def _truth_risk(
+    *,
+    matched_requirements: list[str],
+    noise_flags: list[str],
+    recommendation: str,
+) -> str:
+    if not matched_requirements or "responsibility_only" in noise_flags:
+        return "high"
+    if recommendation == "rewrite" or noise_flags:
+        return "medium"
+    return "low"
+
+
+def _why_stronger(
+    *,
+    matched_requirements: list[str],
+    recommendation: str,
+    noise_flags: list[str],
+) -> str:
+    if recommendation == "keep":
+        return (
+            "Strong pointer because it directly supports "
+            f"{', '.join(matched_requirements)} with resume-backed evidence."
+        )
+    if recommendation == "rewrite":
+        return (
+            "Useful pointer, but it needs tighter wording to make the JD match "
+            "and resume evidence obvious."
+        )
+    if "no_jd_requirement_match" in noise_flags:
+        return (
+            "Weak pointer for this JD because it does not clearly support a listed requirement."
+        )
+    return "Lower-priority pointer for this JD; keep it only if it supports the role narrative."
+
+
 def _source_page_estimate(doc: ResumeDocumentJSON, bullet_count: int) -> float:
     """Estimate whether the source is closer to one page or two pages.
 
@@ -151,6 +196,11 @@ def score_bullet_fit(doc: ResumeDocumentJSON, jd: JDExtraction) -> list[BulletFi
             if bullet_tokens & terms
         ]
         matched = [*matched_must, *matched_good]
+        matched_jd_phrases = [
+            req.evidence_from_jd
+            for req in [*jd.must_have, *jd.good_to_have]
+            if req.skill in matched and req.evidence_from_jd
+        ]
 
         requirement_score = 0
         if all_requirements:
@@ -186,6 +236,13 @@ def score_bullet_fit(doc: ResumeDocumentJSON, jd: JDExtraction) -> list[BulletFi
             evidence = "low"
             rationale = "Limited JD overlap; trim unless it supports a critical narrative."
 
+        page_cost = _page_cost(text)
+        truth_risk = _truth_risk(
+            matched_requirements=matched,
+            noise_flags=noise_flags,
+            recommendation=recommendation,
+        )
+
         signals.append(
             BulletFitSignal(
                 bullet_id=bullet.id,
@@ -195,6 +252,15 @@ def score_bullet_fit(doc: ResumeDocumentJSON, jd: JDExtraction) -> list[BulletFi
                 matched_requirements=matched,
                 noise_flags=noise_flags,
                 rationale=rationale,
+                why_stronger=_why_stronger(
+                    matched_requirements=matched,
+                    recommendation=recommendation,
+                    noise_flags=noise_flags,
+                ),
+                matched_jd_phrases=matched_jd_phrases,
+                source_resume_evidence=[text] if text else [],
+                page_cost=page_cost,
+                truth_risk=truth_risk,
             )
         )
 

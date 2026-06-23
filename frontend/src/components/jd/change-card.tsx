@@ -25,6 +25,12 @@ export interface ChangeCardProps {
   testId?: string;
 }
 
+function signalTone(value?: 'low' | 'medium' | 'high') {
+  if (value === 'high') return 'border-red-500/30 bg-red-500/10 text-red-700';
+  if (value === 'medium') return 'border-amber-500/30 bg-amber-500/10 text-amber-700';
+  return 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700';
+}
+
 export function ChangeCard(props: ChangeCardProps) {
   const editable = props.onTextChange && props.editedText !== undefined;
   const fitTone = props.fitSignal?.recommendation === 'keep'
@@ -112,15 +118,45 @@ export function ChangeCard(props: ChangeCardProps) {
         <div className="space-y-1">
           <p className="text-xs opacity-60">{props.reason}</p>
           {props.fitSignal && (
-            <p className="text-xs opacity-70">
-              {props.fitSignal.rationale}
-              {props.fitSignal.matched_requirements.length > 0
-                ? ` Matched: ${props.fitSignal.matched_requirements.join(', ')}.`
-                : ''}
-              {props.fitSignal.noise_flags.length > 0
-                ? ` Flags: ${props.fitSignal.noise_flags.join(', ')}.`
-                : ''}
-            </p>
+            <div className="space-y-2 rounded-sm border border-border/70 bg-muted/30 p-3 text-xs">
+              <p className="font-medium text-foreground">
+                {props.fitSignal.why_stronger || props.fitSignal.rationale}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <span className={`rounded-sm border px-2 py-1 font-semibold uppercase tracking-wide ${signalTone(props.fitSignal.page_cost)}`}>
+                  Page cost: {props.fitSignal.page_cost || 'low'}
+                </span>
+                <span className={`rounded-sm border px-2 py-1 font-semibold uppercase tracking-wide ${signalTone(props.fitSignal.truth_risk)}`}>
+                  Truth risk: {props.fitSignal.truth_risk || 'low'}
+                </span>
+                {props.fitSignal.matched_requirements.length > 0 && (
+                  <span className="rounded-sm border border-blue-500/30 bg-blue-500/10 px-2 py-1 font-semibold uppercase tracking-wide text-blue-700">
+                    Matches: {props.fitSignal.matched_requirements.join(', ')}
+                  </span>
+                )}
+              </div>
+              {props.fitSignal.matched_jd_phrases && props.fitSignal.matched_jd_phrases.length > 0 && (
+                <div>
+                  <p className="font-semibold uppercase tracking-wide text-muted-foreground">JD evidence</p>
+                  <ul className="mt-1 list-disc space-y-1 pl-4 text-muted-foreground">
+                    {props.fitSignal.matched_jd_phrases.slice(0, 2).map((phrase, index) => (
+                      <li key={`${phrase}-${index}`}>{phrase}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {props.fitSignal.source_resume_evidence && props.fitSignal.source_resume_evidence.length > 0 && (
+                <div>
+                  <p className="font-semibold uppercase tracking-wide text-muted-foreground">Resume evidence</p>
+                  <p className="mt-1 text-muted-foreground">{props.fitSignal.source_resume_evidence[0]}</p>
+                </div>
+              )}
+              {props.fitSignal.noise_flags.length > 0 && (
+                <p className="text-muted-foreground">
+                  Flags: {props.fitSignal.noise_flags.join(', ')}.
+                </p>
+              )}
+            </div>
           )}
         </div>
       </div>
