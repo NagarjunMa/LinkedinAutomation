@@ -1,7 +1,7 @@
 import logging
 from typing import Optional, List
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
-from pydantic import BaseModel, HttpUrl, validator
+from pydantic import BaseModel, HttpUrl, field_validator
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -9,7 +9,7 @@ from app.core.auth import get_current_user_id
 from app.models.job import JobListing, JobApplication, UserProfile
 from app.services.url_job_extractor import url_job_extractor
 from app.services.smart_job_scorer import smart_job_scorer
-from datetime import datetime
+from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -24,14 +24,14 @@ class JobExtractionRequest(BaseModel):
     auto_apply: bool = True
     application_notes: Optional[str] = None
 
-    @validator('url')
+    @field_validator('url')
     def validate_url(cls, v):
         url_str = str(v)
         if len(url_str) > 2000:
             raise ValueError('URL too long')
         return v
 
-    @validator('user_id')
+    @field_validator('user_id')
     def validate_user_id(cls, v):
         if not v or len(v.strip()) == 0:
             raise ValueError('User ID cannot be empty')
@@ -42,7 +42,7 @@ class BatchJobExtractionRequest(BaseModel):
     user_id: str
     auto_apply: bool = True
 
-    @validator('urls')
+    @field_validator('urls')
     def validate_urls(cls, v):
         if len(v) > 10:
             raise ValueError('Maximum 10 URLs allowed per batch')
@@ -163,8 +163,8 @@ async def extract_job_from_url(
                 source="url_extraction",
                 source_url=str(request.url),
                 is_active=True,
-                posted_date=datetime.utcnow(),
-                extracted_date=datetime.utcnow()
+                posted_date=datetime.now(timezone.utc),
+                extracted_date=datetime.now(timezone.utc)
             )
 
             db.add(job_listing)
@@ -188,7 +188,7 @@ async def extract_job_from_url(
 
             # Mark job as applied and set applied_date
             job_listing.applied = True
-            job_listing.applied_date = datetime.utcnow()
+            job_listing.applied_date = datetime.now(timezone.utc)
 
             job_application = JobApplication(
                 user_id=request.user_id,

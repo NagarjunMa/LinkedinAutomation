@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from typing import Optional, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.models.job import UserProfile
 from app.models import JobApplication
@@ -236,7 +236,7 @@ class ProfileService:
         for field, value in update_data.items():
             setattr(profile, field, value)
 
-        profile.updated_at = datetime.utcnow()
+        profile.updated_at = datetime.now(timezone.utc)
         db.commit()
         db.refresh(profile)
         return profile

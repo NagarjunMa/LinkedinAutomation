@@ -27,22 +27,23 @@ def test_legacy_user_routes_reject_unauthenticated_requests(client: TestClient):
     current_user_override = app.dependency_overrides.pop(get_current_user_id, None)
     authenticated_user_override = app.dependency_overrides.pop(get_authenticated_user_id, None)
     try:
-        responses = [
+        active_route_responses = [
             client.get("/api/v1/user-profiles/user-a"),
             client.get("/api/v1/profiles/profile/user-a"),
-            client.post(
-                "/api/v1/jobs/extract-from-url",
-                json={"url": "https://example.com/job", "user_id": "user-a"},
-            ),
             client.get("/api/v1/jobs/"),
         ]
+        disabled_legacy_response = client.post(
+            "/api/v1/jobs/extract-from-url",
+            json={"url": "https://example.com/job", "user_id": "user-a"},
+        )
     finally:
         if current_user_override is not None:
             app.dependency_overrides[get_current_user_id] = current_user_override
         if authenticated_user_override is not None:
             app.dependency_overrides[get_authenticated_user_id] = authenticated_user_override
 
-    assert {response.status_code for response in responses} == {401}
+    assert {response.status_code for response in active_route_responses} == {401}
+    assert disabled_legacy_response.status_code in {404, 405, 410}
 
 
 def test_legacy_path_user_id_mismatch_is_rejected(client: TestClient):
@@ -58,17 +59,16 @@ def test_legacy_body_user_id_mismatch_is_rejected(client: TestClient):
         json={"url": "https://example.com/job", "user_id": "someone-else"},
     )
 
-    assert response.status_code == 403
-    assert response.json()["detail"] == "User mismatch"
+    assert response.status_code in {404, 405, 410}
 
 
-def test_cleanup_all_rejects_non_admin(client: TestClient, monkeypatch):
+def test_cleanup_all_disabled_before_publication(client: TestClient, monkeypatch):
     monkeypatch.setenv("ADMIN_USER_IDS", "admin-user")
 
     response = client.post("/api/v1/jobs/cleanup/execute-all")
 
-    assert response.status_code == 403
-    assert response.json()["detail"] == "Admin only"
+    assert response.status_code == 410
+    assert response.json()["detail"] == "This legacy cleanup endpoint is no longer supported"
 
 
 def test_legacy_profiles_users_rejects_non_admin(client: TestClient, monkeypatch):

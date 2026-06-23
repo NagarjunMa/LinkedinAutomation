@@ -1,12 +1,11 @@
-import os
 import json
 import logging
 from typing import Optional
-from openai import AsyncOpenAI
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_not_exception_type
 from app.schemas.resume_v2 import RewriteResult
 from app.services.resume.hallucination_guard import check_no_unprompted_numbers, HallucinationError
 from app.core.llm_logging import measure, log_cost
+from app.core.openai_client import get_openai_client
 
 logger = logging.getLogger("llm")
 
@@ -43,9 +42,6 @@ JD context (may be empty): {jd_context}
 Rewrite the bullet."""
 
 
-_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
-
 @retry(stop=stop_after_attempt(2), wait=wait_exponential(multiplier=1, min=1, max=4),
        retry=retry_if_not_exception_type(HallucinationError))
 async def rewrite_bullet(
@@ -60,7 +56,7 @@ async def rewrite_bullet(
         country=country, jd_context=jd_context or "",
     )
     async with measure("rewriter", user_id=user_id):
-        resp = await _client.chat.completions.create(
+        resp = await get_openai_client().chat.completions.create(
             model="gpt-4o-2024-08-06",
             response_format={"type": "json_object"},
             messages=[{"role": "system", "content": REWRITER_SYSTEM},

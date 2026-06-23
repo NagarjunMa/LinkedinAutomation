@@ -14,7 +14,7 @@ import logging
 import os
 from sqlalchemy import text
 
-from app.core.config import settings
+from app.core.config import settings, validate_production_config
 from app.core.auth import require_admin_user
 from app.api.v1.api import api_router
 from app.db.session import engine
@@ -31,6 +31,13 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting up Prism Pro application...")
+
+    if is_production:
+        production_issues = validate_production_config()
+        if production_issues:
+            issue_list = "; ".join(production_issues)
+            logger.error("Production configuration validation failed: %s", issue_list)
+            raise RuntimeError(f"Production configuration validation failed: {issue_list}")
 
 
     # Validate Railway configuration if deployed
@@ -102,6 +109,38 @@ security_config = {
         'requests_per_minute': 100 if is_production else 1000,
         'requests_per_hour': 2000 if is_production else 10000,
         'burst_size': 20 if is_production else 1000,
+        'route_limits': {
+            '/api/v1/resumes/upload': {
+                'requests_per_minute': 6 if is_production else 1000,
+                'requests_per_hour': 60 if is_production else 10000,
+                'burst_size': 3 if is_production else 1000,
+            },
+            '/api/v1/resumes': {
+                'requests_per_minute': 20 if is_production else 1000,
+                'requests_per_hour': 200 if is_production else 10000,
+                'burst_size': 8 if is_production else 1000,
+            },
+            '/api/v1/jd/analyze': {
+                'requests_per_minute': 8 if is_production else 1000,
+                'requests_per_hour': 80 if is_production else 10000,
+                'burst_size': 4 if is_production else 1000,
+            },
+            '/api/v1/jd': {
+                'requests_per_minute': 20 if is_production else 1000,
+                'requests_per_hour': 200 if is_production else 10000,
+                'burst_size': 8 if is_production else 1000,
+            },
+            '/api/v1/exports': {
+                'requests_per_minute': 10 if is_production else 1000,
+                'requests_per_hour': 100 if is_production else 10000,
+                'burst_size': 4 if is_production else 1000,
+            },
+            '/api/v1/tailored-resumes': {
+                'requests_per_minute': 20 if is_production else 1000,
+                'requests_per_hour': 200 if is_production else 10000,
+                'burst_size': 8 if is_production else 1000,
+            },
+        },
         'whitelist_ips': [
             '127.0.0.1',
             '::1',

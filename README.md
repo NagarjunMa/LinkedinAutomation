@@ -38,20 +38,21 @@ For engineers who refuse generic AI bullets.
 - 90 free credits / month (auto-granted via `_ensure_user_row()` and Supabase **pg_cron** → `grant_monthly_credits()`)
 - Billing is disabled for the freemium launch; Stripe routes stay dormant behind `ENABLE_BILLING=true`
 - Per-operation cost: evaluate = 1, tailor = 2, rewrite = 0, apply = 0, export = 1
+- MVP production launch steps live in [`docs/production-mvp-runbook.md`](docs/production-mvp-runbook.md).
 
 ---
 
 ## Tech stack
 
 ### Frontend
-- Next.js 14 (App Router)
+- Next.js 16.2.7 (App Router)
 - Tailwind CSS + shadcn/ui
 - TanStack Query for API state
 - Framer Motion for animations (restrained — fade-up, scroll reveals, marquee)
 - Typography: **Humane** (display + nav), **Fraunces** (serif headings), **Geist Sans** (body / UI)
 
 ### Backend
-- FastAPI + SQLAlchemy 2.0 + Pydantic v2 (loosened `>=` pins with major-version ceilings)
+- FastAPI + SQLAlchemy 2.0 + Pydantic v2 (production installs use `backend/requirements.lock`)
 - OpenAI (`gpt-4o-2024-08-06` for eval/rewrite/tailor, `gpt-4o-mini` for extraction)
 - Schema-enforced LLM responses via `client.beta.chat.completions.parse()` with typed Pydantic models
 - Tenacity retries on `RateLimitError` / `APIConnectionError` / `APITimeoutError`
@@ -170,7 +171,7 @@ backend/                       FastAPI app
     middleware/                credits, security
   migrations/                  Alembic
   tests/                       services, api, integration, fixtures
-frontend/                      Next.js 14
+frontend/                      Next.js 16.2.7
   src/app/                     Routes
   src/components/landing/      Navigation, BentoGrid
 docs/superpowers/

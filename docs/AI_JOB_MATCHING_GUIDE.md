@@ -5,7 +5,7 @@
 This system transforms your LinkedIn automation platform into a personalized AI job matching service for students and new graduates. Instead of manual search queries, the system:
 
 1. **AI Resume Parsing** - Extracts structured data from resumes using GPT-4o-mini
-2. **Profile-Based Filtering** - Matches jobs based on skills, experience, and preferences  
+2. **Profile-Based Filtering** - Matches jobs based on skills, experience, and preferences
 3. **AI Job Scoring** - Provides compatibility scores with detailed reasoning
 4. **Daily Digest Generation** - Creates personalized job recommendations
 
@@ -38,37 +38,37 @@ This system transforms your LinkedIn automation platform into a personalized AI 
 CREATE TABLE user_profiles (
     id SERIAL PRIMARY KEY,
     user_id VARCHAR(100) UNIQUE NOT NULL,
-    
+
     -- Personal Information
     full_name VARCHAR(255),
     email VARCHAR(255),
     phone VARCHAR(50),
     location VARCHAR(255),
     work_authorization VARCHAR(100),
-    
+
     -- Professional Summary
     years_of_experience FLOAT DEFAULT 0.0,
     career_level VARCHAR(50),
     professional_summary TEXT,
-    
+
     -- Skills (JSON Arrays)
     programming_languages JSON,
     frameworks_libraries JSON,
     tools_platforms JSON,
     soft_skills JSON,
-    
+
     -- Experience
     job_titles JSON,
     companies JSON,
     industries JSON,
     experience_descriptions JSON,
-    
+
     -- Education
     degrees JSON,
     institutions JSON,
     graduation_years JSON,
     relevant_coursework JSON,
-    
+
     -- Preferences
     desired_roles JSON,
     preferred_locations JSON,
@@ -76,13 +76,13 @@ CREATE TABLE user_profiles (
     salary_range_max INTEGER,
     job_types JSON,
     company_size_preference JSON,
-    
+
     -- AI Insights
     ai_profile_summary TEXT,
     ai_strengths JSON,
     ai_improvement_areas JSON,
     ai_career_advice TEXT,
-    
+
     -- Metadata
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW(),
@@ -96,28 +96,28 @@ CREATE TABLE job_scores (
     id SERIAL PRIMARY KEY,
     user_id VARCHAR(100) REFERENCES user_profiles(user_id),
     job_id INTEGER REFERENCES job_listings(id),
-    
+
     -- Scoring
     compatibility_score FLOAT NOT NULL,
     confidence_score FLOAT DEFAULT 0.0,
-    
+
     -- AI Reasoning
     ai_reasoning TEXT,
     match_factors JSON,
     mismatch_factors JSON,
-    
+
     -- Detailed Breakdown
     skills_match_score FLOAT DEFAULT 0.0,
     location_match_score FLOAT DEFAULT 0.0,
     experience_match_score FLOAT DEFAULT 0.0,
     salary_match_score FLOAT DEFAULT 0.0,
     culture_match_score FLOAT DEFAULT 0.0,
-    
+
     -- User Actions
     user_interested BOOLEAN,
     user_applied BOOLEAN DEFAULT FALSE,
     user_feedback VARCHAR(20),
-    
+
     -- Metadata
     scored_at TIMESTAMP DEFAULT NOW(),
     score_version VARCHAR(10) DEFAULT '1.0'
@@ -130,32 +130,32 @@ CREATE TABLE daily_digests (
     id SERIAL PRIMARY KEY,
     user_id VARCHAR(100) REFERENCES user_profiles(user_id),
     digest_date DATE NOT NULL,
-    
+
     -- Content
     digest_title VARCHAR(255),
     digest_summary TEXT,
     digest_html TEXT,
-    
+
     -- Job Data
     top_jobs JSON,
     total_new_jobs INTEGER DEFAULT 0,
     total_matches INTEGER DEFAULT 0,
-    
+
     -- Market Insights
     market_trends JSON,
     skill_recommendations JSON,
-    
+
     -- Delivery Status
     email_sent BOOLEAN DEFAULT FALSE,
     email_sent_at TIMESTAMP,
     email_opened BOOLEAN DEFAULT FALSE,
     email_clicked BOOLEAN DEFAULT FALSE,
-    
+
     -- User Engagement
     user_viewed BOOLEAN DEFAULT FALSE,
     user_viewed_at TIMESTAMP,
     jobs_clicked JSON,
-    
+
     -- Metadata
     created_at TIMESTAMP DEFAULT NOW(),
     generation_time_seconds FLOAT
@@ -170,7 +170,7 @@ Add these to your `.env` file:
 
 ```bash
 # OpenAI Configuration
-OPENAPI_KEY=sk-your-openai-api-key-here
+OPENAI_API_KEY=sk-your-openai-api-key-here
 OPENAI_MODEL=gpt-4o-mini
 OPENAI_MAX_TOKENS=1000
 
@@ -308,7 +308,7 @@ curl -X POST "http://localhost:8000/api/v1/profiles/score-jobs/test_user?job_lim
 
 ```bash
 # Install dependencies
-pip install -r requirements.txt
+pip install -r requirements.lock
 
 # Run migrations
 alembic upgrade head
@@ -323,10 +323,10 @@ celery -A app.core.celery_app beat --loglevel=info
 
 ```bash
 # Set OpenAI API key
-export OPENAPI_KEY="sk-your-key-here"
+export OPENAI_API_KEY="sk-your-key-here"
 
 # Verify configuration
-python -c "from app.core.config import settings; print(f'API Key: {settings.OPENAPI_KEY[:10]}...')"
+python -c "from app.core.config import settings; print(f'API Key: {settings.OPENAI_API_KEY[:10]}...')"
 ```
 
 ### 3. Initial Data Setup
@@ -452,13 +452,13 @@ class JobScoringService:
 **1. "OpenAI API key not set"**
 ```bash
 # Check environment variable
-echo $OPENAPI_KEY
+echo $OPENAI_API_KEY
 
 # Set in current session
-export OPENAPI_KEY="sk-your-key-here"
+export OPENAI_API_KEY="sk-your-key-here"
 
 # Add to .env file
-echo "OPENAPI_KEY=sk-your-key-here" >> .env
+echo "OPENAI_API_KEY=sk-your-key-here" >> .env
 ```
 
 **2. "No jobs found for scoring"**
@@ -537,4 +537,4 @@ After successful deployment, you should see:
 - ✅ System costs remain under $2/day for 100 users
 - ✅ High user engagement with personalized matches
 
-**The system is now a fully functional AI-powered job matching platform!** 🚀 
+**The system is now a fully functional AI-powered job matching platform!** 🚀

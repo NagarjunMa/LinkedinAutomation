@@ -1,9 +1,9 @@
-from openai import AsyncOpenAI
 import json
 import logging
 from typing import Dict, List, Any, Optional
 from app.core.config import settings
 from app.core.enhanced_logging import log_openai_request, log_openai_error
+from app.core.openai_client import get_openai_client
 
 logger = logging.getLogger(__name__)
 
@@ -11,19 +11,19 @@ class AIService:
     """
     OpenAI GPT-4o-mini integration for job matching and resume parsing
     """
-    
+
     def __init__(self):
         if not settings.OPENAI_API_KEY:
             logger.error("OpenAI API key not configured - AI features will not work")
             raise ValueError("OPENAI_API_KEY environment variable is required")
 
-        self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+        self.client = get_openai_client()
         self.model = settings.OPENAI_MODEL
         self.model_name = settings.OPENAI_MODEL  # Add for compatibility
         self.max_tokens = settings.OPENAI_MAX_TOKENS
 
         logger.info(f"AIService initialized with model: {self.model}")
-    
+
     async def create_completion(
         self,
         model: str,
@@ -169,14 +169,14 @@ class AIService:
         # GPT-4o-mini pricing (as of 2024): $0.00015 per 1K input tokens, $0.0006 per 1K output tokens
         # Approximating with average cost of $0.0003 per 1K tokens
         return (tokens / 1000) * 0.0003
-        
+
     async def parse_resume(self, resume_text: str) -> Dict[str, Any]:
         """
         Extract structured information from resume text using GPT-4o-mini
-        
+
         Args:
             resume_text: Raw text extracted from resume file
-            
+
         Returns:
             Structured profile data dictionary
         """
@@ -186,7 +186,7 @@ class AIService:
         {{
             "personal_info": {{
                 "full_name": "string",
-                "email": "string", 
+                "email": "string",
                 "phone": "string",
                 "location": "string",
                 "work_authorization": "string"
@@ -228,7 +228,7 @@ class AIService:
 
         Return ONLY the JSON object, no additional text or explanation:
         """
-        
+
         try:
             response = await self.client.chat.completions.create(
                 model=self.model,
@@ -239,14 +239,14 @@ class AIService:
                 max_tokens=self.max_tokens,
                 temperature=0.1  # Low temperature for consistent extraction
             )
-            
+
             content = response.choices[0].message.content.strip()
-            
+
             # Parse JSON response
             if not content:
                 logger.warning("Empty response from OpenAI, using fallback")
                 return self._get_fallback_profile()
-            
+
             try:
                 parsed_data = json.loads(content)
                 logger.info("Successfully parsed resume with AI")
@@ -255,11 +255,11 @@ class AIService:
                 logger.error(f"AI returned invalid JSON: {e}")
                 # Return fallback structure
                 return self._get_fallback_profile()
-                
+
         except Exception as e:
             logger.error(f"Error parsing resume with AI: {e}")
             return self._get_fallback_profile()
-    
+
     async def generate_profile_insights(self, profile_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Generate AI insights about user profile including strengths and career advice
@@ -279,7 +279,7 @@ class AIService:
 
         Return ONLY the JSON object:
         """
-        
+
         try:
             response = await self.client.chat.completions.create(
                 model=self.model,
@@ -290,15 +290,15 @@ class AIService:
                 max_tokens=500,
                 temperature=0.3
             )
-            
+
             content = response.choices[0].message.content.strip()
-            
+
             if not content:
                 logger.warning("Empty response from OpenAI for profile insights, using fallback")
                 raise ValueError("Empty response")
-                
+
             return json.loads(content)
-            
+
         except Exception as e:
             logger.error(f"Error generating profile insights: {e}")
             return {
@@ -307,17 +307,17 @@ class AIService:
                 "improvement_areas": ["Continuous learning"],
                 "career_advice": "Focus on building relevant skills and networking."
             }
-    
+
     async def score_job_compatibility(
-        self, 
-        user_profile: Dict[str, Any], 
+        self,
+        user_profile: Dict[str, Any],
         job_description: str,
         job_title: str,
         job_requirements: str = ""
     ) -> Dict[str, Any]:
         """
         Score how well a job matches a user profile using AI
-        
+
         Returns:
             Dictionary with compatibility score and detailed breakdown
         """
@@ -325,7 +325,7 @@ class AIService:
         user_skills = user_profile.get('skills', {}).get('programming_languages', [])
         user_experience = user_profile.get('professional_summary', {}).get('years_of_experience', 0)
         user_location = user_profile.get('personal_info', {}).get('location', '')
-        
+
         prompt = f"""Score this job match. Return ONLY valid JSON in this exact format:
 
 {{"compatibility_score": 75.0, "confidence_score": 80.0, "reasoning": "Good skills match with Python and React", "match_factors": ["Technical Skills", "Experience"], "skills_match_score": 80.0, "experience_match_score": 70.0, "location_match_score": 90.0, "salary_match_score": 75.0, "culture_match_score": 65.0}}
@@ -335,7 +335,7 @@ CANDIDATE: {user_experience} years experience with skills: {', '.join(user_skill
 JOB: {job_title} - {job_description[:600]}
 
 Score 0-100 based on skill match, experience fit, and requirements. Return only JSON:"""
-        
+
         try:
             response = await self.client.chat.completions.create(
                 model=self.model,
@@ -346,20 +346,20 @@ Score 0-100 based on skill match, experience fit, and requirements. Return only 
                 max_tokens=400,
                 temperature=0.2
             )
-            
+
             content = response.choices[0].message.content.strip()
-            
+
             if not content:
                 logger.warning("Empty response from OpenAI for job scoring, using fallback")
                 raise ValueError("Empty response")
-                
+
             result = json.loads(content)
-            
+
             # Ensure score is within bounds
             result["compatibility_score"] = max(0.0, min(100.0, result.get("compatibility_score", 0.0)))
-            
+
             return result
-            
+
         except Exception as e:
             logger.error(f"Error scoring job compatibility: {e}")
             return {
@@ -376,7 +376,7 @@ Score 0-100 based on skill match, experience fit, and requirements. Return only 
                     "culture_match": 50.0
                 }
             }
-    
+
     async def generate_daily_digest(
         self,
         user_profile: Dict[str, Any],
@@ -399,7 +399,7 @@ Score 0-100 based on skill match, experience fit, and requirements. Return only 
 
         User Profile: {user_profile.get('professional_summary', 'New graduate')}
         Preferred Roles: {user_profile.get('preferences', {}).get('desired_roles', [])}
-        
+
         Top Jobs Today: {len(top_jobs)} matches
         {json.dumps(top_jobs[:3], indent=2) if top_jobs else "No jobs"}
 
@@ -407,7 +407,7 @@ Score 0-100 based on skill match, experience fit, and requirements. Return only 
 
         Create engaging, personalized content. Return ONLY the JSON object:
         """
-        
+
         try:
             response = await self.client.chat.completions.create(
                 model=self.model,
@@ -418,15 +418,15 @@ Score 0-100 based on skill match, experience fit, and requirements. Return only 
                 max_tokens=600,
                 temperature=0.4
             )
-            
+
             content = response.choices[0].message.content.strip()
-            
+
             if not content:
                 logger.warning("Empty response from OpenAI for daily digest, using fallback")
                 raise ValueError("Empty response")
-                
+
             return json.loads(content)
-            
+
         except Exception as e:
             logger.error(f"Error generating daily digest: {e}")
             return {
@@ -436,7 +436,7 @@ Score 0-100 based on skill match, experience fit, and requirements. Return only 
                 "market_insights": ["Job market remains competitive"],
                 "skill_recommendations": ["Continue developing your core skills"]
             }
-    
+
     def _get_fallback_profile(self) -> Dict[str, Any]:
         """
         Return basic profile structure when AI parsing fails
@@ -489,4 +489,4 @@ def get_ai_service() -> AIService:
     Dependency injection function for FastAPI
     Returns the global AI service instance
     """
-    return ai_service 
+    return ai_service

@@ -1,11 +1,10 @@
-import os
 import logging
-from openai import AsyncOpenAI, RateLimitError, APIConnectionError, APITimeoutError
+from openai import RateLimitError, APIConnectionError, APITimeoutError
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from app.schemas.jd import JDExtraction
 from app.core.llm_logging import measure, log_cost
+from app.core.openai_client import get_openai_client
 
-_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 logger = logging.getLogger("llm")
 
 EXTRACTOR_SYSTEM = """You parse job descriptions for hiring intelligence.
@@ -31,7 +30,7 @@ Every item in must_have / good_to_have MUST be an object with all three fields p
 async def extract_jd_requirements(jd_text: str, user_id: str | None = None) -> JDExtraction:
     """Extract structured JD requirements via schema-enforced parse()."""
     async with measure("extractor", user_id=user_id):
-        resp = await _client.beta.chat.completions.parse(
+        resp = await get_openai_client().beta.chat.completions.parse(
             model="gpt-4o-2024-08-06",
             response_format=JDExtraction,
             messages=[

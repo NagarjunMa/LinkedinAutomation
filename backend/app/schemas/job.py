@@ -1,5 +1,5 @@
 from typing import Optional, List
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from enum import Enum
 
@@ -46,8 +46,7 @@ class JobListingResponse(JobListingBase):
     posted_date: Optional[datetime] = None
     extracted_date: datetime
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class DailyJobStats(BaseModel):
     date: str
@@ -76,5 +75,4 @@ class RecentApplication(BaseModel):
     extracted_date: datetime
     source_url: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

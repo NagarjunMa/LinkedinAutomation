@@ -30,11 +30,11 @@ RUN apt-get update && apt-get install -y \
 # Set working directory
 WORKDIR /app
 
-# Copy requirements file
-COPY requirements.txt .
+# Copy locked dependency files
+COPY requirements.in requirements.lock ./
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Install Python dependencies from the tested production lockfile
+RUN pip install --no-cache-dir -r requirements.lock
 
 # Install Playwright browsers
 RUN playwright install chromium

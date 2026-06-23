@@ -9,10 +9,11 @@ Configuration is loaded from environment variables with sensible defaults for de
 For production deployment, ensure all required environment variables are set.
 """
 
-from typing import List, Optional, Union
 import json
+from typing import List, Optional, Union
+
+from pydantic import ConfigDict, field_validator, model_validator
 from pydantic_settings import BaseSettings
-from pydantic import validator
 
 
 class Settings(BaseSettings):
@@ -45,6 +46,9 @@ class Settings(BaseSettings):
     ENABLE_BILLING: bool = False
     """Enable paid billing/webhook routes. Kept disabled for the freemium launch."""
 
+    ADMIN_USER_IDS: str = ""
+    """Comma-separated Supabase user IDs allowed to access admin-only endpoints."""
+
     # ==========================================
     # Security Configuration
     # ==========================================
@@ -68,7 +72,7 @@ class Settings(BaseSettings):
     Example: ["https://frontend.example.com", "https://app.example.com"]
     """
 
-    @validator("CORS_ORIGINS", pre=True)
+    @field_validator("CORS_ORIGINS", mode="before")
     def assemble_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:
         """
         Parse CORS origins from environment variable.
@@ -97,7 +101,7 @@ class Settings(BaseSettings):
     Format: postgresql://postgres:[password]@db.[ref].supabase.co:5432/postgres
     """
 
-    @validator("SQLALCHEMY_DATABASE_URI", pre=True)
+    @field_validator("SQLALCHEMY_DATABASE_URI", mode="before")
     def validate_database_uri(cls, v: Optional[str]) -> str:
         """
         Validate and return the database URI.
@@ -135,7 +139,7 @@ class Settings(BaseSettings):
     This is a privileged secret key — only use on the backend.
     """
 
-    SUPABASE_STORAGE_BUCKET: str = "resumes"
+    SUPABASE_STORAGE_BUCKET: str = "resume"
     """
     Supabase storage bucket name for PDF exports.
     """
@@ -156,19 +160,6 @@ class Settings(BaseSettings):
 
     OPENAI_API_KEY: str = ""
     """OpenAI API key for AI-powered features like resume analysis and job matching"""
-
-    @validator("OPENAI_API_KEY", pre=True)
-    def validate_openai_key(cls, v: str) -> str:
-        """
-        Validate OpenAI API key format and presence when AI features are enabled.
-        Railway deployment requires this to be set correctly.
-        """
-        if not v and cls.__fields__["ENABLE_AI_FEATURES"].default:
-            # Allow empty in development, but warn
-            import os
-            if os.getenv("ENVIRONMENT", "development").lower() == "production":
-                raise ValueError("OPENAI_API_KEY is required when AI features are enabled in production")
-        return v
 
     OPENAI_MODEL: str = "gpt-4o-mini"
     """OpenAI model to use for text generation (optimized for cost-efficiency)"""
@@ -261,11 +252,60 @@ class Settings(BaseSettings):
     ENABLE_ANALYTICS: bool = True
     """Enable/disable analytics and reporting features"""
 
-    class Config:
-        """Pydantic configuration"""
-        case_sensitive = True
-        env_file = ".env"
-        extra = "ignore"  # Ignore unknown environment variables
+    ENABLE_LEGACY_JOB_EXTRACTION: bool = False
+    """Mount deprecated URL extraction/demo endpoints. Disabled for MVP publication."""
+
+    model_config = ConfigDict(
+        case_sensitive=True,
+        env_file=".env",
+        extra="ignore",
+    )
+
+    @model_validator(mode="after")
+    def validate_production_settings(self) -> "Settings":
+        if self.ENVIRONMENT.lower() != "production":
+            return self
+
+        missing = []
+        for name in (
+            "SQLALCHEMY_DATABASE_URI",
+            "SUPABASE_URL",
+            "SUPABASE_ANON_KEY",
+            "SUPABASE_SERVICE_ROLE_KEY",
+            "CORS_ORIGINS",
+        ):
+            value = getattr(self, name)
+            if value in ("", None, []):
+                missing.append(name)
+
+        if self.ENABLE_AI_FEATURES and not self.OPENAI_API_KEY:
+            missing.append("OPENAI_API_KEY")
+
+        if self.ENABLE_BILLING:
+            for name in ("STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"):
+                if not getattr(self, name, ""):
+                    missing.append(name)
+
+        database_uri = self.SQLALCHEMY_DATABASE_URI or ""
+        if database_uri.startswith("sqlite"):
+            raise ValueError("SQLALCHEMY_DATABASE_URI must use PostgreSQL in production")
+
+        if any(origin.startswith(("http://localhost", "http://127.0.0.1")) for origin in self.CORS_ORIGINS):
+            raise ValueError("CORS_ORIGINS must not include localhost origins in production")
+
+        if self.SUPABASE_STORAGE_BUCKET != "resume":
+            raise ValueError("SUPABASE_STORAGE_BUCKET must be 'resume' in production")
+
+        if not self.ADMIN_USER_IDS.strip():
+            missing.append("ADMIN_USER_IDS")
+
+        if self.SECRET_KEY == "dev-secret-key-change-in-production" or len(self.SECRET_KEY) < 32:
+            missing.append("SECRET_KEY")
+
+        if missing:
+            raise ValueError(f"Missing required production settings: {', '.join(sorted(set(missing)))}")
+
+        return self
 
 
 # Global settings instance
@@ -284,12 +324,26 @@ def validate_production_config() -> List[str]:
     # Check required production settings
     if not settings.SQLALCHEMY_DATABASE_URI:
         issues.append("SQLALCHEMY_DATABASE_URI is required")
+    elif settings.SQLALCHEMY_DATABASE_URI.startswith("sqlite"):
+        issues.append("SQLALCHEMY_DATABASE_URI must use PostgreSQL in production")
 
     if not settings.SUPABASE_URL:
         issues.append("SUPABASE_URL is required")
 
     if not settings.SUPABASE_ANON_KEY:
         issues.append("SUPABASE_ANON_KEY is required")
+
+    if not settings.SUPABASE_SERVICE_ROLE_KEY:
+        issues.append("SUPABASE_SERVICE_ROLE_KEY is required")
+
+    if settings.SUPABASE_STORAGE_BUCKET != "resume":
+        issues.append("SUPABASE_STORAGE_BUCKET must be 'resume'")
+
+    if any(origin.startswith(("http://localhost", "http://127.0.0.1")) for origin in settings.CORS_ORIGINS):
+        issues.append("CORS_ORIGINS must not include localhost origins in production")
+
+    if not settings.ADMIN_USER_IDS.strip():
+        issues.append("ADMIN_USER_IDS is required")
 
     # SUPABASE_JWT_SECRET no longer required — auth now uses ES256 + JWKS
     # (fetched from <SUPABASE_URL>/auth/v1/.well-known/jwks.json).
@@ -300,11 +354,16 @@ def validate_production_config() -> List[str]:
     if len(settings.SECRET_KEY) < 32:
         issues.append("SECRET_KEY must be at least 32 characters long")
 
-    # Check optional but recommended settings
+    # Check optional AI/billing settings that are required when enabled.
     if settings.ENABLE_AI_FEATURES and not settings.OPENAI_API_KEY:
         issues.append("OPENAI_API_KEY is required when AI features are enabled")
 
-    if not settings.RESEND_API_KEY:
-        issues.append("RESEND_API_KEY is recommended for email functionality")
+    if settings.ENABLE_BILLING:
+        import os
+
+        if not os.getenv("STRIPE_API_KEY") and not os.getenv("STRIPE_SECRET_KEY"):
+            issues.append("Stripe secret key is required when ENABLE_BILLING=true")
+        if not os.getenv("STRIPE_WEBHOOK_SECRET"):
+            issues.append("STRIPE_WEBHOOK_SECRET is required when ENABLE_BILLING=true")
 
     return issues

@@ -79,8 +79,8 @@ linkedin-automation/
    ```bash
    # Backend
    cd backend
-   pip install -r requirements.txt
-   
+   pip install -r requirements.lock
+
    # Frontend
    cd ../frontend
    npm install
@@ -90,7 +90,7 @@ linkedin-automation/
    ```bash
    # Backend (in backend directory)
    uvicorn app.main:app --reload
-   
+
    # Frontend (in frontend directory)
    npm run dev
    ```
@@ -150,5 +150,5 @@ When adding new features:
 
 ---
 
-**Last Updated**: July 2024  
-**Version**: 1.0.0 
+**Last Updated**: July 2024
+**Version**: 1.0.0

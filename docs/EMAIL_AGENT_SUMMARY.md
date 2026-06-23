@@ -37,7 +37,7 @@
 ### Email Classification Accuracy
 ```
 ✅ Confirmation emails: 95% confidence
-✅ Interview invitations: 90% confidence  
+✅ Interview invitations: 90% confidence
 ✅ Rejection notices: 95% confidence
 ✅ Job offers: 90% confidence
 ✅ Status updates: 95% confidence
@@ -107,7 +107,7 @@ frontend/
 ```bash
 # Required
 ARCADE_API_KEY=your_arcade_api_key
-OPENAPI_KEY=your_openai_key
+OPENAI_API_KEY=your_openai_key
 
 # Optional (with defaults)
 EMAIL_CLASSIFICATION_MODEL=gpt-4o-mini
@@ -166,9 +166,9 @@ python-dotenv>=1.0.0
 ## 🎯 Next Steps
 
 1. **Get Arcade.dev API key** for Gmail integration
-2. **Test with real Gmail account** 
+2. **Test with real Gmail account**
 3. **Customize classification rules** for your needs
 4. **Add background processing** for automatic sync
 5. **Integrate with existing job tracking** workflow
 
-The email agent is **fully functional** and ready for development and testing. The AI classification is working perfectly, and the entire system is integrated with your existing LinkedIn automation architecture. 
+The email agent is **fully functional** and ready for development and testing. The AI classification is working perfectly, and the entire system is integrated with your existing LinkedIn automation architecture.

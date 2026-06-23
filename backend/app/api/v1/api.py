@@ -1,7 +1,5 @@
 from fastapi import APIRouter, Depends
-from app.api.v1.endpoints import (
-    jobs, profiles, job_extraction, user_profiles, logs
-)
+from app.api.v1.endpoints import jobs, profiles, user_profiles, logs
 from app.api.v1.endpoints import resumes_v2
 from app.api.v1.endpoints import jd
 from app.api.v1.endpoints import credits
@@ -28,12 +26,15 @@ api_router.include_router(
     tags=["profiles"],
     dependencies=[Depends(require_path_user_matches_current)],
 )
-api_router.include_router(
-    job_extraction.router,
-    prefix="/jobs",
-    tags=["job-extraction"],
-    dependencies=[Depends(get_current_user_id)],
-)
+if settings.ENABLE_LEGACY_JOB_EXTRACTION:
+    from app.api.v1.endpoints import job_extraction
+
+    api_router.include_router(
+        job_extraction.router,
+        prefix="/jobs",
+        tags=["job-extraction"],
+        dependencies=[Depends(get_current_user_id)],
+    )
 api_router.include_router(resumes_v2.router, prefix="/resumes", tags=["resumes-v2"])
 api_router.include_router(
     user_profiles.router,

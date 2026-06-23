@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 from app.models.job import JobListing
@@ -15,7 +15,7 @@ class JobCleanupService:
     def cleanup_old_jobs(self, days_old: int = 20) -> dict:
         """Delete jobs older than specified days that haven't been applied to"""
         try:
-            cutoff_date = datetime.utcnow() - timedelta(days=days_old)
+            cutoff_date = datetime.now(timezone.utc) - timedelta(days=days_old)
             old_jobs_query = self.db.query(JobListing).filter(
                 and_(
                     JobListing.extracted_date < cutoff_date,
@@ -55,7 +55,7 @@ class JobCleanupService:
     def get_cleanup_stats(self, days_old: int = 20) -> dict:
         """Get statistics about jobs that would be cleaned up"""
         try:
-            cutoff_date = datetime.utcnow() - timedelta(days=days_old)
+            cutoff_date = datetime.now(timezone.utc) - timedelta(days=days_old)
 
             old_unapplied_jobs = self.db.query(JobListing).filter(
                 and_(
@@ -94,7 +94,7 @@ class JobCleanupService:
     def cleanup_by_user(self, user_id: str, days_old: int = 20) -> dict:
         """Clean up old jobs (no user filtering since JobListing lacks user_id)"""
         try:
-            cutoff_date = datetime.utcnow() - timedelta(days=days_old)
+            cutoff_date = datetime.now(timezone.utc) - timedelta(days=days_old)
             old_jobs_query = self.db.query(JobListing).filter(
                 and_(
                     JobListing.extracted_date < cutoff_date,

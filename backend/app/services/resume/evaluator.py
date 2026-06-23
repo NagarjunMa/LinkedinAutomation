@@ -1,10 +1,10 @@
-import os
 import json
 import logging
-from openai import AsyncOpenAI, RateLimitError, APIConnectionError, APITimeoutError
+from openai import RateLimitError, APIConnectionError, APITimeoutError
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from app.schemas.resume_v2 import ResumeDocumentJSON, EvaluationReport
 from app.core.llm_logging import measure, log_cost
+from app.core.openai_client import get_openai_client
 
 logger = logging.getLogger("llm")
 
@@ -47,9 +47,6 @@ Evaluate the resume. Return STRICTLY this JSON schema:
 }}"""
 
 
-_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
-
 @retry(stop=stop_after_attempt(3),
        wait=wait_exponential(multiplier=1, min=1, max=10),
        retry=retry_if_exception_type((RateLimitError, APIConnectionError, APITimeoutError)))
@@ -65,7 +62,7 @@ async def evaluate_resume(
         raw_text=(doc.raw_text or "")[:12000],
     )
     async with measure("evaluator", user_id=user_id):
-        resp = await _client.chat.completions.create(
+        resp = await get_openai_client().chat.completions.create(
             model="gpt-4o-2024-08-06",
             response_format={"type": "json_object"},
             messages=[

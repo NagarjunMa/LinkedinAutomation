@@ -4,9 +4,9 @@ Centralizes frontend error logging to backend's enhanced logging system
 """
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, Dict, Any, List
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 import json
 from app.core.enhanced_logging import enhanced_logger
@@ -31,16 +31,16 @@ class FrontendLogSchema(BaseModel):
     sessionId: Optional[str] = Field(None, description="Session identifier")
     level: str = Field(default="error", description="Log level")
     metadata: Optional[Dict[str, Any]] = Field(None, description="Additional context data")
-    timestamp: datetime = Field(default_factory=datetime.utcnow, description="Client timestamp")
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), description="Client timestamp")
 
-    @validator('level')
+    @field_validator('level')
     def validate_level(cls, v):
         allowed_levels = ['error', 'warn', 'info', 'debug']
         if v not in allowed_levels:
             return 'error'  # Default to error for safety
         return v
 
-    @validator('metadata')
+    @field_validator('metadata')
     def validate_metadata(cls, v):
         if v is None:
             return {}
@@ -55,9 +55,9 @@ class FrontendLogSchema(BaseModel):
 
 class FrontendLogBatchSchema(BaseModel):
     """Schema for batch log entries"""
-    logs: List[FrontendLogSchema] = Field(..., max_items=10, description="Batch of log entries")
+    logs: List[FrontendLogSchema] = Field(..., max_length=10, description="Batch of log entries")
 
-    @validator('logs')
+    @field_validator('logs')
     def validate_logs(cls, v):
         if len(v) > 10:
             # Truncate to prevent abuse
@@ -130,7 +130,7 @@ async def log_frontend_error(
             'user_agent': log_entry.userAgent,
             'component_stack': log_entry.componentStack,
             'client_timestamp': log_entry.timestamp.isoformat(),
-            'server_timestamp': datetime.utcnow().isoformat(),
+            'server_timestamp': datetime.now(timezone.utc).isoformat(),
             'metadata': log_entry.metadata
         }
 
@@ -216,7 +216,7 @@ async def log_frontend_errors_batch(
                 'user_agent': log_entry.userAgent,
                 'component_stack': log_entry.componentStack,
                 'client_timestamp': log_entry.timestamp.isoformat(),
-                'server_timestamp': datetime.utcnow().isoformat(),
+                'server_timestamp': datetime.now(timezone.utc).isoformat(),
                 'metadata': log_entry.metadata
             }
 
@@ -276,14 +276,14 @@ async def frontend_logging_health():
             "Frontend logging health check",
             extra={
                 'health_check': True,
-                'timestamp': datetime.utcnow().isoformat()
+                'timestamp': datetime.now(timezone.utc).isoformat()
             }
         )
 
         return {
             "status": "healthy",
             "service": "frontend-logging",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "enhanced_logging_available": enhanced_logger is not None
         }
     except Exception as e:

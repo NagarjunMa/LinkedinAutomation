@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Any, Optional
 from sqlalchemy import or_, desc
 
@@ -270,7 +270,7 @@ class SmartJobScoringService:
             total_jobs = db.query(JobListing).filter(JobListing.is_active.is_(True)).count()
 
             # Check for recent jobs
-            recent_cutoff = datetime.utcnow() - timedelta(hours=24)
+            recent_cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
             recent_jobs = db.query(JobListing).filter(
                 JobListing.extracted_date >= recent_cutoff
             ).count()
