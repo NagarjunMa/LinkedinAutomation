@@ -70,8 +70,33 @@ class FormatIssue(BaseModel):
     fix_hint: str
 
 
+class ScoreBreakdown(BaseModel):
+    content_quality: int = Field(ge=0, le=100)
+    role_fit: int = Field(ge=0, le=100)
+    evidence_strength: int = Field(ge=0, le=100)
+    recruiter_readability: int = Field(ge=0, le=100)
+
+
+class ScoreExplanation(BaseModel):
+    category: Literal[
+        "content_quality",
+        "role_fit",
+        "evidence_strength",
+        "recruiter_readability",
+    ]
+    score: int = Field(ge=0, le=100)
+    reason: str
+    evidence: List[str] = Field(default_factory=list)
+    before_applying_action: str
+
+
 class EvaluationReport(BaseModel):
     overall_score: int = Field(ge=0, le=100)
+    readiness_label: Literal["ready", "minor_edits", "needs_work"]
+    score_breakdown: ScoreBreakdown
+    score_explanation: List[ScoreExplanation]
+    top_actions_before_applying: List[str] = Field(default_factory=list)
+    parser_confidence: Literal["high", "medium", "low"]
     bullet_flags: List[BulletFlag]
     format_issues: List[FormatIssue]
     summary_critique: Optional[str] = None

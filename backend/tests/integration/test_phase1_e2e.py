@@ -37,6 +37,24 @@ EVAL_RESPONSE = httpx.Response(200, json={
             "role": "assistant",
             "content": json.dumps({
                 "overall_score": 65,
+                "readiness_label": "minor_edits",
+                "score_breakdown": {
+                    "content_quality": 68,
+                    "role_fit": 62,
+                    "evidence_strength": 58,
+                    "recruiter_readability": 70,
+                },
+                "score_explanation": [
+                    {
+                        "category": "evidence_strength",
+                        "score": 58,
+                        "reason": "Several bullets need stronger evidence.",
+                        "evidence": ["Missing quantification"],
+                        "before_applying_action": "Add verified impact to core bullets.",
+                    }
+                ],
+                "top_actions_before_applying": ["Add verified impact to core bullets."],
+                "parser_confidence": "high",
                 "bullet_flags": [
                     {
                         "bullet_id": "b1",

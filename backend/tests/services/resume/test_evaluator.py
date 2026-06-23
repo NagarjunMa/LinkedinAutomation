@@ -22,6 +22,37 @@ def make_doc():
     )
 
 
+def evaluation_content(overrides=None):
+    payload = {
+        "overall_score": 72,
+        "readiness_label": "minor_edits",
+        "score_breakdown": {
+            "content_quality": 74,
+            "role_fit": 70,
+            "evidence_strength": 66,
+            "recruiter_readability": 78,
+        },
+        "score_explanation": [
+            {
+                "category": "evidence_strength",
+                "score": 66,
+                "reason": "One bullet has measurable performance evidence, but another remains vague.",
+                "evidence": ["Improved performance 30%", "Did stuff"],
+                "before_applying_action": "Replace vague bullets with action, scope, and outcome.",
+            }
+        ],
+        "top_actions_before_applying": ["Rewrite vague bullets with verified outcomes."],
+        "parser_confidence": "high",
+        "bullet_flags": [],
+        "format_issues": [],
+        "summary_critique": None,
+        "skill_gaps": [],
+    }
+    if overrides:
+        payload.update(overrides)
+    return payload
+
+
 @pytest.mark.asyncio
 @respx.mock
 async def test_evaluator_returns_report():
@@ -30,17 +61,14 @@ async def test_evaluator_returns_report():
         "choices": [{
             "index": 0, "finish_reason": "stop",
             "message": {"role": "assistant",
-                "content": json.dumps({
+                "content": json.dumps(evaluation_content({
                     "overall_score": 60,
                     "bullet_flags": [
                         {"bullet_id": "b1", "severity": "critical",
                          "reason": "no quantification, vague verb",
                          "category": "quantification"}
                     ],
-                    "format_issues": [],
-                    "summary_critique": None,
-                    "skill_gaps": [],
-                })}
+                }))}
         }],
         "usage": {"prompt_tokens": 100, "completion_tokens": 50, "total_tokens": 150},
     }
@@ -49,6 +77,9 @@ async def test_evaluator_returns_report():
     )
     report = await evaluate_resume(make_doc(), target_role="SWE")
     assert report.overall_score == 60
+    assert report.readiness_label == "minor_edits"
+    assert report.score_breakdown.evidence_strength == 66
+    assert report.score_explanation[0].before_applying_action
     assert any(f.bullet_id == "b1" and f.severity == "critical" for f in report.bullet_flags)
 
 
@@ -62,13 +93,7 @@ async def test_evaluator_logs_cost(caplog):
         "choices": [{
             "index": 0, "finish_reason": "stop",
             "message": {"role": "assistant",
-                "content": json.dumps({
-                    "overall_score": 70,
-                    "bullet_flags": [],
-                    "format_issues": [],
-                    "summary_critique": None,
-                    "skill_gaps": [],
-                })}
+                "content": json.dumps(evaluation_content({"overall_score": 70}))}
         }],
         "usage": {"prompt_tokens": 100, "completion_tokens": 50, "total_tokens": 150},
     }
@@ -93,13 +118,7 @@ async def test_evaluator_logs_user_id(caplog):
         "choices": [{
             "index": 0, "finish_reason": "stop",
             "message": {"role": "assistant",
-                "content": json.dumps({
-                    "overall_score": 75,
-                    "bullet_flags": [],
-                    "format_issues": [],
-                    "summary_critique": None,
-                    "skill_gaps": [],
-                })}
+                "content": json.dumps(evaluation_content({"overall_score": 75}))}
         }],
         "usage": {"prompt_tokens": 100, "completion_tokens": 50, "total_tokens": 150},
     }
@@ -126,13 +145,7 @@ async def test_evaluator_prompt_includes_raw_text_and_parser_guardrails():
         "choices": [{
             "index": 0, "finish_reason": "stop",
             "message": {"role": "assistant",
-                "content": json.dumps({
-                    "overall_score": 80,
-                    "bullet_flags": [],
-                    "format_issues": [],
-                    "summary_critique": None,
-                    "skill_gaps": [],
-                })}
+                "content": json.dumps(evaluation_content({"overall_score": 80}))}
         }],
         "usage": {"prompt_tokens": 100, "completion_tokens": 50, "total_tokens": 150},
     }
@@ -152,6 +165,8 @@ async def test_evaluator_prompt_includes_raw_text_and_parser_guardrails():
     assert "Raw ATS text is the ground truth" in system_prompt
     assert "Do not flag missing dates if dates are present in the raw ATS text" in system_prompt
     assert "Do not flag empty bullets if bullets are present in the raw ATS text" in system_prompt
+    assert "score_explanation must cite resume evidence" in system_prompt
+    assert "top_actions_before_applying" in user_prompt
     assert "Structured resume JSON:" in user_prompt
     assert "Raw ATS text:" in user_prompt
     assert "SWE at Acme 2022-2024" in user_prompt
