@@ -11,6 +11,7 @@ import {
     LogOut,
     ChevronDown,
     FileText,
+    LibraryBig,
     Wand2,
     Coins
 } from 'lucide-react';
@@ -132,6 +133,7 @@ export function SophisticatedSidebar({ onClose }: { onClose?: () => void }) {
                         <NavItem to="/dashboard" label="Dashboard" icon={<LayoutGrid className="w-5 h-5" />} isCollapsed={isCollapsed} />
                         <NavItem to="/dashboard/resume" label="Resume" icon={<FileText className="w-5 h-5" />} isCollapsed={isCollapsed} />
                         <NavItem to="/dashboard/resume/tailor" label="Tailor" icon={<Wand2 className="w-5 h-5" />} isCollapsed={isCollapsed} />
+                        <NavItem to="/dashboard/library" label="Library" icon={<LibraryBig className="w-5 h-5" />} isCollapsed={isCollapsed} />
                         <NavItem to="/dashboard/applications" label="Applications" icon={<Briefcase className="w-5 h-5" />} isCollapsed={isCollapsed} />
                     </div>
                 </div>

@@ -6,6 +6,7 @@ import {
     Wand2,
     Coins,
     Briefcase,
+    LibraryBig,
     ArrowRight,
     BarChart3,
     Upload,
@@ -34,6 +35,14 @@ const primaryActions = [
         href: '/dashboard/resume/tailor',
         shortcut: 'T',
         cta: 'Start Tailoring',
+    },
+    {
+        icon: <LibraryBig className="w-6 h-6" />,
+        title: 'Resume Library',
+        description: 'Review saved company-specific resumes, source JDs, accepted changes, and export the version you used.',
+        href: '/dashboard/library',
+        shortcut: 'L',
+        cta: 'Review Saved Work',
     },
     {
         icon: <Coins className="w-6 h-6" />,
@@ -129,7 +138,7 @@ export default function DashboardPage() {
             </motion.div>
 
             {/* Primary Action Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 md:gap-8 mb-20">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-6 md:gap-8 mb-20">
                 {primaryActions.map((action, i) => (
                     <motion.div
                         key={action.href}
