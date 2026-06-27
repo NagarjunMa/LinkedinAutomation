@@ -1,53 +1,73 @@
 # Production Readiness Checklist
 
-Branch: `codex/production-readiness-freemium`
+This checklist is the phase tracker for work that must be resolved before Prism
+Pro is publicly shared. Long-term cleanup that does not block the 50-100 user
+MVP belongs in `TECH_DEBT.md`; anything below is a release gate.
 
-## Baseline Captured
+## Phase 1: Configuration And Documentation Hygiene
 
-- Backend baseline: `python -m pytest tests/ --ignore=tests/golden -q --maxfail=5`
-  currently fails in the local shell because Python 3.12 loads a Starlette/httpx
-  `TestClient` incompatibility (`Client.__init__() got an unexpected keyword
-  argument 'app'`). CI/Docker target Python 3.11.
-- Frontend lint baseline: `npm run lint -- --max-warnings=0` fails on unused
-  imports and hook dependency warnings.
-- Frontend type baseline: `npx tsc --noEmit` fails on dashboard context,
-  Framer Motion variants, missing `react-confetti`, `react-window` v2 API, and
-  one hook test type.
-- Frontend audit baseline: `npm audit --omit=dev --json` reports 8 production
-  vulnerabilities, including direct `next` advisories.
-
-## Workstreams
-
-| Area | Status | Verification Gate |
+| Item | Status | Verification Gate |
 | --- | --- | --- |
-| Freemium credits | Verified locally | New/current users receive one 90-credit monthly grant only |
-| Billing hold | Verified locally | Stripe route hidden unless `ENABLE_BILLING=true` |
-| Auth hardening | Verified locally | Legacy routes reject unauthenticated and mismatched user IDs |
-| Frontend upgrade | Verified locally | Next 16, Node 20.9+, strict lint/type/build |
-| Env/security | In progress | Root `.env.production` removed from tracking; secret scan must run in CI |
-| CI strictness | In progress | CI now blocks lint/type/test/high audit failures; remote CI run still required |
-| Production smoke | Pending | Manual checklist passes in production |
+| Remove stale `SUPABASE_JWT_SECRET` references | Complete | CI/test config uses Supabase ES256 + JWKS only |
+| Remove stale build-ignore documentation | Complete | README no longer claims `ignoreBuildErrors` is masking TypeScript issues |
+| Keep launch docs authoritative | Complete | README points to this checklist and `docs/production-mvp-runbook.md` |
+| Keep frontend secrets out of public env | Pending production check | Frontend has only `NEXT_PUBLIC_*`; no service role/admin vars |
 
-## Local Verification Completed
+## Phase 2: CI And Dependency Gates
 
-- Backend lint: `python3.11 -m ruff check app/ --select=E,F --ignore=E501,E402`
-- Backend API/security slice: `python3.11 -m pytest tests/api/v1 tests/core/test_auth.py tests/integration/test_new_user_bootstrap.py tests/test_smoke.py -q -o addopts=""`
-  - Result: 59 passed, 3 skipped. Skips are Stripe webhook tests gated by `ENABLE_BILLING=true`.
-- Backend credit slice: `python3.11 -m pytest tests/api/v1/test_credits.py tests/services/credits/ -q -o addopts=""`
-  - Result: 14 passed, 2 skipped.
-- Frontend lint: `npm run lint`
-- Frontend typecheck: `npx tsc --noEmit`
-- Frontend build: `NEXT_PUBLIC_API_URL=https://api.example.com NEXT_PUBLIC_SUPABASE_URL=https://test.supabase.co NEXT_PUBLIC_SUPABASE_ANON_KEY=test npm run build`
-- Frontend tests: `npm run test`
-  - Result: 44 passed across 15 files.
-- Frontend production audit: `npm audit --omit=dev --audit-level=high`
-  - Result: passes with zero high/critical production findings. Two moderate Next/PostCSS findings remain from Next 16.2.7 vendored dependency metadata.
+| Item | Status | Verification Gate |
+| --- | --- | --- |
+| Backend lint/test/coverage | CI gated | GitHub backend job passes |
+| Clean Postgres migration smoke | CI gated | `alembic upgrade head` passes against CI Postgres |
+| Postgres concurrent credit tests | CI gated | `tests/services/credits/ -k concurrent` passes |
+| Backend dependency audit | CI gated | `pip-audit -r backend/requirements.lock` passes |
+| Frontend lint/type/build/test/e2e | CI gated | GitHub frontend job passes |
+| Frontend production audit | CI gated | `npm audit --omit=dev --audit-level=high` passes |
+| Secret scanning | CI gated | TruffleHog verified scan passes |
+| Docker images | CI gated | Backend and frontend Docker builds pass |
 
-## Remaining Deployment Gates
+## Phase 3: Supabase Security Gate
 
-- Run full CI on GitHub after pushing this branch.
-- Run backend tests with configured coverage plugin in the CI Python 3.11 environment.
-- Run `pip-audit -r backend/requirements.txt` in CI after dependency install.
-- Verify Alembic `upgrade head` on a clean Postgres database.
-- Run production manual smoke: Google sign-in, 90-credit grant, upload PDF/DOCX, evaluate, tailor, apply, export, signed URL, 402 behavior, and multi-user isolation.
-- Confirm secret scan passes and no generated reports/artifacts appear in `git status`.
+| Item | Status | Verification Gate |
+| --- | --- | --- |
+| User-owned table RLS | Pending audit | All user-owned tables report `rowsecurity=true` |
+| Ownership policies | Pending audit | Policies include user predicates, not only `TO authenticated` |
+| Update policy safety | Pending audit | `UPDATE`/`ALL` policies include `WITH CHECK` |
+| Private storage bucket | Pending audit | `storage.buckets.public=false` for bucket `resume` |
+| User-scoped storage paths | Pending audit | `storage.objects` policies restrict paths to the authenticated user |
+| Service role isolation | Pending production check | Service role key exists only in backend env |
+
+Run the SQL checks in `docs/production-mvp-runbook.md` and paste results into
+the release ticket before publication.
+
+## Phase 4: Product Smoke Gate
+
+| Item | Status | Verification Gate |
+| --- | --- | --- |
+| Google sign-in | Pending manual smoke | Login works from `https://www.prismpro.live` |
+| Monthly credits | Pending manual smoke | New user receives exactly 90 credits once for the current month |
+| Uploads | Pending manual smoke | PDF and DOCX upload succeed |
+| Resume evaluation | Pending manual smoke | Evaluation debits 1 credit and returns transparent score explanations |
+| JD tailoring | Pending manual smoke | Tailor/analyze debits 2 credits and returns truth/fit signals |
+| Pointer apply | Pending manual smoke | Selected/edited pointers persist tailored JSON |
+| Tailored resume library | Pending manual smoke | Company-specific saved resume is visible and isolated to the user |
+| PDF download | Pending manual smoke | Download renders from saved JSON and debits 1 credit |
+| Low-credit path | Pending manual smoke | Zero-credit calls return `402` |
+| Multi-user isolation | Pending manual smoke | A second user cannot read first user data |
+| Stripe hidden | Pending manual smoke | No payment/top-up/Stripe UI appears |
+
+## Phase 5: Resume PDF Layout Gate
+
+| Item | Status | Verification Gate |
+| --- | --- | --- |
+| One-page fit | Pending manual QA | Single-page resumes stay one page unless source content justifies 2 pages |
+| A4/Letter scaling | Pending manual QA | Both page sizes keep readable margins and no crop |
+| Long bullet wrapping | Pending manual QA | Bullets wrap without clipping or overlap |
+| Empty section handling | Pending manual QA | Empty sections are suppressed or rendered cleanly |
+| Downloaded PDF content | Pending manual QA | Downloaded PDF contains visible resume content |
+| Browser preview isolation | Pending manual QA | Tailor preview iframe renders under production security headers without blank/cropped content |
+
+## Phase 6: Launch Decision
+
+Public launch is approved only when Phases 2-5 are complete and the production
+runbook has captured the actual Supabase audit output and manual smoke results.

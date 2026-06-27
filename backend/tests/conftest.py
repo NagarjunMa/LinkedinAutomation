@@ -4,7 +4,6 @@ os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
 # Must be set BEFORE app.core.config is imported so Session uses SQLite
 os.environ.setdefault("SQLALCHEMY_DATABASE_URI", "sqlite:///:memory:")
 # Minimal stub values expected by Settings validators
-os.environ.setdefault("SUPABASE_JWT_SECRET", "test-secret")
 os.environ.setdefault("SUPABASE_URL", "https://test.supabase.co")
 os.environ.setdefault("SUPABASE_ANON_KEY", "test-anon-key")
 

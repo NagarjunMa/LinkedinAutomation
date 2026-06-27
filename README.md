@@ -196,13 +196,25 @@ progress.txt                   Phase-by-phase delivery status
 
 ---
 
-## Known issues
+## Publication readiness
 
-See `BLOCKERS.md` and `TECH_DEBT.md`:
-- Alembic migration chain has tangled merge points — fresh DBs use `create_all` + `stamp head` (TECH_DEBT)
-- 12 pre-existing TS errors masked by `next.config.mjs` `ignoreBuildErrors: true`
-- 9 frontend `react-hooks/exhaustive-deps` warnings in legacy components
-- 12 minor issues catalogued from 2026-05-26 code review (`TECH_DEBT.md` §2026-05-26)
+Use `docs/production-mvp-runbook.md` and `DEPLOYMENT_READINESS_CHECKLIST.md`
+as the authoritative launch references. Public sharing is blocked until:
+
+- GitHub CI is green for backend, frontend, audits, Docker builds, and the MVP
+  Playwright smoke suite.
+- Supabase RLS/storage audit results are captured and show user-owned tables,
+  ownership predicates, `WITH CHECK` update policies, and a private `resume`
+  bucket.
+- Manual production smoke passes for Google sign-in, 90-credit grants,
+  PDF/DOCX upload, evaluation, tailoring, pointer apply, tailored resume
+  library, PDF download, zero-credit `402`, and multi-user isolation.
+- Resume PDF layout QA passes on real resumes/JDs for one-page output,
+  A4/Letter scaling, margins, overflow, empty sections, long bullets, and
+  downloaded PDF content.
+
+Post-MVP maintenance items are tracked separately in `TECH_DEBT.md`; they must
+not be used as launch instructions.
 
 ---
 

@@ -58,7 +58,7 @@ def _sanitize_filename(name: str | None, default: str = _DEFAULT_FILENAME) -> st
 
     # 5. Fall back to default if empty
     if not name:
-        name = default.rstrip(".pdf") if default.endswith(".pdf") else default
+        name = default.removesuffix(".pdf") if default.endswith(".pdf") else default
 
     # 6. Ensure .pdf suffix
     if not name.lower().endswith(".pdf"):
