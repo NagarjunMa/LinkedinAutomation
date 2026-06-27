@@ -34,37 +34,37 @@ const CARDS = [
   {
     num: '01',
     title: 'ATS Raw-Text Simulator',
-    desc: 'See your resume as a parser sees it — tables, columns, and special characters called out before they cost you a screen.',
+    desc: 'See the resume text an ATS-style parser can actually read before formatting hides important evidence.',
     span: 'md:col-span-2',
     detail: 'Name: John Doe  |  [TABLE STRIPPED]  |  Skills: [COLUMN LOST]',
     mono: true,
   },
   {
     num: '02',
-    title: 'Senior-Recruiter Panel',
-    desc: 'Bullet-level severity flags: Strong, Weak, Vague Impact. Actionable rewrites, not five-paragraph rubrics.',
+    title: 'Score Explanation Panel',
+    desc: 'Read why the score changed, which issues matter before applying, and what action should come first.',
     span: 'md:col-span-1',
     bar: 82,
   },
   {
     num: '03',
-    title: 'JD Diff & Accept',
-    desc: 'Paste any job description. AI proposes bullet rewrites in a diff view — accept each change individually or all at once.',
+    title: 'JD Fit Diff',
+    desc: 'Compare each suggested pointer against the job description, then accept, edit, regenerate, or reject it.',
     span: 'md:col-span-1',
   },
   {
     num: '04',
-    title: 'Country-Aware PDF Export',
-    desc: 'Six templates (SWE · DS · PM) × (USA · India) rendered to recruiter-standard PDFs.',
+    title: 'Application Resume Library',
+    desc: 'Save company-specific resume JSON with source JD, role, accepted changes, and interview review context.',
     span: 'md:col-span-2',
-    pills: ['SWE – USA', 'DS – USA', 'PM – USA', 'SWE – India', 'DS – India', 'PM – India'],
+    pills: ['Company', 'Role', 'Source JD', 'Accepted Changes', 'Resume JSON', 'PDF Export'],
   },
   {
     num: '05',
-    title: 'Placeholder-Hybrid Rewrites',
-    desc: 'Hard numbers are preserved as [X%] or [N users] — you fill them in. Verbs, structure, and framing are rewritten.',
+    title: 'Truth-Check Signals',
+    desc: 'Unsupported numbers and JD-only skills are blocked or flagged before they become part of your resume.',
     span: 'md:col-span-1',
-    tag: 'NO HALLUCINATION',
+    tag: 'PROOF-AWARE',
   },
   {
     num: '06',
@@ -165,7 +165,7 @@ export const BentoGrid: React.FC<BentoGridProps> = ({ isDark: _isDark }) => {
                   className="text-foreground/30 uppercase"
                   style={humaneStyle(10, 500, '0.15em')}
                 >
-                  RECRUITER SCORE — {card.bar}%
+                  READINESS SCORE — {card.bar}%
                 </span>
               </div>
             )}

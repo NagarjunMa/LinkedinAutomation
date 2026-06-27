@@ -67,97 +67,101 @@ const STEPS = [
     icon: Upload,
     step: '01',
     title: 'Upload your resume',
-    desc: 'PDF or DOCX. We extract every bullet, skill, and section without losing structure.'
+    desc: 'PDF or DOCX. Prism Pro turns your existing resume into structured content you can evaluate, tailor, and reuse.'
   },
   {
     icon: ScanText,
     step: '02',
-    title: 'Senior-recruiter critique',
-    desc: 'Bullet-level severity flags — Strong, Weak, Vague Impact — the same lens a hiring manager uses in 7 seconds.'
+    title: 'See what weakens the first scan',
+    desc: 'Review score explanations, ATS parseability, missing evidence, noisy bullets, and the highest-impact actions before applying.'
   },
   {
     icon: FileDiff,
     step: '03',
-    title: 'JD-driven tailoring',
-    desc: 'Paste any job description. Review a diff of AI-proposed rewrites and accept changes one by one.'
+    title: 'Tailor against the real JD',
+    desc: 'Paste a job description and compare suggested changes against the role requirements before anything is applied.'
   },
   {
     icon: Download,
     step: '04',
-    title: 'Recruiter-grade PDF export',
-    desc: 'Six templates (SWE · DS · PM) × (USA · India). Export the format that matches the market.'
+    title: 'Save the application version',
+    desc: 'Keep a company-specific resume record, then export an ATS-aware PDF when you are ready to submit.'
   }
 ];
 
 const PROBLEMS = [
   {
-    stat: '75%',
-    label: 'of resumes are rejected before a human reads them',
-    detail: 'ATS systems filter on keyword match and parse quality, not on your actual experience.'
+    stat: 'ATS',
+    label: 'parsers flatten the resume before anyone sees it',
+    detail: 'Tables, columns, headers, special characters, and missing dates can change what systems actually read.'
   },
   {
-    stat: '7 sec',
-    label: 'is how long a recruiter spends on first pass',
-    detail: 'Weak opening bullets and buried impact metrics cost you before the conversation starts.'
+    stat: 'SCAN',
+    label: 'strong experience gets buried under noisy bullets',
+    detail: 'A recruiter should not have to hunt through every project to understand your fit for the role.'
   },
   {
-    stat: '1 size',
-    label: 'does not fit all — US and India formats differ',
-    detail: 'US recruiters expect a tight 1-page resume. Indian hiring teams expect a longer structured CV.'
+    stat: 'FIT',
+    label: 'a strong general resume can still miss the job',
+    detail: 'Each JD asks for a different mix of evidence, keywords, seniority signals, and project context.'
   }
 ];
 
 const FEATURES = [
   {
-    title: 'Bullet-level severity scoring',
-    desc: 'Each bullet is flagged Strong, Weak, or Vague Impact — no five-paragraph rubric, just the same signal a senior recruiter marks on paper.'
+    title: 'Transparent score explanations',
+    desc: 'Scores are broken into readable reasons and top actions, so you know what to fix before sending the resume.'
   },
   {
     title: 'ATS raw-text simulator',
-    desc: 'See your resume as an ATS parser sees it. Tables, multi-column layouts, and special characters are called out before they cost you a screen.'
+    desc: 'Preview the text an ATS-style parser sees, including formatting issues that can hide otherwise strong experience.'
   },
   {
-    title: 'JD diff with per-change accept',
-    desc: 'Paste a job description and review a structured diff. Accept rewrites bullet by bullet or all at once — you stay in control.'
+    title: 'Diff-based tailoring control',
+    desc: 'Accept, edit, reset, regenerate, or reject every suggested pointer. The final resume changes only when you approve it.'
   },
   {
-    title: 'Placeholder-hybrid rewrites',
-    desc: "Numbers you can't verify appear as [X%] or [N users]. Verbs, structure, and framing are rewritten. The output reads like a recruiter wrote it."
+    title: 'Truth-checked rewrite signals',
+    desc: 'Unsupported numbers and JD skills are blocked or surfaced as review signals instead of quietly becoming fake achievements.'
   },
   {
-    title: 'Country + role templates',
-    desc: 'Six export templates — SWE, DS, PM in USA and India formats — rendered to PDF via Puppeteer to match recruiter expectations in each market.'
+    title: 'One-page fit guardrails',
+    desc: 'For US-style resumes, Prism Pro helps prioritize the highest-signal bullets so tailoring does not create a noisy two-page resume.'
   },
   {
-    title: 'Transparent credit system',
-    desc: '90 free credits per month covers about 30 JD tailor-and-export workflows during the freemium launch.'
+    title: 'Company-specific resume library',
+    desc: 'Every accepted JD-tailored version is saved with company, role, source JD, accepted changes, and resume JSON for interview review.'
   }
 ];
 
 const FAQS = [
   {
     q: 'How is this different from Rezi or Teal?',
-    a: "Most resume tools score your resume against a rubric and produce generic AI-written bullets. Prism Pro surfaces bullet-level severity flags the same way a senior recruiter would mark your resume by hand, then proposes rewrites in a diff view so you accept or reject every change."
+    a: "Prism Pro is built around truthful JD-specific editing, not one-click resume generation. You see why a pointer helps, what requirement it maps to, and exactly what will change before you apply it."
   },
   {
-    q: 'Will the AI hallucinate my experience or invent metrics?',
-    a: "No. Hard numbers that the AI cannot verify are replaced with typed placeholders like [X%] or [$Y]. Only verb choice, sentence structure, and framing are rewritten. Every proposed change is shown in a diff view before it is applied."
+    q: 'Does Prism Pro write fake achievements?',
+    a: "It is designed to avoid unsupported claims. Rewrites are checked for invented numbers and unsupported JD skills, and every proposed change remains editable before it becomes part of a saved resume."
   },
   {
-    q: 'Which ATS systems does it test against?',
-    a: "The simulator tests against the core parser behaviours shared by Workday, Greenhouse, Lever, and iCIMS: multi-column rejection, table parsing, header/footer stripping, and special-character handling."
+    q: 'Can I edit or reject the AI suggestions?',
+    a: "Yes. Suggested pointers can be selected, cleared, edited, reset, regenerated, or switched between alternatives. Prism Pro keeps you in control of the final version."
   },
   {
-    q: 'Why do you have different templates for the USA and India?',
-    a: "US hiring conventions expect a one-page, tightly scoped resume. Indian hiring teams typically expect a 2-3 page structured CV with education placed prominently and a profile summary at the top."
+    q: 'Will it always create a one-page resume?',
+    a: "For US-style resumes, the workflow prioritizes one-page fit when the source content supports it. If the original resume has much more content, Prism Pro focuses on reducing noise while preserving the strongest role evidence."
   },
   {
     q: 'How are credits priced?',
     a: "Every account receives 90 free credits per month during the freemium launch. A JD tailor-and-export workflow costs 3 credits: 2 to tailor and 1 to export."
   },
   {
+    q: 'Why save tailored resumes?',
+    a: "Every application creates a different version. The library lets you revisit the exact company-specific resume, source JD, and accepted changes before recruiter screens or interviews."
+  },
+  {
     q: 'Is my resume data stored securely?',
-    a: "All documents are stored in Supabase with Row-Level Security — your data is only accessible to your account. You can delete your data at any time from the account settings."
+    a: "Resume data is stored in user-scoped records and private storage. The launch checklist includes Supabase Row-Level Security and storage policy audits before public release."
   }
 ];
 
@@ -263,7 +267,7 @@ export default function LandingPage() {
                 className="text-foreground uppercase"
                 style={{ fontFamily: 'var(--font-geist-sans), system-ui, sans-serif', fontSize: '22px', fontWeight: 700, letterSpacing: '0.22em', lineHeight: 1 }}
               >
-                RECRUITER-GRADE — 2026
+                TRUTHFUL TAILORING — 2026
               </span>
               <div className="w-10 h-[1px] bg-foreground/60" aria-hidden="true" />
             </motion.div>
@@ -274,14 +278,14 @@ export default function LandingPage() {
               className="text-foreground leading-relaxed mb-12"
               style={{ fontFamily: 'var(--font-geist-sans), system-ui, sans-serif', fontSize: '24px', fontWeight: 400, lineHeight: '1.5', maxWidth: '600px' }}
             >
-              Bullet-level resume critique. JD-driven tailoring.{' '}
+              Upload your resume, paste a job description, and review every suggested change before it becomes your final resume.{' '}
               <span
                 className="text-foreground uppercase"
                 style={{ fontFamily: 'var(--font-geist-sans), system-ui, sans-serif', fontSize: '26px', fontWeight: 700, letterSpacing: '0.05em' }}
               >
-                Recruiter&#8209;grade
+                Truthful,
               </span>{' '}
-              PDF export for USA and India markets.
+              JD-specific resume prep for technical professionals.
             </motion.p>
 
             {/* CTA buttons */}
@@ -294,7 +298,7 @@ export default function LandingPage() {
                   className="inline-flex items-center gap-2 px-7 py-3.5 bg-foreground text-background uppercase transition-opacity hover:opacity-85"
                   style={humaneStyle(17, 700, '0.14em')}
                 >
-                  Polish Your Resume <ArrowRight size={16} />
+                  Tailor My Resume Free <ArrowRight size={16} />
                 </button>
               </Link>
               <button
@@ -358,7 +362,7 @@ export default function LandingPage() {
                 letterSpacing: '-0.005em',
               }}
             >
-              For engineers who refuse generic AI bullets.
+              Recruiter-grade resume tailoring for engineers, data scientists, and PMs who refuse generic AI bullets.
             </motion.p>
 
             {/* Decorative circle — editorial accent */}
@@ -378,7 +382,7 @@ export default function LandingPage() {
             className="shrink-0 pl-8 text-foreground/35 uppercase whitespace-nowrap"
             style={humaneStyle(15, 700, '0.2em')}
           >
-            USED BY ENGINEERS FROM
+            BUILT FOR
           </span>
 
           {/* Marquee — duplicates list twice; CSS keyframe translates -50% */}
@@ -391,7 +395,7 @@ export default function LandingPage() {
               }}
             >
               {[...Array(2)].flatMap((_, dupIdx) =>
-                ['Figma', 'Razorpay', 'Flipkart', 'Spotify', 'Amazon', 'Thoughtworks', 'Atlassian', 'Zerodha', 'Cloudflare'].map((name) => (
+                ['Software Engineers', 'Data Scientists', 'Product Managers', 'ML Engineers', 'Backend Engineers', 'Cloud Engineers', 'Platform Engineers', 'Technical PMs', 'Career Switchers'].map((name) => (
                   <span
                     key={`${dupIdx}-${name}`}
                     className="text-foreground/40 uppercase shrink-0"
@@ -433,7 +437,7 @@ export default function LandingPage() {
                 number="01"
                 label="PROBLEM"
                 title={<>The problem is not<br />your <em className="font-normal not-italic">experience.</em></>}
-                subtitle="It is how your experience is presented. Three structural failures cause most rejections before a hiring manager ever reads your name."
+                subtitle="It is what survives the first scan. Prism Pro focuses on the parts that decide whether your resume gets read: parseability, signal, and role fit."
               />
             </motion.div>
 
@@ -490,8 +494,8 @@ export default function LandingPage() {
               <SplitHeading
                 number="02"
                 label="WORKFLOW"
-                title={<>Four steps from<br />upload to<br /><em className="font-normal not-italic">recruiter-ready.</em></>}
-                subtitle="Every step is designed for experienced professionals who know what their resume needs — and want to act on it fast."
+                title={<>Four steps from<br />resume to<br /><em className="font-normal not-italic">application-ready.</em></>}
+                subtitle="Every step is built for professionals who want targeted edits, proof-aware suggestions, and a saved record for each application."
               />
             </motion.div>
 
@@ -555,8 +559,8 @@ export default function LandingPage() {
               <SplitHeading
                 number="03"
                 label="FEATURES"
-                title={<>Every tool built around what recruiters<br /><em className="font-normal italic">actually</em> look for.</>}
-                subtitle="Not a generic AI wrapper. Each feature maps directly to a documented hiring-team behaviour or ATS failure mode."
+                title={<>Every tool built to keep your resume<br /><em className="font-normal italic">specific</em> and honest.</>}
+                subtitle="Not a one-click generator. Each feature helps you decide what belongs on this resume for this job."
               />
             </motion.div>
 
@@ -584,8 +588,8 @@ export default function LandingPage() {
               <SplitHeading
                 number="04"
                 label="CAPABILITIES"
-                title={<>Six tools.<br />One<br /><em className="font-normal italic">coherent</em><br />workflow.</>}
-                subtitle="Each capability addresses a specific, documented point of failure in the application process."
+                title={<>Six signals.<br />One<br /><em className="font-normal italic">deliberate</em><br />workflow.</>}
+                subtitle="Evaluation, ATS view, JD fit, truth checks, page discipline, and saved versions work together so the final resume is intentional."
               />
             </motion.div>
 
@@ -733,7 +737,7 @@ export default function LandingPage() {
                   className="text-foreground/85 leading-relaxed mb-8"
                   style={humaneStyle(19, 500, '0')}
                 >
-                  We are keeping the launch freemium-only while we validate the resume and JD workflow with real users.
+                  We are keeping launch freemium-only while we validate resume quality, layout fit, and JD-tailoring accuracy with real users.
                 </p>
                 <Link href="/login">
                   <button
@@ -824,28 +828,28 @@ export default function LandingPage() {
               fontWeight: 400,
             }}
           >
-            Your resume reviewed by a<br />
-            <em className="font-normal opacity-60">senior recruiter in minutes.</em>
+            Make every application version<br />
+            <em className="font-normal opacity-60">intentional.</em>
           </h2>
           <p
             className="text-foreground/50 mb-12 max-w-md leading-relaxed"
             style={humaneStyle(20, 500, '0')}
           >
-            Join engineers and product professionals who prep smarter, not longer.
+            Upload your resume, tailor it to a real JD, and keep only the changes you trust.
           </p>
           <Link href="/login">
             <button
               className="inline-flex items-center gap-2 px-8 py-4 bg-foreground text-background uppercase transition-opacity hover:opacity-80 mb-8"
               style={humaneStyle(16, 700, '0.14em')}
             >
-              Polish Your Resume <ArrowRight size={14} />
+              Start Free <ArrowRight size={14} />
             </button>
           </Link>
           <span
             className="text-foreground/30 uppercase"
             style={humaneStyle(15, 700, '0.2em')}
           >
-            PRISM PRO. — RECRUITER-GRADE RESUME PREP
+            PRISM PRO. — TRUTHFUL RESUME TAILORING
           </span>
         </motion.div>
       </section>
@@ -869,7 +873,7 @@ export default function LandingPage() {
                 className="text-foreground/80 leading-relaxed"
                 style={humaneStyle(16, 500, '0.01em')}
               >
-                Recruiter-grade resume tailoring for experienced engineers and product professionals. Built for USA and India markets.
+                Truthful JD-specific resume tailoring for technical professionals. Built for focused applications, ATS-aware exports, and interview-ready version history.
               </p>
             </div>
 

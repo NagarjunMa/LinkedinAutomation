@@ -40,12 +40,14 @@ def _resolve_template(country_hint: str, role_category: str) -> str:
 def _slugify(text: str) -> str:
     """Lowercase, replace non-alphanumeric with hyphens, collapse repeats, strip ends.
 
-    Falls back to 'user' if the result is empty.
+    Falls back to 'user' if the result is empty and caps output length for
+    filesystem-safe filename hints.
     """
     slug = text.lower()
     slug = re.sub(r"[^a-z0-9]+", "-", slug)
     slug = re.sub(r"-+", "-", slug)
     slug = slug.strip("-")
+    slug = (slug or "user")[:100].strip("-")
     return slug or "user"
 
 

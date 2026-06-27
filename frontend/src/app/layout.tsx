@@ -63,21 +63,21 @@ const appOrigin = getConfiguredAppOrigin()
 
 export const metadata: Metadata = {
   title: {
-    default: "Prism Pro — Recruiter-Grade Resume Prep",
+    default: "Prism Pro — Truthful Resume Tailoring for Technical Professionals",
     template: "%s | Prism Pro"
   },
-  description: "Recruiter-grade resume tailoring and JD matching for experienced engineers and product professionals. Used by SWEs, Data Scientists, and PMs targeting roles in the US and India.",
+  description: "Tailor your resume to real job descriptions without generic AI bullets or unsupported claims. Prism Pro helps engineers, data scientists, and PMs review, edit, and export ATS-aware resumes.",
   keywords: [
-    "resume tailoring",
-    "ATS optimization",
-    "JD matching",
-    "resume scoring",
-    "recruiter resume review",
-    "software engineer resume",
-    "data scientist resume",
-    "product manager resume",
-    "resume builder USA India",
-    "ATS resume checker"
+    "resume tailoring for software engineers",
+    "job description resume tailoring",
+    "ATS resume checker",
+    "AI resume review",
+    "truthful resume rewriting",
+    "software engineer resume review",
+    "data scientist resume review",
+    "product manager resume tailoring",
+    "resume diff editor",
+    "US India resume templates"
   ],
   authors: [{ name: "Prism Pro Team" }],
   creator: "Prism Pro",
@@ -95,24 +95,14 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_US',
     url: appOrigin,
-    title: 'Prism Pro — Recruiter-Grade Resume Prep',
-    description: 'Recruiter-grade resume tailoring and JD matching for experienced engineers and product professionals. Used by SWEs, Data Scientists, and PMs targeting roles in the US and India.',
+    title: 'Prism Pro — Truthful Resume Tailoring for Technical Professionals',
+    description: 'Upload your resume, paste a job description, review every suggested change, and export an ATS-aware PDF without unsupported claims.',
     siteName: 'Prism Pro',
-    images: [
-      {
-        url: '/og-image.jpg',
-        width: 1200,
-        height: 630,
-        alt: 'Prism Pro — Recruiter-Grade Resume Prep',
-      },
-    ],
   },
   twitter: {
-    card: 'summary_large_image',
-    title: 'Prism Pro — Recruiter-Grade Resume Prep',
-    description: 'Bullet-level resume critique, JD-driven tailoring, and country-aware PDF export for experienced engineers and PMs.',
-    images: ['/og-image.jpg'],
-    creator: '@prismpro',
+    card: 'summary',
+    title: 'Prism Pro — Truthful Resume Tailoring',
+    description: 'JD-specific resume edits with diff review, truth checks, ATS-aware export, and saved company-specific versions.',
   },
   robots: {
     index: true,
@@ -124,9 +114,6 @@ export const metadata: Metadata = {
       'max-image-preview': 'large',
       'max-snippet': -1,
     },
-  },
-  verification: {
-    google: 'your-google-verification-code',
   },
 }
 
@@ -151,7 +138,7 @@ export default function RootLayout({
               "@context": "https://schema.org",
               "@type": "SoftwareApplication",
               "name": "Prism Pro",
-              "description": "Recruiter-grade resume tailoring platform. Professionals use Prism Pro to evaluate and tailor their resumes to job descriptions, prepare for ATS systems, and export polished, country-aware PDF resumes.",
+              "description": "Truthful resume tailoring workspace for technical professionals. Prism Pro helps users evaluate resumes, tailor them to job descriptions, review every AI-suggested change, avoid unsupported claims, and export ATS-aware PDFs.",
               "url": appOrigin,
               "applicationCategory": "BusinessApplication",
               "operatingSystem": "Web Browser",
