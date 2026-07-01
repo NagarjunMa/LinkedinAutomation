@@ -30,11 +30,11 @@ MVP belongs in `TECH_DEBT.md`; anything below is a release gate.
 
 | Item | Status | Verification Gate |
 | --- | --- | --- |
-| User-owned table RLS | Pending audit | All user-owned tables report `rowsecurity=true` |
-| Ownership policies | Pending audit | Policies include user predicates, not only `TO authenticated` |
-| Update policy safety | Pending audit | `UPDATE`/`ALL` policies include `WITH CHECK` |
-| Private storage bucket | Pending audit | `storage.buckets.public=false` for bucket `resume` |
-| User-scoped storage paths | Pending audit | `storage.objects` policies restrict paths to the authenticated user |
+| User-owned table RLS | Complete | Live Supabase audit on 2026-06-30 reports all public tables with `rowsecurity=true` |
+| Ownership policies | Complete | Live policies use user predicates or explicit authenticated read-only access for shared job listings |
+| Update policy safety | Complete | Live `UPDATE`/`ALL` policies include `WITH CHECK` for user-owned write paths |
+| Private storage bucket | Complete | Live `storage.buckets.public=false` for bucket `resume` |
+| User-scoped storage paths | Complete | Live `storage.objects` policies restrict paths to the authenticated user |
 | Service role isolation | Pending production check | Service role key exists only in backend env |
 
 Run the SQL checks in `docs/production-mvp-runbook.md` and paste results into
@@ -44,17 +44,17 @@ the release ticket before publication.
 
 | Item | Status | Verification Gate |
 | --- | --- | --- |
-| Google sign-in | Pending manual smoke | Login works from `https://www.prismpro.live` |
-| Monthly credits | Pending manual smoke | New user receives exactly 90 credits once for the current month |
-| Uploads | Pending manual smoke | PDF and DOCX upload succeed |
-| Resume evaluation | Pending manual smoke | Evaluation debits 1 credit and returns transparent score explanations |
-| JD tailoring | Pending manual smoke | Tailor/analyze debits 2 credits and returns truth/fit signals |
-| Pointer apply | Pending manual smoke | Selected/edited pointers persist tailored JSON |
-| Tailored resume library | Pending manual smoke | Company-specific saved resume is visible and isolated to the user |
-| PDF download | Pending manual smoke | Download renders from saved JSON and debits 1 credit |
-| Low-credit path | Pending manual smoke | Zero-credit calls return `402` |
-| Multi-user isolation | Pending manual smoke | A second user cannot read first user data |
-| Stripe hidden | Pending manual smoke | No payment/top-up/Stripe UI appears |
+| Google sign-in | Complete | User-confirmed production smoke passed on 2026-06-30 |
+| Monthly credits | Complete | User-confirmed 90-credit grant smoke passed on 2026-06-30 |
+| Uploads | Complete | User-confirmed PDF and DOCX upload smoke passed on 2026-06-30 |
+| Resume evaluation | Complete | User-confirmed evaluation debit smoke passed on 2026-06-30 |
+| JD tailoring | Complete | User-confirmed tailor debit smoke passed on 2026-06-30 |
+| Pointer apply | Complete | User-confirmed pointer apply smoke passed on 2026-06-30 |
+| Tailored resume library | Complete | User-confirmed library smoke passed on 2026-06-30 |
+| PDF download | Complete | User-confirmed PDF download debit smoke passed on 2026-06-30 |
+| Low-credit path | Complete | User-confirmed `402` smoke passed on 2026-06-30 |
+| Multi-user isolation | Complete | User-confirmed multi-user isolation smoke passed on 2026-06-30 |
+| Stripe hidden | Complete | User-confirmed no payment/top-up/Stripe UI smoke passed on 2026-06-30 |
 
 ## Phase 5: Resume PDF Layout Gate
 

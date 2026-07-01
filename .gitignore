@@ -360,7 +360,8 @@ $RECYCLE.BIN/
 .aws/
 
 # Docker
-.dockerignore
+# Keep per-service .dockerignore files tracked so production image contexts
+# do not include local dependency/build artifacts.
 
 # =============================================================================
 # MISC

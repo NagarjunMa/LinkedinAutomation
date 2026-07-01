@@ -151,6 +151,26 @@ Release is blocked if:
 - The `resume` bucket is public.
 - Storage object policies do not enforce user-scoped paths.
 
+### 2026-06-30 Live Audit Result
+
+Project: `foytemzinonzkufkstqf`
+
+Result:
+
+- All public tables report RLS enabled.
+- User-owned write policies use ownership predicates and `WITH CHECK`.
+- `resume` storage bucket is private.
+- `resume` storage bucket allows only PDF and DOCX with a 10 MB limit.
+- Storage object policies scope paths to the authenticated user's folder.
+- `public.grant_monthly_credits(p_amount integer)` has `search_path=public`.
+- Alembic production version is `8a7c2d19f4b3`.
+
+Remaining Supabase Security Advisor warning:
+
+- Leaked password protection is disabled. This is not a blocker if password
+  auth is disabled and Google OAuth is the only launch sign-in method. Enable
+  it before offering email/password sign-in.
+
 ## Monthly Credits
 
 Enable `pg_cron`, schedule the monthly grant, and backfill the current month:
