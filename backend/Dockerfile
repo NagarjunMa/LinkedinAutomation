@@ -27,6 +27,9 @@ RUN apt-get update && apt-get install -y \
     fonts-liberation \
     && rm -rf /var/lib/apt/lists/*
 
+# The PDF layout contract uses this installed, embeddable production font.
+RUN fc-match --format '%{family}\n' 'Liberation Sans' | grep -qi '^Liberation Sans$'
+
 # Set working directory
 WORKDIR /app
 

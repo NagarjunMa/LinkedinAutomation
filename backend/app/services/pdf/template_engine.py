@@ -83,8 +83,12 @@ def render_html_only(
     css_content = _read_shared_css()
     style_block = f"<style>\n{css_content}\n</style>"
 
-    # Inject before </head>; if no </head>, prepend at top
-    if re.search(r"</head>", cleaned, re.IGNORECASE):
+    # Insert shared CSS before template-specific <style> blocks. This keeps a
+    # template's A4 @page declaration authoritative after styles are inlined.
+    first_style = re.search(r"<style\b", cleaned, re.IGNORECASE)
+    if first_style:
+        cleaned = cleaned[:first_style.start()] + style_block + "\n" + cleaned[first_style.start():]
+    elif re.search(r"</head>", cleaned, re.IGNORECASE):
         cleaned = re.sub(
             r"(</head>)",
             f"{style_block}\n\\1",
