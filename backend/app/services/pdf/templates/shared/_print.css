@@ -1,10 +1,9 @@
 /* backend/app/services/pdf/templates/shared/_print.css */
 @page {
   size: Letter;     /* US default; IN templates override via @page in their own <style> */
-  margin: 0.5in 0.55in;
+  margin: 0.5in;
 }
 @media print {
   body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
 }
 .no-break { break-inside: avoid; page-break-inside: avoid; }
-.experience-item { break-inside: avoid; page-break-inside: avoid; margin-bottom: 0.5em; }

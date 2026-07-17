@@ -1,15 +1,15 @@
 /* backend/app/services/pdf/templates/shared/_typography.css */
 :root {
-  --font-sans: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  --font-serif-headings-in: "IBM Plex Serif", "Times New Roman", Times, serif;
-  --fs-name: 22pt;
+  --font-sans: "Liberation Sans", Arial, sans-serif;
+  --fs-name: 14pt;
   --fs-h2: 11pt;
   --fs-body: 10pt;
-  --fs-small: 9pt;
-  --line: 1.35;
+  --fs-summary: 11pt;
+  --fs-contact: 10pt;
+  --line: 1.14;
 }
 body { font-family: var(--font-sans); font-size: var(--fs-body); line-height: var(--line); }
-h1 { font-size: var(--fs-name); margin: 0; font-weight: 700; }
-h2 { font-size: var(--fs-h2); margin: 0.6em 0 0.3em; font-weight: 700; }
-.summary, .meta { font-size: var(--fs-small); }
-.country-IN h2 { font-family: var(--font-serif-headings-in); letter-spacing: 0.02em; }
+h1 { font-size: var(--fs-name); margin: 0; font-weight: 700; line-height: 1.1; }
+h2 { font-size: var(--fs-h2); margin: 0 0 0.2em; font-weight: 700; line-height: 1.1; }
+.summary { font-size: var(--fs-summary); }
+.meta { font-size: var(--fs-contact); }

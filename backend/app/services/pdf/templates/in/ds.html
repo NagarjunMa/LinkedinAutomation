@@ -7,10 +7,10 @@
   <link rel="stylesheet" href="{{ base_css }}">
   <link rel="stylesheet" href="{{ type_css }}">
   <link rel="stylesheet" href="{{ print_css }}">
-  <style>@page { size: A4; margin: 0.55in 0.55in; }</style>
+  <style>@page { size: A4; margin: 0.5in; }</style>
 </head>
 <body>
-  <header>
+  <header class="resume-header">
     <h1>{{ doc.contact.name }}</h1>
     <div class="meta">
       {% if doc.contact.email %}{{ doc.contact.email }}{% endif %}
@@ -20,18 +20,18 @@
   </header>
 
   {% if doc.summary %}
-  <section class="section">
+  <section class="section section-summary">
     <h2>Profile</h2>
     <p class="summary">{{ doc.summary }}</p>
   </section>
   {% endif %}
 
-  <section class="section">
+  <section class="section section-skills">
     <h2>Technical Skills</h2>
-    <p>{{ doc.skills.hard | join(" · ") }}</p>
+    <p class="skills-list">{{ doc.skills.hard | join(" · ") }}</p>
   </section>
 
-  <section class="section">
+  <section class="section section-experience">
     <h2>Professional Experience</h2>
     {% for exp in doc.experience %}
       <div class="experience-item">
@@ -45,7 +45,7 @@
   </section>
 
   {% if doc.projects %}
-  <section class="section">
+  <section class="section section-projects">
     <h2>Key Projects</h2>
     {% for proj in doc.projects %}
       <div class="experience-item">
@@ -56,10 +56,10 @@
   </section>
   {% endif %}
 
-  <section class="section">
+  <section class="section section-education">
     <h2>Education</h2>
     {% for ed in doc.education %}
-      <div class="row">
+      <div class="row education-item">
         <strong>{{ ed.degree }} · {{ ed.school }}</strong>
         <span class="muted">{{ ed.dates }}{% if ed.gpa %} · GPA {{ ed.gpa }}{% endif %}</span>
       </div>

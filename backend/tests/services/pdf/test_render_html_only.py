@@ -47,3 +47,22 @@ def test_render_html_only_inlines_all_three_css_files():
     # The HTML must be self-contained
     assert "<html" in html.lower()
     assert "</html>" in html.lower()
+
+
+def test_render_html_only_uses_the_classic_ats_layout_contract():
+    """The preview must expose the same locked typography as the PDF export."""
+    from app.services.pdf.template_engine import render_html_only
+
+    html = render_html_only(make_resume(), country="US", role="swe")
+
+    assert 'class="resume-header"' in html
+    assert 'class="section section-summary"' in html
+    assert 'class="skills-list"' in html
+    assert '"Liberation Sans", Arial, sans-serif' in html
+    assert "--fs-name: 14pt" in html
+    assert "--fs-h2: 11pt" in html
+    assert "--fs-summary: 11pt" in html
+    assert "--fs-body: 10pt" in html
+    assert "--line: 1.14" in html
+    assert "margin: 0.5in" in html
+    assert "break-after: avoid-page" in html
