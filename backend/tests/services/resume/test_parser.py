@@ -1,4 +1,3 @@
-import pytest
 from pathlib import Path
 from app.services.resume.parser import parse_resume, _structure_from_text
 
@@ -80,3 +79,49 @@ CS50's Introduction to Artificial Intelligence with Python | Harvard University 
     assert doc.certifications == [
         "CS50's Introduction to Artificial Intelligence with Python | Harvard University | 2024"
     ]
+
+
+def test_parser_preserves_contact_links_for_export():
+    doc = _structure_from_text(
+        """Jane Doe
+jane@example.com | +1 555 0100 | linkedin.com/in/janedoe | https://github.com/janedoe
+SUMMARY
+Backend engineer.
+"""
+    )
+
+    assert doc.contact.links == [
+        "https://linkedin.com/in/janedoe",
+        "https://github.com/janedoe",
+    ]
+
+
+def test_parser_reads_canonical_export_rows_on_reupload():
+    raw = """Jane Doe
+jane@example.com · +1 555 0100 · https://github.com/janedoe
+SUMMARY
+Backend engineer.
+TECHNICAL SKILLS
+Python, Postgres, AWS
+WORK EXPERIENCE
+Senior SWE · Acme 2022-2026 · SF, CA
+• Built backend APIs.
+PROJECTS
+OSS lib
+• Built a parser.
+EDUCATION
+BS CS · State U 2017-2021 · GPA 3.8
+"""
+
+    doc = _structure_from_text(raw)
+
+    assert doc.contact.links == ["https://github.com/janedoe"]
+    assert doc.experience[0].role == "Senior SWE"
+    assert doc.experience[0].company == "Acme"
+    assert doc.experience[0].location == "SF, CA"
+    assert doc.experience[0].dates == "2022-2026"
+    assert doc.experience[0].bullets[0].text == "Built backend APIs."
+    assert doc.education[0].degree == "BS CS"
+    assert doc.education[0].school == "State U"
+    assert doc.education[0].dates == "2017-2021"
+    assert doc.education[0].gpa == "3.8"

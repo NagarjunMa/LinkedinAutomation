@@ -27,7 +27,7 @@ def _simulate_pdf(content: bytes) -> ATSResult:
     with pdfplumber.open(BytesIO(content)) as pdf:
         text_parts: list[str] = []
         for i, page in enumerate(pdf.pages):
-            tables = page.find_tables()
+            tables = [table for table in page.find_tables() if _is_true_table(table)]
             if tables:
                 issues.append(FormatIssue(
                     type="table",
@@ -55,6 +55,21 @@ def _simulate_pdf(content: bytes) -> ATSResult:
     raw = "\n".join(text_parts)
     score = max(0, min(100, score))
     return ATSResult(parseability_score=score, raw_text=raw, format_issues=issues)
+
+
+def _is_true_table(table) -> bool:
+    """Reject line-based false positives while preserving genuine data grids.
+
+    Section divider rules can cause pdfplumber to infer a one-column "table"
+    across an otherwise normal resume. A meaningful ATS-risk table needs at
+    least two populated rows and two populated columns.
+    """
+    data = table.extract() or []
+    populated_rows = [row for row in data if any((cell or "").strip() for cell in row or [])]
+    if len(populated_rows) < 2:
+        return False
+    column_count = max((len(row or []) for row in populated_rows), default=0)
+    return column_count >= 2
 
 
 def _detect_columns(page) -> int:
