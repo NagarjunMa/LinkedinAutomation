@@ -86,12 +86,32 @@ def _split_sections(raw: str) -> dict[str, str]:
 
 
 def _extract_contact(header_block: str) -> Contact:
-    import re
     name = header_block.splitlines()[0].strip() if header_block else "Unknown"
     email_match = re.search(r"[\w.+-]+@[\w-]+\.[\w.-]+", header_block)
     email = email_match.group(0) if email_match else None
     phone_m = re.search(r"[\+\d][\d\s\-\(\)]{7,}", header_block)
-    return Contact(name=name, email=email, phone=phone_m.group(0).strip() if phone_m else None, links=[])
+    links = _extract_links(header_block)
+    return Contact(name=name, email=email, phone=phone_m.group(0).strip() if phone_m else None, links=links)
+
+
+_LINK_RE = re.compile(
+    r"(?:(?:https?://|www\.)[^\s|,;]+|(?:linkedin\.com|github\.com)/[^\s|,;]+)",
+    re.I,
+)
+
+
+def _extract_links(header_block: str) -> list[str]:
+    """Return de-duplicated portfolio links without trailing sentence punctuation."""
+    links: list[str] = []
+    for match in _LINK_RE.finditer(header_block):
+        link = match.group(0).rstrip(".])}")
+        if link.lower().startswith("www."):
+            link = f"https://{link}"
+        elif "://" not in link:
+            link = f"https://{link}"
+        if link not in links:
+            links.append(link)
+    return links
 
 
 MONTH = r"(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\.?"
@@ -115,6 +135,13 @@ def _split_pipe_parts(line: str) -> list[str]:
     return [p.strip() for p in re.split(r"\s+\|\s+", line) if p.strip()]
 
 
+def _split_standard_parts(line: str) -> list[str]:
+    """Split legacy pipe rows and canonical export rows without losing location text."""
+    if re.search(r"\s+\|\s+", line):
+        return _split_pipe_parts(line)
+    return [part.strip() for part in re.split(r"\s+·\s+", line) if part.strip()]
+
+
 def _split_name_location(value: str, *, allow_single_location: bool = False) -> tuple[str, str | None]:
     parts = [part.strip() for part in value.split(",") if part.strip()]
     if len(parts) >= 3:
@@ -126,7 +153,7 @@ def _split_name_location(value: str, *, allow_single_location: bool = False) -> 
 
 def _parse_experience_header(line: str) -> ExperienceEntry:
     line_without_dates, dates = _extract_date(line)
-    parts = _split_pipe_parts(line_without_dates)
+    parts = _split_standard_parts(line_without_dates)
     if len(parts) >= 3:
         role, company, location = parts[0], parts[1], " | ".join(parts[2:])
     elif len(parts) == 2:
@@ -141,7 +168,7 @@ def _parse_experience_header(line: str) -> ExperienceEntry:
 
 def _extract_experience(block: str) -> list[ExperienceEntry]:
     """Each entry = role line + bullets that follow until next role line.
-    Role line heuristic: contains ' at ' or ' | ' or year range pattern."""
+    Role line heuristic: contains ' at ', a legacy pipe, or the canonical dot separator."""
     entries: list[ExperienceEntry] = []
     if not block:
         return entries
@@ -152,7 +179,7 @@ def _extract_experience(block: str) -> list[ExperienceEntry]:
         stripped = line.strip()
         bullet_match = BULLET_RE.match(stripped)
         is_role = bool(DATE_RANGE_RE.search(stripped)) and (
-            " | " in stripped or " at " in stripped.lower()
+            " | " in stripped or " · " in stripped or " at " in stripped.lower()
         )
         if is_role:
             if current_role:
@@ -179,8 +206,16 @@ def _extract_education(block: str) -> list[EducationEntry]:
     lines = [line.strip() for line in block.splitlines() if line.strip()]
     out: list[EducationEntry] = []
     for line in lines:
-        line_without_dates, dates = _extract_date(line)
-        parts = _split_pipe_parts(line_without_dates)
+        gpa_match = re.search(r"\b(?:CGPA|GPA)\s*:?\s*([\d.]+(?:\s*/\s*[\d.]+)?)", line, re.I)
+        gpa = gpa_match.group(1).replace(" ", "") if gpa_match else None
+        line_without_gpa = re.sub(
+            r"\s*[·|,]?\s*\b(?:CGPA|GPA)\s*:?\s*[\d.]+(?:\s*/\s*[\d.]+)?",
+            "",
+            line,
+            flags=re.I,
+        ).strip()
+        line_without_dates, dates = _extract_date(line_without_gpa)
+        parts = _split_standard_parts(line_without_dates)
         if len(parts) >= 3:
             degree, school, location = parts[0], parts[1], " | ".join(parts[2:])
         elif len(parts) == 2:
@@ -192,7 +227,7 @@ def _extract_education(block: str) -> list[EducationEntry]:
                 degree, school, location = comma_parts[0], comma_parts[1], None
             else:
                 degree, school, location = None, line_without_dates, None
-        out.append(EducationEntry(school=school, degree=degree, location=location, dates=dates))
+        out.append(EducationEntry(school=school, degree=degree, location=location, dates=dates, gpa=gpa))
     return out
 
 

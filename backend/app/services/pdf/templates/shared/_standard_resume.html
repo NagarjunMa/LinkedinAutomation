@@ -1,0 +1,71 @@
+{# Canonical ATS-safe resume structure shared by every export template. #}
+{% macro render_resume(doc, summary_heading="Summary", skills_heading="Technical Skills", experience_heading="Work Experience", projects_heading="Projects") -%}
+  <header class="resume-header">
+    <h1>{{ doc.contact.name }}</h1>
+    <div class="meta resume-contact">
+      {% if doc.contact.email %}{{ doc.contact.email }}{% endif %}
+      {% if doc.contact.phone %}{% if doc.contact.email %} · {% endif %}{{ doc.contact.phone }}{% endif %}
+      {% for link in doc.contact.links %}{% if doc.contact.email or doc.contact.phone or not loop.first %} · {% endif %}<a href="{{ link if '://' in link else 'https://' ~ link }}">{{ link }}</a>{% endfor %}
+    </div>
+  </header>
+
+  {% if doc.summary %}
+  <section class="section section-summary">
+    <h2>{{ summary_heading }}</h2>
+    <p class="summary">{{ doc.summary }}</p>
+  </section>
+  {% endif %}
+
+  {% if doc.skills.hard %}
+  <section class="section section-skills">
+    <h2>{{ skills_heading }}</h2>
+    <p class="skills-list">{{ doc.skills.hard | join(", ") }}</p>
+  </section>
+  {% endif %}
+
+  {% if doc.experience %}
+  <section class="section section-experience">
+    <h2>{{ experience_heading }}</h2>
+    {% for exp in doc.experience %}
+      <div class="experience-item">
+        <div class="row">
+          <strong>{{ exp.role }}{% if exp.company %} · {{ exp.company }}{% endif %}</strong>
+          {% if exp.dates or exp.location %}<span class="muted">{{ exp.dates or "" }}{% if exp.dates and exp.location %} · {% endif %}{{ exp.location or "" }}</span>{% endif %}
+        </div>
+        {% if exp.bullets %}<ul class="bullet-list">{% for b in exp.bullets %}<li><span class="bullet-marker" aria-hidden="true">•</span><span>{{ b.text }}</span></li>{% endfor %}</ul>{% endif %}
+      </div>
+    {% endfor %}
+  </section>
+  {% endif %}
+
+  {% if doc.projects %}
+  <section class="section section-projects">
+    <h2>{{ projects_heading }}</h2>
+    {% for proj in doc.projects %}
+      <div class="experience-item">
+        {% if proj.name and proj.name | lower not in ["projects", "project", "selected projects", "notable projects"] %}<strong>{{ proj.name }}</strong>{% endif %}
+        {% if proj.bullets %}<ul class="bullet-list">{% for b in proj.bullets %}<li><span class="bullet-marker" aria-hidden="true">•</span><span>{{ b.text }}</span></li>{% endfor %}</ul>{% endif %}
+      </div>
+    {% endfor %}
+  </section>
+  {% endif %}
+
+  {% if doc.education %}
+  <section class="section section-education">
+    <h2>Education</h2>
+    {% for ed in doc.education %}
+      <div class="row education-item">
+        <strong>{% if ed.degree %}{{ ed.degree }}{% endif %}{% if ed.degree and ed.school %} · {% endif %}{{ ed.school }}</strong>
+        {% if ed.dates or ed.gpa %}<span class="muted">{{ ed.dates or "" }}{% if ed.dates and ed.gpa %} · {% endif %}{% if ed.gpa %}GPA {{ ed.gpa }}{% endif %}</span>{% endif %}
+      </div>
+    {% endfor %}
+  </section>
+  {% endif %}
+
+  {% if doc.certifications %}
+  <section class="section section-certifications">
+    <h2>Certifications</h2>
+    <ul class="bullet-list">{% for certification in doc.certifications %}<li><span class="bullet-marker" aria-hidden="true">•</span><span>{{ certification }}</span></li>{% endfor %}</ul>
+  </section>
+  {% endif %}
+{%- endmacro %}

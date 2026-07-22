@@ -1,4 +1,5 @@
-{# backend/app/services/pdf/templates/us/swe.html — US SWE: action-first, 1-page target #}
+{# US SWE export using the canonical ATS-safe structure. #}
+{% from "shared/_standard_resume.html" import render_resume with context %}
 <!doctype html>
 <html lang="en" class="country-US role-swe">
 <head>
@@ -9,62 +10,6 @@
   <link rel="stylesheet" href="{{ print_css }}">
 </head>
 <body>
-  <header class="resume-header">
-    <h1>{{ doc.contact.name }}</h1>
-    <div class="meta">
-      {% if doc.contact.email %}{{ doc.contact.email }}{% endif %}
-      {% if doc.contact.phone %} · {{ doc.contact.phone }}{% endif %}
-      {% for link in doc.contact.links %} · {{ link }}{% endfor %}
-    </div>
-  </header>
-
-  {% if doc.summary %}
-  <section class="section section-summary">
-    <h2>Summary</h2>
-    <p class="summary">{{ doc.summary }}</p>
-  </section>
-  {% endif %}
-
-  <section class="section section-experience">
-    <h2>Experience</h2>
-    {% for exp in doc.experience %}
-      <div class="experience-item">
-        <div class="row">
-          <strong>{{ exp.role }} · {{ exp.company }}</strong>
-          <span class="muted">{{ exp.dates }}{% if exp.location %} · {{ exp.location }}{% endif %}</span>
-        </div>
-        <ul>
-          {% for b in exp.bullets %}<li>{{ b.text }}</li>{% endfor %}
-        </ul>
-      </div>
-    {% endfor %}
-  </section>
-
-  {% if doc.projects %}
-  <section class="section section-projects">
-    <h2>Projects</h2>
-    {% for proj in doc.projects %}
-      <div class="experience-item">
-        <strong>{{ proj.name }}</strong>
-        <ul>{% for b in proj.bullets %}<li>{{ b.text }}</li>{% endfor %}</ul>
-      </div>
-    {% endfor %}
-  </section>
-  {% endif %}
-
-  <section class="section section-skills">
-    <h2>Skills</h2>
-    <p class="skills-list">{{ doc.skills.hard | join(", ") }}</p>
-  </section>
-
-  <section class="section section-education">
-    <h2>Education</h2>
-    {% for ed in doc.education %}
-      <div class="row education-item">
-        <strong>{{ ed.degree }} · {{ ed.school }}</strong>
-        <span class="muted">{{ ed.dates }}{% if ed.gpa %} · GPA {{ ed.gpa }}{% endif %}</span>
-      </div>
-    {% endfor %}
-  </section>
+  {{ render_resume(doc) }}
 </body>
 </html>
