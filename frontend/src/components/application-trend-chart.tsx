@@ -17,6 +17,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { analyticsAPI, TrendAnalysis, isInsufficientDataError, isAnalyticsAPIError } from "@/lib/analytics-api"
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
@@ -33,6 +34,7 @@ export function ApplicationTrendChart({
     showActions = true,
     days = 30
 }: ApplicationTrendChartProps) {
+    const router = useRouter()
     const [trendData, setTrendData] = useState<TrendAnalysis | null>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
@@ -280,9 +282,7 @@ export function ApplicationTrendChart({
                     <div className="mt-4">
                         <Button
                             className="w-full bg-primary-700 hover:bg-primary-600 text-cream-50 border-primary-500 hover:border-accent-500 transition-all duration-200 group/btn"
-                            onClick={() => {
-                                window.location.href = '/dashboard/analytics'
-                            }}
+                            onClick={() => router.push('/dashboard/analytics')}
                         >
                             <div className="flex items-center space-x-2">
                                 <Calendar className="h-4 w-4 group-hover/btn:text-accent-400 transition-colors" />

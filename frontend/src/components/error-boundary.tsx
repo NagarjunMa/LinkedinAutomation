@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { AlertTriangle, RefreshCw, Home, Bug } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -180,6 +181,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 
 // Default Error Fallback Component
 const DefaultErrorFallback: React.FC<ErrorFallbackProps> = ({ error, resetError, errorId }) => {
+  const router = useRouter();
   const isDevelopment = process.env.NODE_ENV === 'development';
 
   const handleReportError = () => {
@@ -223,7 +225,7 @@ Please describe what you were doing when this error occurred:
               <RefreshCw className="mr-2 h-4 w-4" />
               Try Again
             </Button>
-            <Button variant="outline" onClick={() => window.location.href = '/'} className="flex-1">
+            <Button variant="outline" onClick={() => router.push('/')} className="flex-1">
               <Home className="mr-2 h-4 w-4" />
               Go Home
             </Button>
@@ -240,6 +242,8 @@ Please describe what you were doing when this error occurred:
 
 // Specialized Error Fallbacks
 export const PageErrorFallback: React.FC<ErrorFallbackProps> = ({ error: _error, resetError, errorId }) => {
+  const router = useRouter();
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-background">
       <Card className="w-full max-w-lg mx-auto">
@@ -262,7 +266,7 @@ export const PageErrorFallback: React.FC<ErrorFallbackProps> = ({ error: _error,
               <RefreshCw className="mr-2 h-4 w-4" />
               Reload Page
             </Button>
-            <Button variant="outline" onClick={() => window.location.href = '/'} size="lg" className="w-full">
+            <Button variant="outline" onClick={() => router.push('/')} size="lg" className="w-full">
               <Home className="mr-2 h-4 w-4" />
               Return to Dashboard
             </Button>
