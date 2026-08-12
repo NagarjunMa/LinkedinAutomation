@@ -28,13 +28,7 @@ export function ProtectedRoute({ children, fallback }: ProtectedRouteProps) {
       // Add a small delay to prevent showing auth required screen during logout
       const timer = setTimeout(() => {
         setShowAuthRequired(true)
-        // Try router first, fallback to window.location
-        try {
-          router.push('/')
-        } catch (error) {
-          console.error('Router error:', error)
-          window.location.href = '/'
-        }
+        router.push('/')
       }, 100) // Small delay to allow logout redirect to complete
 
       return () => clearTimeout(timer)
@@ -49,15 +43,8 @@ export function ProtectedRoute({ children, fallback }: ProtectedRouteProps) {
 
   const handleGoToLanding = () => {
     console.log('ProtectedRoute: Go to Landing Page button clicked')
-    try {
-      console.log('ProtectedRoute: Attempting router.push("/")')
-      router.push('/')
-    } catch (error) {
-      console.error('Router error:', error)
-      // Fallback to direct navigation
-      console.log('ProtectedRoute: Falling back to window.location.href')
-      window.location.href = '/'
-    }
+    console.log('ProtectedRoute: Attempting router.push("/")')
+    router.push('/')
   }
 
   if (loading) {

@@ -17,6 +17,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { analyticsAPI, SkillsAnalysis, isInsufficientDataError, isAnalyticsAPIError } from "@/lib/analytics-api"
 
 interface SkillsAnalyticsCardProps {
@@ -30,6 +31,7 @@ export function SkillsAnalyticsCard({
     className,
     showActions = true
 }: SkillsAnalyticsCardProps) {
+    const router = useRouter()
     const [skillsData, setSkillsData] = useState<SkillsAnalysis | null>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
@@ -200,10 +202,7 @@ export function SkillsAnalyticsCard({
                     <div className="mt-auto pt-3">
                         <Button
                             className="w-full bg-primary-700 hover:bg-primary-600 text-cream-50 border-primary-500 hover:border-accent-500 transition-all duration-200 group/btn"
-                            onClick={() => {
-                                // Navigate to detailed analytics page
-                                window.location.href = '/dashboard/analytics'
-                            }}
+                            onClick={() => router.push('/dashboard/analytics')}
                         >
                             <div className="flex items-center space-x-2">
                                 <Award className="h-4 w-4 group-hover/btn:text-accent-400 transition-colors" />

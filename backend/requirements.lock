@@ -6,7 +6,7 @@
 #
 aiohappyeyeballs==2.6.2
     # via aiohttp
-aiohttp==3.14.1
+aiohttp==3.14.3
     # via -r requirements.in
 aiosignal==1.4.0
     # via aiohttp
@@ -41,8 +41,9 @@ click==8.4.1
     # via uvicorn
 coverage[toml]==7.14.3
     # via pytest-cov
-cryptography==49.0.0
+cryptography==50.0.0
     # via
+    #   -r requirements.in
     #   google-auth
     #   pdfminer-six
     #   pyjwt
@@ -87,14 +88,17 @@ h11==0.16.0
     # via
     #   httpcore
     #   uvicorn
-h2==4.3.0
-    # via httpx
-hpack==4.1.0
+h2==4.4.1
+    # via
+    #   -r requirements.in
+    #   httpx
+hpack==4.2.0
     # via h2
 httpcore==1.0.9
     # via httpx
-httplib2==0.31.2
+httplib2==0.32.0
     # via
+    #   -r requirements.in
     #   google-api-python-client
     #   google-auth-httplib2
 httptools==0.8.0
@@ -148,8 +152,10 @@ pdfminer-six==20260107
     # via pdfplumber
 pdfplumber==0.11.10
     # via -r requirements.in
-pillow==12.2.0
-    # via pdfplumber
+pillow==12.3.0
+    # via
+    #   -r requirements.in
+    #   pdfplumber
 playwright==1.60.0
     # via -r requirements.in
 pluggy==1.6.0
@@ -171,8 +177,10 @@ protobuf==7.35.1
     #   proto-plus
 psycopg2-binary==2.9.12
     # via -r requirements.in
-pyasn1==0.6.3
-    # via pyasn1-modules
+pyasn1==0.6.4
+    # via
+    #   -r requirements.in
+    #   pyasn1-modules
 pyasn1-modules==0.4.2
     # via google-auth
 pycparser==3.0
@@ -203,7 +211,7 @@ pymupdf==1.27.2.3
     # via -r requirements.in
 pyparsing==3.3.2
     # via httplib2
-pypdf==6.14.0
+pypdf==6.15.0
     # via -r requirements.in
 pypdfium2==5.10.1
     # via pdfplumber
