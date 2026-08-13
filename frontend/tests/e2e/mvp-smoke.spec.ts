@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import path from 'path';
 
 const API = 'http://localhost:8000';
+const APP = `http://localhost:${process.env.E2E_PORT ?? '3000'}`;
 
 const UPLOAD_RESPONSE = {
   resume_document_id: 'doc-2',
@@ -106,7 +107,7 @@ test('protected dashboard route redirects when unauthenticated', async ({ page }
 });
 
 test('authenticated dashboard loads with non-production bypass', async ({ page, context }) => {
-  await context.addCookies([{ name: 'test-bypass-auth', value: '1', url: 'http://localhost:3000' }]);
+  await context.addCookies([{ name: 'test-bypass-auth', value: '1', url: APP }]);
   await page.route(`${API}/api/v1/credits/balance`, (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ balance: 90 }) }));
   await page.route(`${API}/api/v1/jobs/stats**`, (route) =>
@@ -127,7 +128,7 @@ test('authenticated dashboard loads with non-production bypass', async ({ page, 
 });
 
 test('tailor MVP flow uploads, edits pointer, applies, and exposes download contract', async ({ page, context }) => {
-  await context.addCookies([{ name: 'test-bypass-auth', value: '1', url: 'http://localhost:3000' }]);
+  await context.addCookies([{ name: 'test-bypass-auth', value: '1', url: APP }]);
 
   await page.route(`${API}/api/v1/credits/balance`, (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ balance: 90 }) }));
