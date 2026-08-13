@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import type { NextResponse } from 'next/server'
 
 // Supabase configuration
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -16,19 +17,12 @@ export const createServerSupabaseClient = async () => {
       },
       setAll(cookiesToSet) {
         try {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, {
-              ...options,
-              httpOnly: false, // Allow client-side access
-              secure: process.env.NODE_ENV === 'production',
-              sameSite: 'lax',
-            })
-          )
-        } catch (error) {
-          console.warn('Failed to set server cookies:', error)
-          // The `setAll` method was called from a Server Component.
-          // This can be ignored if you have middleware refreshing
-          // user sessions.
+          cookiesToSet.forEach(({ name, value, options }) => {
+            cookieStore.set(name, value, options)
+          })
+        } catch {
+          // Server Components cannot write cookies. The root Proxy refreshes
+          // sessions before rendering and is responsible for response writes.
         }
       },
     },
@@ -36,7 +30,7 @@ export const createServerSupabaseClient = async () => {
 }
 
 // Server client with response cookie handling for API routes
-export const createServerSupabaseClientWithResponse = async (response: Response) => {
+export const createServerSupabaseClientWithResponse = async (response: NextResponse) => {
   const cookieStore = await cookies()
 
   return createServerClient(supabaseUrl, supabaseAnonKey, {
@@ -44,80 +38,21 @@ export const createServerSupabaseClientWithResponse = async (response: Response)
       getAll() {
         return cookieStore.getAll()
       },
-      setAll(cookiesToSet) {
-        try {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            // Set in cookie store
-            cookieStore.set(name, value, options)
-
-            // Also set in response headers
-            const cookieOptions = {
-              ...options,
-              httpOnly: false,
-              secure: process.env.NODE_ENV === 'production',
-              sameSite: 'lax',
-            }
-
-            const cookieString = `${name}=${value}; ${Object.entries(cookieOptions || {})
-              .map(([key, val]) => {
-                if (key === 'maxAge') return `Max-Age=${val}`
-                if (key === 'sameSite') return `SameSite=${val}`
-                if (key === 'httpOnly') return val ? 'HttpOnly' : ''
-                if (key === 'secure') return val ? 'Secure' : ''
-                if (key === 'path') return `Path=${val}`
-                return `${key}=${val}`
-              })
-              .filter(Boolean)
-              .join('; ')}`
-
-            response.headers.append('Set-Cookie', cookieString)
-          })
-        } catch (error) {
-          console.warn('Failed to set response cookies:', error)
-        }
+      setAll(cookiesToSet, headers) {
+        cookiesToSet.forEach(({ name, value, options }) => {
+          response.cookies.set(name, value, options)
+        })
+        Object.entries(headers).forEach(([name, value]) => {
+          response.headers.set(name, value)
+        })
       },
     },
   })
 }
 
-// Server-side auth utilities
-export const getServerSession = async () => {
-  try {
-    const supabase = await createServerSupabaseClient()
-    const { data: { session }, error } = await supabase.auth.getSession()
-
-    if (error) {
-      console.warn('getServerSession error:', error.message)
-      // Don't throw on certain recoverable errors
-      if (error.message?.includes('Invalid Refresh Token') ||
-        error.message?.includes('refresh_token_not_found')) {
-        console.log('Server session expired or invalid, returning null')
-        return null
-      }
-      throw error
-    }
-
-    return session
-  } catch (error) {
-    console.error('getServerSession failed:', error)
-    throw error
-  }
-}
-
-export const getServerUser = async () => {
+export const getServerClaims = async () => {
   const supabase = await createServerSupabaseClient()
-  const { data: { user }, error } = await supabase.auth.getUser()
+  const { data, error } = await supabase.auth.getClaims()
   if (error) throw error
-  return user
-}
-
-// Verify OTP for email verification
-export const verifyOtp = async (tokenHash: string, type: string) => {
-  const supabase = await createServerSupabaseClient()
-  const { data, error } = await supabase.auth.verifyOtp({
-    token_hash: tokenHash,
-    type: type as any
-  })
-  if (error) throw error
-  return data
+  return data?.claims ?? null
 }

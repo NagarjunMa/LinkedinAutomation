@@ -8,7 +8,6 @@ them, and verify access tokens against the matching `kid`.
 
 import jwt
 import logging
-import os
 from datetime import datetime, timezone
 from typing import Optional
 from fastapi import HTTPException, Security, Depends, Request
@@ -24,12 +23,17 @@ from app.core.config import settings
 security = HTTPBearer(auto_error=False)
 
 _auth_logger = logging.getLogger("auth")
+_INVALID_TOKEN_DETAIL = "Invalid or expired authentication token"
+
+
+def _supabase_issuer() -> str:
+    return f"{settings.SUPABASE_URL.rstrip('/')}/auth/v1"
 
 
 @lru_cache(maxsize=1)
 def _jwks_client() -> PyJWKClient:
     """JWKS client for Supabase project. Lifespan controls cache TTL."""
-    url = f"{os.environ['SUPABASE_URL'].rstrip('/')}/auth/v1/.well-known/jwks.json"
+    url = f"{_supabase_issuer()}/.well-known/jwks.json"
     return PyJWKClient(url, cache_keys=True, lifespan=3600)
 
 
@@ -42,11 +46,24 @@ def decode_supabase_jwt(token: str) -> dict:
             signing_key.key,
             algorithms=["ES256"],
             audience="authenticated",
-            options={"verify_aud": True, "verify_exp": True, "verify_iss": False},
+            issuer=_supabase_issuer(),
+            options={
+                "verify_aud": True,
+                "verify_exp": True,
+                "verify_iss": True,
+                "require": ["aud", "exp", "iss", "sub"],
+            },
         )
         return payload
-    except PyJWTError as e:
-        raise HTTPException(status_code=401, detail=f"Invalid token: {str(e)}")
+    except PyJWTError as exc:
+        _auth_logger.info("JWT verification rejected: %s", type(exc).__name__)
+        raise HTTPException(status_code=401, detail=_INVALID_TOKEN_DETAIL) from exc
+    except Exception as exc:
+        _auth_logger.exception("Supabase JWKS verification unavailable")
+        raise HTTPException(
+            status_code=503,
+            detail="Authentication service unavailable",
+        ) from exc
 
 
 def _ensure_user_row(db: Session, user_id: str, email: str) -> None:
@@ -101,7 +118,7 @@ def get_current_user_id(
         user_id = payload.get("sub")
 
         if not user_id:
-            raise HTTPException(status_code=401, detail="Invalid token: missing user ID")
+            raise HTTPException(status_code=401, detail=_INVALID_TOKEN_DETAIL)
 
         email = payload.get("email") or f"{user_id}@unknown.local"
         _ensure_user_row(db, user_id, email)
@@ -109,8 +126,9 @@ def get_current_user_id(
         return user_id
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
+    except Exception as exc:
+        _auth_logger.warning("Authentication dependency failed: %s", type(exc).__name__)
+        raise HTTPException(status_code=401, detail=_INVALID_TOKEN_DETAIL) from exc
 
 def get_optional_user_id(
     credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
@@ -142,11 +160,14 @@ def get_current_user_email(credentials: HTTPAuthorizationCredentials = Security(
         email = payload.get("email")
 
         if not email:
-            raise HTTPException(status_code=401, detail="Invalid token: missing email")
+            raise HTTPException(status_code=401, detail=_INVALID_TOKEN_DETAIL)
 
         return email
-    except Exception as e:
-        raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
+    except HTTPException:
+        raise
+    except Exception as exc:
+        _auth_logger.warning("Email claim extraction failed: %s", type(exc).__name__)
+        raise HTTPException(status_code=401, detail=_INVALID_TOKEN_DETAIL) from exc
 
 
 # Main authentication dependency - use this in endpoints
@@ -164,7 +185,7 @@ def get_authenticated_user_id(
     payload = decode_supabase_jwt(credentials.credentials)
     user_id = payload.get("sub")
     if not user_id:
-        raise HTTPException(status_code=401, detail="Invalid token: missing user ID")
+        raise HTTPException(status_code=401, detail=_INVALID_TOKEN_DETAIL)
     email = payload.get("email") or f"{user_id}@unknown.local"
     _ensure_user_row(db, user_id, email)
     return user_id
@@ -185,7 +206,7 @@ def require_admin_user(current_user_id: str = Depends(get_current_user_id)) -> s
     """Require the authenticated user to be present in ADMIN_USER_IDS."""
     admins = {
         user_id.strip()
-        for user_id in os.getenv("ADMIN_USER_IDS", "").split(",")
+        for user_id in settings.ADMIN_USER_IDS.split(",")
         if user_id.strip()
     }
     if current_user_id not in admins:

@@ -103,6 +103,8 @@ def test_decode_supabase_jwt_raises_on_invalid_token(monkeypatch):
     with pytest.raises(HTTPException) as exc_info:
         decode_supabase_jwt("not-a-real-token")
     assert exc_info.value.status_code == 401
+    assert exc_info.value.detail == "Invalid or expired authentication token"
+    assert "bad key" not in exc_info.value.detail
 
 
 def test_decode_supabase_jwt_valid_token_returns_claims(monkeypatch):
@@ -113,15 +115,56 @@ def test_decode_supabase_jwt_valid_token_returns_claims(monkeypatch):
     fake_client.get_signing_key_from_jwt.return_value = fake_signing_key
     monkeypatch.setattr("app.core.auth._jwks_client", lambda: fake_client)
 
-    # Patch jwt.decode to return canned claims
-    monkeypatch.setattr(
-        "app.core.auth.jwt.decode",
-        lambda *a, **k: {"sub": "user-123", "email": "test@x.com", "aud": "authenticated"},
-    )
+    decode_arguments = {}
+
+    def fake_decode(*args, **kwargs):
+        decode_arguments.update(kwargs)
+        return {"sub": "user-123", "email": "test@x.com", "aud": "authenticated"}
+
+    monkeypatch.setattr("app.core.auth.jwt.decode", fake_decode)
 
     claims = decode_supabase_jwt("valid-token")
     assert claims["sub"] == "user-123"
     assert claims["email"] == "test@x.com"
+    assert decode_arguments["audience"] == "authenticated"
+    assert decode_arguments["issuer"] == "https://test.supabase.co/auth/v1"
+    assert decode_arguments["algorithms"] == ["ES256"]
+    assert decode_arguments["options"]["verify_iss"] is True
+    assert set(decode_arguments["options"]["require"]) == {"aud", "exp", "iss", "sub"}
+
+
+def test_decode_supabase_jwt_rejects_wrong_issuer_without_leaking_details(monkeypatch):
+    from jwt import InvalidIssuerError
+
+    fake_signing_key = MagicMock()
+    fake_signing_key.key = "fake-key"
+    fake_client = MagicMock()
+    fake_client.get_signing_key_from_jwt.return_value = fake_signing_key
+    monkeypatch.setattr("app.core.auth._jwks_client", lambda: fake_client)
+    monkeypatch.setattr(
+        "app.core.auth.jwt.decode",
+        MagicMock(side_effect=InvalidIssuerError("foreign Supabase project")),
+    )
+
+    with pytest.raises(HTTPException) as exc_info:
+        decode_supabase_jwt("foreign-project-token")
+
+    assert exc_info.value.status_code == 401
+    assert exc_info.value.detail == "Invalid or expired authentication token"
+    assert "foreign" not in exc_info.value.detail
+
+
+def test_decode_supabase_jwt_returns_stable_503_when_jwks_is_unavailable(monkeypatch):
+    fake_client = MagicMock()
+    fake_client.get_signing_key_from_jwt.side_effect = RuntimeError("network details")
+    monkeypatch.setattr("app.core.auth._jwks_client", lambda: fake_client)
+
+    with pytest.raises(HTTPException) as exc_info:
+        decode_supabase_jwt("otherwise-valid-token")
+
+    assert exc_info.value.status_code == 503
+    assert exc_info.value.detail == "Authentication service unavailable"
+    assert "network" not in exc_info.value.detail
 
 
 # ---------------------------------------------------------------------------

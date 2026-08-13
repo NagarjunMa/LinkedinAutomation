@@ -4,6 +4,7 @@ os.environ.setdefault("OPENAI_API_KEY", "test")
 
 import pytest
 from fastapi.testclient import TestClient
+from app.core.config import settings
 
 
 # ---------------------------------------------------------------------------
@@ -74,7 +75,7 @@ def test_admin_metrics_returns_cost_by_user(
     db_session.commit()
 
     # Patch ADMIN_USER_IDS so test_user_id is considered admin
-    monkeypatch.setenv("ADMIN_USER_IDS", test_user_id)
+    monkeypatch.setattr(settings, "ADMIN_USER_IDS", test_user_id)
 
     resp = client.get("/api/v1/admin/metrics/cost-per-user")
     assert resp.status_code == 200, resp.text
@@ -91,7 +92,7 @@ def test_admin_metrics_non_admin_gets_403(
 ):
     """Non-admin user receives 403 Forbidden."""
     # Set ADMIN_USER_IDS to some other user, not test_user_id
-    monkeypatch.setenv("ADMIN_USER_IDS", "some-other-admin-user")
+    monkeypatch.setattr(settings, "ADMIN_USER_IDS", "some-other-admin-user")
 
     resp = client.get("/api/v1/admin/metrics/cost-per-user")
     assert resp.status_code == 403, resp.text
@@ -101,7 +102,7 @@ def test_admin_metrics_empty_admin_ids_gets_403(
     client: TestClient, db_session, test_user_id, monkeypatch
 ):
     """When ADMIN_USER_IDS is empty/unset, all users get 403."""
-    monkeypatch.delenv("ADMIN_USER_IDS", raising=False)
+    monkeypatch.setattr(settings, "ADMIN_USER_IDS", "")
 
     resp = client.get("/api/v1/admin/metrics/cost-per-user")
     assert resp.status_code == 403, resp.text

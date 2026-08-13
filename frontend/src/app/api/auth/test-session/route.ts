@@ -14,7 +14,8 @@ export async function GET(request: NextRequest) {
 
   try {
     const supabase = await createServerSupabaseClient()
-    const { data: { session }, error } = await supabase.auth.getSession()
+    const { data, error } = await supabase.auth.getClaims()
+    const claims = data?.claims
 
     // Get all cookies for debugging
     const allCookies = request.cookies.getAll()
@@ -31,12 +32,11 @@ export async function GET(request: NextRequest) {
 
     const debugInfo = {
       timestamp: new Date().toISOString(),
-      hasSession: !!session,
-      sessionDetails: session ? {
-        userId: session.user.id,
-        email: session.user.email,
-        expiresAt: session.expires_at,
-        hasAccessToken: !!session.access_token
+      hasSession: !!claims,
+      sessionDetails: claims ? {
+        userId: claims.sub,
+        email: claims.email,
+        expiresAt: claims.exp,
       } : null,
       error: error?.message,
       cookieAnalysis: {

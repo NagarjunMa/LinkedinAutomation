@@ -63,7 +63,8 @@ def test_legacy_body_user_id_mismatch_is_rejected(client: TestClient):
 
 
 def test_cleanup_all_disabled_before_publication(client: TestClient, monkeypatch):
-    monkeypatch.setenv("ADMIN_USER_IDS", "admin-user")
+    from app.core.config import settings
+    monkeypatch.setattr(settings, "ADMIN_USER_IDS", "admin-user")
 
     response = client.post("/api/v1/jobs/cleanup/execute-all")
 
@@ -72,7 +73,8 @@ def test_cleanup_all_disabled_before_publication(client: TestClient, monkeypatch
 
 
 def test_legacy_profiles_users_rejects_non_admin(client: TestClient, monkeypatch):
-    monkeypatch.setenv("ADMIN_USER_IDS", "admin-user")
+    from app.core.config import settings
+    monkeypatch.setattr(settings, "ADMIN_USER_IDS", "admin-user")
 
     response = client.get("/api/v1/profiles/users")
 
@@ -81,7 +83,8 @@ def test_legacy_profiles_users_rejects_non_admin(client: TestClient, monkeypatch
 
 
 def test_legacy_score_new_job_rejects_non_admin(client: TestClient, monkeypatch):
-    monkeypatch.setenv("ADMIN_USER_IDS", "admin-user")
+    from app.core.config import settings
+    monkeypatch.setattr(settings, "ADMIN_USER_IDS", "admin-user")
 
     response = client.post("/api/v1/profiles/score-new-job/1")
 
@@ -90,7 +93,8 @@ def test_legacy_score_new_job_rejects_non_admin(client: TestClient, monkeypatch)
 
 
 def test_metrics_rejects_non_admin(client: TestClient, monkeypatch):
-    monkeypatch.setenv("ADMIN_USER_IDS", "admin-user")
+    from app.core.config import settings
+    monkeypatch.setattr(settings, "ADMIN_USER_IDS", "admin-user")
 
     response = client.get("/metrics")
 
@@ -99,7 +103,8 @@ def test_metrics_rejects_non_admin(client: TestClient, monkeypatch):
 
 
 def test_metrics_allows_admin(client: TestClient, test_user_id: str, monkeypatch):
-    monkeypatch.setenv("ADMIN_USER_IDS", test_user_id)
+    from app.core.config import settings
+    monkeypatch.setattr(settings, "ADMIN_USER_IDS", test_user_id)
 
     response = client.get("/metrics")
 
