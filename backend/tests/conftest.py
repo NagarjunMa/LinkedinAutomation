@@ -12,7 +12,6 @@ import sqlalchemy as sa
 from sqlalchemy import create_engine, JSON
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import StaticPool
-from app.db.base_class import Base
 
 
 def _create_sqlite_tables(engine) -> None:
@@ -62,6 +61,7 @@ def _create_sqlite_tables(engine) -> None:
         sa.Column("original_filename", sa.String, nullable=False),
         sa.Column("file_path", sa.String, nullable=False),
         sa.Column("storage_path", sa.String, nullable=True),
+        sa.Column("storage_status", sa.String(16), nullable=False, server_default="ready"),
         sa.Column("file_type", sa.String, nullable=False),
         sa.Column("parsed_json", JSON, nullable=False),
         sa.Column("raw_text", sa.Text, nullable=False),
@@ -276,7 +276,7 @@ def _make_sqlite_engine():
 
 
 @pytest.fixture
-def client(db_session: Session, test_user_id: str, tmp_path):
+def client(db_session: Session, test_user_id: str):
     """FastAPI TestClient with DB and auth overrides.
 
     Strategy to handle two obstacles:
@@ -289,7 +289,6 @@ def client(db_session: Session, test_user_id: str, tmp_path):
        → We patch ``create_all`` to a no-op for the import phase.
     """
     from unittest.mock import patch, MagicMock
-    import sys
 
     # --- Build a stub session module that uses db_session ---
     # We patch app.db.session BEFORE importing app.main so that when
@@ -333,15 +332,6 @@ def client(db_session: Session, test_user_id: str, tmp_path):
     app.dependency_overrides[get_current_user_id] = _override_get_current_user_id
     app.dependency_overrides[get_authenticated_user_id] = _override_get_current_user_id
 
-    # Patch UPLOAD_DIR to use tmp_path so tests don't write to the project tree.
-    try:
-        import app.api.v1.endpoints.resumes_v2 as resumes_v2_mod
-        original_upload_dir = resumes_v2_mod.UPLOAD_DIR
-        resumes_v2_mod.UPLOAD_DIR = str(tmp_path)
-    except (ImportError, AttributeError):
-        resumes_v2_mod = None
-        original_upload_dir = None
-
     # Phase 4: mock Supabase Storage so tests never hit the real bucket.
     # Also reset the module-level singleton so each test gets a fresh mock.
     import app.services.storage.supabase_storage as _storage_mod
@@ -349,7 +339,14 @@ def client(db_session: Session, test_user_id: str, tmp_path):
     _original_singleton = _storage_mod._client_instance
     _resume_fixture_bytes = (_Path(__file__).parent / "fixtures/resumes/simple.pdf").read_bytes()
     _mock_storage = MagicMock()
-    _mock_storage.upload.side_effect = lambda user_id, file_id, content, filename: f"{user_id}/{file_id}_{filename}"
+    def _storage_path(user_id, file_id, filename):
+        return f"{user_id}/{file_id}.{filename.rsplit('.', 1)[-1].lower()}"
+
+    def _upload(user_id, file_id, content, filename):
+        return _storage_path(user_id, file_id, filename)
+
+    _mock_storage.path_for.side_effect = _storage_path
+    _mock_storage.upload.side_effect = _upload
     _mock_storage.download.return_value = _resume_fixture_bytes
     _mock_storage.signed_url.return_value = "https://storage.example/file?token=test"
     _storage_mod._client_instance = _mock_storage
@@ -362,8 +359,6 @@ def client(db_session: Session, test_user_id: str, tmp_path):
     app.dependency_overrides.pop(get_rls_db, None)
     app.dependency_overrides.pop(get_current_user_id, None)
     app.dependency_overrides.pop(get_authenticated_user_id, None)
-    if resumes_v2_mod is not None and original_upload_dir is not None:
-        resumes_v2_mod.UPLOAD_DIR = original_upload_dir
     # Restore storage singleton
     _storage_mod._client_instance = _original_singleton
 

@@ -230,8 +230,48 @@ class Settings(BaseSettings):
     MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024  # 10MB
     """Maximum file upload size in bytes"""
 
-    ALLOWED_EXTENSIONS: List[str] = [".pdf", ".doc", ".docx", ".txt"]
+    ALLOWED_EXTENSIONS: List[str] = [".pdf", ".docx"]
     """Allowed file extensions for resume uploads"""
+
+    MAX_PDF_PAGES: int = 10
+    """Maximum number of pages accepted by the resume parser"""
+
+    MAX_EXTRACTED_TEXT_CHARS: int = 100_000
+    """Maximum extracted resume text retained and parsed"""
+
+    MAX_DOCX_ENTRIES: int = 2_000
+    """Maximum number of files permitted inside a DOCX archive"""
+
+    MAX_DOCX_UNCOMPRESSED_SIZE: int = 25 * 1024 * 1024
+    """Maximum total uncompressed bytes permitted inside a DOCX archive"""
+
+    MAX_DOCX_COMPRESSION_RATIO: int = 100
+    """Maximum aggregate DOCX archive expansion ratio"""
+
+    RESUME_PARSE_TIMEOUT_SECONDS: float = 15.0
+    """Maximum wall-clock wait for a resume parser worker"""
+
+    MAX_CONCURRENT_RESUME_PARSERS: int = 2
+    """Maximum parser subprocesses allowed per backend instance"""
+
+    RESUME_PARSE_QUEUE_TIMEOUT_SECONDS: float = 1.0
+    """Maximum wait for parser capacity before returning a retry response"""
+
+    @field_validator(
+        "MAX_UPLOAD_SIZE",
+        "MAX_PDF_PAGES",
+        "MAX_EXTRACTED_TEXT_CHARS",
+        "MAX_DOCX_ENTRIES",
+        "MAX_DOCX_UNCOMPRESSED_SIZE",
+        "MAX_DOCX_COMPRESSION_RATIO",
+        "RESUME_PARSE_TIMEOUT_SECONDS",
+        "MAX_CONCURRENT_RESUME_PARSERS",
+        "RESUME_PARSE_QUEUE_TIMEOUT_SECONDS",
+    )
+    def validate_positive_resume_budget(cls, value):
+        if value <= 0:
+            raise ValueError("Resume processing budgets must be positive")
+        return value
 
     # ==========================================
     # Feature Flags

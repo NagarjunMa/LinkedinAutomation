@@ -6,7 +6,11 @@ to keep services/ decoupled from core/; both co-exist for one release.
 """
 from supabase import create_client, Client
 from app.core.config import settings
-from app.services.storage.exceptions import StorageUploadError, StorageDownloadError
+from app.services.storage.exceptions import (
+    StorageDeleteError,
+    StorageDownloadError,
+    StorageUploadError,
+)
 
 
 class StorageClient:
@@ -23,13 +27,19 @@ class StorageClient:
     _MIME_BY_EXT = {
         "pdf": "application/pdf",
         "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "doc": "application/msword",
     }
 
-    def upload(self, user_id: str, file_id: str, content: bytes, filename: str) -> str:
-        """Upload bytes to <user_id>/<file_id>_<filename>. Returns the storage path."""
-        path = f"{user_id}/{file_id}_{filename}"
+    def path_for(self, user_id: str, file_id: str, filename: str) -> str:
+        """Return a deterministic, user-scoped key without user-controlled path text."""
         ext = filename.lower().rsplit(".", 1)[-1] if "." in filename else ""
+        if ext not in self._MIME_BY_EXT:
+            raise StorageUploadError("Unsupported storage file type")
+        return f"{user_id}/{file_id}.{ext}"
+
+    def upload(self, user_id: str, file_id: str, content: bytes, filename: str) -> str:
+        """Upload bytes to the deterministic user/document object key."""
+        path = self.path_for(user_id, file_id, filename)
+        ext = filename.lower().rsplit(".", 1)[-1]
         content_type = self._MIME_BY_EXT.get(ext, "application/octet-stream")
         try:
             self._bucket().upload(
@@ -58,7 +68,10 @@ class StorageClient:
 
     def delete(self, path: str) -> None:
         """Delete a stored object."""
-        self._bucket().remove([path])
+        try:
+            self._bucket().remove([path])
+        except Exception as exc:
+            raise StorageDeleteError("Storage object could not be deleted") from exc
 
 
 # Module-level singleton — lazy-initialised on first call

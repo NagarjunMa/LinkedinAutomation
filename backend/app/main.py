@@ -151,7 +151,12 @@ security_config = {
         'rate_limit_by_user': True
     },
     'validation': {
-        'max_request_size': 50 * 1024 * 1024,  # 50MB for resume uploads
+        'max_request_size': 50 * 1024 * 1024,
+        # Allow multipart framing while rejecting declared oversized resume
+        # uploads before Starlette parses the request body.
+        'route_size_limits': {
+            '/api/v1/resumes/upload': settings.MAX_UPLOAD_SIZE + 1024 * 1024,
+        },
         'blocked_user_agents': ['sqlmap', 'nikto', 'nmap'] if is_production else [],
         'require_user_agent': is_production
     },

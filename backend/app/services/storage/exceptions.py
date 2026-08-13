@@ -8,3 +8,7 @@ class StorageUploadError(StorageError):
 
 class StorageDownloadError(StorageError):
     pass
+
+
+class StorageDeleteError(StorageError):
+    pass

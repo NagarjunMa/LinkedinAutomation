@@ -147,3 +147,31 @@ def test_get_profile_derives_from_latest_resume_document(client, db_session: Ses
     assert data["degrees"] == ["MS Information Systems"]
     assert data["institutions"] == ["Northeastern University"]
     assert data["programming_languages"] == ["Python", "FastAPI"]
+
+
+def test_get_profile_ignores_non_ready_resume_documents(
+    client,
+    db_session: Session,
+    test_user_id: str,
+):
+    from app.models.resume_document import ResumeDocument
+
+    db_session.add(
+        ResumeDocument(
+            id="pending-resume",
+            user_id=test_user_id,
+            original_filename="pending.pdf",
+            file_path=f"{test_user_id}/pending-resume.pdf",
+            storage_path=f"{test_user_id}/pending-resume.pdf",
+            storage_status="pending",
+            file_type="pdf",
+            raw_text="Pending Candidate",
+            parsed_json={"contact": {"name": "Pending Candidate"}, "raw_text": "Pending Candidate"},
+        )
+    )
+    db_session.commit()
+
+    response = client.get(f"/api/v1/user-profiles/{test_user_id}")
+
+    assert response.status_code == 200
+    assert response.json()["exists"] is False

@@ -3,25 +3,48 @@ import re
 from io import BytesIO
 import pdfplumber
 from docx import Document as DocxDocument
+from app.core.config import settings
 from app.schemas.resume_v2 import (
     ResumeDocumentJSON, Contact, ExperienceEntry, EducationEntry,
     Skills, Bullet, ProjectEntry,
+)
+from app.services.resume.file_security import (
+    ResumeFileComplexityError,
+    ResumeFileError,
+    validate_resume_bytes,
 )
 
 
 def parse_resume(content: bytes, filename: str) -> ResumeDocumentJSON:
     ext = filename.lower().rsplit(".", 1)[-1]
-    if ext == "pdf":
-        return _parse_pdf(content)
-    if ext == "docx":
-        return _parse_docx(content)
-    raise ValueError(f"Unsupported file type: {ext}")
+    validate_resume_bytes(content, ext)
+    try:
+        if ext == "pdf":
+            return _parse_pdf(content)
+        if ext == "docx":
+            return _parse_docx(content)
+    except ResumeFileError:
+        raise
+    except Exception as exc:
+        raise ResumeFileError("Resume could not be parsed") from exc
+    raise ResumeFileError("Only PDF and DOCX files are supported")
 
 
 def _parse_pdf(content: bytes) -> ResumeDocumentJSON:
     with pdfplumber.open(BytesIO(content)) as pdf:
-        pages = [p.extract_text() or "" for p in pdf.pages]
+        if len(pdf.pages) > settings.MAX_PDF_PAGES:
+            raise ResumeFileComplexityError("PDF exceeds the maximum page count")
+        pages: list[str] = []
+        extracted_chars = 0
+        for page in pdf.pages:
+            text = page.extract_text() or ""
+            extracted_chars += len(text)
+            if extracted_chars > settings.MAX_EXTRACTED_TEXT_CHARS:
+                raise ResumeFileComplexityError("Resume text exceeds the processing limit")
+            pages.append(text)
     raw_text = "\n".join(pages)
+    if not raw_text.strip():
+        raise ResumeFileError("Resume does not contain readable text")
     return _structure_from_text(raw_text)
 
 
@@ -36,6 +59,10 @@ def _parse_docx(content: bytes) -> ResumeDocumentJSON:
         else:
             lines.append(p.text)
     raw_text = "\n".join(lines)
+    if len(raw_text) > settings.MAX_EXTRACTED_TEXT_CHARS:
+        raise ResumeFileComplexityError("Resume text exceeds the processing limit")
+    if not raw_text.strip():
+        raise ResumeFileError("Resume does not contain readable text")
     return _structure_from_text(raw_text)
 
 

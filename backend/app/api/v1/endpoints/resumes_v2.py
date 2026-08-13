@@ -6,7 +6,6 @@ Task 16: POST /api/v1/resumes/{id}/rewrite/{bullet_id}  — hallucination-guarde
 Task 17: POST /api/v1/resumes/{id}/versions  — apply_changes + persist ResumeVersion
 """
 import uuid
-import os
 from typing import Optional
 
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
@@ -15,25 +14,29 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.core.auth import get_current_user_id
-from app.core.config import settings
 from app.models.resume_document import ResumeDocument, ResumeVersion
 from app.models.resume_evaluation_v2 import ResumeEvaluationV2
-from app.models.jd_evaluation import JDEvaluation
-from app.models.resume_export import ResumeExport
 from app.schemas.resume_v2 import ResumeDocumentJSON, ChangeItem
-from app.services.resume.parser import parse_resume
 from app.services.resume.evaluator import evaluate_resume
 from app.services.resume.ats_simulator import simulate_ats
 from app.services.resume.rewriter import rewrite_bullet
 from app.services.resume.hallucination_guard import HallucinationError
 from app.services.storage.supabase_storage import get_storage
+from app.services.resume.file_security import (
+    ResumeFileError,
+    parse_resume_with_timeout,
+    read_resume_upload,
+)
+from app.services.resume.upload_workflow import (
+    STORAGE_READY,
+    ResumeStorageWorkflowError,
+    create_resume_document,
+    delete_resume_document,
+    get_owned_ready_resume,
+)
 from app.middleware.credits import credit_transaction
 
 router = APIRouter(tags=["resumes-v2"])
-
-UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "uploads", "resumes")
-os.makedirs(UPLOAD_DIR, exist_ok=True)
-
 
 # ---------------------------------------------------------------------------
 # Task 14: POST /upload
@@ -50,44 +53,26 @@ async def upload_resume(
     Returns the new ``resume_document_id`` plus the structured JSON
     representation of the resume (contact, experience, education, etc.).
     """
-    if not file.filename or not file.filename.lower().endswith((".pdf", ".docx")):
-        raise HTTPException(status_code=400, detail="Only PDF and DOCX files are supported")
-
-    content = await file.read()
-    if len(content) > settings.MAX_UPLOAD_SIZE:
-        raise HTTPException(status_code=413, detail="File exceeds maximum upload size")
     try:
-        doc_json = parse_resume(content, file.filename)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
+        uploaded = await read_resume_upload(file)
+        doc_json = await parse_resume_with_timeout(uploaded.content, uploaded.filename)
+    except ResumeFileError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=str(exc)) from exc
 
-    doc_id = str(uuid.uuid4())
-    ext = file.filename.rsplit(".", 1)[-1].lower()
+    try:
+        db_doc = create_resume_document(
+            db=db,
+            storage=get_storage(),
+            user_id=current_user_id,
+            filename=uploaded.filename,
+            extension=uploaded.extension,
+            content=uploaded.content,
+            document=doc_json,
+        )
+    except ResumeStorageWorkflowError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
-    # Phase 4: upload to Supabase Storage instead of local disk.
-    # file_path is kept populated for backward compat (will be deprecated post-backfill).
-    storage = get_storage()
-    storage_path = storage.upload(
-        user_id=current_user_id,
-        file_id=doc_id,
-        content=content,
-        filename=file.filename,
-    )
-
-    db_doc = ResumeDocument(
-        id=doc_id,
-        user_id=current_user_id,
-        original_filename=file.filename,
-        file_path=storage_path,       # legacy column — mirrors storage_path for one release
-        storage_path=storage_path,    # Phase 4 canonical column
-        file_type=ext,
-        parsed_json=doc_json.model_dump(),
-        raw_text=doc_json.raw_text,
-    )
-    db.add(db_doc)
-    db.commit()
-
-    return {"resume_document_id": doc_id, **doc_json.model_dump()}
+    return {"resume_document_id": db_doc.id, **doc_json.model_dump()}
 
 
 # ---------------------------------------------------------------------------
@@ -101,7 +86,10 @@ async def list_resumes(
 ):
     docs = (
         db.query(ResumeDocument)
-        .filter(ResumeDocument.user_id == current_user_id)
+        .filter(
+            ResumeDocument.user_id == current_user_id,
+            ResumeDocument.storage_status == STORAGE_READY,
+        )
         .order_by(ResumeDocument.created_at.desc())
         .all()
     )
@@ -139,8 +127,8 @@ async def get_resume(
     db: Session = Depends(get_db),
     current_user_id: str = Depends(get_current_user_id),
 ):
-    doc_row = db.get(ResumeDocument, resume_document_id)
-    if not doc_row or doc_row.user_id != current_user_id:
+    doc_row = get_owned_ready_resume(db, resume_document_id, current_user_id)
+    if not doc_row:
         raise HTTPException(status_code=404, detail="Not found")
 
     evaluation = (
@@ -168,31 +156,15 @@ async def delete_resume(
     if not doc_row or doc_row.user_id != current_user_id:
         raise HTTPException(status_code=404, detail="Not found")
 
-    storage_path = doc_row.storage_path or doc_row.file_path
     try:
-        get_storage().delete(storage_path)
-    except Exception:
-        # Database state is authoritative for the app; stale storage objects can
-        # be cleaned by an admin job without keeping the profile UI blocked.
-        pass
-
-    db.query(ResumeExport).filter(
-        ResumeExport.user_id == current_user_id,
-        ResumeExport.resume_document_id == resume_document_id,
-    ).delete(synchronize_session=False)
-    db.query(ResumeEvaluationV2).filter(
-        ResumeEvaluationV2.user_id == current_user_id,
-        ResumeEvaluationV2.resume_document_id == resume_document_id,
-    ).delete(synchronize_session=False)
-    db.query(ResumeVersion).filter(
-        ResumeVersion.resume_document_id == resume_document_id,
-    ).delete(synchronize_session=False)
-    db.query(JDEvaluation).filter(
-        JDEvaluation.user_id == current_user_id,
-        JDEvaluation.resume_document_id == resume_document_id,
-    ).delete(synchronize_session=False)
-    db.delete(doc_row)
-    db.commit()
+        delete_resume_document(
+            db=db,
+            storage=get_storage(),
+            row=doc_row,
+            user_id=current_user_id,
+        )
+    except ResumeStorageWorkflowError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     return None
 
 
@@ -281,8 +253,8 @@ async def evaluate(
 
     Costs 1 credit.  Persists the result in resume_evaluations_v2.
     """
-    doc_row = db.get(ResumeDocument, resume_document_id)
-    if not doc_row or doc_row.user_id != current_user_id:
+    doc_row = get_owned_ready_resume(db, resume_document_id, current_user_id)
+    if not doc_row:
         raise HTTPException(status_code=404, detail="Not found")
 
     result_payload = None
@@ -351,8 +323,8 @@ async def rewrite(
     current_user_id: str = Depends(get_current_user_id),
 ):
     """Rewrite a single bullet — hallucination-guarded, zero-credit cost."""
-    doc_row = db.get(ResumeDocument, resume_document_id)
-    if not doc_row or doc_row.user_id != current_user_id:
+    doc_row = get_owned_ready_resume(db, resume_document_id, current_user_id)
+    if not doc_row:
         raise HTTPException(status_code=404, detail="Not found")
 
     doc_json = ResumeDocumentJSON.model_validate(doc_row.parsed_json)
@@ -419,8 +391,8 @@ async def create_version(
     current_user_id: str = Depends(get_current_user_id),
 ):
     """Apply a change_set to a resume and persist it as a new version."""
-    doc_row = db.get(ResumeDocument, resume_document_id)
-    if not doc_row or doc_row.user_id != current_user_id:
+    doc_row = get_owned_ready_resume(db, resume_document_id, current_user_id)
+    if not doc_row:
         raise HTTPException(status_code=404, detail="Not found")
 
     if body.parent_version_id:

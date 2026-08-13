@@ -15,6 +15,17 @@ FIXTURE = Path(__file__).parent.parent.parent / "fixtures/resumes/simple.pdf"
 OPENAI_URL = "https://api.openai.com/v1/chat/completions"
 
 
+def _configure_storage(storage: MagicMock) -> None:
+    def path_for(user_id, file_id, filename):
+        extension = filename.rsplit(".", 1)[-1].lower()
+        return f"{user_id}/{file_id}.{extension}"
+
+    storage.path_for.side_effect = path_for
+    storage.upload.side_effect = lambda user_id, file_id, content, filename: path_for(
+        user_id, file_id, filename
+    )
+
+
 # ---------------------------------------------------------------------------
 # Task 14: POST /api/v1/resumes/upload  (Phase 4: uses Supabase Storage)
 # ---------------------------------------------------------------------------
@@ -22,7 +33,7 @@ OPENAI_URL = "https://api.openai.com/v1/chat/completions"
 @patch("app.api.v1.endpoints.resumes_v2.get_storage")
 def test_upload_resume_creates_document(mock_get_storage, client: TestClient, auth_headers):
     storage = MagicMock()
-    storage.upload.return_value = "test-user-1/abc123_simple.pdf"
+    _configure_storage(storage)
     mock_get_storage.return_value = storage
     with FIXTURE.open("rb") as f:
         resp = client.post(
@@ -47,9 +58,43 @@ def test_upload_resume_rejects_unsupported_type(client: TestClient, auth_headers
 
 
 @patch("app.api.v1.endpoints.resumes_v2.get_storage")
+def test_upload_resume_rejects_mismatched_media_type_before_storage(
+    mock_get_storage, client: TestClient, auth_headers
+):
+    storage = MagicMock()
+    mock_get_storage.return_value = storage
+
+    response = client.post(
+        "/api/v1/resumes/upload",
+        files={"file": ("resume.pdf", b"%PDF-1.4", "application/octet-stream")},
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 400
+    storage.upload.assert_not_called()
+
+
+@patch("app.api.v1.endpoints.resumes_v2.get_storage")
+def test_upload_resume_rejects_invalid_signature_before_storage(
+    mock_get_storage, client: TestClient, auth_headers
+):
+    storage = MagicMock()
+    mock_get_storage.return_value = storage
+
+    response = client.post(
+        "/api/v1/resumes/upload",
+        files={"file": ("resume.pdf", b"not a pdf", "application/pdf")},
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 400
+    storage.upload.assert_not_called()
+
+
+@patch("app.api.v1.endpoints.resumes_v2.get_storage")
 def test_list_and_get_resume_documents_for_profile_page(mock_get_storage, client: TestClient, auth_headers):
     storage = MagicMock()
-    storage.upload.return_value = "test-user-1/abc123_simple.pdf"
+    _configure_storage(storage)
     mock_get_storage.return_value = storage
 
     with FIXTURE.open("rb") as f:
@@ -82,7 +127,7 @@ def test_list_and_get_resume_documents_for_profile_page(mock_get_storage, client
 @patch("app.api.v1.endpoints.resumes_v2.get_storage")
 def test_delete_resume_document_removes_v2_rows(mock_get_storage, client: TestClient, auth_headers):
     storage = MagicMock()
-    storage.upload.return_value = "test-user-1/abc123_simple.pdf"
+    _configure_storage(storage)
     mock_get_storage.return_value = storage
 
     with FIXTURE.open("rb") as f:
@@ -97,7 +142,9 @@ def test_delete_resume_document_removes_v2_rows(mock_get_storage, client: TestCl
     delete_response = client.delete(f"/api/v1/resumes/{doc_id}", headers=auth_headers)
 
     assert delete_response.status_code == 204, delete_response.text
-    storage.delete.assert_called_once_with("test-user-1/abc123_simple.pdf")
+    storage.delete.assert_called_once()
+    assert storage.delete.call_args.args[0].startswith("test-user-1/")
+    assert storage.delete.call_args.args[0].endswith(".pdf")
     list_response = client.get("/api/v1/resumes/list", headers=auth_headers)
     assert list_response.status_code == 200
     assert list_response.json()["total_count"] == 0
@@ -113,7 +160,7 @@ def test_delete_resume_document_removes_dependent_rows(
     from app.models.resume_export import ResumeExport
 
     storage = MagicMock()
-    storage.upload.return_value = "test-user-1/abc123_simple.pdf"
+    _configure_storage(storage)
     mock_get_storage.return_value = storage
 
     with FIXTURE.open("rb") as f:

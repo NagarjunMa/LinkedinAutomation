@@ -13,7 +13,8 @@ from app.core.auth import get_current_user_id
 from app.services.jd.extractor import extract_jd_requirements
 from app.services.jd.tailor import generate_bullet_options, tailor_resume_to_jd
 from app.services.resume.hallucination_guard import HallucinationError
-from app.models.resume_document import ResumeDocument, ResumeVersion
+from app.services.resume.upload_workflow import get_owned_ready_resume
+from app.models.resume_document import ResumeVersion
 from app.models.jd_evaluation import JDEvaluation
 from app.schemas.resume_v2 import ResumeDocumentJSON, ApplyTailorRequest, ApplyTailorResponse
 from app.schemas.jd import BulletDiff, JDExtraction
@@ -74,8 +75,8 @@ async def analyze(
 
     Costs 2 credits. Returns extracted_requirements + diff_plan.
     """
-    doc_row = db.get(ResumeDocument, body.resume_document_id)
-    if not doc_row or doc_row.user_id != current_user_id:
+    doc_row = get_owned_ready_resume(db, body.resume_document_id, current_user_id)
+    if not doc_row:
         raise HTTPException(status_code=404, detail="Resume document not found")
 
     result_payload = None
@@ -136,8 +137,8 @@ async def apply_tailor(
         raise HTTPException(status_code=404, detail="JD evaluation not found")
 
     # Load the base document (Q6.A: NEVER a version row)
-    doc_row = db.get(ResumeDocument, jd_row.resume_document_id)
-    if not doc_row or doc_row.user_id != current_user_id:
+    doc_row = get_owned_ready_resume(db, jd_row.resume_document_id, current_user_id)
+    if not doc_row:
         raise HTTPException(status_code=404, detail="Resume document not found")
 
     # Apply accepted changes to the BASE document
@@ -230,8 +231,8 @@ async def regenerate_bullet_options(
     if not jd_row or jd_row.user_id != current_user_id:
         raise HTTPException(status_code=404, detail="JD evaluation not found")
 
-    doc_row = db.get(ResumeDocument, jd_row.resume_document_id)
-    if not doc_row or doc_row.user_id != current_user_id:
+    doc_row = get_owned_ready_resume(db, jd_row.resume_document_id, current_user_id)
+    if not doc_row:
         raise HTTPException(status_code=404, detail="Resume document not found")
 
     doc = ResumeDocumentJSON.model_validate(doc_row.parsed_json)

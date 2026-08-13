@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, Text, Integer, ForeignKey
+from sqlalchemy import CheckConstraint, Column, DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.sql import func
 from app.db.base_class import Base
@@ -6,11 +6,19 @@ from app.db.base_class import Base
 
 class ResumeDocument(Base):
     __tablename__ = "resume_documents"
+    __table_args__ = (
+        CheckConstraint(
+            "storage_status IN ('pending', 'ready', 'deleting')",
+            name="ck_resume_documents_storage_status",
+        ),
+        Index("ix_resume_documents_user_storage_status", "user_id", "storage_status"),
+    )
     id = Column(String, primary_key=True, index=True)
     user_id = Column(String, ForeignKey("users.user_id"), nullable=False, index=True)
     original_filename = Column(String, nullable=False)
     file_path = Column(String, nullable=False)
     storage_path = Column(String, nullable=True)   # Phase 4: Supabase Storage path
+    storage_status = Column(String(length=16), nullable=False, default="ready", server_default="ready")
     file_type = Column(String, nullable=False)
     parsed_json = Column(JSONB, nullable=False)
     raw_text = Column(Text, nullable=False)
