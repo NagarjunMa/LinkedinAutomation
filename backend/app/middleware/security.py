@@ -354,11 +354,13 @@ class RequestValidationMiddleware(BaseHTTPMiddleware):
         self,
         app,
         max_request_size: int = 10 * 1024 * 1024,  # 10MB
+        route_size_limits: Optional[Dict[str, int]] = None,
         blocked_user_agents: Optional[List[str]] = None,
         require_user_agent: bool = True
     ):
         super().__init__(app)
         self.max_request_size = max_request_size
+        self.route_size_limits = route_size_limits or {}
         self.blocked_user_agents = blocked_user_agents or [
             "curl", "wget", "python-requests", "postman"  # Block common automation tools
         ]
@@ -397,6 +399,16 @@ class RequestValidationMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         # Check request size
+        request_limit = self.max_request_size
+        matching_prefixes = [
+            prefix for prefix in self.route_size_limits
+            if request.url.path == prefix
+            or request.url.path.startswith(f"{prefix.rstrip('/')}/")
+        ]
+        if matching_prefixes:
+            longest_prefix = max(matching_prefixes, key=len)
+            request_limit = self.route_size_limits[longest_prefix]
+
         content_length = request.headers.get("Content-Length")
         try:
             parsed_content_length = int(content_length) if content_length else 0
@@ -409,13 +421,23 @@ class RequestValidationMiddleware(BaseHTTPMiddleware):
                 }
             )
 
-        if parsed_content_length > self.max_request_size:
-            logger.warning(f"Request too large: {content_length} bytes from {request.client.host}")
+        if parsed_content_length < 0:
+            return JSONResponse(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                content={
+                    "error": "Invalid Content-Length header",
+                    "request_id": getattr(request.state, 'request_id', str(uuid.uuid4()))
+                }
+            )
+
+        if parsed_content_length > request_limit:
+            client_host = request.client.host if request.client else "unknown"
+            logger.warning(f"Request too large: {content_length} bytes from {client_host}")
             return JSONResponse(
                 status_code=status.HTTP_413_CONTENT_TOO_LARGE,
                 content={
                     "error": "Request entity too large",
-                    "max_size": self.max_request_size,
+                    "max_size": request_limit,
                     "request_id": getattr(request.state, 'request_id', str(uuid.uuid4()))
                 }
             )

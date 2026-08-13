@@ -160,7 +160,18 @@ def test_oversized_request_rejected_before_endpoint_processing(client: TestClien
     response = client.post(
         "/api/v1/resumes/upload",
         content=b"",
-        headers={"Content-Length": str(51 * 1024 * 1024)},
+        headers={"Content-Length": str(12 * 1024 * 1024)},
     )
 
     assert response.status_code == 413
+    assert response.json()["max_size"] == 11 * 1024 * 1024
+
+
+def test_resume_upload_limit_does_not_replace_global_request_limit(client: TestClient):
+    response = client.post(
+        "/health",
+        content=b"",
+        headers={"Content-Length": str(12 * 1024 * 1024)},
+    )
+
+    assert response.status_code != 413

@@ -6,6 +6,7 @@ from app.models.job import UserProfile
 from app.models import JobApplication
 from app.models.resume_document import ResumeDocument, ResumeVersion
 from app.models.resume_evaluation_v2 import ResumeEvaluationV2
+from app.services.resume.upload_workflow import STORAGE_READY
 from app.schemas.profile import (
     UserProfileCreate, UserProfileUpdate
 )
@@ -18,7 +19,10 @@ class ProfileService:
         profile = db.query(UserProfile).filter(UserProfile.user_id == user_id).first()
         latest_resume = (
             db.query(ResumeDocument)
-            .filter(ResumeDocument.user_id == user_id)
+            .filter(
+                ResumeDocument.user_id == user_id,
+                ResumeDocument.storage_status == STORAGE_READY,
+            )
             .order_by(ResumeDocument.created_at.desc())
             .first()
         )
@@ -27,16 +31,33 @@ class ProfileService:
 
         # Calculate statistics
         total_applications = db.query(JobApplication).filter(JobApplication.user_id == user_id).count()
-        total_resumes = db.query(ResumeDocument).filter(ResumeDocument.user_id == user_id).count()
+        total_resumes = (
+            db.query(ResumeDocument)
+            .filter(
+                ResumeDocument.user_id == user_id,
+                ResumeDocument.storage_status == STORAGE_READY,
+            )
+            .count()
+        )
         total_resume_versions = (
             db.query(ResumeVersion)
             .join(ResumeDocument, ResumeVersion.resume_document_id == ResumeDocument.id)
-            .filter(ResumeDocument.user_id == user_id)
+            .filter(
+                ResumeDocument.user_id == user_id,
+                ResumeDocument.storage_status == STORAGE_READY,
+            )
             .count()
         )
         total_resume_evaluations = (
             db.query(ResumeEvaluationV2)
-            .filter(ResumeEvaluationV2.user_id == user_id)
+            .join(
+                ResumeDocument,
+                ResumeEvaluationV2.resume_document_id == ResumeDocument.id,
+            )
+            .filter(
+                ResumeEvaluationV2.user_id == user_id,
+                ResumeDocument.storage_status == STORAGE_READY,
+            )
             .count()
         )
         derived = ProfileService._derive_from_resume(latest_resume) if latest_resume else {}

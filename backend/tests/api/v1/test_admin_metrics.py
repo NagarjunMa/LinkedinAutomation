@@ -48,7 +48,14 @@ def _make_admin_client(db_session, admin_user_id: str, tmp_path):
     from pathlib import Path as _Path
     _original_singleton = _storage_mod._client_instance
     _mock_storage = MagicMock()
-    _mock_storage.upload.side_effect = lambda user_id, file_id, content, filename: f"{user_id}/{file_id}_{filename}"
+    def _storage_path(user_id, file_id, filename):
+        return f"{user_id}/{file_id}.{filename.rsplit('.', 1)[-1].lower()}"
+
+    def _upload(user_id, file_id, content, filename):
+        return _storage_path(user_id, file_id, filename)
+
+    _mock_storage.path_for.side_effect = _storage_path
+    _mock_storage.upload.side_effect = _upload
     fixture_path = _Path(__file__).parent.parent / "fixtures/resumes/simple.pdf"
     _mock_storage.download.return_value = fixture_path.read_bytes() if fixture_path.exists() else b"%PDF-stub"
     _storage_mod._client_instance = _mock_storage

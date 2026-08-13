@@ -17,11 +17,12 @@ from app.core.config import settings
 from app.core.supabase_storage import download_pdf, signed_url, upload_pdf
 from app.db.session import get_db
 from app.middleware.credits import credit_transaction
-from app.models.resume_document import ResumeDocument, ResumeVersion
+from app.models.resume_document import ResumeVersion
 from app.models.resume_export import ResumeExport
 from app.schemas.resume_v2 import ResumeDocumentJSON
 from app.schemas.resume_export import Country, ExportRequest, ExportResponse, RoleTemplate
 from app.services.pdf.renderer import BlankPdfError, PdfRenderTimeout, render_pdf_from_doc
+from app.services.resume.upload_workflow import get_owned_ready_resume
 
 router = APIRouter(prefix="/exports", tags=["exports"])
 _EXPORT_SEMAPHORE = asyncio.Semaphore(3)
@@ -99,8 +100,8 @@ async def create_export(
             raise HTTPException(status_code=404, detail="Version not found")
 
         # Ownership via parent document
-        doc_row = db.get(ResumeDocument, version.resume_document_id)
-        if not doc_row or doc_row.user_id != current_user_id:
+        doc_row = get_owned_ready_resume(db, version.resume_document_id, current_user_id)
+        if not doc_row:
             raise HTTPException(status_code=404, detail="Resume document not found")
 
         resume_doc_id = version.resume_document_id
@@ -116,8 +117,8 @@ async def create_export(
                 status_code=422,
                 detail="Either resume_version_id OR (resume_document_id + country + role_template) required",
             )
-        doc_row = db.get(ResumeDocument, body.resume_document_id)
-        if not doc_row or doc_row.user_id != current_user_id:
+        doc_row = get_owned_ready_resume(db, body.resume_document_id, current_user_id)
+        if not doc_row:
             raise HTTPException(status_code=404, detail="Resume document not found")
 
         resume_doc_id = body.resume_document_id

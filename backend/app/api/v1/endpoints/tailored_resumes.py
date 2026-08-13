@@ -21,6 +21,7 @@ from app.middleware.credits import credit_transaction
 from app.models.jd_evaluation import JDEvaluation
 from app.models.resume_document import ResumeDocument, ResumeVersion
 from app.models.resume_export import ResumeExport
+from app.services.resume.upload_workflow import STORAGE_READY, get_owned_ready_resume
 from app.schemas.resume_v2 import ResumeDocumentJSON
 from app.services.pdf.renderer import (
     BlankPdfError,
@@ -89,8 +90,8 @@ def _get_owned_version(
     version = db.get(ResumeVersion, version_id)
     if not version:
         raise HTTPException(status_code=404, detail="Tailored resume not found")
-    doc = db.get(ResumeDocument, version.resume_document_id)
-    if not doc or doc.user_id != current_user_id:
+    doc = get_owned_ready_resume(db, version.resume_document_id, current_user_id)
+    if not doc:
         raise HTTPException(status_code=404, detail="Tailored resume not found")
     return version, doc
 
@@ -105,6 +106,7 @@ def list_tailored_resumes(
         .join(ResumeDocument, ResumeVersion.resume_document_id == ResumeDocument.id)
         .filter(
             ResumeDocument.user_id == current_user_id,
+            ResumeDocument.storage_status == STORAGE_READY,
             ResumeVersion.jd_evaluation_id.isnot(None),
         )
         .order_by(ResumeVersion.created_at.desc())
