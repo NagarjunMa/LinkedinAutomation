@@ -3,12 +3,14 @@ import pytest
 from app.api.error_mapping import to_http_exception
 from app.application.errors import (
     ApplicationError,
+    AuthorizationError,
     ExternalServiceError,
     InsufficientBalanceError,
     InvalidOperationError,
     OperationRejectedError,
     RenderError,
     ResourceBusyError,
+    ResourceConflictError,
     ResourceNotFoundError,
 )
 
@@ -17,7 +19,9 @@ from app.application.errors import (
     ("error", "status_code"),
     [
         (InsufficientBalanceError("credits"), 402),
+        (AuthorizationError("forbidden"), 403),
         (ResourceNotFoundError("missing"), 404),
+        (ResourceConflictError("conflict"), 409),
         (InvalidOperationError("invalid"), 422),
         (OperationRejectedError("rejected"), 422),
         (ResourceBusyError("busy"), 429),

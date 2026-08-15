@@ -10,6 +10,7 @@ MIGRATED_ROUTERS = (
     "jd.py",
     "exports.py",
     "tailored_resumes.py",
+    "jobs.py",
 )
 
 

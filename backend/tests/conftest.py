@@ -313,7 +313,6 @@ def client(db_session: Session, test_user_id: str):
     import app.db.session as _session_mod
     from app.core.auth import get_current_user_id, get_authenticated_user_id
     from app.db.session import get_db
-    from app.db.rls_session import get_db as get_rls_db
 
     # Override engine to one that matches db_session's engine.
     _original_engine = _session_mod.engine
@@ -328,7 +327,6 @@ def client(db_session: Session, test_user_id: str):
         return test_user_id
 
     app.dependency_overrides[get_db] = _override_get_db
-    app.dependency_overrides[get_rls_db] = _override_get_db
     app.dependency_overrides[get_current_user_id] = _override_get_current_user_id
     app.dependency_overrides[get_authenticated_user_id] = _override_get_current_user_id
 
@@ -356,7 +354,6 @@ def client(db_session: Session, test_user_id: str):
 
     # Restore overrides
     app.dependency_overrides.pop(get_db, None)
-    app.dependency_overrides.pop(get_rls_db, None)
     app.dependency_overrides.pop(get_current_user_id, None)
     app.dependency_overrides.pop(get_authenticated_user_id, None)
     # Restore storage singleton

@@ -9,6 +9,14 @@ class ResourceNotFoundError(ApplicationError):
     """The requested owned resource is unavailable to the caller."""
 
 
+class AuthorizationError(ApplicationError):
+    """The caller is authenticated but cannot perform the operation."""
+
+
+class ResourceConflictError(ApplicationError):
+    """The operation conflicts with another owner's use of a resource."""
+
+
 class InvalidOperationError(ApplicationError):
     """The request is structurally valid but cannot be performed."""
 

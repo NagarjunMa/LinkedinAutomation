@@ -1,750 +1,257 @@
-from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, Form
-from sqlalchemy.orm import Session
-from sqlalchemy import func, cast, Date, Integer, extract, desc
-from app.db.rls_session import get_db, set_current_user
+"""HTTP adapters for authenticated job application tracking."""
+
+from typing import Optional
+
+from fastapi import APIRouter, Depends, Form, HTTPException, Query
+
+from app.api.dependencies import get_job_application_service
+from app.api.error_mapping import to_http_exception
+from app.application.errors import ApplicationError
+from app.application.job_service import JobApplicationService
 from app.core.auth import get_authenticated_user_id
-from app.models.job import JobListing, JobApplication
 from app.schemas.job import (
+    ApplicationStatus,
+    JobAppliedUpdate,
+    JobApplicationStatusUpdate,
     JobListingCreate,
     JobListingResponse,
     JobListingUpdate,
     JobStats,
-    TimeRange
+    PaginatedJobApplications,
+    TimeRange,
 )
-from app.services.job_cleanup_service import JobCleanupService
-# LinkedIn scraper removed - using job aggregator instead
-from datetime import datetime, timedelta, timezone
-import logging
 
-logger = logging.getLogger(__name__)
 
 router = APIRouter()
+_LEGACY_SCRAPE_DETAIL = "This legacy scrape endpoint is no longer supported"
+_LEGACY_CLEANUP_DETAIL = "This legacy cleanup endpoint is no longer supported"
 
 
-def _jobs_for_user(db: Session, user_id: str):
-    return (
-        db.query(JobListing)
-        .join(JobApplication, JobApplication.job_id == JobListing.id)
-        .filter(JobApplication.user_id == user_id)
+@router.get("/", response_model=list[JobListingResponse])
+def get_jobs(
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=100, ge=1, le=100),
+    title: Optional[str] = None,
+    company: Optional[str] = None,
+    location: Optional[str] = None,
+    job_type: Optional[str] = None,
+    experience_level: Optional[str] = None,
+    sort_by: str = "newest",
+    applied: Optional[bool] = None,
+    user_id: str = Depends(get_authenticated_user_id),
+    service: JobApplicationService = Depends(get_job_application_service),
+):
+    return service.list_jobs(
+        user_id,
+        skip=skip,
+        limit=limit,
+        title=title,
+        company=company,
+        location=location,
+        job_type=job_type,
+        experience_level=experience_level,
+        sort_by=sort_by,
+        applied=applied,
     )
 
 
-def _get_user_job_or_404(db: Session, job_id: int, user_id: str) -> JobListing:
-    job = _jobs_for_user(db, user_id).filter(JobListing.id == job_id).first()
-    if not job:
-        raise HTTPException(status_code=404, detail="Job not found")
-    return job
-
-@router.get("/", response_model=List[JobListingResponse])
-async def get_jobs(
-    db: Session = Depends(get_db),
-    skip: int = 0,
-    limit: int = 100,
-    title: Optional[str] = None,
-    company: Optional[str] = None,
-    location: Optional[str] = None,
-    job_type: Optional[str] = None,
-    experience_level: Optional[str] = None,
-    sort_by: Optional[str] = "newest",
-    applied: Optional[bool] = None,
-    user_id: str = Depends(get_authenticated_user_id)
-):
-    # Set the current user context for RLS
-    set_current_user(user_id)
-    """
-    Retrieve job listings with optional filtering, sorting, and pagination
-    """
-    query = _jobs_for_user(db, user_id)
-
-    # Apply filters
-    if title:
-        query = query.filter(JobListing.title.ilike(f"%{title}%"))
-    if company:
-        query = query.filter(JobListing.company.ilike(f"%{company}%"))
-    if location:
-        query = query.filter(JobListing.location.ilike(f"%{location}%"))
-    if job_type:
-        query = query.filter(JobListing.job_type == job_type)
-    if experience_level:
-        query = query.filter(JobListing.experience_level == experience_level)
-    if applied is not None:
-        query = query.filter(JobListing.applied == applied)
-
-    # Apply sorting
-    if sort_by == "newest":
-        query = query.order_by(JobListing.extracted_date.desc())
-    elif sort_by == "oldest":
-        query = query.order_by(JobListing.extracted_date.asc())
-    elif sort_by == "posted_newest":
-        query = query.order_by(JobListing.posted_date.desc().nullslast())
-    elif sort_by == "posted_oldest":
-        query = query.order_by(JobListing.posted_date.asc().nullslast())
-    else:
-        # Default to newest first
-        query = query.order_by(JobListing.extracted_date.desc())
-
-    jobs = query.offset(skip).limit(limit).all()
-    return jobs
-
 @router.get("/counts")
-async def get_job_counts(
-    db: Session = Depends(get_db),
+def get_job_counts(
     title: Optional[str] = None,
     company: Optional[str] = None,
     location: Optional[str] = None,
     job_type: Optional[str] = None,
     experience_level: Optional[str] = None,
     user_id: str = Depends(get_authenticated_user_id),
+    service: JobApplicationService = Depends(get_job_application_service),
 ):
-    """
-    Get job counts for pagination and stats
-    """
-    set_current_user(user_id)
-    query = _jobs_for_user(db, user_id)
+    return service.counts(
+        user_id,
+        title=title,
+        company=company,
+        location=location,
+        job_type=job_type,
+        experience_level=experience_level,
+    )
 
-    # Apply same filters as get_jobs
-    if title:
-        query = query.filter(JobListing.title.ilike(f"%{title}%"))
-    if company:
-        query = query.filter(JobListing.company.ilike(f"%{company}%"))
-    if location:
-        query = query.filter(JobListing.location.ilike(f"%{location}%"))
-    if job_type:
-        query = query.filter(JobListing.job_type == job_type)
-    if experience_level:
-        query = query.filter(JobListing.experience_level == experience_level)
-
-    # Get total count
-    total_count = query.count()
-
-    # Get applied count
-    applied_count = query.filter(JobListing.applied.is_(True)).count()
-
-    # Get pending count
-    pending_count = total_count - applied_count
-
-    return {
-        "total": total_count,
-        "applied": applied_count,
-        "pending": pending_count,
-        "total_jobs": total_count,
-        "applied_count": applied_count,
-        "pending_count": pending_count,
-    }
 
 @router.get("/stats", response_model=JobStats)
-async def get_job_stats(
-    db: Session = Depends(get_db),
-    time_range: TimeRange = Query(default=TimeRange.LAST_30_DAYS, description="Time range for stats"),
-    custom_days: Optional[int] = Query(default=None, description="Custom number of days for stats"),
+def get_job_stats(
+    time_range: TimeRange = Query(default=TimeRange.LAST_30_DAYS),
+    custom_days: Optional[int] = Query(default=None, ge=1, le=365),
     user_id: str = Depends(get_authenticated_user_id),
+    service: JobApplicationService = Depends(get_job_application_service),
 ):
-    """
-    Get job statistics including:
-    - Overall total jobs and applications (all time)
-    - Time-range specific graph data
-    """
-    # Get overall totals (regardless of time range)
-    set_current_user(user_id)
-    overall_stats = _jobs_for_user(db, user_id).with_entities(
-        func.count(JobListing.id).label('total_jobs'),
-        func.sum(cast(JobListing.applied, Integer)).label('total_applied')
-    ).first()
+    return service.stats(user_id, time_range=time_range, custom_days=custom_days)
 
-    total_jobs = overall_stats.total_jobs or 0
-    total_applied = overall_stats.total_applied or 0
-
-    # Calculate success rate from overall totals
-    success_rate = (total_applied / total_jobs * 100) if total_jobs > 0 else 0
-
-    # Calculate date range for graph data
-    end_date = datetime.now(timezone.utc)
-    if custom_days is not None:
-        days = custom_days
-    else:
-        days = {
-            TimeRange.LAST_7_DAYS: 7,
-            TimeRange.LAST_30_DAYS: 30,
-            TimeRange.LAST_3_MONTHS: 90
-        }[time_range]
-
-    start_date = end_date - timedelta(days=days)
-
-    # Get time-range specific data for the graph
-    daily_stats = _jobs_for_user(db, user_id).with_entities(
-        cast(JobListing.extracted_date, Date).label('date'),
-        func.count(JobListing.id).label('jobs_extracted'),
-        func.sum(cast(JobListing.applied, Integer)).label('jobs_applied'),
-        extract('hour', JobListing.extracted_date).label('hour')
-    ).filter(
-        JobListing.extracted_date >= start_date,
-        JobListing.extracted_date <= end_date
-    ).group_by(
-        cast(JobListing.extracted_date, Date),
-        extract('hour', JobListing.extracted_date)
-    ).order_by(
-        cast(JobListing.extracted_date, Date),
-        extract('hour', JobListing.extracted_date)
-    ).all()
-
-    # Calculate daily aggregates for the graph
-    daily_data = []
-    current_date = None
-    daily_extracted = 0
-    daily_applied = 0
-
-    for stat in daily_stats:
-        stat_date = stat.date
-
-        if current_date is None:
-            current_date = stat_date
-
-        if current_date != stat_date:
-            # Add the previous day's data
-            daily_data.append({
-                "date": str(current_date),
-                "jobs_extracted": daily_extracted,
-                "jobs_applied": daily_applied or 0,
-            })
-            # Reset counters for new day
-            current_date = stat_date
-            daily_extracted = stat.jobs_extracted
-            daily_applied = stat.jobs_applied or 0
-        else:
-            # Accumulate current day's data
-            daily_extracted += stat.jobs_extracted
-            daily_applied += stat.jobs_applied or 0
-
-    # Add the last day's data
-    if current_date is not None:
-        daily_data.append({
-            "date": str(current_date),
-            "jobs_extracted": daily_extracted,
-            "jobs_applied": daily_applied or 0,
-        })
-
-    # Get period totals (just for the selected time range)
-    period_stats = _jobs_for_user(db, user_id).with_entities(
-        func.count(JobListing.id).label('period_jobs'),
-        func.sum(cast(JobListing.applied, Integer)).label('period_applied')
-    ).filter(
-        JobListing.extracted_date >= start_date,
-        JobListing.extracted_date <= end_date
-    ).first()
-
-    return {
-        # Overall statistics (all time)
-        "total_jobs": total_jobs,
-        "total_applied": total_applied,
-        "success_rate": round(success_rate, 2),
-
-        # Period statistics (for selected time range)
-        "period_jobs": period_stats.period_jobs or 0,
-        "period_applied": period_stats.period_applied or 0,
-
-        # Graph data
-        "daily_stats": daily_data,
-        "time_range": time_range.value if not custom_days else f"last_{custom_days}_days"
-    }
 
 @router.get("/recent-applications")
-async def get_recent_applications(
+def get_recent_applications(
     limit: int = Query(default=5, ge=1, le=50),
-    db: Session = Depends(get_db),
     user_id: str = Depends(get_authenticated_user_id),
+    service: JobApplicationService = Depends(get_job_application_service),
 ):
-    """
-    Get recent job applications, ordered by application date
-    """
-    # Query JobApplication table to get actual applications with job details
-    recent_apps = db.query(JobApplication, JobListing).join(
-        JobListing, JobApplication.job_id == JobListing.id
-    ).filter(
-        JobApplication.user_id == user_id
-    ).order_by(
-        desc(JobApplication.application_date)
-    ).limit(limit).all()
+    return service.recent(user_id, limit)
 
-    # Format response to match frontend expectations
-    result = []
-    for app, job in recent_apps:
-        result.append({
-            "id": job.id,
-            "title": job.title,
-            "company": job.company,
-            "location": job.location or "Remote",
-            "applied_date": app.application_date.isoformat() if app.application_date else None,
-            "extracted_date": job.extracted_date.isoformat() if job.extracted_date else None,
-            "status": app.application_status.title() if app.application_status else "Applied",
-            "source_url": job.source_url,
-            "application_source": app.application_source
-        })
-
-    return result
 
 @router.post("/", response_model=JobListingResponse)
-async def create_job(
+def create_job(
     job: JobListingCreate,
-    db: Session = Depends(get_db),
     user_id: str = Depends(get_authenticated_user_id),
+    service: JobApplicationService = Depends(get_job_application_service),
 ):
-    """
-    Create a new job listing
-    """
-    db_job = JobListing(**job.dict())
-    db.add(db_job)
-    db.flush()
-    db.add(JobApplication(
-        user_id=user_id,
-        job_id=db_job.id,
-        application_status="interested",
-        application_source="manual",
-        source_url=db_job.source_url,
-    ))
-    db.commit()
-    db.refresh(db_job)
-    return db_job
-
-@router.get("/{job_id}", response_model=JobListingResponse)
-async def get_job(
-    job_id: int,
-    db: Session = Depends(get_db),
-    user_id: str = Depends(get_authenticated_user_id),
-):
-    """
-    Retrieve a specific job listing by ID
-    """
-    return _get_user_job_or_404(db, job_id, user_id)
-
-@router.put("/{job_id}", response_model=JobListingResponse)
-async def update_job(
-    job_id: int,
-    job_update: JobListingUpdate,
-    db: Session = Depends(get_db),
-    user_id: str = Depends(get_authenticated_user_id),
-):
-    """
-    Update a job listing
-    """
-    db_job = _get_user_job_or_404(db, job_id, user_id)
-
-    for field, value in job_update.dict(exclude_unset=True).items():
-        setattr(db_job, field, value)
-
-    db.commit()
-    db.refresh(db_job)
-    return db_job
-
-@router.delete("/{job_id}")
-async def delete_job(
-    job_id: int,
-    db: Session = Depends(get_db),
-    user_id: str = Depends(get_authenticated_user_id),
-):
-    """
-    Delete a job listing
-    """
-    db_job = _get_user_job_or_404(db, job_id, user_id)
-
-    db.delete(db_job)
-    db.commit()
-    return {"message": "Job deleted successfully"}
-
-@router.post("/scrape", response_model=List[JobListingResponse], include_in_schema=False)
-async def scrape_jobs(
-    query: dict,
-    db: Session = Depends(get_db),
-    user_id: str = Depends(get_authenticated_user_id),
-):
-    """
-    Scrape jobs from LinkedIn based on search parameters
-    """
-    # from app.scrapers.linkedin_scraper import LinkedInScraper # This import is removed as per the new_code
-    # async with LinkedInScraper() as scraper:
-    #     jobs = await scraper.search_jobs(query)
-
-    #     # Save jobs to database
-    #     for job in jobs:
-    #         db.add(job)
-    #     db.commit()
-
-    #     return jobs
-    raise HTTPException(status_code=410, detail="This legacy scrape endpoint is no longer supported")
-
-@router.put("/{job_id}/status", response_model=JobListingResponse)
-async def update_job_status(
-    job_id: int,
-    status_update: dict,
-    db: Session = Depends(get_db),
-    user_id: str = Depends(get_authenticated_user_id),
-):
-    """
-    Update job application status
-    """
-    db_job = _get_user_job_or_404(db, job_id, user_id)
-
-    if "applied" in status_update:
-        db_job.applied = status_update["applied"]
-
-        # Set applied_date timestamp when marking as applied
-        if status_update["applied"]:
-            db_job.applied_date = datetime.now(timezone.utc)
-
-    db.commit()
-    db.refresh(db_job)
-    return db_job
-
-@router.put("/{job_id}/application-status")
-async def update_job_application_status(
-    job_id: int,
-    status_update: dict,
-    db: Session = Depends(get_db),
-    user_id: str = Depends(get_authenticated_user_id)
-):
-    """
-    Update comprehensive job application status with the new status system
-    """
     try:
-        # Find a job visible to the authenticated user.
-        db_job = _get_user_job_or_404(db, job_id, user_id)
+        return service.create(user_id, job)
+    except ApplicationError as exc:
+        raise to_http_exception(exc) from exc
 
-        # Find or create job application record
-        application = db.query(JobApplication).filter(
-            JobApplication.job_id == job_id,
-            JobApplication.user_id == user_id
-        ).first()
 
-        if not application:
-            # Create new application record
-            application = JobApplication(
-                user_id=user_id,
-                job_id=job_id,
-                application_status=status_update.get("status", "pending"),
-                application_source="url_extraction",
-                source_url=db_job.source_url,
-                user_notes=status_update.get("notes"),
-                extraction_metadata={
-                    "status_update_method": "modal",
-                    "updated_at": datetime.now(timezone.utc).isoformat()
-                }
-            )
-            db.add(application)
-        else:
-            # Update existing application
-            application.application_status = status_update.get("status", "pending")
-            application.user_notes = status_update.get("notes")
-            application.updated_at = datetime.now(timezone.utc)
+@router.post("/scrape", include_in_schema=False)
+def scrape_jobs(_query: dict):
+    raise HTTPException(status_code=410, detail=_LEGACY_SCRAPE_DETAIL)
 
-            # Update extraction metadata
-            if not application.extraction_metadata:
-                application.extraction_metadata = {}
-            application.extraction_metadata.update({
-                "status_update_method": "modal",
-                "updated_at": datetime.now(timezone.utc).isoformat()
-            })
-
-        # Update job listing with new status
-        db_job.applied = status_update.get("status") == "applied"
-
-        # Set applied date if status is "applied"
-        if status_update.get("status") == "applied":
-            if status_update.get("date"):
-                try:
-                    # Parse the date string if provided
-                    if isinstance(status_update["date"], str):
-                        applied_date = datetime.fromisoformat(status_update["date"].replace('Z', '+00:00'))
-                    else:
-                        applied_date = status_update["date"]
-                    db_job.applied_date = applied_date
-                except ValueError:
-                    db_job.applied_date = datetime.now(timezone.utc)
-            else:
-                db_job.applied_date = datetime.now(timezone.utc)
-
-        # Update job with new status fields
-        if hasattr(db_job, 'application_status'):
-            db_job.application_status = status_update.get("status")
-        if hasattr(db_job, 'application_notes'):
-            db_job.application_notes = status_update.get("notes")
-        if hasattr(db_job, 'application_context'):
-            db_job.application_context = status_update.get("context")
-
-        db.commit()
-        db.refresh(application)
-        db.refresh(db_job)
-
-        logger.info(f"Successfully updated job {job_id} application status to {status_update.get('status')}")
-
-        return {
-            "success": True,
-            "message": f"Job application status updated to {status_update.get('status')}",
-            "job_id": job_id,
-            "application_id": application.id,
-            "status": status_update.get("status"),
-            "updated_at": application.updated_at.isoformat() if application.updated_at else None
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error updating job application status: {e}")
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error updating application status: {str(e)}")
 
 @router.post("/applications/{job_id}/apply")
-async def apply_to_job(
+def apply_to_job(
     job_id: int,
-    user_id: str = Form(...),
-    application_source: str = Form("direct"),
-    notes: str = Form(""),
-    db: Session = Depends(get_db),
+    user_id: str = Form(..., max_length=100),
+    application_source: str = Form("direct", max_length=100),
+    notes: str = Form("", max_length=5000),
     current_user_id: str = Depends(get_authenticated_user_id),
+    service: JobApplicationService = Depends(get_job_application_service),
 ):
-    """Track when user applies to a job"""
     try:
-        if user_id != current_user_id:
-            raise HTTPException(status_code=403, detail="User mismatch")
-        _get_user_job_or_404(db, job_id, current_user_id)
-        # Check if already applied
-        existing = db.query(JobApplication).filter(
-            JobApplication.user_id == user_id,
-            JobApplication.job_id == job_id
-        ).first()
+        return service.apply(
+            job_id,
+            submitted_user_id=user_id,
+            current_user_id=current_user_id,
+            application_source=application_source,
+            notes=notes,
+        )
+    except ApplicationError as exc:
+        raise to_http_exception(exc) from exc
 
-        if existing:
-            if existing.application_status == "applied":
-                return {"message": "Already applied to this job", "application_id": existing.id}
-            else:
-                # Update to applied status
-                existing.application_status = "applied"
-                existing.application_date = datetime.now(timezone.utc)
-                existing.application_source = application_source
-                existing.user_notes = notes
-                existing.updated_at = datetime.now(timezone.utc)
-        else:
-            # Create new application record
-            application = JobApplication(
-                user_id=user_id,
-                job_id=job_id,
-                application_status="applied",
-                application_source=application_source,
-                user_notes=notes
-            )
-            db.add(application)
-            existing = application
 
-        db.commit()
-        db.refresh(existing)
-
-        return {
-            "message": "Application tracked successfully",
-            "application_id": existing.id,
-            "status": "applied"
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error tracking job application: {e}")
-        db.rollback()
-        raise HTTPException(status_code=500, detail="Error tracking application")
-
-@router.get("/applications/{user_id}")
-async def get_user_applications(
+@router.get("/applications/{user_id}", response_model=PaginatedJobApplications)
+def get_user_applications(
     user_id: str,
-    status: str = None,
-    page: int = 1,
-    limit: int = 10,
-    db: Session = Depends(get_db),
+    status: Optional[ApplicationStatus] = None,
+    page: int = Query(default=1, ge=1),
+    limit: int = Query(default=10, ge=1, le=100),
     current_user_id: str = Depends(get_authenticated_user_id),
+    service: JobApplicationService = Depends(get_job_application_service),
 ):
-    """Get user's applied jobs from JobApplication table with pagination"""
-    try:
-        if user_id != current_user_id:
-            raise HTTPException(status_code=403, detail="User mismatch")
-        # Query JobApplication table for user's applications
-        query = db.query(JobApplication).filter(JobApplication.user_id == user_id)
+    return service.list_applications(
+        current_user_id,
+        status=status,
+        page=page,
+        limit=limit,
+    )
 
-        # Filter by status if provided
-        if status:
-            query = query.filter(JobApplication.application_status == status)
-
-        # Get total count for pagination
-        total_count = query.count()
-
-        # Apply pagination and order by application_date (latest first)
-        offset = (page - 1) * limit
-        applications = query.order_by(JobApplication.application_date.desc()).offset(offset).limit(limit).all()
-
-        # Prepare response to match frontend expectations
-        results = []
-        for application in applications:
-            job = application.job_listing
-            results.append({
-                "id": application.id,
-                "user_id": application.user_id,
-                "job_id": application.job_id,
-                "application_status": application.application_status,
-                "application_source": application.application_source,
-                "application_date": application.application_date.isoformat(),
-                "source_url": application.source_url,
-                "user_notes": application.user_notes,
-                "extraction_metadata": application.extraction_metadata or {
-                    "extraction_confidence": 0.9,
-                    "extraction_method": job.source or "dashboard"
-                },
-                "follow_up_date": application.follow_up_date.isoformat() if application.follow_up_date else None,
-                "company_response": application.company_response,
-                "response_date": application.response_date.isoformat() if application.response_date else None,
-                "job_listing": {
-                    "id": job.id,
-                    "title": job.title,
-                    "company": job.company,
-                    "location": job.location,
-                    "description": job.description,
-                    "requirements": job.requirements,
-                    "job_type": job.job_type,
-                    "experience_level": job.experience_level,
-                    "salary_range": job.salary_range,
-                    "skills": job.skills,
-                    "application_url": job.application_url,
-                    "source": job.source,
-                    "source_url": job.source_url,
-                    "posted_date": job.posted_date.isoformat() if job.posted_date else None,
-                    "extracted_date": job.extracted_date.isoformat() if job.extracted_date else None,
-                }
-            })
-
-        return {
-            "applications": results,
-            "total": total_count,
-            "page": page,
-            "limit": limit,
-            "total_pages": (total_count + limit - 1) // limit
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error fetching applications: {e}")
-        raise HTTPException(status_code=500, detail="Error fetching applications")
 
 @router.put("/applications/{application_id}/status")
-async def update_application_status(
+def update_application_status(
     application_id: int,
-    status: str = Form(...),  # interested, applied, interviewed, rejected, hired
-    notes: str = Form(""),
-    follow_up_date: str = Form(""),  # YYYY-MM-DD format
-    db: Session = Depends(get_db),
+    status: ApplicationStatus = Form(...),
+    notes: str = Form("", max_length=5000),
+    follow_up_date: str = Form("", max_length=10),
     user_id: str = Depends(get_authenticated_user_id),
+    service: JobApplicationService = Depends(get_job_application_service),
 ):
-    """Update application status"""
     try:
-        application = db.query(JobApplication).filter(
-            JobApplication.id == application_id,
-            JobApplication.user_id == user_id,
-        ).first()
+        return service.update_application(
+            application_id,
+            user_id,
+            status=status,
+            notes=notes,
+            follow_up_date=follow_up_date,
+        )
+    except ApplicationError as exc:
+        raise to_http_exception(exc) from exc
 
-        if not application:
-            raise HTTPException(status_code=404, detail="Application not found")
-
-        # Update status
-        application.application_status = status
-        application.updated_at = datetime.now(timezone.utc)
-
-        if notes:
-            application.user_notes = notes
-
-        if follow_up_date:
-            from datetime import datetime as dt
-            application.follow_up_date = dt.strptime(follow_up_date, "%Y-%m-%d").date()
-
-        # Set response tracking based on status
-        if status in ["interviewed", "rejected", "hired"]:
-            application.company_response = True
-            if not application.response_date:
-                application.response_date = datetime.now(timezone.utc)
-
-        db.commit()
-        db.refresh(application)
-
-        return {
-            "message": "Application status updated",
-            "application_id": application.id,
-            "new_status": status
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error updating application status: {e}")
-        db.rollback()
-        raise HTTPException(status_code=500, detail="Error updating application")
-
-# =====================================================
-# JOB CLEANUP ENDPOINTS
-# =====================================================
 
 @router.get("/cleanup/stats", include_in_schema=False)
-async def get_cleanup_stats(
-    days_old: int = Query(default=20, ge=1, le=365, description="Number of days to check for old jobs"),
-    user_id: str = Depends(get_authenticated_user_id),
-    db: Session = Depends(get_db)
+def get_cleanup_stats(
+    days_old: int = Query(default=20, ge=1, le=365),
 ):
-    """Deprecated cleanup preview endpoint."""
-    raise HTTPException(status_code=410, detail="This legacy cleanup endpoint is no longer supported")
-    try:
-        set_current_user(user_id)
-        cleanup_service = JobCleanupService(db)
-        return cleanup_service.get_cleanup_stats(days_old)
-    except Exception as e:
-        logger.error(f"Error getting cleanup stats: {e}")
-        raise HTTPException(status_code=500, detail="Error getting cleanup statistics")
+    del days_old
+    raise HTTPException(status_code=410, detail=_LEGACY_CLEANUP_DETAIL)
+
 
 @router.post("/cleanup/execute", include_in_schema=False)
-async def execute_cleanup(
-    days_old: int = Query(default=20, ge=1, le=365, description="Number of days after which to delete old jobs"),
-    user_id: str = Depends(get_authenticated_user_id),
-    db: Session = Depends(get_db)
+def execute_cleanup(
+    days_old: int = Query(default=20, ge=1, le=365),
 ):
-    """Deprecated cleanup execution endpoint."""
-    raise HTTPException(status_code=410, detail="This legacy cleanup endpoint is no longer supported")
-    try:
-        set_current_user(user_id)
-        cleanup_service = JobCleanupService(db)
-        result = cleanup_service.cleanup_by_user(user_id, days_old)
+    del days_old
+    raise HTTPException(status_code=410, detail=_LEGACY_CLEANUP_DETAIL)
 
-        if result["status"] == "error":
-            raise HTTPException(status_code=500, detail=result["message"])
-        return result
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error executing cleanup: {e}")
-        raise HTTPException(status_code=500, detail="Error executing cleanup")
 
 @router.post("/cleanup/execute-all", include_in_schema=False)
-async def execute_cleanup_all(
-    days_old: int = Query(default=20, ge=1, le=365, description="Number of days after which to delete old jobs"),
-    user_id: str = Depends(get_authenticated_user_id),
-    db: Session = Depends(get_db)
+def execute_cleanup_all(
+    days_old: int = Query(default=20, ge=1, le=365),
 ):
-    """Deprecated cleanup-all endpoint."""
-    raise HTTPException(status_code=410, detail="This legacy cleanup endpoint is no longer supported")
-    try:
-        import os
-        admins = {u.strip() for u in os.getenv("ADMIN_USER_IDS", "").split(",") if u.strip()}
-        if user_id not in admins:
-            raise HTTPException(status_code=403, detail="Admin only")
-        cleanup_service = JobCleanupService(db)
-        result = cleanup_service.cleanup_old_jobs(days_old)
+    del days_old
+    raise HTTPException(status_code=410, detail=_LEGACY_CLEANUP_DETAIL)
 
-        if result["status"] == "error":
-            raise HTTPException(status_code=500, detail=result["message"])
-        return result
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error executing cleanup for all users: {e}")
-        raise HTTPException(status_code=500, detail="Error executing cleanup")
+
+@router.get("/{job_id}", response_model=JobListingResponse)
+def get_job(
+    job_id: int,
+    user_id: str = Depends(get_authenticated_user_id),
+    service: JobApplicationService = Depends(get_job_application_service),
+):
+    try:
+        return service.get(job_id, user_id)
+    except ApplicationError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.put("/{job_id}", response_model=JobListingResponse)
+def update_job(
+    job_id: int,
+    job_update: JobListingUpdate,
+    user_id: str = Depends(get_authenticated_user_id),
+    service: JobApplicationService = Depends(get_job_application_service),
+):
+    try:
+        return service.update(job_id, user_id, job_update)
+    except ApplicationError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.delete("/{job_id}")
+def delete_job(
+    job_id: int,
+    user_id: str = Depends(get_authenticated_user_id),
+    service: JobApplicationService = Depends(get_job_application_service),
+):
+    try:
+        return service.delete(job_id, user_id)
+    except ApplicationError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.put("/{job_id}/status", response_model=JobListingResponse)
+def update_job_status(
+    job_id: int,
+    status_update: JobAppliedUpdate,
+    user_id: str = Depends(get_authenticated_user_id),
+    service: JobApplicationService = Depends(get_job_application_service),
+):
+    try:
+        return service.set_applied(job_id, user_id, status_update.applied)
+    except ApplicationError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.put("/{job_id}/application-status")
+def update_job_application_status(
+    job_id: int,
+    status_update: JobApplicationStatusUpdate,
+    user_id: str = Depends(get_authenticated_user_id),
+    service: JobApplicationService = Depends(get_job_application_service),
+):
+    try:
+        return service.set_application_status(job_id, user_id, status_update)
+    except ApplicationError as exc:
+        raise to_http_exception(exc) from exc
