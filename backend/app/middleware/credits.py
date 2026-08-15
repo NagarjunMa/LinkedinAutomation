@@ -6,6 +6,7 @@
   3. On any exception inside the block: issues a refund commit, then re-raises.
   4. Raises ``HTTPException(402)`` immediately when the user has insufficient
      credits (before yielding).
+  5. Raises ``HTTPException(503)`` when a refund requires reconciliation.
 
 ``require_credits`` wraps an async FastAPI endpoint function.  It expects the
 endpoint to accept ``db: Session`` and ``current_user_id: str`` keyword
@@ -19,49 +20,23 @@ from functools import wraps
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from app.services.credits.ledger import debit, refund, InsufficientCredits
+from app.application.credits import paid_operation
+from app.application.errors import CreditReconciliationError, InsufficientBalanceError
 
 
 @contextmanager
 def credit_transaction(db: Session, user_id: str, amount: int, reason: str):
-    """Context manager that gates execution behind a credit debit.
-
-    Entry:
-      - Calls ``debit()``.  If InsufficientCredits → raises HTTPException(402).
-      - Commits the debit so the balance is visible to concurrent readers.
-
-    Exit (success): no further action; the debit stands.
-
-    Exit (exception):
-      - Calls ``refund()`` and commits to restore the balance.
-      - Re-raises the original exception unchanged.
-
-    Usage::
-
-        with credit_transaction(db, current_user_id, 2, "tailor"):
-            result = await ai_call(...)
-        return result
-    """
-    # --- Entry: try to debit ---
+    """HTTP compatibility adapter around the application credit boundary."""
     try:
-        debit(db, user_id=user_id, amount=amount, reason=reason)
-        db.commit()
-    except InsufficientCredits as exc:
-        db.rollback()
+        with paid_operation(db, user_id, amount, reason):
+            yield
+    except InsufficientBalanceError as exc:
         raise HTTPException(status_code=402, detail="Insufficient credits") from exc
-
-    # --- Yield control to the caller ---
-    try:
-        yield
-    except Exception:
-        # --- Exit on failure: refund and re-raise ---
-        try:
-            refund(db, user_id=user_id, amount=amount, reason=reason)
-            db.commit()
-        except Exception:
-            # If the refund itself fails, rollback to keep the DB consistent.
-            db.rollback()
-        raise
+    except CreditReconciliationError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Credit refund requires reconciliation",
+        ) from exc
 
 
 def require_credits(amount: int, reason: str):

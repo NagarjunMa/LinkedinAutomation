@@ -1,6 +1,5 @@
 """Tests for POST /api/v1/jd/{jd_evaluation_id}/apply (Task 6 & 7)."""
 import uuid
-import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
@@ -216,7 +215,10 @@ def test_regenerate_bullet_options_returns_three_options(
         ],
     )
 
-    with patch("app.api.v1.endpoints.jd.generate_bullet_options", new=AsyncMock(return_value=diff)):
+    with patch(
+        "app.application.jd_service.generate_bullet_options",
+        new=AsyncMock(return_value=diff),
+    ):
         resp = client.post(
             f"/api/v1/jd/{jd_id}/bullets/b1/options",
             headers=auth_headers,
