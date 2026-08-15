@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import localFont from "next/font/local"
-import { Urbanist, Inter, Playfair_Display, JetBrains_Mono, Fraunces, IBM_Plex_Sans } from "next/font/google"
 import { GeistSans } from "geist/font/sans"
+import { GeistMono } from "geist/font/mono"
 import "./globals.css"
 import { Providers } from "@/components/ui/providers"
 import { AuthProvider } from "@/contexts/auth-context"
@@ -17,46 +17,6 @@ const humane = localFont({
   variable: "--font-humane",
   display: "swap",
   weight: "100 900",
-})
-
-const urbanist = Urbanist({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800", "900"],
-  variable: "--font-urbanist"
-})
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter"
-})
-
-const playfair = Playfair_Display({
-  subsets: ["latin"],
-  style: ['normal', 'italic'],
-  variable: "--font-playfair"
-})
-
-const jetbrains = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono"
-})
-
-// ── Prism Pro brand typography ─────────────────────────────────────────────
-// Display / headings: Fraunces (premium editorial optical-size serif)
-const fraunces = Fraunces({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "900"],
-  style: ["normal", "italic"],
-  variable: "--font-fraunces",
-  display: "swap",
-})
-
-// Body / UI: IBM Plex Sans (professional, legible, neutral)
-const ibmPlexSans = IBM_Plex_Sans({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  variable: "--font-ibm-plex-sans",
-  display: "swap",
 })
 
 const appOrigin = getConfiguredAppOrigin()
@@ -156,7 +116,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${GeistSans.variable} ${humane.variable} ${fraunces.variable} ${ibmPlexSans.variable} ${urbanist.variable} ${inter.variable} ${playfair.variable} ${jetbrains.variable}`}>
+      <body className={`${GeistSans.variable} ${GeistMono.variable} ${humane.variable}`}>
         <ErrorBoundary fallback={PageErrorFallback}>
           <ThemeProvider>
             <AuthProvider>
