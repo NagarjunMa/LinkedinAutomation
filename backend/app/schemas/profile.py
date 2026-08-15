@@ -1,6 +1,6 @@
 from datetime import datetime, date
 from typing import List, Optional, Dict
-from pydantic import BaseModel, ConfigDict, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class WorkExperience(BaseModel):
@@ -102,12 +102,14 @@ class UserProfileResponse(UserProfileBase):
 
 
 class UserSettingsBase(BaseModel):
-    email_notifications: Optional[Dict[str, bool]] = {
-        "application_updates": True,
-        "interview_reminders": True,
-        "weekly_digest": True,
-        "referral_responses": True
-    }
+    email_notifications: Optional[Dict[str, bool]] = Field(
+        default_factory=lambda: {
+            "application_updates": True,
+            "interview_reminders": True,
+            "weekly_digest": True,
+            "referral_responses": True,
+        }
+    )
     notification_frequency: Optional[str] = "realtime"
     email_forwarding_enabled: Optional[str] = "inactive"
     forwarding_address: Optional[str] = None

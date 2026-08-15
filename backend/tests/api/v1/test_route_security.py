@@ -29,9 +29,9 @@ def test_legacy_user_routes_reject_unauthenticated_requests(client: TestClient):
     try:
         active_route_responses = [
             client.get("/api/v1/user-profiles/user-a"),
-            client.get("/api/v1/profiles/profile/user-a"),
             client.get("/api/v1/jobs/"),
         ]
+        disabled_profile_response = client.get("/api/v1/profiles/profile/user-a")
         disabled_legacy_response = client.post(
             "/api/v1/jobs/extract-from-url",
             json={"url": "https://example.com/job", "user_id": "user-a"},
@@ -43,6 +43,7 @@ def test_legacy_user_routes_reject_unauthenticated_requests(client: TestClient):
             app.dependency_overrides[get_authenticated_user_id] = authenticated_user_override
 
     assert {response.status_code for response in active_route_responses} == {401}
+    assert disabled_profile_response.status_code == 404
     assert disabled_legacy_response.status_code in {404, 405, 410}
 
 
@@ -72,24 +73,16 @@ def test_cleanup_all_disabled_before_publication(client: TestClient, monkeypatch
     assert response.json()["detail"] == "This legacy cleanup endpoint is no longer supported"
 
 
-def test_legacy_profiles_users_rejects_non_admin(client: TestClient, monkeypatch):
-    from app.core.config import settings
-    monkeypatch.setattr(settings, "ADMIN_USER_IDS", "admin-user")
-
+def test_legacy_profiles_users_is_unmounted(client: TestClient):
     response = client.get("/api/v1/profiles/users")
 
-    assert response.status_code == 403
-    assert response.json()["detail"] == "Admin only"
+    assert response.status_code == 404
 
 
-def test_legacy_score_new_job_rejects_non_admin(client: TestClient, monkeypatch):
-    from app.core.config import settings
-    monkeypatch.setattr(settings, "ADMIN_USER_IDS", "admin-user")
-
+def test_legacy_score_new_job_is_unmounted(client: TestClient):
     response = client.post("/api/v1/profiles/score-new-job/1")
 
-    assert response.status_code == 403
-    assert response.json()["detail"] == "Admin only"
+    assert response.status_code == 404
 
 
 def test_metrics_rejects_non_admin(client: TestClient, monkeypatch):

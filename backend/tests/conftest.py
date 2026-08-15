@@ -184,6 +184,44 @@ def _create_sqlite_tables(engine) -> None:
     )
 
     sa.Table(
+        "profile_settings",
+        meta,
+        sa.Column(
+            "user_id",
+            sa.String(100),
+            sa.ForeignKey("users.user_id", ondelete="CASCADE"),
+            primary_key=True,
+            index=True,
+        ),
+        sa.Column("email_notifications", JSON),
+        sa.Column("notification_frequency", sa.String),
+        sa.Column("email_forwarding_enabled", sa.String),
+        sa.Column("forwarding_address", sa.String),
+        sa.Column("last_email_check", sa.DateTime),
+        sa.Column("data_retention_days", sa.Integer),
+        sa.Column("analytics_enabled", sa.String),
+        sa.Column("created_at", sa.DateTime, server_default=sa.func.now()),
+        sa.Column("updated_at", sa.DateTime, server_default=sa.func.now()),
+    )
+
+    sa.Table(
+        "profile_change_history",
+        meta,
+        sa.Column("id", sa.String, primary_key=True),
+        sa.Column(
+            "user_id",
+            sa.String(100),
+            sa.ForeignKey("users.user_id"),
+            nullable=False,
+            index=True,
+        ),
+        sa.Column("field_changed", sa.String, nullable=False),
+        sa.Column("old_value", sa.Text),
+        sa.Column("new_value", sa.Text),
+        sa.Column("changed_at", sa.DateTime, server_default=sa.func.now()),
+    )
+
+    sa.Table(
         "job_listings",
         meta,
         sa.Column("id", sa.Integer, primary_key=True, autoincrement=True),

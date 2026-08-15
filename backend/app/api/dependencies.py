@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.application.export_service import ExportApplicationService
 from app.application.jd_service import JDTailoringApplicationService
 from app.application.job_service import JobApplicationService
+from app.application.profile_service import ProfileApplicationService
 from app.application.resume_service import ResumeApplicationService
 from app.application.tailored_resume_service import TailoredResumeApplicationService
 from app.db.session import get_db
@@ -27,6 +28,12 @@ def get_job_application_service(
     db: Session = Depends(get_db),
 ) -> JobApplicationService:
     return JobApplicationService(db)
+
+
+def get_profile_application_service(
+    db: Session = Depends(get_db),
+) -> ProfileApplicationService:
+    return ProfileApplicationService(db)
 
 
 def get_export_application_service(
