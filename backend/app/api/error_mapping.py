@@ -4,12 +4,14 @@ from fastapi import HTTPException
 
 from app.application.errors import (
     ApplicationError,
+    AuthorizationError,
     ExternalServiceError,
     InsufficientBalanceError,
     InvalidOperationError,
     OperationRejectedError,
     RenderError,
     ResourceBusyError,
+    ResourceConflictError,
     ResourceNotFoundError,
 )
 
@@ -17,8 +19,12 @@ from app.application.errors import (
 def to_http_exception(error: ApplicationError) -> HTTPException:
     if isinstance(error, InsufficientBalanceError):
         status_code = 402
+    elif isinstance(error, AuthorizationError):
+        status_code = 403
     elif isinstance(error, ResourceNotFoundError):
         status_code = 404
+    elif isinstance(error, ResourceConflictError):
+        status_code = 409
     elif isinstance(error, InvalidOperationError):
         status_code = 422
     elif isinstance(error, OperationRejectedError):
