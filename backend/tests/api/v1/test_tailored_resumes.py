@@ -118,10 +118,10 @@ def test_tailored_resume_download_renders_json_debits_and_does_not_store_pdf(
     before = get_balance(db_session, test_user_id)
 
     with patch(
-        "app.api.v1.endpoints.tailored_resumes.render_pdf_from_doc",
+        "app.application.tailored_resume_service.render_pdf_from_doc",
         return_value=b"%PDF-tailored",
     ), patch(
-        "app.api.v1.endpoints.tailored_resumes.get_pdf_page_count",
+        "app.application.tailored_resume_service.get_pdf_page_count",
         return_value=1,
     ):
         resp = client.post(
@@ -157,7 +157,7 @@ def test_tailored_resume_download_refunds_on_blank_pdf(
     before = get_balance(db_session, test_user_id)
 
     with patch(
-        "app.api.v1.endpoints.tailored_resumes.render_pdf_from_doc",
+        "app.application.tailored_resume_service.render_pdf_from_doc",
         side_effect=BlankPdfError("blank output"),
     ):
         resp = client.post(

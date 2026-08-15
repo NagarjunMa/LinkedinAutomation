@@ -1,5 +1,4 @@
 import uuid
-import pytest
 
 
 def test_export_404_on_unknown_resume(client, auth_headers, user_with_credits):
@@ -61,7 +60,7 @@ def test_export_refunds_credit_on_blank_pdf(
 
     starting = client.get("/api/v1/credits/balance", headers=auth_headers).json()["balance"]
     with patch(
-        "app.api.v1.endpoints.exports.render_pdf_from_doc",
+        "app.application.export_service.render_pdf_from_doc",
         side_effect=BlankPdfError("blank output"),
     ):
         resp = client.post(
@@ -109,7 +108,7 @@ def test_download_export_returns_pdf_bytes(
     assert created.status_code == 201, created.text
     export_id = created.json()["export_id"]
 
-    with patch("app.api.v1.endpoints.exports.download_pdf", return_value=b"%PDF-download"):
+    with patch("app.application.export_service.download_pdf", return_value=b"%PDF-download"):
         resp = client.get(f"/api/v1/exports/{export_id}/download", headers=auth_headers)
 
     assert resp.status_code == 200

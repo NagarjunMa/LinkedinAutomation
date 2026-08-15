@@ -30,7 +30,7 @@ def _configure_storage(storage: MagicMock) -> None:
 # Task 14: POST /api/v1/resumes/upload  (Phase 4: uses Supabase Storage)
 # ---------------------------------------------------------------------------
 
-@patch("app.api.v1.endpoints.resumes_v2.get_storage")
+@patch("app.application.resume_service.get_storage")
 def test_upload_resume_creates_document(mock_get_storage, client: TestClient, auth_headers):
     storage = MagicMock()
     _configure_storage(storage)
@@ -57,7 +57,7 @@ def test_upload_resume_rejects_unsupported_type(client: TestClient, auth_headers
     assert resp.status_code == 400
 
 
-@patch("app.api.v1.endpoints.resumes_v2.get_storage")
+@patch("app.application.resume_service.get_storage")
 def test_upload_resume_rejects_mismatched_media_type_before_storage(
     mock_get_storage, client: TestClient, auth_headers
 ):
@@ -74,7 +74,7 @@ def test_upload_resume_rejects_mismatched_media_type_before_storage(
     storage.upload.assert_not_called()
 
 
-@patch("app.api.v1.endpoints.resumes_v2.get_storage")
+@patch("app.application.resume_service.get_storage")
 def test_upload_resume_rejects_invalid_signature_before_storage(
     mock_get_storage, client: TestClient, auth_headers
 ):
@@ -91,7 +91,7 @@ def test_upload_resume_rejects_invalid_signature_before_storage(
     storage.upload.assert_not_called()
 
 
-@patch("app.api.v1.endpoints.resumes_v2.get_storage")
+@patch("app.application.resume_service.get_storage")
 def test_list_and_get_resume_documents_for_profile_page(mock_get_storage, client: TestClient, auth_headers):
     storage = MagicMock()
     _configure_storage(storage)
@@ -124,7 +124,7 @@ def test_list_and_get_resume_documents_for_profile_page(mock_get_storage, client
     assert detail_data["evaluation"] is None
 
 
-@patch("app.api.v1.endpoints.resumes_v2.get_storage")
+@patch("app.application.resume_service.get_storage")
 def test_delete_resume_document_removes_v2_rows(mock_get_storage, client: TestClient, auth_headers):
     storage = MagicMock()
     _configure_storage(storage)
@@ -150,7 +150,7 @@ def test_delete_resume_document_removes_v2_rows(mock_get_storage, client: TestCl
     assert list_response.json()["total_count"] == 0
 
 
-@patch("app.api.v1.endpoints.resumes_v2.get_storage")
+@patch("app.application.resume_service.get_storage")
 def test_delete_resume_document_removes_dependent_rows(
     mock_get_storage, client: TestClient, auth_headers, db_session, test_user_id
 ):
@@ -531,9 +531,9 @@ def test_versions_rejects_foreign_parent_version(client: TestClient, auth_header
 
 def test_apply_changes_updates_project_bullets():
     """apply_changes with a bullet_update for a project bullet must update that bullet."""
-    from app.api.v1.endpoints.resumes_v2 import apply_changes
+    from app.services.resume.changes import apply_changes
     from app.schemas.resume_v2 import (
-        ResumeDocumentJSON, Contact, ExperienceEntry, Bullet,
+        ResumeDocumentJSON, Contact, Bullet,
         EducationEntry, Skills, ProjectEntry, ChangeItem,
     )
 

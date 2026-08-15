@@ -400,7 +400,7 @@ def uploaded_resume_doc(db_session, test_user_id):
 @pytest.fixture
 def mock_pdf_render():
     from unittest.mock import patch
-    with patch("app.api.v1.endpoints.exports.render_pdf_from_doc", return_value=b"%PDF-stub-content"):
+    with patch("app.application.export_service.render_pdf_from_doc", return_value=b"%PDF-stub-content"):
         yield
 
 
@@ -408,19 +408,19 @@ def mock_pdf_render():
 def mock_pdf_render_timeout():
     from unittest.mock import patch
     from app.services.pdf.renderer import PdfRenderTimeout
-    with patch("app.api.v1.endpoints.exports.render_pdf_from_doc", side_effect=PdfRenderTimeout("simulated")):
+    with patch("app.application.export_service.render_pdf_from_doc", side_effect=PdfRenderTimeout("simulated")):
         yield
 
 
 @pytest.fixture
 def mock_supabase_upload():
     from unittest.mock import patch
-    with patch("app.api.v1.endpoints.exports.upload_pdf", return_value="user-1/exp-1.pdf") as m:
+    with patch("app.application.export_service.upload_pdf", return_value="user-1/exp-1.pdf") as m:
         yield m
 
 
 @pytest.fixture
 def mock_signed_url():
     from unittest.mock import patch
-    with patch("app.api.v1.endpoints.exports.signed_url", return_value="https://supabase.example/file.pdf?token=abc") as m:
+    with patch("app.application.export_service.signed_url", return_value="https://supabase.example/file.pdf?token=abc") as m:
         yield m

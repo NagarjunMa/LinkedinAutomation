@@ -360,9 +360,9 @@ def test_apply_then_export_e2e(client, auth_headers, db_session, test_user_id, u
     # -----------------------------------------------------------------------
     # 2. Export — mock render + storage; call POST /api/v1/exports
     # -----------------------------------------------------------------------
-    with patch("app.api.v1.endpoints.exports.render_pdf_from_doc", return_value=b"%PDF-1.4 stub"), \
-         patch("app.api.v1.endpoints.exports.upload_pdf", return_value=None), \
-         patch("app.api.v1.endpoints.exports.signed_url", return_value="https://signed.example/asha-stripe.pdf?token=abc"):
+    with patch("app.application.export_service.render_pdf_from_doc", return_value=b"%PDF-1.4 stub"), \
+         patch("app.application.export_service.upload_pdf", return_value=None), \
+         patch("app.application.export_service.signed_url", return_value="https://signed.example/asha-stripe.pdf?token=abc"):
 
         export_resp = client.post(
             "/api/v1/exports",
