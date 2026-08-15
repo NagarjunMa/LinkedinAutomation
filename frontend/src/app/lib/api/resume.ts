@@ -1,5 +1,5 @@
 import { ResumeFile, ResumeEvaluation, ResumeListItemResponse } from './types';
-import { makeAPIRequest, getAuthHeaders } from './config';
+import { makeAPIRequest } from './config';
 
 export const resumeApi = {
     // Upload resume
@@ -9,33 +9,19 @@ export const resumeApi = {
         if (targetRole) formData.append('target_role', targetRole);
         if (targetSeniority) formData.append('target_seniority', targetSeniority);
 
-        const authHeaders = await getAuthHeaders();
-        // Remove Content-Type to let browser set it with boundary for FormData
-        if (authHeaders['Content-Type']) {
-            delete authHeaders['Content-Type'];
-        }
-
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/resumes/upload`, {
+        const data = await makeAPIRequest<Record<string, unknown>>('/api/v1/resumes/upload', {
             method: 'POST',
-            headers: authHeaders,
             body: formData,
         });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.detail || 'Failed to upload resume');
-        }
-
-        const data = await response.json();
-        const resumeId = data.resume_document_id || data.id;
+        const resumeId = String(data.resume_document_id || data.id);
         return {
             id: resumeId,
-            filename: data.original_filename || file.name,
-            original_filename: data.original_filename || file.name,
-            file_size: data.file_size || file.size,
-            file_type: data.file_type || file.name.split('.').pop() || 'unknown',
-            uploaded_at: data.uploaded_at || new Date().toISOString(),
-            evaluation_status: data.evaluation_status || 'pending',
+            filename: String(data.original_filename || file.name),
+            original_filename: String(data.original_filename || file.name),
+            file_size: Number(data.file_size || file.size),
+            file_type: String(data.file_type || file.name.split('.').pop() || 'unknown'),
+            uploaded_at: String(data.uploaded_at || new Date().toISOString()),
+            evaluation_status: (data.evaluation_status || 'pending') as ResumeFile['evaluation_status'],
         };
     },
 
