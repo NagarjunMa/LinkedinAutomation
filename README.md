@@ -188,10 +188,10 @@ progress.txt                   Phase-by-phase delivery status
 ## Test coverage
 
 - **Backend pytest:** 157 pass, 12 skip — `make test` or `cd backend && pytest` (86.7% coverage, gate at 80%)
-- **Frontend vitest:** 44 pass across 15 test files — `cd frontend && npm run test` (83.6% lines, 75.3% branches, gate at 80/75)
+- **Frontend Vitest:** 81 tests pass across 24 test files — `cd frontend && npm run test:coverage` (87.6% lines, 75.6% branches)
 - **Frontend e2e (Playwright):** `cd frontend && npm run test:e2e`
 - **Coverage report:** `cd backend && pytest --cov=app --cov-report=term-missing` or `cd frontend && npm run test:coverage`
-- **Pre-push hook** (lefthook) runs both suites + coverage gates before every `git push`. Bypass with `--no-verify`.
+- **Pre-push hook** (Lefthook) always runs both local CI suites before every `git push`, regardless of which application changed. It blocks on backend Ruff/tests/coverage/audit and frontend lint/types/build/unit coverage/Playwright/audit. Docker, PostgreSQL service checks, and TruffleHog remain blocking GitHub CI jobs.
 - Core Prism Pro paths are 90%+ covered; legacy job-tracking modules (excluded via `.coveragerc`) are not gated.
 
 ---

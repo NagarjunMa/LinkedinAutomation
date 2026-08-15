@@ -1,13 +1,14 @@
 .DEFAULT_GOAL := help
-.PHONY: help install setup verify verify-ci dev backend frontend test test-backend test-frontend test-agents test-golden test-smoke lint lint-backend lint-frontend typecheck build audit audit-backend audit-frontend clean stop migrate shell-backend logs
+.PHONY: help install setup verify verify-ci verify-backend-ci verify-frontend-ci dev backend frontend test test-backend test-frontend test-frontend-unit test-frontend-e2e test-agents test-golden test-smoke lint lint-backend lint-frontend typecheck build audit audit-backend audit-frontend clean stop migrate shell-backend logs
 
 BACKEND_DIR  := backend
 FRONTEND_DIR := frontend
 BACKEND_PORT := 8000
 FRONTEND_PORT := 3000
 PYTHON       := python3.11
-BACKEND_TEST_ENV := OPENAI_API_KEY=test SUPABASE_URL=https://test.supabase.co SUPABASE_ANON_KEY=test SUPABASE_JWT_SECRET=test SUPABASE_SERVICE_ROLE_KEY=test DATABASE_URL=sqlite:///:memory:
+BACKEND_TEST_ENV := OPENAI_API_KEY=test SUPABASE_URL=https://test.supabase.co SUPABASE_ANON_KEY=test SUPABASE_SERVICE_ROLE_KEY=test DATABASE_URL=sqlite:///:memory:
 FRONTEND_BUILD_ENV := NEXT_PUBLIC_API_URL=https://api.example.com NEXT_PUBLIC_SUPABASE_URL=https://test.supabase.co NEXT_PUBLIC_SUPABASE_ANON_KEY=test
+FRONTEND_E2E_ENV := NEXT_PUBLIC_API_URL=http://localhost:8000 NEXT_PUBLIC_SUPABASE_URL=https://test.supabase.co NEXT_PUBLIC_SUPABASE_ANON_KEY=test
 
 help: ## Show this help
 	@echo "Prism Pro — make targets"
@@ -30,7 +31,11 @@ verify: test-smoke test-agents ## One-shot sanity check (no LLM, no API keys req
 	@echo "All agent paths verified against mocked OpenAI + real fixtures."
 	@echo "To exercise the real LLM, run:  make test-golden"
 
-verify-ci: lint test audit ## Run strict local checks that mirror CI except Docker/Postgres services
+verify-ci: verify-backend-ci verify-frontend-ci ## Run both local CI suites except Docker/Postgres/secret-scan services
+
+verify-backend-ci: lint-backend test-backend audit-backend ## Run backend lint, coverage tests, and dependency audit
+
+verify-frontend-ci: lint-frontend typecheck build test-frontend audit-frontend ## Run frontend lint, types, build, tests, and audit
 
 dev: ## Run backend + frontend together (Ctrl+C stops both)
 	@echo "→ backend  http://localhost:$(BACKEND_PORT)"
@@ -61,8 +66,13 @@ test-golden: ## Run golden snapshots against REAL OpenAI (requires OPENAI_API_KE
 	@if [ -z "$$OPENAI_API_KEY" ]; then echo "OPENAI_API_KEY not set — skipping"; exit 1; fi
 	cd $(BACKEND_DIR) && RUN_GOLDEN=1 $(PYTHON) -m pytest tests/golden -v
 
-test-frontend: ## Run frontend lint + type check + build + unit coverage
-	cd $(FRONTEND_DIR) && npm run lint && npx tsc --noEmit && $(FRONTEND_BUILD_ENV) npm run build && npm run test:coverage
+test-frontend: test-frontend-unit test-frontend-e2e ## Run frontend unit coverage and MVP Playwright smoke
+
+test-frontend-unit: ## Run frontend unit tests with coverage
+	cd $(FRONTEND_DIR) && npm run test:coverage
+
+test-frontend-e2e: ## Run the MVP Playwright smoke suite
+	cd $(FRONTEND_DIR) && $(FRONTEND_E2E_ENV) npm run test:e2e
 
 lint: lint-backend lint-frontend ## Lint backend (ruff) + frontend
 
@@ -81,7 +91,7 @@ build: ## Build frontend production bundle
 audit: audit-backend audit-frontend ## Run backend + frontend dependency audits
 
 audit-backend: ## Run backend dependency audit
-	cd $(BACKEND_DIR) && $(PYTHON) -m pip_audit -r requirements.txt
+	cd $(BACKEND_DIR) && $(PYTHON) -m pip_audit -r requirements.lock
 
 audit-frontend: ## Run frontend production dependency audit
 	cd $(FRONTEND_DIR) && npm audit --omit=dev --audit-level=high
