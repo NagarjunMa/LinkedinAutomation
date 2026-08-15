@@ -11,6 +11,7 @@ MIGRATED_ROUTERS = (
     "exports.py",
     "tailored_resumes.py",
     "jobs.py",
+    "user_profiles.py",
 )
 
 

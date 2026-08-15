@@ -57,6 +57,17 @@ def test_mvp_public_api_surface_excludes_unsupported_legacy_routes(client: TestC
         "/api/v1/jobs/cleanup/stats",
         "/api/v1/jobs/cleanup/execute",
         "/api/v1/jobs/cleanup/execute-all",
+        "/api/v1/profiles/upload-resume/{user_id}",
+        "/api/v1/profiles/profile/{user_id}",
+        "/api/v1/profiles/matches/{user_id}",
+        "/api/v1/profiles/score-jobs/{user_id}",
+        "/api/v1/profiles/parse-text/{user_id}",
+        "/api/v1/profiles/users",
+        "/api/v1/profiles/preferences/{user_id}",
+        "/api/v1/profiles/trigger-scoring/{user_id}",
+        "/api/v1/profiles/scoring-status/{user_id}",
+        "/api/v1/profiles/clear-scores/{user_id}",
+        "/api/v1/profiles/score-new-job/{job_id}",
     }
 
     assert unsupported_paths.isdisjoint(paths), (
