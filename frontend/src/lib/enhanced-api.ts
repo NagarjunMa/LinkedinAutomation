@@ -321,7 +321,7 @@ export async function enhancedFetchRecentApplications(limit: number = 5): Promis
     });
 
     return data.map((app) => ({
-      id: app.id,
+      id: String(app.id),
       title: app.title as string,
       company: app.company as string,
       appliedAt: app.applied_date as string,

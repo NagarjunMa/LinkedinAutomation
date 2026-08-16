@@ -2,12 +2,13 @@
 export type JsonRecord = Record<string, unknown>;
 
 export interface JobApiResponse extends JsonRecord {
-    id: string;
+    id: string | number;
     title: string;
     company: string;
     location?: string;
     job_type?: string;
     description?: string;
+    requirements?: string;
     application_url?: string;
     posted_date?: string;
     salary_range?: string;
@@ -21,6 +22,8 @@ export interface JobApiResponse extends JsonRecord {
     application_context?: string;
     compatibility_score?: number;
     ai_insights?: string;
+    source?: string;
+    source_url?: string;
 }
 
 export interface DailyStatsResponse {
@@ -32,13 +35,18 @@ export interface DailyStatsResponse {
 }
 
 export interface RecentApplicationResponse extends JsonRecord {
-    id: string;
+    id: string | number;
     title?: string;
     company?: string;
     applied_date?: string;
     extracted_date?: string;
     status?: string;
     company_logo?: string;
+    location?: string;
+    salary_range?: string;
+    application_source?: string;
+    source_url?: string;
+    compatibility_score?: number;
 }
 
 export interface ResumeListItemResponse extends JsonRecord {

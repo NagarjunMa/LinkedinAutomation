@@ -37,7 +37,7 @@ export async function fetchJobs(filters?: JobFilters & {
     const data = await makeAPIRequest<JobApiResponse[]>(url);
 
     return data.map((job) => ({
-        id: job.id,
+        id: String(job.id),
         title: job.title,
         company: job.company,
         location: job.location ?? '',
@@ -136,7 +136,7 @@ export async function fetchRecentApplications(limit: number = 5): Promise<Recent
 
     // Map backend response to frontend interface
     return data.map((app) => ({
-        id: app.id,
+        id: String(app.id),
         title: app.title ?? 'Unknown Position',
         company: app.company ?? 'Unknown Company',
         appliedAt: app.applied_date || '',
@@ -149,4 +149,8 @@ export async function fetchRecentApplications(limit: number = 5): Promise<Recent
         sourceUrl: (typeof app.source_url === 'string' ? app.source_url : undefined),
         compatibilityScore: (typeof app.compatibility_score === 'number' ? app.compatibility_score : 0) || 0
     }));
+}
+
+export async function fetchJobDetails(jobId: string): Promise<JobApiResponse> {
+    return makeAPIRequest<JobApiResponse>(`/api/v1/jobs/${encodeURIComponent(jobId)}`);
 }
