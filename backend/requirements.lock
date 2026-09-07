@@ -211,7 +211,7 @@ pymupdf==1.27.2.3
     # via -r requirements.in
 pyparsing==3.3.2
     # via httplib2
-pypdf==6.15.0
+pypdf==6.17.0
     # via -r requirements.in
 pypdfium2==5.10.1
     # via pdfplumber
