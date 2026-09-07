@@ -349,7 +349,7 @@ export default function LandingPage() {
                 >
                   Private preview in development
                 </Badge>
-                <span className="text-foreground/50" style={labelStyle(12, 600, '0.08em')}>
+                <span className="text-foreground/70" style={labelStyle(12, 600, '0.08em')}>
                   PUBLIC ACCESS CLOSED
                 </span>
               </motion.div>
@@ -380,7 +380,7 @@ export default function LandingPage() {
                 </Button>
               </motion.div>
 
-              <motion.div variants={fadeIn} className="flex items-center gap-3 text-foreground/55">
+              <motion.div variants={fadeIn} className="flex items-center gap-3 text-foreground/70">
                 <ShieldCheck size={16} strokeWidth={1.5} aria-hidden="true" />
                 <span style={labelStyle(12, 600, '0.04em')}>
                   No account or dashboard access yet. Join the waitlist to help shape the private preview.
@@ -394,7 +394,7 @@ export default function LandingPage() {
               variants={staggerContainer}
               className="order-1 flex flex-col justify-center py-12 lg:order-2 lg:py-16 lg:pl-20"
             >
-              <motion.span variants={fadeInUp} className="mb-5 uppercase text-foreground/45" style={labelStyle(12, 700, '0.22em')}>
+              <motion.span variants={fadeInUp} className="mb-5 uppercase text-foreground/70" style={labelStyle(12, 700, '0.22em')}>
                 Career evidence, before career copy
               </motion.span>
               <motion.h1
@@ -425,13 +425,13 @@ export default function LandingPage() {
 
         <section aria-label="People Prism Pro is being designed for" className={`overflow-hidden border-y ${borderFaint} py-8`}>
           <div className="flex items-center gap-10">
-            <span className="shrink-0 pl-8 uppercase text-foreground/45" style={labelStyle(11, 700, '0.2em')}>
+            <span className="shrink-0 pl-8 uppercase text-foreground/70" style={labelStyle(11, 700, '0.2em')}>
               DESIGNED FOR
             </span>
             <div className="overflow-hidden">
               <div className="flex w-max gap-12 whitespace-nowrap pr-12 motion-safe:animate-[marquee_32s_linear_infinite]">
                 {[...STAGES, ...STAGES].map((stage, index) => (
-                  <span key={`${stage}-${index}`} className="uppercase text-foreground/45" style={labelStyle(15, 700, '0.08em')}>
+                  <span key={`${stage}-${index}`} className="uppercase text-foreground/70" style={labelStyle(15, 700, '0.08em')}>
                     {stage}
                   </span>
                 ))}
@@ -463,7 +463,7 @@ export default function LandingPage() {
                     transition={{ delay: index * 0.08 }}
                     className="p-8 transition-colors hover:bg-foreground/[0.025] sm:p-10"
                   >
-                    <span className="mb-5 block text-foreground/35" style={labelStyle(11, 700, '0.2em')}>{marker}</span>
+                    <span className="mb-5 block text-foreground/70" style={labelStyle(11, 700, '0.2em')}>{marker}</span>
                     <h3 className="mb-4 max-w-2xl text-foreground" style={serifStyle('clamp(25px, 2.8vw, 40px)', 400)}>{title}</h3>
                     <p className="max-w-2xl text-foreground/70" style={{ fontSize: '18px', lineHeight: 1.7 }}>{detail}</p>
                   </motion.div>
@@ -502,7 +502,7 @@ export default function LandingPage() {
                     <div className="flex-1">
                       <div className="mb-3 flex items-start justify-between gap-5">
                         <h3 className="text-foreground" style={serifStyle('clamp(21px, 2vw, 29px)', 400)}>{title}</h3>
-                        <span className="text-foreground/15" style={serifStyle('32px', 400)}>{step}</span>
+                        <span className="text-foreground/70" style={serifStyle('32px', 400)}>{step}</span>
                       </div>
                       <p className="text-foreground/70" style={{ fontSize: '18px', lineHeight: 1.7 }}>{desc}</p>
                     </div>
@@ -552,7 +552,7 @@ export default function LandingPage() {
                     transition={{ delay: index * 0.05 }}
                     className="border-b border-r border-foreground/10 p-8 transition-colors hover:bg-foreground/[0.025]"
                   >
-                    <span className="mb-6 block text-foreground/30" style={labelStyle(11, 700, '0.2em')}>
+                    <span className="mb-6 block text-foreground/70" style={labelStyle(11, 700, '0.2em')}>
                       {String(index + 1).padStart(2, '0')}.
                     </span>
                     <h3 className="mb-4 text-foreground" style={serifStyle('clamp(21px, 1.9vw, 27px)', 400)}>{title}</h3>
@@ -580,7 +580,7 @@ export default function LandingPage() {
                 {RESEARCH_SIGNALS.map(({ label, title, body }, index) => (
                   <motion.div key={label} initial="hidden" whileInView="visible" variants={scrollReveal} viewport={viewport} transition={{ delay: index * 0.06 }}>
                     <Card className="h-full rounded-none border-foreground/10 bg-card/35 p-8 shadow-none transition-transform duration-300 hover:-translate-y-1">
-                      <span className="mb-8 block text-foreground/35" style={labelStyle(11, 700, '0.2em')}>{label}</span>
+                      <span className="mb-8 block text-foreground/70" style={labelStyle(11, 700, '0.2em')}>{label}</span>
                       <h3 className="mb-5 text-foreground" style={serifStyle('clamp(23px, 2.2vw, 31px)', 400)}>{title}</h3>
                       <p className="text-foreground/70" style={{ fontSize: '17px', lineHeight: 1.7 }}>{body}</p>
                     </Card>
@@ -605,7 +605,7 @@ export default function LandingPage() {
 
               <motion.div initial="hidden" whileInView="visible" variants={scrollReveal} viewport={viewport} className="border border-foreground/10">
                 <div className="border-b border-foreground/10 p-8 sm:p-10">
-                  <span className="mb-5 block uppercase text-foreground/40" style={labelStyle(11, 700, '0.2em')}>PRISM PRO WILL NOT</span>
+                  <span className="mb-5 block uppercase text-foreground/70" style={labelStyle(11, 700, '0.2em')}>PRISM PRO WILL NOT</span>
                   <h3 className="max-w-2xl text-foreground" style={serifStyle('clamp(32px, 4vw, 58px)', 400)}>
                     Manufacture confidence where evidence is missing.
                   </h3>
@@ -676,7 +676,7 @@ export default function LandingPage() {
             <div className="mx-auto max-w-3xl border border-foreground/15 bg-background/75 p-6 backdrop-blur-sm sm:p-9">
               <WaitlistForm formLabel="Join the PrismPro private preview from the final call to action" />
             </div>
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-foreground/45" style={labelStyle(11, 650, '0.08em')}>
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-foreground/70" style={labelStyle(11, 650, '0.08em')}>
               <span className="inline-flex items-center gap-2"><Sparkles size={14} aria-hidden="true" /> PRODUCT PREVIEW</span>
               <span className="inline-flex items-center gap-2"><BookOpenCheck size={14} aria-hidden="true" /> RESEARCH-LED</span>
               <span className="inline-flex items-center gap-2"><ShieldCheck size={14} aria-hidden="true" /> TRUTH-FIRST</span>
@@ -712,7 +712,7 @@ export default function LandingPage() {
                   ['FAQ', 'faq'],
                 ].map(([label, id]) => (
                   <li key={id}>
-                    <button onClick={() => scrollTo(id)} className="text-foreground/65 transition-colors hover:text-foreground" style={labelStyle(14, 500, '0.02em')}>
+                    <button onClick={() => scrollTo(id)} className="text-foreground/70 transition-colors hover:text-foreground" style={labelStyle(14, 500, '0.02em')}>
                       {label}
                     </button>
                   </li>
@@ -723,15 +723,15 @@ export default function LandingPage() {
             <div>
               <h3 className="mb-5 uppercase text-foreground" style={labelStyle(11, 700, '0.2em')}>LEGAL</h3>
               <ul className="space-y-3">
-                <li><Link href="/privacy-policy" className="text-foreground/65 transition-colors hover:text-foreground" style={labelStyle(14, 500, '0.02em')}>Privacy Policy</Link></li>
-                <li><Link href="/terms" className="text-foreground/65 transition-colors hover:text-foreground" style={labelStyle(14, 500, '0.02em')}>Terms of Service</Link></li>
+                <li><Link href="/privacy-policy" className="text-foreground/70 transition-colors hover:text-foreground" style={labelStyle(14, 500, '0.02em')}>Privacy Policy</Link></li>
+                <li><Link href="/terms" className="text-foreground/70 transition-colors hover:text-foreground" style={labelStyle(14, 500, '0.02em')}>Terms of Service</Link></li>
               </ul>
             </div>
           </div>
 
           <div className={`flex flex-col items-start justify-between gap-4 border-t ${borderFaint} pt-8 sm:flex-row sm:items-center`}>
-            <span className="uppercase text-foreground/35" style={labelStyle(10, 700, '0.18em')}>© 2026 PRISM PRO. ALL RIGHTS RESERVED.</span>
-            <span className="uppercase text-foreground/35" style={labelStyle(10, 700, '0.18em')}>PRISMPRO.LIVE · PRODUCT IN DEVELOPMENT</span>
+            <span className="uppercase text-foreground/70" style={labelStyle(10, 700, '0.18em')}>© 2026 PRISM PRO. ALL RIGHTS RESERVED.</span>
+            <span className="uppercase text-foreground/70" style={labelStyle(10, 700, '0.18em')}>PRISMPRO.LIVE · PRODUCT IN DEVELOPMENT</span>
           </div>
         </div>
       </footer>

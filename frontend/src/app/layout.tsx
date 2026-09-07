@@ -1,6 +1,5 @@
 import type { Metadata } from "next"
 import localFont from "next/font/local"
-import Script from "next/script"
 import { GeistSans } from "geist/font/sans"
 import { GeistMono } from "geist/font/mono"
 import "./globals.css"
@@ -94,9 +93,8 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <Script
+        <script
           id="prismpro-structured-data"
-          strategy="beforeInteractive"
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
@@ -111,7 +109,7 @@ export default function RootLayout({
                 "@type": "Organization",
                 "name": "PrismPro"
               }
-            })
+            }).replace(/</g, '\\u003c')
           }}
         />
       </head>

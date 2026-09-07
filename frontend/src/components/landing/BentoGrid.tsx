@@ -99,12 +99,12 @@ export const BentoGrid: React.FC<BentoGridProps> = ({ isDark: _isDark }) => {
     <figure ref={ref}>
       <div className="mb-4 flex items-center justify-between gap-4 border-y border-foreground/10 py-3">
         <span
-          className="uppercase text-foreground/55"
+          className="uppercase text-foreground/70"
           style={humaneStyle(10, 700, '0.18em')}
         >
           Planned concept preview
         </span>
-        <span className="text-foreground/35" style={humaneStyle(10, 500, '0.08em')}>
+        <span className="text-foreground/70" style={humaneStyle(10, 500, '0.08em')}>
           NOT A PRODUCTION SCREENSHOT
         </span>
       </div>
@@ -124,14 +124,14 @@ export const BentoGrid: React.FC<BentoGridProps> = ({ isDark: _isDark }) => {
           <div>
             <div className="flex items-start justify-between mb-5">
               <span
-                className="text-foreground/25"
+                className="text-foreground/70"
                 style={humaneStyle(11, 500, '0.18em')}
               >
                 {card.num}.
               </span>
               {card.tag && (
                 <span
-                  className="px-2 py-1 border border-foreground/15 text-foreground/40 uppercase"
+                  className="px-2 py-1 border border-foreground/15 text-foreground/70 uppercase"
                   style={humaneStyle(10, 500, '0.15em')}
                 >
                   {card.tag}
@@ -147,7 +147,7 @@ export const BentoGrid: React.FC<BentoGridProps> = ({ isDark: _isDark }) => {
             </h3>
 
             <p
-              className="text-foreground/50 leading-relaxed"
+              className="text-foreground/70 leading-relaxed"
               style={humaneStyle(14, 400, '0')}
             >
               {card.desc}
@@ -158,7 +158,7 @@ export const BentoGrid: React.FC<BentoGridProps> = ({ isDark: _isDark }) => {
           <div>
             {card.mono && (
               <div
-                className="text-foreground/30 leading-relaxed border-l border-foreground/15 pl-3"
+                className="text-foreground/70 leading-relaxed border-l border-foreground/15 pl-3"
                 style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '10px', letterSpacing: '0' }}
               >
                 {card.detail}
@@ -170,7 +170,7 @@ export const BentoGrid: React.FC<BentoGridProps> = ({ isDark: _isDark }) => {
                 {card.pills.map((label) => (
                   <span
                     key={label}
-                    className="px-3 py-1 border border-foreground/10 text-foreground/40 uppercase"
+                    className="px-3 py-1 border border-foreground/10 text-foreground/70 uppercase"
                     style={humaneStyle(10, 500, '0.08em')}
                   >
                     {label}
@@ -183,7 +183,7 @@ export const BentoGrid: React.FC<BentoGridProps> = ({ isDark: _isDark }) => {
               <div className="flex items-center gap-3">
                 <span className="h-2 w-2 rounded-full bg-foreground/35" />
                 <span
-                  className="text-foreground/30 uppercase"
+                  className="text-foreground/70 uppercase"
                   style={humaneStyle(10, 500, '0.15em')}
                 >
                   {card.status}
@@ -194,7 +194,7 @@ export const BentoGrid: React.FC<BentoGridProps> = ({ isDark: _isDark }) => {
           </motion.div>
         ))}
       </motion.div>
-      <figcaption className="mt-4 text-sm leading-relaxed text-foreground/50">
+      <figcaption className="mt-4 text-sm leading-relaxed text-foreground/70">
         Planned experience shown for illustration. Public product access is not yet available.
       </figcaption>
     </figure>

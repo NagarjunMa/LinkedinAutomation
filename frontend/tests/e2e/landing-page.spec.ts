@@ -75,6 +75,23 @@ test.describe('Landing Page UI/UX Tests', () => {
     await expect(page.getByRole('form', { name: /from the hero/i })).toBeVisible();
   });
 
+  test('supports keyboard theme control and reduced-motion preferences', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
+    await page.goto('/');
+
+    await expect(page.locator('html')).toHaveClass(/dark/);
+    const themeToggle = page.getByRole('button', { name: /toggle theme/i });
+    await themeToggle.focus();
+    await expect(themeToggle).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('html')).toHaveClass(/light/);
+
+    const audienceMarquee = page
+      .locator('[aria-label="People Prism Pro is being designed for"]')
+      .locator('[class*="animate-"]');
+    await expect(audienceMarquee).toHaveCSS('animation-name', 'none');
+  });
+
   test('should keep login and dashboard access closed during public preview', async ({ page }) => {
     await page.goto('/login');
     await expect(page).toHaveURL('/');
@@ -98,5 +115,13 @@ test.describe('Landing Page UI/UX Tests', () => {
       'content',
       'summary_large_image',
     );
+    const structuredData = page.locator(
+      'script#prismpro-structured-data[type="application/ld+json"]',
+    );
+    await expect(structuredData).toHaveCount(1);
+    expect(JSON.parse((await structuredData.textContent()) ?? '{}')).toMatchObject({
+      '@type': 'SoftwareApplication',
+      name: 'PrismPro',
+    });
   });
 });

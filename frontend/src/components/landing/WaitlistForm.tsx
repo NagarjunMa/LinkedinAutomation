@@ -127,7 +127,7 @@ export function WaitlistForm({
       >
         <CheckCircle2 className="mb-4 h-7 w-7" strokeWidth={1.4} aria-hidden="true" />
         <p className="font-serif text-2xl leading-snug text-foreground">{message}</p>
-        <p className="mt-3 text-sm leading-relaxed text-foreground/60">
+        <p className="mt-3 text-sm leading-relaxed text-foreground/70">
           No account was created. Your information is used only for PrismPro research and
           private-preview contact.
         </p>
@@ -280,7 +280,7 @@ export function WaitlistForm({
         </Button>
       )}
 
-      <p id={`${fieldId}-privacy`} className="text-xs leading-relaxed text-foreground/55">
+      <p id={`${fieldId}-privacy`} className="text-xs leading-relaxed text-foreground/70">
         No account will be created. We will only use this information for PrismPro research
         and early access. Read our{' '}
         <Link href="/privacy-policy" className="underline underline-offset-4 hover:text-foreground">
