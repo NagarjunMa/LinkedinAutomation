@@ -19,7 +19,9 @@ class PublicPreviewAccessMiddleware(BaseHTTPMiddleware):
     ) -> None:
         super().__init__(app)
         self.enabled = enabled
-        self.allowed_paths = frozenset(allowed_paths or {"/api/v1/waitlist"})
+        self.allowed_paths = frozenset(
+            allowed_paths or {"/health", "/api/v1/waitlist"}
+        )
 
     async def dispatch(
         self,
@@ -27,9 +29,7 @@ class PublicPreviewAccessMiddleware(BaseHTTPMiddleware):
         call_next: RequestResponseEndpoint,
     ) -> Response:
         path = request.url.path.rstrip("/") or "/"
-        is_product_api = path == "/api/v1" or path.startswith("/api/v1/")
-
-        if self.enabled and is_product_api and path not in self.allowed_paths:
+        if self.enabled and path not in self.allowed_paths:
             return JSONResponse(
                 status_code=status.HTTP_403_FORBIDDEN,
                 content={
