@@ -192,6 +192,19 @@ def verify_http(
 
     health = session.get(f"{backend_url}/health", headers=headers, timeout=15)
     _require(health.status_code == 200, f"Backend health returned HTTP {health.status_code}")
+    _require("no-store" in health.headers.get("Cache-Control", ""), "Backend health response is cacheable")
+
+    for path in ("/", "/docs", "/redoc", "/openapi.json", "/metrics"):
+        blocked_backend_route = session.get(
+            f"{backend_url}{path}",
+            headers=headers,
+            timeout=15,
+            allow_redirects=False,
+        )
+        _require(
+            blocked_backend_route.status_code == 403,
+            f"Backend route {path} returned HTTP {blocked_backend_route.status_code}, expected 403",
+        )
 
     product = session.get(
         f"{backend_url}/api/v1/resumes",

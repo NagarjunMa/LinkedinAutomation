@@ -107,6 +107,8 @@ test('protected dashboard route redirects when unauthenticated', async ({ page }
 });
 
 test('authenticated dashboard loads with non-production bypass', async ({ page, context }) => {
+  const pageErrors: Error[] = [];
+  page.on('pageerror', (error) => pageErrors.push(error));
   await context.addCookies([{ name: 'test-bypass-auth', value: '1', url: APP }]);
   await page.route(`${API}/api/v1/credits/balance`, (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ balance: 90 }) }));
@@ -125,6 +127,9 @@ test('authenticated dashboard loads with non-production bypass', async ({ page, 
 
   await page.goto('/dashboard');
   await expect(page.locator('body')).toBeVisible();
+  expect(pageErrors.map((error) => error.message)).not.toEqual(
+    expect.arrayContaining([expect.stringContaining('Hydration failed')]),
+  );
 });
 
 test('tailor MVP flow uploads, edits pointer, applies, and exposes download contract', async ({ page, context }) => {

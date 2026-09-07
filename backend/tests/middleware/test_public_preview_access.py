@@ -10,6 +10,7 @@ def _app(*, enabled: bool) -> FastAPI:
         PublicPreviewAccessMiddleware,
         enabled=enabled,
         allowed_paths={
+            "/health",
             "/api/v1/waitlist",
             "/api/v1/public-preview/events",
         },
@@ -40,6 +41,11 @@ def test_preview_mode_allows_only_health_and_waitlist():
     assert client.get("/health").status_code == 200
     assert client.post("/api/v1/waitlist").status_code == 200
     assert client.post("/api/v1/public-preview/events").status_code == 200
+
+    for path in ("/", "/docs", "/redoc", "/openapi.json", "/metrics"):
+        response = client.get(path)
+        assert response.status_code == 403
+        assert "no-store" in response.headers["cache-control"]
 
     blocked = client.get(
         "/api/v1/resumes", headers={"Authorization": "Bearer existing-token"}

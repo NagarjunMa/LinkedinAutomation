@@ -224,6 +224,7 @@ app.add_middleware(
     PublicPreviewAccessMiddleware,
     enabled=settings.PRISM_PRO_PUBLIC_PREVIEW_ONLY,
     allowed_paths={
+        "/health",
         "/api/v1/waitlist",
         "/api/v1/public-preview/events",
     },
@@ -234,7 +235,7 @@ app.include_router(api_router, prefix="/api/v1")
 
 @app.get("/health")
 async def health_check():
-    """Enhanced health check endpoint with metrics"""
+    """Return readiness without exposing operational details in production."""
     try:
         health_metrics = health_monitor.get_health_metrics()
 
@@ -242,15 +243,21 @@ async def health_check():
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
 
-        health_metrics.update({
+        health_payload = {
             "status": "healthy",
             "version": "1.0.0",
             "database": "connected",
-            "environment": os.getenv("ENVIRONMENT", "development")
-        })
+        }
+        if not is_production:
+            health_payload.update(health_metrics)
+            health_payload["environment"] = os.getenv("ENVIRONMENT", "development")
 
         logger.info("Health check successful", extra={"metrics": health_metrics})
-        return JSONResponse(content=health_metrics, status_code=200)
+        return JSONResponse(
+            content=health_payload,
+            status_code=200,
+            headers={"Cache-Control": "no-store"},
+        )
 
     except Exception as exc:
         logger.error(
@@ -263,7 +270,8 @@ async def health_check():
                 "error": "Health check failed",
                 "version": "1.0.0"
             },
-            status_code=503
+            status_code=503,
+            headers={"Cache-Control": "no-store"},
         )
 
 @app.get("/metrics")

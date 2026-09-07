@@ -9,6 +9,27 @@ def test_health_returns_200(client: TestClient):
     """GET /health must return 200 — basic liveness check."""
     resp = client.get("/health")
     assert resp.status_code == 200, f"/health returned {resp.status_code}: {resp.text}"
+    assert "no-store" in resp.headers["cache-control"]
+
+
+def test_health_failure_does_not_expose_database_details(client: TestClient, monkeypatch):
+    from app import main as main_module
+
+    def fail_connection():
+        raise RuntimeError("postgresql://secret@internal.example/waitlist")
+
+    monkeypatch.setattr(main_module.engine, "connect", fail_connection)
+
+    resp = client.get("/health")
+
+    assert resp.status_code == 503
+    assert resp.json() == {
+        "status": "unhealthy",
+        "error": "Health check failed",
+        "version": "1.0.0",
+    }
+    assert "internal.example" not in resp.text
+    assert "no-store" in resp.headers["cache-control"]
 
 
 def test_phase1_routes_registered_in_openapi(client: TestClient):

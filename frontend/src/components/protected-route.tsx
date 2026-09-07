@@ -13,13 +13,19 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, fallback }: ProtectedRouteProps) {
-  const isTestBypass =
-    process.env.NODE_ENV !== 'production' &&
-    typeof document !== 'undefined' &&
-    document.cookie.includes('test-bypass-auth=1')
+  const [isTestBypass, setIsTestBypass] = useState(false)
   const { user, loading } = useAuth()
   const router = useRouter()
   const [showAuthRequired, setShowAuthRequired] = useState(false)
+
+  useEffect(() => {
+    // Reading document.cookie during render makes the server and first client
+    // render disagree. Resolve this non-production E2E bypass after hydration
+    // so production auth behavior and SSR markup remain deterministic.
+    if (process.env.NODE_ENV !== 'production') {
+      setIsTestBypass(document.cookie.includes('test-bypass-auth=1'))
+    }
+  }, [])
 
   useEffect(() => {
     if (isTestBypass) return
