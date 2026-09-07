@@ -8,10 +8,18 @@ from app.api.v1.endpoints import tailored_resumes
 from app.api.v1.endpoints import webhooks
 from app.api.v1.endpoints import admin_metrics
 from app.api.v1.endpoints import analytics
+from app.api.v1.endpoints import waitlist
+from app.api.v1.endpoints import public_preview
 from app.core.config import settings
 from app.core.auth import require_path_user_matches_current, get_current_user_id
 
 api_router = APIRouter()
+
+# These are the only unauthenticated routes available while the public
+# deployment is operating in preview mode. Analytics accepts enum-only,
+# content-free dimensions and never accepts waitlist fields.
+api_router.include_router(waitlist.router)
+api_router.include_router(public_preview.router)
 
 # Core feature endpoints only
 api_router.include_router(

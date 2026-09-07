@@ -1,22 +1,40 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { motion, type Variants, useReducedMotion } from 'framer-motion';
 import {
-  ArrowRight,
-  Upload,
-  ScanText,
-  FileDiff,
-  Download,
-  CheckCircle
+  BookOpenCheck,
+  Check,
+  FileText,
+  MessagesSquare,
+  ShieldCheck,
+  Sparkles,
+  Target,
+  UserRoundCheck,
 } from 'lucide-react';
 import Link from 'next/link';
 
 import { Navigation } from '@/components/landing/Navigation';
 import { BentoGrid } from '@/components/landing/BentoGrid';
+import { WaitlistForm } from '@/components/landing/WaitlistForm';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { useTheme } from '@/contexts/theme-context';
+import { trackPublicPreviewEvent } from '@/lib/public-preview-analytics';
 
-// ── Motion variants respecting prefers-reduced-motion ─────────────────────
+/*
+ * Prism Pro landing direction
+ * Purpose: introduce the in-development Career Evidence Coach and collect early interest.
+ * Audience: students, new graduates, engineers, technical leaders, and career switchers.
+ * Aesthetic: refined editorial minimalism — warm paper, ink, oversized condensed type,
+ * asymmetric layouts, fine rules, and restrained motion.
+ * Typography: Humane for the wordmark/display moments, editorial serif for section titles,
+ * and a highly legible sans for body copy.
+ * Motion: one staggered hero entrance, quiet scroll reveals, and reduced-motion parity.
+ * Spatial system: generous whitespace with sticky editorial headings and structured proof panels.
+ */
+
 function useMotionVariants() {
   const reduce = useReducedMotion();
 
@@ -26,19 +44,19 @@ function useMotionVariants() {
         hidden: { opacity: 0 },
         visible: {
           opacity: 1,
-          transition: { duration: 0.7, ease: [0.17, 0.55, 0.55, 1] as [number, number, number, number] }
-        }
+          transition: { duration: 0.7, ease: [0.17, 0.55, 0.55, 1] },
+        },
       };
 
   const fadeInUp: Variants = reduce
     ? { hidden: { opacity: 1, y: 0 }, visible: { opacity: 1, y: 0 } }
     : {
-        hidden: { opacity: 0, y: 20 },
+        hidden: { opacity: 0, y: 22 },
         visible: {
           opacity: 1,
           y: 0,
-          transition: { duration: 0.7, ease: [0.17, 0.55, 0.55, 1] as [number, number, number, number] }
-        }
+          transition: { duration: 0.7, ease: [0.17, 0.55, 0.55, 1] },
+        },
       };
 
   const staggerContainer: Variants = reduce
@@ -47,143 +65,190 @@ function useMotionVariants() {
         hidden: { opacity: 0 },
         visible: {
           opacity: 1,
-          transition: { staggerChildren: 0.12, delayChildren: 0.05 }
-        }
+          transition: { staggerChildren: 0.12, delayChildren: 0.05 },
+        },
       };
 
   const scrollReveal: Variants = reduce
     ? { hidden: { opacity: 1, y: 0 }, visible: { opacity: 1, y: 0 } }
     : {
         hidden: { opacity: 0, y: 16 },
-        visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } }
+        visible: {
+          opacity: 1,
+          y: 0,
+          transition: { duration: 0.55, ease: 'easeOut' },
+        },
       };
 
-  return { fadeIn, fadeInUp, staggerContainer, scrollReveal, reduce };
+  return { fadeIn, fadeInUp, staggerContainer, scrollReveal };
 }
 
-// ── Data ───────────────────────────────────────────────────────────────────
-const STEPS = [
-  {
-    icon: Upload,
-    step: '01',
-    title: 'Upload your resume',
-    desc: 'PDF or DOCX. Prism Pro turns your existing resume into structured content you can evaluate, tailor, and reuse.'
-  },
-  {
-    icon: ScanText,
-    step: '02',
-    title: 'See what weakens the first scan',
-    desc: 'Review score explanations, ATS parseability, missing evidence, noisy bullets, and the highest-impact actions before applying.'
-  },
-  {
-    icon: FileDiff,
-    step: '03',
-    title: 'Tailor against the real JD',
-    desc: 'Paste a job description and compare suggested changes against the role requirements before anything is applied.'
-  },
-  {
-    icon: Download,
-    step: '04',
-    title: 'Save the application version',
-    desc: 'Keep a company-specific resume record, then export an ATS-aware PDF when you are ready to submit.'
-  }
+const STAGES = [
+  'Students',
+  'New graduates',
+  'Early-career engineers',
+  'Experienced ICs',
+  'Technical leaders',
+  'Career switchers',
+  'Returning professionals',
 ];
 
 const PROBLEMS = [
   {
-    stat: 'ATS',
-    label: 'parsers flatten the resume before anyone sees it',
-    detail: 'Tables, columns, headers, special characters, and missing dates can change what systems actually read.'
+    marker: 'HIDDEN',
+    title: 'Your documents capture only part of the work.',
+    detail:
+      'Ownership, decisions, constraints, recovery, and impact often surface only when someone asks the right follow-up question.',
   },
   {
-    stat: 'SCAN',
-    label: 'strong experience gets buried under noisy bullets',
-    detail: 'A recruiter should not have to hunt through every project to understand your fit for the role.'
+    marker: 'GENERIC',
+    title: 'Polished AI language can erase the person behind it.',
+    detail:
+      'When every candidate sounds strategic, scalable, and high-impact, credible technical evidence becomes harder to see.',
   },
   {
-    stat: 'FIT',
-    label: 'a strong general resume can still miss the job',
-    detail: 'Each JD asks for a different mix of evidence, keywords, seniority signals, and project context.'
-  }
+    marker: 'SPLIT',
+    title: 'Resume, LinkedIn, and interview stories drift apart.',
+    detail:
+      'A strong application needs one truthful evidence history, expressed differently for each role and each career artifact.',
+  },
 ];
 
-const FEATURES = [
+const STEPS = [
   {
-    title: 'Transparent score explanations',
-    desc: 'Scores are broken into readable reasons and top actions, so you know what to fix before sending the resume.'
+    icon: FileText,
+    step: '01',
+    title: 'Bring what already exists',
+    desc: 'Start with a resume, an optional LinkedIn profile PDF, and a short introduction. Your documents are source material—not unquestioned truth.',
   },
   {
-    title: 'ATS raw-text simulator',
-    desc: 'Preview the text an ATS-style parser sees, including formatting issues that can hide otherwise strong experience.'
+    icon: MessagesSquare,
+    step: '02',
+    title: 'Talk through the work behind the bullets',
+    desc: 'Prism Pro will ask one focused question at a time about ownership, technical decisions, constraints, outcomes, and proof.',
   },
   {
-    title: 'Diff-based tailoring control',
-    desc: 'Accept, edit, reset, regenerate, or reject every suggested pointer. The final resume changes only when you approve it.'
+    icon: UserRoundCheck,
+    step: '03',
+    title: 'Decide what is true and usable',
+    desc: 'Confirm, edit, reject, mark private, or leave evidence unavailable. The model cannot approve its own assumptions.',
   },
   {
-    title: 'Truth-checked rewrite signals',
-    desc: 'Unsupported numbers and JD skills are blocked or surfaced as review signals instead of quietly becoming fake achievements.'
+    icon: Target,
+    step: '04',
+    title: 'Create a role-specific view',
+    desc: 'Turn confirmed evidence into a focused resume, LinkedIn recommendations, interview stories, and an honest map of what is still missing.',
+  },
+];
+
+const CAPABILITIES = [
+  {
+    title: 'A coach that interviews before it writes',
+    desc: 'The planned conversational flow learns your target, stage, history, and evidence before suggesting career material.',
   },
   {
-    title: 'One-page fit guardrails',
-    desc: 'For US-style resumes, Prism Pro helps prioritize the highest-signal bullets so tailoring does not create a noisy two-page resume.'
+    title: 'One evidence history, many career views',
+    desc: 'Keep the complete story once, then create different role views without rewriting your history into contradictions.',
   },
   {
-    title: 'Company-specific resume library',
-    desc: 'Every accepted JD-tailored version is saved with company, role, source JD, accepted changes, and resume JSON for interview review.'
-  }
+    title: 'Questions that adapt to your career stage',
+    desc: 'A student project, an early-career delivery, and a staff-level decision require different evidence—not the same questionnaire.',
+  },
+  {
+    title: 'Gaps explained without a magic score',
+    desc: 'Separate communication, evidence, experience, knowledge, positioning, and document limitations instead of hiding them in one number.',
+  },
+  {
+    title: 'Candidate control over every factual claim',
+    desc: 'Private, rejected, contradicted, or unavailable evidence stays out of generated material. Unknown metrics stay unknown.',
+  },
+  {
+    title: 'LinkedIn review without LinkedIn automation',
+    desc: 'Upload your own profile PDF for review. Prism Pro will not request credentials, scrape the live profile, or post on your behalf.',
+  },
+];
+
+const RESEARCH_SIGNALS = [
+  {
+    label: 'SIGNAL 01',
+    title: 'Generic polish is not differentiation.',
+    body: 'Candidate and recruiter discovery repeatedly points to the same concern: polished resumes can still feel interchangeable when ownership and proof are missing.',
+  },
+  {
+    label: 'SIGNAL 02',
+    title: 'The strongest evidence often starts as a conversation.',
+    body: 'Projects and roles contain decisions, trade-offs, failures, and recovery stories that rarely survive the first resume draft.',
+  },
+  {
+    label: 'SIGNAL 03',
+    title: 'Broad careers need focus, not erasure.',
+    body: 'Experienced candidates need a clear target lane while preserving the complete history that supports interviews and future role changes.',
+  },
+  {
+    label: 'SIGNAL 04',
+    title: 'Credibility comes from boundaries.',
+    body: 'Strong claims are easier to trust when personal ownership, team contribution, measurement, uncertainty, and source evidence are visible.',
+  },
+];
+
+const BOUNDARIES = [
+  'Invent metrics, technologies, employers, ownership, or outcomes.',
+  'Ask for LinkedIn credentials, scrape a live profile, or publish changes.',
+  'Reduce your career to an unexplained resume or ATS success score.',
+  'Promise profile views, interviews, offers, or employment outcomes.',
 ];
 
 const FAQS = [
   {
-    q: 'How is this different from Rezi or Teal?',
-    a: "Prism Pro is built around truthful JD-specific editing, not one-click resume generation. You see why a pointer helps, what requirement it maps to, and exactly what will change before you apply it."
+    q: 'What is Prism Pro becoming?',
+    a: 'Prism Pro is becoming a career-evidence coach for technical candidates. It is designed to uncover truthful work evidence, help you confirm what may be used, and create role-aligned resume, LinkedIn, and interview material from that confirmed evidence.',
   },
   {
-    q: 'Does Prism Pro write fake achievements?',
-    a: "It is designed to avoid unsupported claims. Rewrites are checked for invented numbers and unsupported JD skills, and every proposed change remains editable before it becomes part of a saved resume."
+    q: 'Can I create an account or enter the dashboard today?',
+    a: 'Not yet. Prism Pro is currently in product development, and public account creation and dashboard access are intentionally closed. This site is a preview of the product direction.',
   },
   {
-    q: 'Can I edit or reject the AI suggestions?',
-    a: "Yes. Suggested pointers can be selected, cleared, edited, reset, regenerated, or switched between alternatives. Prism Pro keeps you in control of the final version."
+    q: 'Who is it being built for?',
+    a: 'The first experience is being designed for students, new graduates, engineers, technical professionals, career switchers, and returning professionals. The questions and evidence priorities will adapt to career stage and target role.',
   },
   {
-    q: 'Will it always create a one-page resume?',
-    a: "For US-style resumes, the workflow prioritizes one-page fit when the source content supports it. If the original resume has much more content, Prism Pro focuses on reducing noise while preserving the strongest role evidence."
+    q: 'Do I need a finished resume to use it?',
+    a: 'No. A resume will be recommended because it gives the interview useful context, but it will not be required. A short introduction and a target role can start the evidence conversation.',
   },
   {
-    q: 'How are credits priced?',
-    a: "Every account receives 90 free credits per month during the freemium launch. A JD tailor-and-export workflow costs 3 credits: 2 to tailor and 1 to export."
+    q: 'How will the LinkedIn review work?',
+    a: 'You will be able to upload the PDF generated from your own LinkedIn profile. Prism Pro will compare that snapshot with confirmed evidence and a target role, then prepare copy-ready recommendations for you to review. It will not access or edit your live account.',
   },
   {
-    q: 'Why save tailored resumes?',
-    a: "Every application creates a different version. The library lets you revisit the exact company-specific resume, source JD, and accepted changes before recruiter screens or interviews."
+    q: 'Will Prism Pro generate achievements for me?',
+    a: 'It may help express approved facts more clearly, but it is not designed to manufacture achievements. Evidence starts as proposed, and factual career material can use only evidence that you have confirmed and kept non-private.',
   },
   {
-    q: 'Is my resume data stored securely?',
-    a: "Resume data is stored in user-scoped records and private storage. The launch checklist includes Supabase Row-Level Security and storage policy audits before public release."
-  }
+    q: 'Will it guarantee that I pass an ATS or get interviews?',
+    a: 'No. Prism Pro can help with truthful communication, role alignment, defensibility, and document parseability. Hiring outcomes also depend on role fit, market conditions, timing, application channel, and employer decisions.',
+  },
+  {
+    q: 'What happens when I join the private preview?',
+    a: 'You will join the research and early-access list. No application account will be created. We may contact you about product interviews, prototype feedback, or private-preview availability.',
+  },
 ];
 
-// ── Sans typography helper ─────────────────────────────────────────────────
-// NOTE: Humane is reserved for the wordmark + Navbar only (see Navigation.tsx).
-// All other UI labels use IBM Plex Sans for legibility.
-const humaneStyle = (
+const labelStyle = (
   size: number,
-  weight: number = 400,
-  tracking: string = '0'
+  weight: number = 500,
+  tracking: string = '0',
 ): React.CSSProperties => ({
-  fontFamily: 'var(--font-geist-sans), system-ui, sans-serif',
+  fontFamily: 'var(--font-geist-sans), sans-serif',
   fontSize: `${size}px`,
   fontWeight: weight,
   letterSpacing: tracking,
-  lineHeight: 1,
+  lineHeight: 1.2,
 });
 
-const frauncesStyle = (
+const serifStyle = (
   size: string,
   weight: number = 400,
-  tracking: string = '-0.02em'
+  tracking: string = '-0.02em',
 ): React.CSSProperties => ({
   fontFamily: 'var(--font-fraunces), Georgia, serif',
   fontSize: size,
@@ -192,7 +257,6 @@ const frauncesStyle = (
   lineHeight: 1.02,
 });
 
-// ── Shared split-section heading column ────────────────────────────────────
 interface SplitHeadingProps {
   number: string;
   label: string;
@@ -201,702 +265,454 @@ interface SplitHeadingProps {
 }
 
 const SplitHeading: React.FC<SplitHeadingProps> = ({ number, label, title, subtitle }) => (
-  <div className="lg:sticky lg:top-32 self-start">
-    <div
-      className="mb-8 uppercase text-foreground/85"
-      style={humaneStyle(16, 700, '0.2em')}
-    >
+  <div className="self-start lg:sticky lg:top-32">
+    <div className="mb-8 uppercase text-foreground/75" style={labelStyle(13, 700, '0.2em')}>
       {number} / {label}
     </div>
     <h2
-      className="text-foreground font-normal mb-8 leading-[0.95]"
-      style={{
-        fontFamily: 'var(--font-fraunces), Georgia, serif',
-        fontSize: 'clamp(36px, 4.5vw, 72px)',
-        letterSpacing: '-0.02em',
-        lineHeight: 0.95,
-        fontWeight: 400,
-      }}
+      className="mb-8 font-normal text-foreground"
+      style={serifStyle('clamp(38px, 4.5vw, 72px)', 400)}
     >
       {title}
     </h2>
-    <p
-      className="text-foreground/85 max-w-md"
-      style={{ fontSize: '21px', lineHeight: 1.55, fontWeight: 400 }}
-    >
+    <p className="max-w-md text-foreground/75" style={{ fontSize: '20px', lineHeight: 1.6 }}>
       {subtitle}
     </p>
   </div>
 );
 
-// ── Page ───────────────────────────────────────────────────────────────────
 export default function LandingPage() {
   const { isDark } = useTheme();
   const { fadeIn, fadeInUp, staggerContainer, scrollReveal } = useMotionVariants();
-
+  const reportedScrollDepths = useRef(new Set<number>());
   const viewport = { once: true, margin: '-80px' } as const;
-  const borderFaint = isDark ? 'border-foreground/10' : 'border-foreground/10';
+  const borderFaint = 'border-foreground/10';
+
+  const scrollTo = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    let scheduled = false;
+    const thresholds = [25, 50, 75, 100] as const;
+
+    const reportScrollDepth = () => {
+      scheduled = false;
+      const scrollableHeight = document.documentElement.scrollHeight;
+      if (scrollableHeight <= 0) return;
+
+      const depth = Math.min(
+        100,
+        Math.round(((window.scrollY + window.innerHeight) / scrollableHeight) * 100),
+      );
+      thresholds.forEach((threshold) => {
+        if (depth >= threshold && !reportedScrollDepths.current.has(threshold)) {
+          reportedScrollDepths.current.add(threshold);
+          trackPublicPreviewEvent({
+            event_name: 'scroll_depth',
+            scroll_depth: threshold,
+          });
+        }
+      });
+    };
+
+    const onScroll = () => {
+      if (scheduled) return;
+      scheduled = true;
+      window.requestAnimationFrame(reportScrollDepth);
+    };
+
+    reportScrollDepth();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   return (
-    <div className="relative min-h-screen bg-background text-foreground">
-
-      {/* ─── NAV (includes top dark band) ──────────────────────────────── */}
+    <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
       <Navigation />
 
-      {/* ─── HERO ────────────────────────────────────────────────────────── */}
-      {/* Push down below fixed nav: 14px band + ~74px nav = 88px */}
-      <section id="hero" className="relative pt-[88px] min-h-screen bg-background">
-
-        {/* Asymmetric two-column grid */}
-        <div className="max-w-[1400px] mx-auto px-8 grid grid-cols-1 lg:grid-cols-[1fr_1fr] min-h-[calc(100vh-88px)]">
-
-          {/* LEFT column — eyebrow + body copy + CTAs */}
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={staggerContainer}
-            className="flex flex-col justify-center lg:border-r border-foreground/10 py-16 pr-0 lg:pr-20"
-          >
-            {/* Eyebrow — with horizontal rules for emphasis */}
+      <main>
+        <section id="hero" className="relative min-h-screen pt-[88px]">
+          <div className="pointer-events-none absolute inset-0 opacity-[0.16] [background-image:radial-gradient(circle_at_1px_1px,currentColor_1px,transparent_0)] [background-size:28px_28px]" aria-hidden="true" />
+          <div className="relative mx-auto grid min-h-[calc(100vh-88px)] max-w-[1400px] grid-cols-1 px-6 sm:px-8 lg:grid-cols-[0.92fr_1.08fr]">
             <motion.div
-              variants={fadeInUp}
-              className="flex items-center gap-3 mb-8"
+              initial="hidden"
+              animate="visible"
+              variants={staggerContainer}
+              className="order-2 flex flex-col justify-center border-foreground/10 py-12 lg:order-1 lg:border-r lg:py-16 lg:pr-20"
             >
-              <div className="w-10 h-[1px] bg-foreground/60" aria-hidden="true" />
-              <span
-                className="text-foreground uppercase"
-                style={{ fontFamily: 'var(--font-geist-sans), system-ui, sans-serif', fontSize: '22px', fontWeight: 700, letterSpacing: '0.22em', lineHeight: 1 }}
+              <motion.div variants={fadeInUp} className="mb-9 flex flex-wrap items-center gap-3">
+                <Badge
+                  variant="outline"
+                  className="rounded-none border-foreground/25 px-3 py-1.5 uppercase text-foreground"
+                  style={labelStyle(11, 700, '0.18em')}
+                >
+                  Private preview in development
+                </Badge>
+                <span className="text-foreground/50" style={labelStyle(12, 600, '0.08em')}>
+                  PUBLIC ACCESS CLOSED
+                </span>
+              </motion.div>
+
+              <motion.p
+                variants={fadeInUp}
+                className="mb-10 max-w-[620px] text-foreground"
+                style={{ fontSize: 'clamp(21px, 1.8vw, 28px)', lineHeight: 1.5 }}
               >
-                TRUTHFUL TAILORING — 2026
-              </span>
-              <div className="w-10 h-[1px] bg-foreground/60" aria-hidden="true" />
+                Prism Pro is the career-evidence coach for technical candidates. It uncovers
+                the work your resume and LinkedIn miss, lets you verify every fact, and prepares
+                role-aligned career material without inventing experience.
+              </motion.p>
+
+              <motion.div variants={fadeInUp} className="mb-7 max-w-[640px]">
+                <WaitlistForm compact formLabel="Join the PrismPro private preview from the hero" />
+              </motion.div>
+
+              <motion.div variants={fadeInUp} className="mb-8">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => scrollTo('how-it-works')}
+                  className="h-auto min-h-12 rounded-none border-foreground/35 bg-transparent px-7 py-3.5 text-foreground shadow-none hover:bg-foreground/5 hover:text-foreground"
+                  style={labelStyle(13, 700, '0.13em')}
+                >
+                  See how it will work
+                </Button>
+              </motion.div>
+
+              <motion.div variants={fadeIn} className="flex items-center gap-3 text-foreground/55">
+                <ShieldCheck size={16} strokeWidth={1.5} aria-hidden="true" />
+                <span style={labelStyle(12, 600, '0.04em')}>
+                  No account or dashboard access yet. Join the waitlist to help shape the private preview.
+                </span>
+              </motion.div>
             </motion.div>
 
-            {/* Body copy — IBM Plex Sans for paragraph readability */}
-            <motion.p
-              variants={fadeInUp}
-              className="text-foreground leading-relaxed mb-12"
-              style={{ fontFamily: 'var(--font-geist-sans), system-ui, sans-serif', fontSize: '24px', fontWeight: 400, lineHeight: '1.5', maxWidth: '600px' }}
-            >
-              Upload your resume, paste a job description, and review every suggested change before it becomes your final resume.{' '}
-              <span
-                className="text-foreground uppercase"
-                style={{ fontFamily: 'var(--font-geist-sans), system-ui, sans-serif', fontSize: '26px', fontWeight: 700, letterSpacing: '0.05em' }}
-              >
-                Truthful,
-              </span>{' '}
-              JD-specific resume prep for technical professionals.
-            </motion.p>
-
-            {/* CTA buttons */}
             <motion.div
-              variants={fadeInUp}
-              className="flex flex-col sm:flex-row items-start gap-4 mb-16"
+              initial="hidden"
+              animate="visible"
+              variants={staggerContainer}
+              className="order-1 flex flex-col justify-center py-12 lg:order-2 lg:py-16 lg:pl-20"
             >
-              <Link href="/login">
-                <button
-                  className="inline-flex items-center gap-2 px-7 py-3.5 bg-foreground text-background uppercase transition-opacity hover:opacity-85"
-                  style={humaneStyle(17, 700, '0.14em')}
-                >
-                  Tailor My Resume Free <ArrowRight size={16} />
-                </button>
-              </Link>
-              <button
-                onClick={() => {
-                  const el = document.getElementById('how-it-works');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+              <motion.span variants={fadeInUp} className="mb-5 uppercase text-foreground/45" style={labelStyle(12, 700, '0.22em')}>
+                Career evidence, before career copy
+              </motion.span>
+              <motion.h1
+                variants={fadeInUp}
+                className="mb-8 uppercase text-foreground"
+                style={{
+                  fontFamily: 'var(--font-humane), sans-serif',
+                  fontSize: 'clamp(76px, 10.5vw, 168px)',
+                  fontWeight: 540,
+                  fontVariationSettings: '"wght" 540',
+                  letterSpacing: '0.02em',
+                  lineHeight: 0.77,
                 }}
-                className="inline-flex items-center gap-2 px-7 py-3.5 border border-foreground/40 text-foreground uppercase transition-colors hover:border-foreground"
-                style={humaneStyle(17, 700, '0.14em')}
               >
-                See How It Works
-              </button>
-            </motion.div>
-
-            {/* Scroll down indicator — bottom left */}
-            <motion.div
-              variants={fadeIn}
-              className="hidden lg:flex items-center gap-3"
-            >
-              <div className="w-10 h-[1px] bg-foreground/50" />
-              <span
-                className="text-foreground/75 uppercase"
-                style={humaneStyle(16, 700, '0.2em')}
+                MAKE THE WORK<br />BEHIND YOUR<br />RESUME VISIBLE.
+              </motion.h1>
+              <motion.p
+                variants={fadeInUp}
+                className="max-w-xl border-l border-foreground/25 pl-5 text-foreground/70"
+                style={{ fontSize: 'clamp(17px, 1.4vw, 21px)', lineHeight: 1.55 }}
               >
-                SCROLL DOWN
-              </span>
+                One confirmed evidence history. Many truthful views for your resume,
+                LinkedIn profile, target roles, and interviews.
+              </motion.p>
             </motion.div>
-          </motion.div>
+          </div>
+        </section>
 
-          {/* RIGHT column — massive serif headline */}
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={staggerContainer}
-            className="flex flex-col justify-center py-16 pl-0 lg:pl-20"
-          >
-            {/* Display H1 — massive Humane, single line, left-aligned, condensed */}
-            <motion.h1
-              variants={fadeInUp}
-              className="text-foreground uppercase leading-[0.9] mb-8 whitespace-nowrap"
-              style={{
-                fontFamily: 'var(--font-humane), sans-serif',
-                fontSize: 'clamp(96px, 14vw, 220px)',
-                letterSpacing: '0.04em',
-                fontWeight: 500,
-                fontVariationSettings: '"wght" 500',
-              }}
-            >
-              PRISM PRO.
-            </motion.h1>
-
-            {/* Tagline */}
-            <motion.p
-              variants={fadeInUp}
-              className="text-foreground/85 mb-10 max-w-xl"
-              style={{
-                fontFamily: 'var(--font-geist-sans), system-ui, sans-serif',
-                fontSize: 'clamp(20px, 1.6vw, 26px)',
-                fontWeight: 400,
-                lineHeight: 1.4,
-                letterSpacing: '-0.005em',
-              }}
-            >
-              Recruiter-grade resume tailoring for engineers, data scientists, and PMs who refuse generic AI bullets.
-            </motion.p>
-
-            {/* Decorative circle — editorial accent */}
-            <motion.div
-              variants={fadeInUp}
-              aria-hidden="true"
-              className="w-24 h-24 rounded-full border border-foreground/20"
-            />
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ─── SOCIAL PROOF STRIP — infinite marquee ───────────────────────── */}
-      <section className={`py-10 border-y ${borderFaint} overflow-hidden`}>
-        <div className="flex items-center gap-16">
-          <span
-            className="shrink-0 pl-8 text-foreground/35 uppercase whitespace-nowrap"
-            style={humaneStyle(15, 700, '0.2em')}
-          >
-            BUILT FOR
-          </span>
-
-          {/* Marquee — duplicates list twice; CSS keyframe translates -50% */}
-          <div className="flex-1 overflow-hidden relative">
-            <div
-              className="flex gap-12 whitespace-nowrap pr-12"
-              style={{
-                animation: 'marquee 30s linear infinite',
-                width: 'max-content',
-              }}
-            >
-              {[...Array(2)].flatMap((_, dupIdx) =>
-                ['Software Engineers', 'Data Scientists', 'Product Managers', 'ML Engineers', 'Backend Engineers', 'Cloud Engineers', 'Platform Engineers', 'Technical PMs', 'Career Switchers'].map((name) => (
-                  <span
-                    key={`${dupIdx}-${name}`}
-                    className="text-foreground/40 uppercase shrink-0"
-                    style={humaneStyle(20, 700, '0.08em')}
-                  >
-                    {name}
+        <section aria-label="People Prism Pro is being designed for" className={`overflow-hidden border-y ${borderFaint} py-8`}>
+          <div className="flex items-center gap-10">
+            <span className="shrink-0 pl-8 uppercase text-foreground/45" style={labelStyle(11, 700, '0.2em')}>
+              DESIGNED FOR
+            </span>
+            <div className="overflow-hidden">
+              <div className="flex w-max gap-12 whitespace-nowrap pr-12 motion-safe:animate-[marquee_32s_linear_infinite]">
+                {[...STAGES, ...STAGES].map((stage, index) => (
+                  <span key={`${stage}-${index}`} className="uppercase text-foreground/45" style={labelStyle(15, 700, '0.08em')}>
+                    {stage}
                   </span>
-                ))
-              )}
+                ))}
+              </div>
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* Keyframe scoped via JSX style block */}
-        <style jsx>{`
-          @keyframes marquee {
-            0%   { transform: translateX(0); }
-            100% { transform: translateX(-50%); }
-          }
-        `}</style>
-      </section>
+        <section id="product-vision" className={`scroll-mt-24 border-t ${borderFaint} py-28 lg:py-32`}>
+          <div className="mx-auto max-w-[1400px] px-6 sm:px-8">
+            <div className="grid grid-cols-1 gap-16 lg:grid-cols-[420px_1fr] lg:gap-24">
+              <motion.div initial="hidden" whileInView="visible" variants={scrollReveal} viewport={viewport}>
+                <SplitHeading
+                  number="01"
+                  label="THE GAP"
+                  title={<>Your experience is not the same as what your application <em className="font-normal">shows.</em></>}
+                  subtitle="Prism Pro is being built to close the communication gap without crossing the truth boundary."
+                />
+              </motion.div>
 
-      {/* ─── 01 / PROBLEM STATEMENT ─────────────────────────────────────── */}
-      <section
-        id="problem"
-        className={`border-t ${borderFaint} py-32 scroll-mt-20`}
-      >
-        <div className="max-w-[1400px] mx-auto px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-16 lg:gap-24">
-
-            {/* LEFT — sticky heading */}
-            <motion.div
-              initial="hidden"
-              whileInView="visible"
-              variants={scrollReveal}
-              viewport={viewport}
-            >
-              <SplitHeading
-                number="01"
-                label="PROBLEM"
-                title={<>The problem is not<br />your <em className="font-normal not-italic">experience.</em></>}
-                subtitle="It is what survives the first scan. Prism Pro focuses on the parts that decide whether your resume gets read: parseability, signal, and role fit."
-              />
-            </motion.div>
-
-            {/* RIGHT — 3 stat cards, vertical stack with hairline separators */}
-            <div className="divide-y divide-foreground/10 border border-foreground/10">
-              {PROBLEMS.map(({ stat, label, detail }, i) => (
-                <motion.div
-                  key={stat}
-                  initial="hidden"
-                  whileInView="visible"
-                  variants={scrollReveal}
-                  viewport={viewport}
-                  style={{ transitionDelay: `${i * 80}ms` }}
-                  className="p-10 hover:bg-foreground/[0.025] transition-colors"
-                >
-                  <div
-                    className="mb-4 text-foreground font-normal leading-none"
-                    style={frauncesStyle('clamp(40px, 4vw, 64px)', 400, '-0.02em')}
+              <div className="divide-y divide-foreground/10 border border-foreground/10">
+                {PROBLEMS.map(({ marker, title, detail }, index) => (
+                  <motion.div
+                    key={marker}
+                    initial="hidden"
+                    whileInView="visible"
+                    variants={scrollReveal}
+                    viewport={viewport}
+                    transition={{ delay: index * 0.08 }}
+                    className="p-8 transition-colors hover:bg-foreground/[0.025] sm:p-10"
                   >
-                    {stat}
-                  </div>
-                  <h4
-                    className="font-normal mb-3 text-foreground leading-snug"
-                    style={frauncesStyle('clamp(17px, 1.5vw, 21px)', 500, '-0.005em')}
-                  >
-                    {label}
-                  </h4>
-                  <p
-                    className="text-foreground/85 leading-relaxed"
-                    style={humaneStyle(19, 500, '0')}
-                  >
-                    {detail}
-                  </p>
-                </motion.div>
-              ))}
+                    <span className="mb-5 block text-foreground/35" style={labelStyle(11, 700, '0.2em')}>{marker}</span>
+                    <h3 className="mb-4 max-w-2xl text-foreground" style={serifStyle('clamp(25px, 2.8vw, 40px)', 400)}>{title}</h3>
+                    <p className="max-w-2xl text-foreground/70" style={{ fontSize: '18px', lineHeight: 1.7 }}>{detail}</p>
+                  </motion.div>
+                ))}
+              </div>
             </div>
-
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* ─── 02 / WORKFLOW ──────────────────────────────────────────────── */}
-      <section id="how-it-works" className={`border-t ${borderFaint} py-32 scroll-mt-20`}>
-        <div className="max-w-[1400px] mx-auto px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-16 lg:gap-24">
+        <section id="how-it-works" className={`scroll-mt-24 border-t ${borderFaint} py-28 lg:py-32`}>
+          <div className="mx-auto max-w-[1400px] px-6 sm:px-8">
+            <div className="grid grid-cols-1 gap-16 lg:grid-cols-[420px_1fr] lg:gap-24">
+              <motion.div initial="hidden" whileInView="visible" variants={scrollReveal} viewport={viewport}>
+                <SplitHeading
+                  number="02"
+                  label="PLANNED EXPERIENCE"
+                  title={<>From scattered details to a <em className="font-normal">defensible story.</em></>}
+                  subtitle="The product will interview before it writes, and the candidate—not the model—will decide what becomes career evidence."
+                />
+              </motion.div>
 
-            {/* LEFT — sticky heading */}
-            <motion.div
-              initial="hidden"
-              whileInView="visible"
-              variants={scrollReveal}
-              viewport={viewport}
-            >
-              <SplitHeading
-                number="02"
-                label="WORKFLOW"
-                title={<>Four steps from<br />resume to<br /><em className="font-normal not-italic">application-ready.</em></>}
-                subtitle="Every step is built for professionals who want targeted edits, proof-aware suggestions, and a saved record for each application."
-              />
-            </motion.div>
-
-            {/* RIGHT — vertical stack of 4 steps */}
-            <div className="divide-y divide-foreground/10 border border-foreground/10">
-              {STEPS.map(({ icon: Icon, step, title, desc }, i) => (
-                <motion.div
-                  key={step}
-                  initial="hidden"
-                  whileInView="visible"
-                  variants={scrollReveal}
-                  viewport={viewport}
-                  style={{ transitionDelay: `${i * 80}ms` }}
-                  className="p-8 flex items-start gap-6 group hover:bg-foreground/[0.025] transition-colors"
-                >
-                  <div className="shrink-0 w-10 h-10 border border-foreground/15 flex items-center justify-center group-hover:border-foreground/30 transition-colors mt-0.5">
-                    <Icon size={18} className="text-foreground/60" strokeWidth={1.25} />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between mb-2">
-                      <h4
-                        className="text-foreground font-normal"
-                        style={frauncesStyle('clamp(17px, 1.5vw, 21px)', 500, '-0.005em')}
-                      >
-                        {title}
-                      </h4>
-                      <span
-                        className="text-foreground/10 font-normal ml-4 shrink-0"
-                        style={frauncesStyle('clamp(22px, 2.5vw, 36px)', 400, '-0.02em')}
-                      >
-                        {step}
-                      </span>
+              <div className="divide-y divide-foreground/10 border border-foreground/10">
+                {STEPS.map(({ icon: Icon, step, title, desc }, index) => (
+                  <motion.div
+                    key={step}
+                    initial="hidden"
+                    whileInView="visible"
+                    variants={scrollReveal}
+                    viewport={viewport}
+                    transition={{ delay: index * 0.08 }}
+                    className="group flex items-start gap-5 p-7 transition-colors hover:bg-foreground/[0.025] sm:gap-7 sm:p-9"
+                  >
+                    <div className="mt-1 flex h-11 w-11 shrink-0 items-center justify-center border border-foreground/20 group-hover:border-foreground/40">
+                      <Icon size={19} strokeWidth={1.35} aria-hidden="true" />
                     </div>
-                    <p
-                      className="text-foreground/85 leading-relaxed"
-                      style={humaneStyle(19, 500, '0')}
-                    >
-                      {desc}
-                    </p>
-                  </div>
-                </motion.div>
-              ))}
+                    <div className="flex-1">
+                      <div className="mb-3 flex items-start justify-between gap-5">
+                        <h3 className="text-foreground" style={serifStyle('clamp(21px, 2vw, 29px)', 400)}>{title}</h3>
+                        <span className="text-foreground/15" style={serifStyle('32px', 400)}>{step}</span>
+                      </div>
+                      <p className="text-foreground/70" style={{ fontSize: '18px', lineHeight: 1.7 }}>{desc}</p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
             </div>
-
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* ─── 03 / FEATURES (BENTO) ──────────────────────────────────────── */}
-      <section id="features" className={`border-t ${borderFaint} py-32 scroll-mt-20`}>
-        <div className="max-w-[1400px] mx-auto px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-16 lg:gap-24">
-
-            {/* LEFT — sticky heading */}
-            <motion.div
-              initial="hidden"
-              whileInView="visible"
-              variants={scrollReveal}
-              viewport={viewport}
-            >
-              <SplitHeading
-                number="03"
-                label="FEATURES"
-                title={<>Every tool built to keep your resume<br /><em className="font-normal italic">specific</em> and honest.</>}
-                subtitle="Not a one-click generator. Each feature helps you decide what belongs on this resume for this job."
-              />
-            </motion.div>
-
-            {/* RIGHT — BentoGrid constrained to right column */}
-            <div>
+        <section id="experience" className={`scroll-mt-24 border-t ${borderFaint} py-28 lg:py-32`}>
+          <div className="mx-auto max-w-[1400px] px-6 sm:px-8">
+            <div className="grid grid-cols-1 gap-16 lg:grid-cols-[420px_1fr] lg:gap-24">
+              <motion.div initial="hidden" whileInView="visible" variants={scrollReveal} viewport={viewport}>
+                <SplitHeading
+                  number="03"
+                  label="PRODUCT PREVIEW"
+                  title={<>A workspace for the evidence behind the <em className="font-normal">document.</em></>}
+                  subtitle="These concept panels show the planned experience. They are product direction—not a claim that public access is already available."
+                />
+              </motion.div>
               <BentoGrid isDark={isDark} />
             </div>
-
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* ─── 04 / CAPABILITIES ──────────────────────────────────────────── */}
-      <section className={`border-t ${borderFaint} py-32`}>
-        <div className="max-w-[1400px] mx-auto px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-16 lg:gap-24">
+        <section id="principles" className={`scroll-mt-24 border-t ${borderFaint} py-28 lg:py-32`}>
+          <div className="mx-auto max-w-[1400px] px-6 sm:px-8">
+            <div className="grid grid-cols-1 gap-16 lg:grid-cols-[420px_1fr] lg:gap-24">
+              <motion.div initial="hidden" whileInView="visible" variants={scrollReveal} viewport={viewport}>
+                <SplitHeading
+                  number="04"
+                  label="PRODUCT PRINCIPLES"
+                  title={<>Useful AI needs a clear line it will <em className="font-normal">not cross.</em></>}
+                  subtitle="The differentiator is not more generated text. It is better evidence, explicit candidate control, and transparent boundaries."
+                />
+              </motion.div>
 
-            {/* LEFT — sticky heading */}
-            <motion.div
-              initial="hidden"
-              whileInView="visible"
-              variants={scrollReveal}
-              viewport={viewport}
-            >
-              <SplitHeading
-                number="04"
-                label="CAPABILITIES"
-                title={<>Six signals.<br />One<br /><em className="font-normal italic">deliberate</em><br />workflow.</>}
-                subtitle="Evaluation, ATS view, JD fit, truth checks, page discipline, and saved versions work together so the final resume is intentional."
-              />
-            </motion.div>
-
-            {/* RIGHT — 2-col grid of feature blocks */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-0 border border-foreground/10">
-              {FEATURES.map(({ title, desc }, i) => (
-                <motion.div
-                  key={title}
-                  initial="hidden"
-                  whileInView="visible"
-                  variants={scrollReveal}
-                  viewport={viewport}
-                  style={{ transitionDelay: `${i * 60}ms` }}
-                  className={`p-8 hover:bg-foreground/[0.025] transition-colors border-foreground/10
-                    ${i % 2 === 0 ? 'sm:border-r' : ''}
-                    ${i < FEATURES.length - 2 ? 'border-b' : ''}
-                    ${FEATURES.length % 2 !== 0 && i === FEATURES.length - 1 ? 'sm:col-span-2 sm:border-r-0' : ''}
-                  `}
-                >
-                  <span
-                    className="block mb-5 text-foreground/25"
-                    style={humaneStyle(15, 700, '0.2em')}
+              <div className="grid grid-cols-1 border-l border-t border-foreground/10 sm:grid-cols-2">
+                {CAPABILITIES.map(({ title, desc }, index) => (
+                  <motion.div
+                    key={title}
+                    initial="hidden"
+                    whileInView="visible"
+                    variants={scrollReveal}
+                    viewport={viewport}
+                    transition={{ delay: index * 0.05 }}
+                    className="border-b border-r border-foreground/10 p-8 transition-colors hover:bg-foreground/[0.025]"
                   >
-                    {String(i + 1).padStart(2, '0')}.
-                  </span>
-                  <h4
-                    className="text-foreground mb-3 font-normal"
-                    style={frauncesStyle('clamp(17px, 1.5vw, 21px)', 500, '-0.005em')}
-                  >
-                    {title}
-                  </h4>
-                  <p
-                    className="text-foreground/85 leading-relaxed"
-                    style={humaneStyle(19, 500, '0')}
-                  >
-                    {desc}
-                  </p>
-                </motion.div>
-              ))}
+                    <span className="mb-6 block text-foreground/30" style={labelStyle(11, 700, '0.2em')}>
+                      {String(index + 1).padStart(2, '0')}.
+                    </span>
+                    <h3 className="mb-4 text-foreground" style={serifStyle('clamp(21px, 1.9vw, 27px)', 400)}>{title}</h3>
+                    <p className="text-foreground/70" style={{ fontSize: '17px', lineHeight: 1.7 }}>{desc}</p>
+                  </motion.div>
+                ))}
+              </div>
             </div>
-
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* ─── 05 / PRICING ───────────────────────────────────────────────── */}
-      <section
-        id="pricing"
-        className={`border-t ${borderFaint} py-32 scroll-mt-20`}
-      >
-        <div className="max-w-[1400px] mx-auto px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-16 lg:gap-24">
+        <section id="research" className={`scroll-mt-24 border-t ${borderFaint} py-28 lg:py-32`}>
+          <div className="mx-auto max-w-[1400px] px-6 sm:px-8">
+            <div className="grid grid-cols-1 gap-16 lg:grid-cols-[420px_1fr] lg:gap-24">
+              <motion.div initial="hidden" whileInView="visible" variants={scrollReveal} viewport={viewport}>
+                <SplitHeading
+                  number="05"
+                  label="WHAT SHAPED IT"
+                  title={<>Built from observed problems, not invented <em className="font-normal">proof.</em></>}
+                  subtitle="Prism Pro is being shaped by qualitative candidate and recruiter discovery. These are directional research signals, not customer results or hiring statistics."
+                />
+              </motion.div>
 
-            {/* LEFT — sticky heading */}
-            <motion.div
-              initial="hidden"
-              whileInView="visible"
-              variants={scrollReveal}
-              viewport={viewport}
-            >
-              <SplitHeading
-                number="05"
-                label="PRICING"
-                title={<>Freemium +<br />credits. <em className="font-normal italic">No</em><br />surprises.</>}
-                subtitle="Start free with a monthly allowance built for real job-search volume."
-              />
-            </motion.div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {RESEARCH_SIGNALS.map(({ label, title, body }, index) => (
+                  <motion.div key={label} initial="hidden" whileInView="visible" variants={scrollReveal} viewport={viewport} transition={{ delay: index * 0.06 }}>
+                    <Card className="h-full rounded-none border-foreground/10 bg-card/35 p-8 shadow-none transition-transform duration-300 hover:-translate-y-1">
+                      <span className="mb-8 block text-foreground/35" style={labelStyle(11, 700, '0.2em')}>{label}</span>
+                      <h3 className="mb-5 text-foreground" style={serifStyle('clamp(23px, 2.2vw, 31px)', 400)}>{title}</h3>
+                      <p className="text-foreground/70" style={{ fontSize: '17px', lineHeight: 1.7 }}>{body}</p>
+                    </Card>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
 
-            {/* RIGHT — 2 pricing cards, side-by-side on sm+, stacked on mobile */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-0 border border-foreground/10 self-start">
+        <section className={`border-t ${borderFaint} py-28 lg:py-32`}>
+          <div className="mx-auto max-w-[1400px] px-6 sm:px-8">
+            <div className="grid grid-cols-1 gap-16 lg:grid-cols-[420px_1fr] lg:gap-24">
+              <motion.div initial="hidden" whileInView="visible" variants={scrollReveal} viewport={viewport}>
+                <SplitHeading
+                  number="06"
+                  label="THE BOUNDARY"
+                  title={<>Career support without career <em className="font-normal">fiction.</em></>}
+                  subtitle="Some product limits are features. They protect your credibility, your privacy, and the value of the work you actually did."
+                />
+              </motion.div>
 
-              {/* Free tier */}
-              <motion.div
-                initial="hidden"
-                whileInView="visible"
-                variants={scrollReveal}
-                viewport={viewport}
-                className="p-10 border-b sm:border-b-0 sm:border-r border-foreground/10"
-              >
-                <div
-                  className="uppercase text-foreground/80 mb-6"
-                  style={humaneStyle(15, 700, '0.2em')}
-                >
-                  FREE
+              <motion.div initial="hidden" whileInView="visible" variants={scrollReveal} viewport={viewport} className="border border-foreground/10">
+                <div className="border-b border-foreground/10 p-8 sm:p-10">
+                  <span className="mb-5 block uppercase text-foreground/40" style={labelStyle(11, 700, '0.2em')}>PRISM PRO WILL NOT</span>
+                  <h3 className="max-w-2xl text-foreground" style={serifStyle('clamp(32px, 4vw, 58px)', 400)}>
+                    Manufacture confidence where evidence is missing.
+                  </h3>
                 </div>
-                <div
-                  className="text-foreground font-normal mb-1 leading-none"
-                  style={frauncesStyle('clamp(36px, 4vw, 56px)', 400, '-0.02em')}
-                >
-                  90 credits
-                </div>
-                <div
-                  className="text-foreground/80 mb-8"
-                  style={humaneStyle(19, 500, '0')}
-                >
-                  per month, always
-                </div>
-                <ul className="space-y-3">
-                  {[
-                    'About 30 JD tailor-and-export workflows',
-                    'ATS raw-text simulator',
-                    'All 6 PDF export templates',
-                    'JD diff with per-change accept'
-                  ].map((item) => (
-                    <li key={item} className="flex items-center gap-3">
-                      <CheckCircle size={13} className="text-foreground/40 shrink-0" strokeWidth={1.5} />
-                      <span
-                        className="text-foreground/60"
-                        style={humaneStyle(19, 500, '0')}
-                      >
-                        {item}
-                      </span>
+                <ul className="divide-y divide-foreground/10">
+                  {BOUNDARIES.map((boundary) => (
+                    <li key={boundary} className="flex items-start gap-4 p-6 sm:px-10">
+                      <Check size={17} className="mt-1 shrink-0 text-foreground/45" strokeWidth={1.5} aria-hidden="true" />
+                      <span className="text-foreground/75" style={{ fontSize: '18px', lineHeight: 1.6 }}>{boundary}</span>
                     </li>
                   ))}
                 </ul>
               </motion.div>
+            </div>
+          </div>
+        </section>
 
-              {/* Freemium launch */}
-              <motion.div
-                initial="hidden"
-                whileInView="visible"
-                variants={scrollReveal}
-                viewport={viewport}
-                className="p-10 bg-foreground/[0.03]"
-              >
-                <div
-                  className="uppercase text-foreground/80 mb-6"
-                  style={humaneStyle(15, 700, '0.2em')}
-                >
-                  LAUNCH
-                </div>
-                <div
-                  className="text-foreground font-normal mb-1 leading-none"
-                  style={frauncesStyle('clamp(36px, 4vw, 56px)', 400, '-0.02em')}
-                >
-                  Freemium first
-                </div>
-                <div
-                  className="text-foreground/80 mb-8"
-                  style={humaneStyle(19, 500, '0')}
-                >
-                  paid plans are on hold
-                </div>
-                <p
-                  className="text-foreground/85 leading-relaxed mb-8"
-                  style={humaneStyle(19, 500, '0')}
-                >
-                  We are keeping launch freemium-only while we validate resume quality, layout fit, and JD-tailoring accuracy with real users.
-                </p>
-                <Link href="/login">
-                  <button
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-foreground text-background uppercase transition-opacity hover:opacity-80"
-                    style={humaneStyle(16, 700, '0.14em')}
-                  >
-                    Get Started Free <ArrowRight size={13} />
-                  </button>
-                </Link>
+        <section id="faq" className={`scroll-mt-24 border-t ${borderFaint} py-28 lg:py-32`}>
+          <div className="mx-auto max-w-[1400px] px-6 sm:px-8">
+            <div className="grid grid-cols-1 gap-16 lg:grid-cols-[420px_1fr] lg:gap-24">
+              <motion.div initial="hidden" whileInView="visible" variants={scrollReveal} viewport={viewport}>
+                <SplitHeading
+                  number="07"
+                  label="FAQ"
+                  title={<>The product is early. The answers should still be <em className="font-normal">clear.</em></>}
+                  subtitle="What Prism Pro is becoming, what is deliberately unavailable today, and what the product will never promise."
+                />
               </motion.div>
 
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* ─── 06 / FAQ ───────────────────────────────────────────────────── */}
-      <section
-        id="faq"
-        className={`border-t ${borderFaint} py-32 scroll-mt-20`}
-      >
-        <div className="max-w-[1400px] mx-auto px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-16 lg:gap-24">
-
-            {/* LEFT — sticky heading */}
-            <motion.div
-              initial="hidden"
-              whileInView="visible"
-              variants={scrollReveal}
-              viewport={viewport}
-            >
-              <SplitHeading
-                number="06"
-                label="FAQ"
-                title={<>Straight<br /><em className="font-normal italic">answers.</em></>}
-                subtitle="Questions we get from engineers who have tried every other resume tool."
-              />
-            </motion.div>
-
-            {/* RIGHT — single-column FAQ list, 1px bottom-border each */}
-            <div>
-              {FAQS.map(({ q, a }, i) => (
-                <motion.div
-                  key={q}
-                  initial="hidden"
-                  whileInView="visible"
-                  variants={scrollReveal}
-                  viewport={viewport}
-                  style={{ transitionDelay: `${i * 60}ms` }}
-                  className={`py-8 ${i < FAQS.length - 1 ? `border-b ${borderFaint}` : ''}`}
-                >
-                  <h4
-                    className="text-foreground mb-4 font-normal"
-                    style={frauncesStyle('clamp(17px, 1.6vw, 22px)', 500, '-0.005em')}
+              <div className="divide-y divide-foreground/10 border-y border-foreground/10">
+                {FAQS.map(({ q, a }, index) => (
+                  <motion.details
+                    key={q}
+                    initial="hidden"
+                    whileInView="visible"
+                    variants={scrollReveal}
+                    viewport={viewport}
+                    transition={{ delay: index * 0.04 }}
+                    className="group py-7"
                   >
-                    {q}
-                  </h4>
-                  <p
-                    className="text-foreground/85 leading-relaxed"
-                    style={humaneStyle(19, 500, '0')}
-                  >
-                    {a}
-                  </p>
-                </motion.div>
-              ))}
+                    <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-6 text-foreground marker:content-none">
+                      <span style={serifStyle('clamp(20px, 1.8vw, 26px)', 400)}>{q}</span>
+                      <span className="relative h-5 w-5 shrink-0" aria-hidden="true">
+                        <span className="absolute left-0 top-1/2 h-px w-5 bg-foreground/50" />
+                        <span className="absolute left-1/2 top-0 h-5 w-px bg-foreground/50 transition-transform group-open:rotate-90" />
+                      </span>
+                    </summary>
+                    <p className="max-w-3xl pb-2 pt-5 text-foreground/70" style={{ fontSize: '17px', lineHeight: 1.75 }}>{a}</p>
+                  </motion.details>
+                ))}
+              </div>
             </div>
-
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* ─── FINAL CTA ──────────────────────────────────────────────────── */}
-      <section className={`py-40 px-8 border-t ${borderFaint} bg-foreground/[0.02]`}>
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          variants={scrollReveal}
-          viewport={viewport}
-          className="max-w-[1400px] mx-auto flex flex-col items-center text-center"
-        >
-          <h2
-            className="text-foreground font-normal mb-8 leading-[0.95]"
-            style={{
-              fontFamily: 'var(--font-fraunces), Georgia, serif',
-              fontSize: 'clamp(40px, 6vw, 88px)',
-              letterSpacing: '-0.01em',
-              fontWeight: 400,
-            }}
-          >
-            Make every application version<br />
-            <em className="font-normal opacity-60">intentional.</em>
-          </h2>
-          <p
-            className="text-foreground/50 mb-12 max-w-md leading-relaxed"
-            style={humaneStyle(20, 500, '0')}
-          >
-            Upload your resume, tailor it to a real JD, and keep only the changes you trust.
-          </p>
-          <Link href="/login">
-            <button
-              className="inline-flex items-center gap-2 px-8 py-4 bg-foreground text-background uppercase transition-opacity hover:opacity-80 mb-8"
-              style={humaneStyle(16, 700, '0.14em')}
-            >
-              Start Free <ArrowRight size={14} />
-            </button>
-          </Link>
-          <span
-            className="text-foreground/30 uppercase"
-            style={humaneStyle(15, 700, '0.2em')}
-          >
-            PRISM PRO. — TRUTHFUL RESUME TAILORING
-          </span>
-        </motion.div>
-      </section>
+        <section id="early-access" className={`relative scroll-mt-24 border-t ${borderFaint} bg-foreground/[0.025] px-6 py-32 sm:px-8 lg:py-40`}>
+          <div className="pointer-events-none absolute inset-0 opacity-[0.12] [background-image:linear-gradient(to_right,currentColor_1px,transparent_1px),linear-gradient(to_bottom,currentColor_1px,transparent_1px)] [background-size:48px_48px]" aria-hidden="true" />
+          <motion.div initial="hidden" whileInView="visible" variants={scrollReveal} viewport={viewport} className="relative mx-auto max-w-[1100px] text-center">
+            <Badge variant="outline" className="mb-8 rounded-none border-foreground/25 px-3 py-1.5 uppercase text-foreground" style={labelStyle(11, 700, '0.18em')}>
+              Private preview
+            </Badge>
+            <h2 className="mb-8 text-foreground" style={serifStyle('clamp(46px, 7vw, 104px)', 400, '-0.025em')}>
+              Your career is bigger than the document trying to explain it.
+            </h2>
+            <p className="mx-auto mb-10 max-w-2xl text-foreground/70" style={{ fontSize: 'clamp(18px, 1.8vw, 23px)', lineHeight: 1.6 }}>
+              Tell us your target role, career stage, and the part of your experience that is hardest to communicate. We will use that context to shape the private preview.
+            </p>
+            <div className="mx-auto max-w-3xl border border-foreground/15 bg-background/75 p-6 backdrop-blur-sm sm:p-9">
+              <WaitlistForm formLabel="Join the PrismPro private preview from the final call to action" />
+            </div>
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-foreground/45" style={labelStyle(11, 650, '0.08em')}>
+              <span className="inline-flex items-center gap-2"><Sparkles size={14} aria-hidden="true" /> PRODUCT PREVIEW</span>
+              <span className="inline-flex items-center gap-2"><BookOpenCheck size={14} aria-hidden="true" /> RESEARCH-LED</span>
+              <span className="inline-flex items-center gap-2"><ShieldCheck size={14} aria-hidden="true" /> TRUTH-FIRST</span>
+            </div>
+          </motion.div>
+        </section>
+      </main>
 
-      {/* ─── BOTTOM DARK BAND ────────────────────────────────────────────── */}
-      <div className="h-[14px] w-full" style={{ backgroundColor: '#1a1a1a' }} />
+      <div className="h-[14px] w-full bg-[#1a1a1a]" />
 
-      {/* ─── FOOTER ─────────────────────────────────────────────────────── */}
-      <footer className={`py-16 px-8 border-t ${borderFaint}`}>
-        <div className="max-w-[1400px] mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
-            {/* Wordmark column */}
-            <div className="md:col-span-1">
-              <span
-                className="block mb-4 uppercase text-foreground"
-                style={humaneStyle(16, 600, '0.15em')}
-              >
+      <footer className={`border-t ${borderFaint} px-6 py-16 sm:px-8`}>
+        <div className="mx-auto max-w-[1400px]">
+          <div className="mb-16 grid grid-cols-1 gap-12 md:grid-cols-4">
+            <div className="md:col-span-2">
+              <span className="mb-4 block uppercase text-foreground" style={{ fontFamily: 'var(--font-humane), sans-serif', fontSize: '36px', fontWeight: 600, letterSpacing: '0.05em', lineHeight: 1 }}>
                 PRISM PRO.
               </span>
-              <p
-                className="text-foreground/80 leading-relaxed"
-                style={humaneStyle(16, 500, '0.01em')}
-              >
-                Truthful JD-specific resume tailoring for technical professionals. Built for focused applications, ATS-aware exports, and interview-ready version history.
+              <p className="max-w-lg text-foreground/70" style={{ fontSize: '16px', lineHeight: 1.7 }}>
+                A career-evidence coach in development for technical candidates. One confirmed evidence history for truthful, role-aligned resumes, LinkedIn recommendations, and interview narratives.
               </p>
+              <a href="mailto:support@prismpro.live" className="mt-5 inline-block text-foreground/80 underline decoration-foreground/25 underline-offset-4 hover:text-foreground" style={labelStyle(14, 600, '0.03em')}>
+                support@prismpro.live
+              </a>
             </div>
 
-            {/* Product */}
             <div>
-              <h5
-                className="uppercase text-foreground mb-5"
-                style={humaneStyle(15, 700, '0.2em')}
-              >
-                PRODUCT
-              </h5>
+              <h3 className="mb-5 uppercase text-foreground" style={labelStyle(11, 700, '0.2em')}>EXPLORE</h3>
               <ul className="space-y-3">
                 {[
-                  { label: 'How It Works', action: () => { const el = document.getElementById('how-it-works'); if (el) el.scrollIntoView({ behavior: 'smooth' }); } },
-                  { label: 'Features', action: () => { const el = document.getElementById('features'); if (el) el.scrollIntoView({ behavior: 'smooth' }); } },
-                  { label: 'Pricing', action: () => { const el = document.getElementById('pricing'); if (el) el.scrollIntoView({ behavior: 'smooth' }); } },
-                ].map(({ label, action }) => (
-                  <li key={label}>
-                    <button
-                      onClick={action}
-                      className="text-foreground/75 hover:text-foreground transition-colors"
-                      style={humaneStyle(16, 500, '0.01em')}
-                    >
+                  ['Product vision', 'product-vision'],
+                  ['Planned experience', 'how-it-works'],
+                  ['Product principles', 'principles'],
+                  ['FAQ', 'faq'],
+                ].map(([label, id]) => (
+                  <li key={id}>
+                    <button onClick={() => scrollTo(id)} className="text-foreground/65 transition-colors hover:text-foreground" style={labelStyle(14, 500, '0.02em')}>
                       {label}
                     </button>
                   </li>
@@ -904,79 +720,32 @@ export default function LandingPage() {
               </ul>
             </div>
 
-            {/* Resources */}
             <div>
-              <h5
-                className="uppercase text-foreground mb-5"
-                style={humaneStyle(15, 700, '0.2em')}
-              >
-                RESOURCES
-              </h5>
+              <h3 className="mb-5 uppercase text-foreground" style={labelStyle(11, 700, '0.2em')}>LEGAL</h3>
               <ul className="space-y-3">
-                <li>
-                  <Link href="/docs" className="text-foreground/75 hover:text-foreground transition-colors" style={humaneStyle(16, 500, '0.01em')}>
-                    Docs
-                  </Link>
-                </li>
-                <li>
-                  <button
-                    onClick={() => { const el = document.getElementById('faq'); if (el) el.scrollIntoView({ behavior: 'smooth' }); }}
-                    className="text-foreground/75 hover:text-foreground transition-colors"
-                    style={humaneStyle(16, 500, '0.01em')}
-                  >
-                    FAQ
-                  </button>
-                </li>
-              </ul>
-            </div>
-
-            {/* Legal */}
-            <div>
-              <h5
-                className="uppercase text-foreground mb-5"
-                style={humaneStyle(15, 700, '0.2em')}
-              >
-                LEGAL
-              </h5>
-              <ul className="space-y-3">
-                <li>
-                  <Link href="/privacy-policy" className="text-foreground/75 hover:text-foreground transition-colors" style={humaneStyle(16, 500, '0.01em')}>
-                    Privacy Policy
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/terms" className="text-foreground/75 hover:text-foreground transition-colors" style={humaneStyle(16, 500, '0.01em')}>
-                    Terms of Service
-                  </Link>
-                </li>
+                <li><Link href="/privacy-policy" className="text-foreground/65 transition-colors hover:text-foreground" style={labelStyle(14, 500, '0.02em')}>Privacy Policy</Link></li>
+                <li><Link href="/terms" className="text-foreground/65 transition-colors hover:text-foreground" style={labelStyle(14, 500, '0.02em')}>Terms of Service</Link></li>
               </ul>
             </div>
           </div>
 
-          {/* Bottom row */}
-          <div className={`pt-8 border-t ${borderFaint} flex flex-col md:flex-row justify-between items-center gap-4`}>
-            <span
-              className="text-foreground/30 uppercase"
-              style={humaneStyle(15, 700, '0.2em')}
-            >
-              &copy; 2026 PRISM PRO. ALL RIGHTS RESERVED.
-            </span>
-            <span
-              className="text-foreground/30 uppercase"
-              style={humaneStyle(15, 700, '0.2em')}
-            >
-              PRISMPRO.LIVE
-            </span>
-            {/* Locale switch placeholder */}
-            <span
-              className="text-foreground/20 uppercase cursor-default"
-              style={humaneStyle(15, 700, '0.2em')}
-            >
-              EN / IN
-            </span>
+          <div className={`flex flex-col items-start justify-between gap-4 border-t ${borderFaint} pt-8 sm:flex-row sm:items-center`}>
+            <span className="uppercase text-foreground/35" style={labelStyle(10, 700, '0.18em')}>© 2026 PRISM PRO. ALL RIGHTS RESERVED.</span>
+            <span className="uppercase text-foreground/35" style={labelStyle(10, 700, '0.18em')}>PRISMPRO.LIVE · PRODUCT IN DEVELOPMENT</span>
           </div>
         </div>
       </footer>
+
+      <style jsx global>{`
+        @keyframes marquee {
+          from { transform: translateX(0); }
+          to { transform: translateX(-50%); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          html { scroll-behavior: auto; }
+        }
+      `}</style>
     </div>
   );
 }

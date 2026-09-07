@@ -12,10 +12,27 @@ describe('email confirmation callback', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.stubEnv('NEXT_PUBLIC_FRONTEND_URL', 'https://www.prismpro.live')
+    vi.stubEnv('PRISM_PRO_PUBLIC_PREVIEW_ONLY', 'false')
     createServerClientMock.mockImplementation(async (response) => {
       response.cookies.set('sb-session', 'confirmed-session', { path: '/' })
       return { auth: { verifyOtp: verifyOtpMock } }
     })
+  })
+
+  it('does not verify a token while the public preview is active', async () => {
+    vi.stubEnv('PRISM_PRO_PUBLIC_PREVIEW_ONLY', 'true')
+    const { GET } = await import('@/app/api/auth/confirm/route')
+
+    const response = await GET(
+      new NextRequest(
+        'https://www.prismpro.live/api/auth/confirm?token_hash=hash&type=email',
+      ),
+    )
+
+    expect(response.headers.get('location')).toBe('https://www.prismpro.live/')
+    expect(response.headers.get('cache-control')).toContain('no-store')
+    expect(createServerClientMock).not.toHaveBeenCalled()
+    expect(verifyOtpMock).not.toHaveBeenCalled()
   })
 
   it('preserves confirmation cookies and restricts the redirect destination', async () => {

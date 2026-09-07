@@ -13,6 +13,59 @@ describe('Supabase session Proxy', () => {
     vi.stubEnv('NODE_ENV', 'production')
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://project.supabase.co')
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'publishable-key')
+    vi.stubEnv('PRISM_PRO_PUBLIC_PREVIEW_ONLY', 'false')
+  })
+
+  it.each([
+    '/login',
+    '/onboarding',
+    '/dashboard',
+    '/dashboard/resume',
+    '/docs',
+    '/api/auth/callback',
+    '/api/auth/confirm',
+    '/api/auth/test-session',
+  ])(
+    'blocks %s while the public preview is active',
+    async (pathname) => {
+      vi.stubEnv('PRISM_PRO_PUBLIC_PREVIEW_ONLY', 'true')
+      const { updateSession } = await import('@/lib/supabase-proxy')
+
+      const response = await updateSession(
+        new NextRequest(`https://www.prismpro.live${pathname}`),
+      )
+
+      expect(response.status).toBe(307)
+      expect(response.headers.get('location')).toBe('https://www.prismpro.live/')
+      expect(response.headers.get('cache-control')).toContain('no-store')
+      expect(createServerClientMock).not.toHaveBeenCalled()
+    },
+  )
+
+  it('fails closed when the preview flag is omitted', async () => {
+    vi.unstubAllEnvs()
+    vi.stubEnv('NODE_ENV', 'production')
+    const { updateSession } = await import('@/lib/supabase-proxy')
+
+    const response = await updateSession(
+      new NextRequest('https://www.prismpro.live/dashboard'),
+    )
+
+    expect(response.status).toBe(307)
+    expect(response.headers.get('location')).toBe('https://www.prismpro.live/')
+    expect(createServerClientMock).not.toHaveBeenCalled()
+  })
+
+  it('does not initialize Supabase for a public page during preview', async () => {
+    vi.stubEnv('PRISM_PRO_PUBLIC_PREVIEW_ONLY', 'true')
+    const { updateSession } = await import('@/lib/supabase-proxy')
+
+    const response = await updateSession(
+      new NextRequest('https://www.prismpro.live/privacy-policy'),
+    )
+
+    expect(response.status).toBe(200)
+    expect(createServerClientMock).not.toHaveBeenCalled()
   })
 
   it('preserves refreshed cookies and anti-cache headers on auth redirects', async () => {

@@ -6,6 +6,7 @@ os.environ.setdefault("SQLALCHEMY_DATABASE_URI", "sqlite:///:memory:")
 # Minimal stub values expected by Settings validators
 os.environ.setdefault("SUPABASE_URL", "https://test.supabase.co")
 os.environ.setdefault("SUPABASE_ANON_KEY", "test-anon-key")
+os.environ.setdefault("PRISM_PRO_PUBLIC_PREVIEW_ONLY", "false")
 
 import pytest
 import sqlalchemy as sa
@@ -50,6 +51,23 @@ def _create_sqlite_tables(engine) -> None:
         sa.Column("balance_after", sa.Integer, nullable=False),
         sa.Column("external_ref", sa.String, nullable=True, unique=True),
         sa.Column("created_at", sa.DateTime, server_default=sa.func.now()),
+    )
+
+    sa.Table(
+        "waitlist_entries",
+        meta,
+        sa.Column("id", sa.String(36), primary_key=True),
+        sa.Column("normalized_email", sa.String(254), nullable=False, unique=True),
+        sa.Column("career_stage", sa.String(40)),
+        sa.Column("target_role", sa.String(120)),
+        sa.Column("communication_challenge", sa.Text),
+        sa.Column("consent_granted", sa.Boolean, nullable=False),
+        sa.Column("consent_version", sa.String(32), nullable=False),
+        sa.Column("consented_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("source", sa.String(64), nullable=False),
+        sa.Column("retention_expires_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
+        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
     )
 
     # Phase-1 resume tables — using JSON instead of JSONB for SQLite compatibility

@@ -2,19 +2,9 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sun, Moon } from 'lucide-react';
+import { ArrowRight, Sun, Moon } from 'lucide-react';
 import Link from 'next/link';
 import { useTheme } from '@/contexts/theme-context';
-
-const smoothScrollToSection = (sectionId: string) => {
-  const element = document.getElementById(sectionId);
-  if (element) {
-    const headerOffset = 80;
-    const elementPosition = element.getBoundingClientRect().top;
-    const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-    window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
-  }
-};
 
 export const Navigation: React.FC = () => {
   const { isDark, toggleTheme } = useTheme();
@@ -36,7 +26,7 @@ export const Navigation: React.FC = () => {
           <div className="max-w-[1400px] mx-auto px-8 py-7 flex items-center justify-between">
 
             {/* Left: wordmark */}
-            <Link href="/" className="flex items-center gap-3">
+            <Link href="/" className="flex min-h-11 items-center gap-3">
               {/* Abstract glyph — thin circle-cross icon */}
               <span
                 className="w-5 h-5 border border-foreground/40 rounded-full flex items-center justify-center shrink-0"
@@ -59,39 +49,29 @@ export const Navigation: React.FC = () => {
             </Link>
 
             {/* Center: nav links */}
-            <div className="hidden md:flex items-center gap-12">
+            <div className="hidden lg:flex items-center gap-8">
               {[
-                { label: 'PRODUCT', action: () => smoothScrollToSection('how-it-works') },
-                { label: 'DOCS', href: '/docs' },
-                { label: 'PRICING', action: () => smoothScrollToSection('pricing') },
-              ].map((item) =>
-                item.href ? (
-                  <Link
-                    key={item.label}
-                    href={item.href}
-                    className="text-foreground/85 hover:text-foreground transition-colors duration-200 uppercase font-humane"
-                    style={{ fontSize: '20px', fontWeight: 600, fontVariationSettings: '"wght" 600', letterSpacing: '0.12em', lineHeight: 1 }}
-                  >
-                    {item.label}
-                  </Link>
-                ) : (
-                  <button
-                    key={item.label}
-                    onClick={item.action}
-                    className="text-foreground/85 hover:text-foreground transition-colors duration-200 uppercase font-humane"
-                    style={{ fontSize: '20px', fontWeight: 600, fontVariationSettings: '"wght" 600', letterSpacing: '0.12em', lineHeight: 1 }}
-                  >
-                    {item.label}
-                  </button>
-                )
-              )}
+                { label: 'HOW IT WORKS', href: '/#how-it-works' },
+                { label: "WHAT YOU'LL GET", href: '/#experience' },
+                { label: 'PRINCIPLES', href: '/#principles' },
+                { label: 'FAQ', href: '/#faq' },
+              ].map((item) => (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className="text-foreground/85 hover:text-foreground transition-colors duration-200 uppercase font-humane"
+                  style={{ fontSize: '18px', fontWeight: 600, fontVariationSettings: '"wght" 600', letterSpacing: '0.12em', lineHeight: 1 }}
+                >
+                  {item.label}
+                </Link>
+              ))}
             </div>
 
-            {/* Right: sign in + theme toggle */}
+            {/* Right: pre-launch CTA + theme toggle. Authentication stays closed. */}
             <div className="flex items-center gap-5">
               <button
                 onClick={toggleTheme}
-                className="p-1.5 text-foreground/50 hover:text-foreground transition-colors duration-200"
+                className="flex h-11 w-11 items-center justify-center text-foreground/50 hover:text-foreground transition-colors duration-200"
                 aria-label="Toggle theme"
               >
                 <AnimatePresence mode="wait">
@@ -119,13 +99,13 @@ export const Navigation: React.FC = () => {
                 </AnimatePresence>
               </button>
 
-              <Link href="/login">
-                <span
-                  className="text-foreground/85 hover:text-foreground transition-colors duration-200 uppercase font-humane"
-                  style={{ fontSize: '20px', fontWeight: 600, fontVariationSettings: '"wght" 600', letterSpacing: '0.12em', lineHeight: 1 }}
-                >
-                  SIGN IN
-                </span>
+              <Link
+                href="/#early-access"
+                className="inline-flex min-h-11 items-center gap-2 border border-foreground/30 px-3 text-foreground/85 transition-colors duration-200 hover:border-foreground hover:text-foreground sm:px-4"
+                style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '11px', fontWeight: 700, letterSpacing: '0.12em', lineHeight: 1 }}
+              >
+                <span className="uppercase"><span className="hidden sm:inline">JOIN THE </span>PREVIEW</span>
+                <ArrowRight size={14} aria-hidden="true" />
               </Link>
             </div>
           </div>

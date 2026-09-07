@@ -49,6 +49,15 @@ class Settings(BaseSettings):
     ADMIN_USER_IDS: str = ""
     """Comma-separated Supabase user IDs allowed to access admin-only endpoints."""
 
+    PRISM_PRO_PUBLIC_PREVIEW_ONLY: bool = True
+    """Fail closed by default: expose only public-preview backend routes."""
+
+    WAITLIST_RETENTION_DAYS: int = 180
+    """Days after which a waitlist entry is eligible for deletion."""
+
+    WAITLIST_CONSENT_VERSION: str = "2026-09-06"
+    """Version of the waitlist contact consent accepted by the visitor."""
+
     # ==========================================
     # Security Configuration
     # ==========================================
@@ -267,6 +276,7 @@ class Settings(BaseSettings):
         "RESUME_PARSE_TIMEOUT_SECONDS",
         "MAX_CONCURRENT_RESUME_PARSERS",
         "RESUME_PARSE_QUEUE_TIMEOUT_SECONDS",
+        "WAITLIST_RETENTION_DAYS",
     )
     def validate_positive_resume_budget(cls, value):
         if value <= 0:

@@ -7,6 +7,7 @@ from app.models.resume_evaluation_v2 import ResumeEvaluationV2
 from app.models.jd_evaluation import JDEvaluation
 from app.models.credit_ledger import CreditLedger
 from app.models.resume_export import ResumeExport  # noqa: F401
+from app.models.waitlist_entry import WaitlistEntry
 
 __all__ = [
     "JobListing",
@@ -24,4 +25,5 @@ __all__ = [
     "JDEvaluation",
     "CreditLedger",
     "ResumeExport",
+    "WaitlistEntry",
 ]
