@@ -8,7 +8,7 @@ FRONTEND_PORT := 3000
 PYTHON       := python3.11
 BACKEND_TEST_ENV := OPENAI_API_KEY=test SUPABASE_URL=https://test.supabase.co SUPABASE_ANON_KEY=test SUPABASE_SERVICE_ROLE_KEY=test DATABASE_URL=sqlite:///:memory:
 FRONTEND_BUILD_ENV := NEXT_PUBLIC_API_URL=https://api.example.com NEXT_PUBLIC_SUPABASE_URL=https://test.supabase.co NEXT_PUBLIC_SUPABASE_ANON_KEY=test
-FRONTEND_E2E_ENV := NEXT_PUBLIC_API_URL=http://localhost:8000 NEXT_PUBLIC_SUPABASE_URL=https://test.supabase.co NEXT_PUBLIC_SUPABASE_ANON_KEY=test
+FRONTEND_E2E_ENV := PRISM_PRO_PUBLIC_PREVIEW_ONLY=false NEXT_PUBLIC_API_URL=http://localhost:8000 NEXT_PUBLIC_SUPABASE_URL=https://test.supabase.co NEXT_PUBLIC_SUPABASE_ANON_KEY=test
 
 help: ## Show this help
 	@echo "Prism Pro — make targets"
