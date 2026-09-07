@@ -150,6 +150,14 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: test
         run: npm run test:e2e
 
+      - name: Run public-preview landing smoke
+        env:
+          PRISM_PRO_PUBLIC_PREVIEW_ONLY: "true"
+          NEXT_PUBLIC_API_URL: http://localhost:8000
+          NEXT_PUBLIC_SUPABASE_URL: https://test.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: test
+        run: npx playwright test tests/e2e/landing-page.spec.ts --project=chromium
+
       - name: Upload Playwright report on failure
         if: failure()
         uses: actions/upload-artifact@v4

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef } from 'react';
-import { motion, type Variants, useReducedMotion } from 'framer-motion';
+import { motion, MotionConfig, type Variants } from 'framer-motion';
 import {
   BookOpenCheck,
   Check,
@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useTheme } from '@/contexts/theme-context';
 import { trackPublicPreviewEvent } from '@/lib/public-preview-analytics';
+import { useHydratedReducedMotion } from '@/hooks/use-hydrated-reduced-motion';
 
 /*
  * Prism Pro landing direction
@@ -36,7 +37,7 @@ import { trackPublicPreviewEvent } from '@/lib/public-preview-analytics';
  */
 
 function useMotionVariants() {
-  const reduce = useReducedMotion();
+  const reduce = useHydratedReducedMotion();
 
   const fadeIn: Variants = reduce
     ? { hidden: { opacity: 1 }, visible: { opacity: 1 } }
@@ -327,8 +328,11 @@ export default function LandingPage() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  // Framer's media-query read can differ between SSR and hydration. Motion
+  // reduction is applied through useHydratedReducedMotion after hydration.
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
+    <MotionConfig reducedMotion="never">
+      <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
       <Navigation />
 
       <main>
@@ -746,6 +750,7 @@ export default function LandingPage() {
           html { scroll-behavior: auto; }
         }
       `}</style>
-    </div>
+      </div>
+    </MotionConfig>
   );
 }

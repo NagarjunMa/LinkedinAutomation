@@ -11,9 +11,31 @@ For production deployment, ensure all required environment variables are set.
 
 import json
 from typing import List, Optional, Union
+from urllib.parse import urlsplit
 
 from pydantic import ConfigDict, field_validator, model_validator
 from pydantic_settings import BaseSettings
+
+
+def _is_exact_https_origin(origin: str) -> bool:
+    if "*" in origin or any(character.isspace() for character in origin):
+        return False
+    parsed = urlsplit(origin)
+    try:
+        port = parsed.port
+    except ValueError:
+        return False
+    return (
+        parsed.scheme == "https"
+        and bool(parsed.hostname)
+        and port is None
+        and parsed.username is None
+        and parsed.password is None
+        and parsed.path in ("", "/")
+        and not parsed.query
+        and not parsed.fragment
+        and origin.rstrip("/") == f"https://{parsed.hostname}"
+    )
 
 
 class Settings(BaseSettings):
@@ -51,6 +73,15 @@ class Settings(BaseSettings):
 
     PRISM_PRO_PUBLIC_PREVIEW_ONLY: bool = True
     """Fail closed by default: expose only public-preview backend routes."""
+
+    PUBLIC_FRONTEND_ORIGIN: str = ""
+    """Canonical browser origin allowed to call the public-preview API."""
+
+    BACKEND_REPLICA_COUNT: int = 1
+    """Declared platform replica count while rate limiting is process-local."""
+
+    WEB_CONCURRENCY: int = 1
+    """Uvicorn worker count; must remain one while rate limiting is process-local."""
 
     WAITLIST_RETENTION_DAYS: int = 180
     """Days after which a waitlist entry is eligible for deletion."""
@@ -277,6 +308,8 @@ class Settings(BaseSettings):
         "MAX_CONCURRENT_RESUME_PARSERS",
         "RESUME_PARSE_QUEUE_TIMEOUT_SECONDS",
         "WAITLIST_RETENTION_DAYS",
+        "BACKEND_REPLICA_COUNT",
+        "WEB_CONCURRENCY",
     )
     def validate_positive_resume_budget(cls, value):
         if value <= 0:
@@ -317,6 +350,7 @@ class Settings(BaseSettings):
             "SUPABASE_ANON_KEY",
             "SUPABASE_SERVICE_ROLE_KEY",
             "CORS_ORIGINS",
+            "PUBLIC_FRONTEND_ORIGIN",
         ):
             value = getattr(self, name)
             if value in ("", None, []):
@@ -336,6 +370,34 @@ class Settings(BaseSettings):
 
         if any(origin.startswith(("http://localhost", "http://127.0.0.1")) for origin in self.CORS_ORIGINS):
             raise ValueError("CORS_ORIGINS must not include localhost origins in production")
+
+        invalid_origins = [
+            origin
+            for origin in self.CORS_ORIGINS
+            if not _is_exact_https_origin(origin)
+        ]
+        if invalid_origins:
+            raise ValueError(
+                "CORS_ORIGINS must contain exact HTTPS origins without paths, "
+                "credentials, queries, fragments, or wildcards"
+            )
+
+        if self.PUBLIC_FRONTEND_ORIGIN and not _is_exact_https_origin(
+            self.PUBLIC_FRONTEND_ORIGIN
+        ):
+            raise ValueError("PUBLIC_FRONTEND_ORIGIN must be an exact HTTPS origin")
+
+        if self.PRISM_PRO_PUBLIC_PREVIEW_ONLY:
+            if self.CORS_ORIGINS != [self.PUBLIC_FRONTEND_ORIGIN]:
+                raise ValueError(
+                    "Public preview requires CORS_ORIGINS to contain only "
+                    "PUBLIC_FRONTEND_ORIGIN"
+                )
+            if self.BACKEND_REPLICA_COUNT != 1 or self.WEB_CONCURRENCY != 1:
+                raise ValueError(
+                    "Public preview requires one backend replica and one worker "
+                    "while rate limiting is process-local"
+                )
 
         if self.SUPABASE_STORAGE_BUCKET != "resume":
             raise ValueError("SUPABASE_STORAGE_BUCKET must be 'resume' in production")
@@ -385,6 +447,29 @@ def validate_production_config() -> List[str]:
 
     if any(origin.startswith(("http://localhost", "http://127.0.0.1")) for origin in settings.CORS_ORIGINS):
         issues.append("CORS_ORIGINS must not include localhost origins in production")
+
+    if any(not _is_exact_https_origin(origin) for origin in settings.CORS_ORIGINS):
+        issues.append(
+            "CORS_ORIGINS must contain exact HTTPS origins without paths, "
+            "credentials, queries, fragments, or wildcards"
+        )
+
+    if not settings.PUBLIC_FRONTEND_ORIGIN:
+        issues.append("PUBLIC_FRONTEND_ORIGIN is required")
+    elif not _is_exact_https_origin(settings.PUBLIC_FRONTEND_ORIGIN):
+        issues.append("PUBLIC_FRONTEND_ORIGIN must be an exact HTTPS origin")
+
+    if settings.PRISM_PRO_PUBLIC_PREVIEW_ONLY:
+        if settings.CORS_ORIGINS != [settings.PUBLIC_FRONTEND_ORIGIN]:
+            issues.append(
+                "Public preview requires CORS_ORIGINS to contain only "
+                "PUBLIC_FRONTEND_ORIGIN"
+            )
+        if settings.BACKEND_REPLICA_COUNT != 1 or settings.WEB_CONCURRENCY != 1:
+            issues.append(
+                "Public preview requires one backend replica and one worker "
+                "while rate limiting is process-local"
+            )
 
     if not settings.ADMIN_USER_IDS.strip():
         issues.append("ADMIN_USER_IDS is required")

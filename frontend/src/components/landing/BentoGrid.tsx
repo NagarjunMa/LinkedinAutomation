@@ -1,7 +1,9 @@
 "use client";
 
 import React from 'react';
-import { motion, type Variants, useInView, useReducedMotion } from 'framer-motion';
+import { motion, type Variants, useInView } from 'framer-motion';
+
+import { useHydratedReducedMotion } from '@/hooks/use-hydrated-reduced-motion';
 
 interface BentoGridProps {
   isDark: boolean;
@@ -79,7 +81,7 @@ const CARDS = [
 export const BentoGrid: React.FC<BentoGridProps> = ({ isDark: _isDark }) => {
   const ref = React.useRef(null);
   const isInView = useInView(ref, { once: true, amount: 0.1 });
-  const reduce = useReducedMotion();
+  const reduce = useHydratedReducedMotion();
 
   const fadeInUp: Variants = reduce
     ? { hidden: { opacity: 1, y: 0 }, visible: { opacity: 1, y: 0 } }
