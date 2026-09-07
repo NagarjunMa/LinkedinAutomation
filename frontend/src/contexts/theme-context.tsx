@@ -20,7 +20,6 @@ interface ThemeProviderProps {
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
   const [theme, setThemeState] = useState<Theme>('light');
-  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
     // Initialize theme on client side only
@@ -38,8 +37,6 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
         applyTheme(systemTheme);
         localStorage.setItem('prism-theme', systemTheme);
       }
-
-      setIsInitialized(true);
     }
   }, []);
 
@@ -87,11 +84,6 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     isDark: theme === 'dark',
     isLight: theme === 'light',
   };
-
-  // Don't render children until theme is initialized on client side
-  if (!isInitialized) {
-    return <div className="min-h-screen bg-background" />; // Temporary loading state
-  }
 
   return (
     <ThemeContext.Provider value={value}>

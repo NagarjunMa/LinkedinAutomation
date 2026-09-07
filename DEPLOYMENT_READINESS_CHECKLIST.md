@@ -71,17 +71,17 @@ the release ticket before publication.
 
 | Item | Status | Verification Gate |
 | --- | --- | --- |
-| Public preview flags | Pending production check | Set `PRISM_PRO_PUBLIC_PREVIEW_ONLY=true` on frontend and backend |
-| Supabase public signup | Pending production check | Auth → General configuration → **Allow new users to sign up** is disabled; anonymous sign-ins are disabled |
-| Preview database migration | Pending production check | `alembic upgrade head` creates `waitlist_entries` with RLS enabled and no `anon`/`authenticated` grants |
+| Public preview flags | Code-enforced; pending production evidence | Set `PRISM_PRO_PUBLIC_PREVIEW_ONLY=true` on frontend and backend; backend production validation fails closed |
+| Supabase public signup | Verifier added; pending production evidence | Auth → General configuration → **Allow new users to sign up** is disabled; anonymous sign-ins are disabled; release verifier passes |
+| Preview database migration | Migration/verifier ready; pending production run | `alembic upgrade head` creates `waitlist_entries` with RLS enabled and no `anon`/`authenticated` grants |
 | Waitlist API | Pending production smoke | Valid and duplicate submissions return the same `202` response; rate limits and 8 KiB request cap are active |
 | Public-preview analytics | Pending production smoke | Hero CTA, form start/success/failure category, and scroll-depth events reach `/api/v1/public-preview/events` without email or free-text fields |
-| Distributed abuse controls | Pending production check | Keep the backend at one replica while using the in-process limiter, or add an edge/distributed IP rate limit before scaling horizontally |
+| Distributed abuse controls | Startup guard added; pending Railway evidence | `BACKEND_REPLICA_COUNT=1` and `WEB_CONCURRENCY=1`; keep Railway at one replica until an edge/distributed limiter exists |
 | Product API lockdown | Pending production smoke | A request with an existing bearer token receives `403` for product API routes |
 | Auth callback lockdown | Pending production smoke | OAuth callback and email confirmation URLs return to `/` without creating session cookies |
-| Waitlist retention | Pending operations setup | Schedule `python scripts/purge_expired_waitlist.py` daily; first run with `--dry-run` |
-| Data requests | Pending operations setup | Route verified access/export/deletion requests from `support@prismpro.live` to an authorized operator |
-| Public origins | Pending production check | Backend `CORS_ORIGINS` contains only the deployed PrismPro frontend origin |
+| Waitlist retention | Migration automation added; pending production evidence | Supabase Cron job `prismpro-waitlist-retention-daily` is active and has a successful recorded run |
+| Data requests | Runbook defined; pending operator validation | Verified-address access/export/deletion workflow from `support@prismpro.live` is exercised by an authorized operator |
+| Public origins | Code-enforced; pending production evidence | `CORS_ORIGINS` equals the single canonical `PUBLIC_FRONTEND_ORIGIN`; release verifier passes allowed/denied preflights |
 
 The public trailer must use a separate deployment for internal product testing.
 Do not set either preview flag to `false` on the public deployment.

@@ -25,7 +25,11 @@ SUPABASE_URL=https://<project-ref>.supabase.co
 SUPABASE_ANON_KEY=<anon-key>
 SUPABASE_SERVICE_ROLE_KEY=<service-role-key>
 OPENAI_API_KEY=<openai-key>
-CORS_ORIGINS=https://www.prismpro.live,https://prismpro.live
+CORS_ORIGINS=https://www.prismpro.live
+PUBLIC_FRONTEND_ORIGIN=https://www.prismpro.live
+PRISM_PRO_PUBLIC_PREVIEW_ONLY=true
+BACKEND_REPLICA_COUNT=1
+WEB_CONCURRENCY=1
 SECRET_KEY=<32+ character secret>
 ADMIN_USER_IDS=<comma-separated-supabase-user-ids>
 SUPABASE_STORAGE_BUCKET=resume
@@ -45,7 +49,103 @@ NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-key>
 NEXT_PUBLIC_SITE_URL=https://www.prismpro.live
 NEXT_PUBLIC_FRONTEND_URL=https://www.prismpro.live
+PRISM_PRO_PUBLIC_PREVIEW_ONLY=true
 ```
+
+The backend refuses to start in production preview mode if the CORS allowlist
+contains another origin, either declared process count is not one, or the
+preview flag is disabled. Railway horizontal scaling must also be fixed at one
+replica until the limiter is moved to a shared store or the edge.
+
+## Public-preview release verification (PRI-5)
+
+### Supabase Auth lockdown
+
+In the PrismPro Supabase project, open **Authentication → General
+Configuration** and disable both:
+
+- **Allow new users to sign up**
+- **Allow anonymous sign-ins**
+
+The release verifier reads these settings through the Supabase Management API;
+it does not attempt to create a real auth user. Use a short-lived personal
+access token with Auth config read access and never commit it.
+
+### Waitlist retention schedule
+
+Enable Supabase Cron before applying the latest Alembic migration. Migration
+`2026_09_07_waitlist_retention` creates or replaces a daily 03:17 UTC job named
+`prismpro-waitlist-retention-daily`. It deletes only rows whose explicit
+`retention_expires_at` deadline has passed.
+
+If Cron was enabled after the migration, run this once in the SQL editor:
+
+```sql
+select cron.schedule(
+  'prismpro-waitlist-retention-daily',
+  '17 3 * * *',
+  $$delete from public.waitlist_entries
+    where retention_expires_at <= current_timestamp$$
+);
+```
+
+Verify the job and recent execution history:
+
+```sql
+select jobid, schedule, command, active
+from cron.job
+where jobname = 'prismpro-waitlist-retention-daily';
+
+select status, return_message, start_time, end_time
+from cron.job_run_details
+where jobid = (
+  select jobid from cron.job
+  where jobname = 'prismpro-waitlist-retention-daily'
+)
+order by start_time desc
+limit 10;
+```
+
+Do not clear the retention gate until `cron.job_run_details` contains at least
+one completed `succeeded` run for this job. If the daily run has not occurred
+yet, leave the release pending and inspect it after the next 03:17 UTC run.
+
+### Executable production gate
+
+From an authorized operator machine with the production database URL and a
+short-lived Supabase Management API token:
+
+```bash
+cd backend
+export SQLALCHEMY_DATABASE_URI='postgresql://...'
+export SUPABASE_ACCESS_TOKEN='sbp_...'
+python scripts/verify_public_preview_release.py \
+  --backend-url https://api.prismpro.live \
+  --frontend-origin https://www.prismpro.live \
+  --supabase-project-ref '<prismpro-project-ref>'
+```
+
+That default command is read-only. After reviewing the target project and
+database, add `--write-smoke` to create one unique `example.com` waitlist row,
+verify the 8 KiB limit, neutral duplicate response, unique persistence, and
+burst limit, then delete only that generated row.
+
+Do not pass `--allow-http` in production. It exists only for local testing.
+
+### Waitlist access and deletion requests
+
+1. Accept requests only through `support@prismpro.live`.
+2. Confirm control of the submitted address by sending a single-use nonce and
+   requiring a reply from the same address. Do not disclose whether an address
+   is present before verification.
+3. Have an authorized operator query only the normalized email requested.
+4. For access, return the record through an approved encrypted channel. For
+   deletion, delete only that normalized email inside a transaction and record
+   the request timestamp and outcome outside the waitlist table without copying
+   the optional free-text response.
+5. Have a second operator review destructive requests when practical. Never
+   paste production records into Linear, GitHub, application logs, or chat.
+6. Confirm completion to the requester without exposing internal identifiers.
 
 ## OAuth Redirects
 

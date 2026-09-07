@@ -5,9 +5,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, Sun, Moon } from 'lucide-react';
 import Link from 'next/link';
 import { useTheme } from '@/contexts/theme-context';
+import { useHydratedReducedMotion } from '@/hooks/use-hydrated-reduced-motion';
 
 export const Navigation: React.FC = () => {
   const { isDark, toggleTheme } = useTheme();
+  const reduceMotion = useHydratedReducedMotion();
 
   return (
     <>
@@ -78,20 +80,20 @@ export const Navigation: React.FC = () => {
                   {isDark ? (
                     <motion.div
                       key="sun"
-                      initial={{ rotate: -90, opacity: 0 }}
+                      initial={reduceMotion ? false : { rotate: -90, opacity: 0 }}
                       animate={{ rotate: 0, opacity: 1 }}
-                      exit={{ rotate: 90, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
+                      exit={{ rotate: reduceMotion ? 0 : 90, opacity: 0 }}
+                      transition={{ duration: reduceMotion ? 0 : 0.2 }}
                     >
                       <Sun size={16} />
                     </motion.div>
                   ) : (
                     <motion.div
                       key="moon"
-                      initial={{ rotate: -90, opacity: 0 }}
+                      initial={reduceMotion ? false : { rotate: -90, opacity: 0 }}
                       animate={{ rotate: 0, opacity: 1 }}
-                      exit={{ rotate: 90, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
+                      exit={{ rotate: reduceMotion ? 0 : 90, opacity: 0 }}
+                      transition={{ duration: reduceMotion ? 0 : 0.2 }}
                     >
                       <Moon size={16} />
                     </motion.div>

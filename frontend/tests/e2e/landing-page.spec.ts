@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Landing Page UI/UX Tests', () => {
   test('should load landing page successfully', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'networkidle' });
 
     // Check for page title
     await expect(page).toHaveTitle(/PrismPro/);
@@ -31,7 +31,7 @@ test.describe('Landing Page UI/UX Tests', () => {
         }),
       });
     });
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'networkidle' });
 
     const form = page.getByRole('form', { name: /from the hero/i });
     await form.getByLabel(/work email/i).fill('candidate@example.com');
@@ -55,7 +55,7 @@ test.describe('Landing Page UI/UX Tests', () => {
       requestCount += 1;
       await route.abort();
     });
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'networkidle' });
 
     const form = page.getByRole('form', { name: /from the hero/i });
     await form.getByLabel(/work email/i).fill('candidate@example.com');
@@ -68,7 +68,7 @@ test.describe('Landing Page UI/UX Tests', () => {
   test('should have responsive design on mobile', async ({ page }) => {
     // Set mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'networkidle' });
 
     // Check if page is still functional on mobile
     await expect(page.locator('body')).toBeVisible();
@@ -76,8 +76,9 @@ test.describe('Landing Page UI/UX Tests', () => {
   });
 
   test('supports keyboard theme control and reduced-motion preferences', async ({ page }) => {
-    await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
-    await page.goto('/');
+    await page.addInitScript(() => localStorage.setItem('prism-theme', 'dark'));
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/', { waitUntil: 'networkidle' });
 
     await expect(page.locator('html')).toHaveClass(/dark/);
     const themeToggle = page.getByRole('button', { name: /toggle theme/i });
@@ -92,17 +93,28 @@ test.describe('Landing Page UI/UX Tests', () => {
     await expect(audienceMarquee).toHaveCSS('animation-name', 'none');
   });
 
+  test('honors the system dark-theme preference', async ({ page, browserName }) => {
+    test.skip(
+      browserName === 'firefox',
+      'Playwright Firefox on macOS does not preserve colorScheme emulation across navigation.',
+    );
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.goto('/', { waitUntil: 'networkidle' });
+
+    await expect(page.locator('html')).toHaveClass(/dark/);
+  });
+
   test('should keep login and dashboard access closed during public preview', async ({ page }) => {
-    await page.goto('/login');
+    await page.goto('/login', { waitUntil: 'networkidle' });
     await expect(page).toHaveURL('/');
 
-    await page.goto('/dashboard');
+    await page.goto('/dashboard', { waitUntil: 'networkidle' });
     await expect(page).toHaveURL('/');
     await expect(page.getByText(/public access closed/i)).toBeVisible();
   });
 
   test('should have proper meta tags for SEO', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'networkidle' });
 
     // Check for viewport meta tag
     const viewport = await page.locator('meta[name="viewport"]').getAttribute('content');
