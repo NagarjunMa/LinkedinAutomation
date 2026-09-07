@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClientWithResponse } from '@/lib/supabase-server'
 import { getConfiguredAppOrigin } from '@/lib/url'
 import { getSafeAuthRedirectPath } from '@/lib/auth-redirect'
+import { isPublicPreviewOnly } from '@/lib/public-preview'
 
 export const runtime = 'nodejs'
 
@@ -21,6 +22,12 @@ export async function GET(request: NextRequest) {
 
   // Use configured frontend URL in production, fallback to request origin in dev
   const origin = getConfiguredAppOrigin(requestUrl.origin)
+
+  // Preview mode is deliberately checked before provider errors or code
+  // exchange so this route cannot create or refresh a public session.
+  if (isPublicPreviewOnly()) {
+    return createPrivateRedirect(origin)
+  }
 
   if (oauthError) {
     return createPrivateRedirect(`${origin}/login?error=oauth_failed`)

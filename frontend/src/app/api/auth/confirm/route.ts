@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClientWithResponse } from '@/lib/supabase-server'
 import { getSafeAuthRedirectPath } from '@/lib/auth-redirect'
 import { getConfiguredAppOrigin } from '@/lib/url'
+import { isPublicPreviewOnly } from '@/lib/public-preview'
 
 export const runtime = 'nodejs'
 
@@ -24,6 +25,12 @@ export async function GET(request: NextRequest) {
   const type = searchParams.get('type')
   const next = getSafeAuthRedirectPath(searchParams.get('next'))
   const origin = getConfiguredAppOrigin(requestUrl.origin)
+
+  // Do not verify signup, magic-link, email, or recovery tokens while the
+  // public deployment is operating as a promotional preview.
+  if (isPublicPreviewOnly()) {
+    return createPrivateRedirect(origin)
+  }
 
   if (!token_hash || !type || !OTP_TYPES.has(type as OtpType)) {
     return createPrivateRedirect(`${origin}/login?error=invalid_confirmation_link`)

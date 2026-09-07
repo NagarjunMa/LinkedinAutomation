@@ -1,6 +1,11 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+import {
+  isPublicPreviewOnly,
+  isPublicPreviewRestrictedPath,
+} from '@/lib/public-preview'
+
 const PRIVATE_RESPONSE_HEADERS = {
   'Cache-Control': 'private, no-cache, no-store, must-revalidate, max-age=0',
   Expires: '0',
@@ -24,7 +29,26 @@ function redirectWithAuthState(url: URL, authResponse: NextResponse) {
   return response
 }
 
+function redirectToPublicPreview(request: NextRequest) {
+  const response = NextResponse.redirect(new URL('/', request.url))
+  applyHeaders(response, PRIVATE_RESPONSE_HEADERS)
+  return response
+}
+
 export async function updateSession(request: NextRequest) {
+  const pathname = request.nextUrl.pathname
+  const publicPreviewOnly = isPublicPreviewOnly()
+
+  if (publicPreviewOnly && isPublicPreviewRestrictedPath(pathname)) {
+    return redirectToPublicPreview(request)
+  }
+
+  // Public marketing and legal routes do not need Supabase. Avoid refreshing
+  // old sessions or requiring auth configuration on the trailer deployment.
+  if (publicPreviewOnly) {
+    return NextResponse.next()
+  }
+
   if (
     process.env.NODE_ENV !== 'production' &&
     request.cookies.get('test-bypass-auth')?.value === '1'
@@ -72,17 +96,17 @@ export async function updateSession(request: NextRequest) {
       ? (userMetadata as Record<string, unknown>)
       : null
 
-  if (!userId && request.nextUrl.pathname.startsWith('/dashboard')) {
+  if (!userId && pathname.startsWith('/dashboard')) {
     return redirectWithAuthState(new URL('/', request.url), supabaseResponse)
   }
 
-  if (!userId && request.nextUrl.pathname === '/onboarding') {
+  if (!userId && pathname === '/onboarding') {
     return redirectWithAuthState(new URL('/', request.url), supabaseResponse)
   }
 
   if (
     userId &&
-    request.nextUrl.pathname === '/onboarding' &&
+    pathname === '/onboarding' &&
     metadata?.onboarding_completed &&
     metadata?.oauth_provider
   ) {

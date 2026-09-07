@@ -1,10 +1,10 @@
 import type { Metadata } from "next"
 import localFont from "next/font/local"
+import Script from "next/script"
 import { GeistSans } from "geist/font/sans"
 import { GeistMono } from "geist/font/mono"
 import "./globals.css"
 import { Providers } from "@/components/ui/providers"
-import { AuthProvider } from "@/contexts/auth-context"
 import { ThemeProvider } from "@/contexts/theme-context"
 import ErrorBoundary, { PageErrorFallback } from "@/components/error-boundary"
 import { getConfiguredAppOrigin } from "@/lib/url"
@@ -23,25 +23,25 @@ const appOrigin = getConfiguredAppOrigin()
 
 export const metadata: Metadata = {
   title: {
-    default: "Prism Pro — Truthful Resume Tailoring for Technical Professionals",
-    template: "%s | Prism Pro"
+    default: "PrismPro — Career Evidence Coach for Technical Candidates",
+    template: "%s | PrismPro"
   },
-  description: "Tailor your resume to real job descriptions without generic AI bullets or unsupported claims. Prism Pro helps engineers, data scientists, and PMs review, edit, and export ATS-aware resumes.",
+  description: "Uncover the work your resume and LinkedIn miss. PrismPro turns confirmed career evidence into truthful, role-aligned application and interview material.",
   keywords: [
-    "resume tailoring for software engineers",
-    "job description resume tailoring",
-    "ATS resume checker",
-    "AI resume review",
-    "truthful resume rewriting",
-    "software engineer resume review",
-    "data scientist resume review",
-    "product manager resume tailoring",
-    "resume diff editor",
-    "US India resume templates"
+    "career evidence coach",
+    "career story for software engineers",
+    "truthful AI resume help",
+    "evidence grounded resume",
+    "LinkedIn profile review for engineers",
+    "technical interview story builder",
+    "career evidence interview",
+    "role aligned resume",
+    "resume and LinkedIn consistency",
+    "technical career positioning"
   ],
-  authors: [{ name: "Prism Pro Team" }],
-  creator: "Prism Pro",
-  publisher: "Prism Pro",
+  authors: [{ name: "PrismPro Team" }],
+  creator: "PrismPro",
+  publisher: "PrismPro",
   formatDetection: {
     email: false,
     address: false,
@@ -55,14 +55,23 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_US',
     url: appOrigin,
-    title: 'Prism Pro — Truthful Resume Tailoring for Technical Professionals',
-    description: 'Upload your resume, paste a job description, review every suggested change, and export an ATS-aware PDF without unsupported claims.',
-    siteName: 'Prism Pro',
+    title: 'Make the Work Behind Your Resume Visible | PrismPro',
+    description: 'A career-evidence coach that interviews before it writes and uses only candidate-confirmed facts.',
+    siteName: 'PrismPro',
+    images: [
+      {
+        url: '/opengraph-image',
+        width: 1200,
+        height: 630,
+        alt: 'PrismPro — Make the work behind your resume visible',
+      },
+    ],
   },
   twitter: {
-    card: 'summary',
-    title: 'Prism Pro — Truthful Resume Tailoring',
-    description: 'JD-specific resume edits with diff review, truth checks, ATS-aware export, and saved company-specific versions.',
+    card: 'summary_large_image',
+    title: 'Make the Work Behind Your Resume Visible | PrismPro',
+    description: 'A career-evidence coach that interviews before it writes and uses only candidate-confirmed facts.',
+    images: ['/opengraph-image'],
   },
   robots: {
     index: true,
@@ -85,32 +94,22 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* Clash Display Font - All Titles */}
-        <link rel="preconnect" href="https://api.fontshare.com" />
-        <link href="https://api.fontshare.com/v2/css?f[]=clash-display@200,300,400,500,600,700&display=swap" rel="stylesheet" />
-
-        {/* Stardom Font - Application Name "PRISM PRO" */}
-        <link href="https://api.fontshare.com/v2/css?f[]=stardom@400,500,600,700&display=swap" rel="stylesheet" />
-        <script
+        <Script
+          id="prismpro-structured-data"
+          strategy="beforeInteractive"
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "SoftwareApplication",
-              "name": "Prism Pro",
-              "description": "Truthful resume tailoring workspace for technical professionals. Prism Pro helps users evaluate resumes, tailor them to job descriptions, review every AI-suggested change, avoid unsupported claims, and export ATS-aware PDFs.",
+              "name": "PrismPro",
+              "description": "Career-evidence coach in development for technical candidates. PrismPro is designed to uncover truthful work evidence and prepare role-aligned resume, LinkedIn, and interview material from candidate-confirmed facts.",
               "url": appOrigin,
               "applicationCategory": "BusinessApplication",
               "operatingSystem": "Web Browser",
-              "offers": {
-                "@type": "Offer",
-                "price": "0",
-                "priceCurrency": "USD",
-                "description": "Freemium — 90 free credits per month during launch"
-              },
               "author": {
                 "@type": "Organization",
-                "name": "Prism Pro"
+                "name": "PrismPro"
               }
             })
           }}
@@ -119,11 +118,7 @@ export default function RootLayout({
       <body className={`${GeistSans.variable} ${GeistMono.variable} ${humane.variable}`}>
         <ErrorBoundary fallback={PageErrorFallback}>
           <ThemeProvider>
-            <AuthProvider>
-              <Providers>
-                {children}
-              </Providers>
-            </AuthProvider>
+            <Providers>{children}</Providers>
           </ThemeProvider>
         </ErrorBoundary>
       </body>

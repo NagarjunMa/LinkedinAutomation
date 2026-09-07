@@ -355,12 +355,14 @@ class RequestValidationMiddleware(BaseHTTPMiddleware):
         app,
         max_request_size: int = 10 * 1024 * 1024,  # 10MB
         route_size_limits: Optional[Dict[str, int]] = None,
+        streamed_body_paths: Optional[List[str]] = None,
         blocked_user_agents: Optional[List[str]] = None,
         require_user_agent: bool = True
     ):
         super().__init__(app)
         self.max_request_size = max_request_size
         self.route_size_limits = route_size_limits or {}
+        self.streamed_body_paths = frozenset(streamed_body_paths or [])
         self.blocked_user_agents = blocked_user_agents or [
             "curl", "wget", "python-requests", "postman"  # Block common automation tools
         ]
@@ -408,6 +410,8 @@ class RequestValidationMiddleware(BaseHTTPMiddleware):
         if matching_prefixes:
             longest_prefix = max(matching_prefixes, key=len)
             request_limit = self.route_size_limits[longest_prefix]
+        else:
+            longest_prefix = None
 
         content_length = request.headers.get("Content-Length")
         try:
@@ -441,6 +445,38 @@ class RequestValidationMiddleware(BaseHTTPMiddleware):
                     "request_id": getattr(request.state, 'request_id', str(uuid.uuid4()))
                 }
             )
+
+        # Content-Length is optional and cannot be trusted as the only limit for
+        # a public endpoint. For explicitly small routes, consume at most the
+        # configured budget and cache the accepted body for FastAPI to replay.
+        # Large upload routes remain streaming and keep their existing behavior.
+        if longest_prefix in self.streamed_body_paths:
+            body_parts = []
+            received_size = 0
+            async for chunk in request.stream():
+                received_size += len(chunk)
+                if received_size > request_limit:
+                    client_host = request.client.host if request.client else "unknown"
+                    logger.warning(
+                        "Streamed request exceeded %s bytes from %s",
+                        request_limit,
+                        client_host,
+                    )
+                    return JSONResponse(
+                        status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+                        content={
+                            "error": "Request entity too large",
+                            "max_size": request_limit,
+                            "request_id": getattr(
+                                request.state, "request_id", str(uuid.uuid4())
+                            ),
+                        },
+                    )
+                body_parts.append(chunk)
+
+            # BaseHTTPMiddleware passes a cached request downstream. Populating
+            # its body cache lets the endpoint parse the already-validated bytes.
+            request._body = b"".join(body_parts)
 
         # Check for suspicious patterns
         is_suspicious, reason = self._is_suspicious_request(request)

@@ -1,107 +1,129 @@
 "use client";
 
 import React from 'react';
+
 import { Navigation } from '@/components/landing/Navigation';
 import { useTheme } from '@/contexts/theme-context';
 import { getConfiguredAppOrigin } from '@/lib/url';
 
 export default function PrivacyPolicy() {
-    const { isDark } = useTheme();
-    const appOrigin = getConfiguredAppOrigin();
+  const { isDark } = useTheme();
+  const appOrigin = getConfiguredAppOrigin();
 
-    return (
-        <div className={`min-h-screen ${isDark ? 'bg-[#0a0a0a] text-[#f0eff2]' : 'bg-[#f0eff2] text-[#0a0a0a]'} transition-colors duration-300 font-sans`}>
-            <Navigation />
+  return (
+    <div className={`min-h-screen ${isDark ? 'bg-[#0a0a0a] text-[#f0eff2]' : 'bg-[#f0eff2] text-[#0a0a0a]'} font-sans transition-colors duration-300`}>
+      <Navigation />
 
-            <main className="max-w-4xl mx-auto px-6 pt-32 pb-20">
-                <h1 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">PRIVACY POLICY</h1>
-                <p className="opacity-60 mb-12">Last updated February 02, 2026</p>
+      <main className="mx-auto max-w-4xl px-6 pb-20 pt-36">
+        <p className="mb-4 text-sm font-bold uppercase tracking-[0.18em] opacity-55">
+          Public preview
+        </p>
+        <h1 className="mb-4 text-4xl font-bold tracking-tight md:text-5xl">Privacy Policy</h1>
+        <p className="mb-12 opacity-60">Last updated September 6, 2026</p>
 
-                <div className="prose max-w-none prose-lg opacity-80 space-y-8">
-                    <p>
-                        This Privacy Notice for Prism Pro ("we," "us," or "our"), describes how and why we might access, collect, store, use, and/or share ("process") your personal information when you use our services ("Services"), including when you:
-                    </p>
-                    <ul className="list-disc pl-6 space-y-2">
-                        <li>Visit our website at <a href={appOrigin} className="underline hover:text-blue-500">{appOrigin}</a> or any website of ours that links to this Privacy Notice</li>
-                        <li>Use Prism Pro. Prism Pro is an AI-powered LinkedIn automation and job search management platform. Students and job seekers use Prism Pro to extract job listings, track applications, and tailor resumes.</li>
-                        <li>Engage with us in other related ways, including any marketing or events</li>
-                    </ul>
+        <div className="max-w-none space-y-10 text-base leading-7 opacity-85 md:text-lg">
+          <section className="space-y-4">
+            <h2 className="text-2xl font-bold">What this notice covers</h2>
+            <p>
+              This notice explains how PrismPro processes information submitted through the
+              private-preview waitlist at{' '}
+              <a href={appOrigin} className="underline underline-offset-4">{appOrigin}</a>.
+              Public account creation, authentication, and product access are currently closed.
+            </p>
+          </section>
 
-                    <p>
-                        Questions or concerns? Reading this Privacy Notice will help you understand your privacy rights and choices. We are responsible for making decisions about how your personal information is processed. If you do not agree with our policies and practices, please do not use our Services. If you still have any questions or concerns, please contact us at <a href="mailto:nagarjunmallesh@gmail.com" className="underline hover:text-blue-500">nagarjunmallesh@gmail.com</a>.
-                    </p>
+          <section className="space-y-4">
+            <h2 className="text-2xl font-bold">Information we collect</h2>
+            <p>The waitlist asks for:</p>
+            <ul className="list-disc space-y-2 pl-6">
+              <li>Your email address, which is required.</li>
+              <li>Your career stage, target role, and communication challenge, which are optional.</li>
+              <li>The version and time of your consent to private-preview contact.</li>
+              <li>
+                Content-free landing-page events, such as form location, validation category,
+                and scroll-depth threshold. These events do not include your email address or
+                free-text responses.
+              </li>
+            </ul>
+            <p>
+              Our server may temporarily process network and request metadata, such as an IP
+              address and request identifier, to enforce rate limits, investigate abuse, and keep
+              the service reliable. This metadata is not stored in your waitlist record.
+            </p>
+          </section>
 
-                    <hr className={`border-t ${isDark ? 'border-white/10' : 'border-black/10'} my-12`} />
+          <section className="space-y-4">
+            <h2 className="text-2xl font-bold">How we use it</h2>
+            <ul className="list-disc space-y-2 pl-6">
+              <li>To maintain the research and private-preview list.</li>
+              <li>To contact you about interviews, prototype feedback, or preview availability.</li>
+              <li>To understand which career communication problems the first experience should address.</li>
+              <li>To prevent duplicate, fraudulent, or abusive submissions.</li>
+              <li>To measure whether the public preview and waitlist flow are working.</li>
+            </ul>
+            <p>
+              Joining the list does not create an account. We do not sell waitlist information,
+              use it for advertising profiles, or use it to train generalized AI models.
+            </p>
+          </section>
 
-                    <h2 className="text-2xl font-bold mt-12 mb-6 text-xl uppercase tracking-widest">Summary of Key Points</h2>
+          <section className="space-y-4">
+            <h2 className="text-2xl font-bold">Storage, access, and retention</h2>
+            <p>
+              Waitlist entries are stored in our application database. The table is not available
+              for direct browser writes and is restricted from anonymous and authenticated
+              Supabase Data API roles. Access is limited to the server-side application and
+              authorized operators who need it for the purposes above.
+            </p>
+            <p>
+              Each waitlist entry receives a 180-day retention deadline. We review and delete
+              expired entries unless you separately join a later pilot, ask us to retain your
+              information, or applicable law requires retention.
+            </p>
+          </section>
 
-                    <div className="space-y-6 text-sm md:text-base">
-                        <p><strong>What personal information do we process?</strong> When you visit, use, or navigate our Services, we may process personal information depending on how you interact with us and the Services, the choices you make, and the products and features you use.</p>
+          <section className="space-y-4">
+            <h2 className="text-2xl font-bold">Service providers</h2>
+            <p>
+              We may use infrastructure providers to host the website, API, and database. They
+              process information for us under their service terms and only as needed to operate
+              the preview. The waitlist does not request LinkedIn credentials or access a live
+              LinkedIn account.
+            </p>
+          </section>
 
-                        <p><strong>Do we process any sensitive personal information?</strong> We do not strictly process sensitive personal information unless included in the resumes or job applications you upload or track (e.g., if you choose to include racial or ethnic origin in your documents), but we do not require it.</p>
+          <section className="space-y-4">
+            <h2 className="text-2xl font-bold">Your choices</h2>
+            <p>
+              You can ask to access, correct, export, or delete your waitlist information, or
+              withdraw contact consent, by emailing{' '}
+              <a href="mailto:support@prismpro.live" className="underline underline-offset-4">
+                support@prismpro.live
+              </a>
+              . We may need to verify that you control the submitted email address before acting
+              on the request.
+            </p>
+          </section>
 
-                        <p><strong>Do we collect any information from third parties?</strong> Yes, we collect information from LinkedIn (via our extension/automation tools) and Google (via OAuth) to provide our core services.</p>
-
-                        <p><strong>How do we process your information?</strong> We process your information to provide, improve, and administer our Services, communicate with you, for security and fraud prevention, and to comply with law. We may also process your information for other purposes with your consent.</p>
-
-                        <p><strong>How do we keep your information safe?</strong> We have adequate organizational and technical processes and procedures in place to protect your personal information.</p>
-                    </div>
-
-                    <h2 className="text-2xl font-bold mt-16 mb-6 uppercase tracking-widest">1. What Information Do We Collect?</h2>
-
-                    <h3 className="text-xl font-bold mt-8 mb-4">Personal information you disclose to us</h3>
-                    <p>The personal information that we collect depends on the context of your interactions with us and the Services, the choices you make, and the products and features you use. The personal information we collect may include the following:</p>
-                    <ul className="list-disc pl-6 space-y-2">
-                        <li>Names</li>
-                        <li>Email addresses</li>
-                        <li>Job titles</li>
-                        <li>Passwords (stored securely via authentication providers)</li>
-                        <li>Professional information including resumes, cover letters, LinkedIn profile links, employment history, education, skills, and certifications.</li>
-                        <li>Job application data: Information about jobs you save, status of applications, and notes you add.</li>
-                    </ul>
-
-                    <h3 className="text-xl font-bold mt-8 mb-4">Social Media Login Data</h3>
-                    <p>We provide you with the option to register with us using your existing social media account details, like your Google account. If you choose to register in this way, we will collect certain profile information about you from the social media provider.</p>
-
-                    <h2 className="text-2xl font-bold mt-16 mb-6 uppercase tracking-widest">2. How Do We Process Your Information?</h2>
-                    <p>We process your personal information for a variety of reasons, depending on how you interact with our Services, including:</p>
-                    <ul className="list-disc pl-6 space-y-2">
-                        <li><strong>To facilitate account creation and authentication:</strong> We process your information so you can create and log in to your account.</li>
-                        <li><strong>To deliver specific services:</strong> Identifying relevant jobs, tailoring resumes using AI, and tracking application status.</li>
-                        <li><strong>To protect our Services:</strong> We may process your information as part of our efforts to keep our Services safe and secure.</li>
-                        <li><strong>Personalize recommendations:</strong> Tailor job and candidate recommendations match results.</li>
-                    </ul>
-
-                    <h2 className="text-2xl font-bold mt-16 mb-6 uppercase tracking-widest">3. Google User Data & Restricted Scopes</h2>
-                    <div className="bg-black/5 dark:bg-white/5 p-6 rounded-lg border border-black/10 dark:border-white/10">
-                        <p className="mb-4">
-                            Prism Pro's use and transfer to any other app of information received from Google APIs will adhere to the <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-500 font-medium">Google API Services User Data Policy</a>, including the <strong>Limited Use</strong> requirements.
-                        </p>
-                        <p className="mb-2 font-medium">For optional features that require restricted scopes (e.g., Gmail integration):</p>
-                        <ul className="list-disc pl-6 space-y-2 mb-4">
-                            <li><strong>https://www.googleapis.com/auth/gmail.readonly</strong>: We request this scope <strong>only</strong> if you explicitly choose to connect your Gmail account. We use it solely to identify job application confirmation emails and status updates (e.g., "Interview Request", "Rejection") to automatically update your job application tracker dashboard. We do not read your personal emails, modify your data, or share your email content with third parties for marketing or advertising purposes.</li>
-                        </ul>
-                        <p className="text-sm opacity-80 italic">
-                            We do not use Google User Data for training generalized AI models.
-                        </p>
-                    </div>
-
-                    <h2 className="text-2xl font-bold mt-16 mb-6 uppercase tracking-widest">4. Do We Offer Artificial Intelligence-Based Products?</h2>
-                    <p>As part of our Services, we offer products, features, or tools powered by artificial intelligence, machine learning, or similar technologies (collectively, "AI Products").</p>
-                    <p className="mt-4">
-                        We provide the AI Products through third-party service providers, potentially including OpenAI and others. Your input (such as resume content) and output (such as tailored suggestions) will be shared with and processed by these AI Service Providers found to enable your use of our AI Products. We do not use your personal data to train public AI models without your explicit consent.
-                    </p>
-
-                    <h2 className="text-2xl font-bold mt-16 mb-6 uppercase tracking-widest">5. How Can You Contact Us?</h2>
-                    <p>If you have questions or comments about this notice, you may email us at <a href="mailto:nagarjunmallesh@gmail.com" className="underline hover:text-blue-500">nagarjunmallesh@gmail.com</a>.</p>
-                </div>
-            </main>
-
-            <footer className={`py-12 px-6 border-t ${isDark ? 'border-[#f0eff2]/5' : 'border-[#3b3b3b]/5'}`}>
-                <div className="max-w-7xl mx-auto text-center opacity-40 text-sm">
-                    <p>&copy; 2026 Prism Pro. All rights reserved.</p>
-                </div>
-            </footer>
+          <section className="space-y-4">
+            <h2 className="text-2xl font-bold">Updates and contact</h2>
+            <p>
+              We may revise this notice as the preview changes. The date above identifies the
+              current version. Questions can be sent to{' '}
+              <a href="mailto:support@prismpro.live" className="underline underline-offset-4">
+                support@prismpro.live
+              </a>
+              .
+            </p>
+          </section>
         </div>
-    );
+      </main>
+
+      <footer className={`border-t px-6 py-12 ${isDark ? 'border-[#f0eff2]/5' : 'border-[#3b3b3b]/5'}`}>
+        <div className="mx-auto max-w-7xl text-center text-sm opacity-40">
+          <p>&copy; 2026 PrismPro. All rights reserved.</p>
+        </div>
+      </footer>
+    </div>
+  );
 }

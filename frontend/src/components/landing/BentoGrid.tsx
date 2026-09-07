@@ -33,45 +33,46 @@ const frauncesStyle = (
 const CARDS = [
   {
     num: '01',
-    title: 'ATS Raw-Text Simulator',
-    desc: 'See the resume text an ATS-style parser can actually read before formatting hides important evidence.',
+    title: 'Career Evidence Coach',
+    desc: 'A chaptered conversation that asks one useful question at a time, based on your career stage and the evidence still missing.',
     span: 'md:col-span-2',
-    detail: 'Name: John Doe  |  [TABLE STRIPPED]  |  Skills: [COLUMN LOST]',
+    detail: 'What part of the service did you personally design, and what constraint shaped that decision?',
     mono: true,
   },
   {
     num: '02',
-    title: 'Score Explanation Panel',
-    desc: 'Read why the score changed, which issues matter before applying, and what action should come first.',
+    title: 'Evidence Notebook',
+    desc: 'Review each proposed claim, its source, support level, and privacy state before it can be used.',
     span: 'md:col-span-1',
-    bar: 82,
+    status: 'CONFIRM · EDIT · PRIVATE',
   },
   {
     num: '03',
-    title: 'JD Fit Diff',
-    desc: 'Compare each suggested pointer against the job description, then accept, edit, regenerate, or reject it.',
+    title: 'Coverage Report',
+    desc: 'See communication, evidence, experience, knowledge, and positioning gaps as separate findings—not one magic score.',
     span: 'md:col-span-1',
+    pills: ['Communication', 'Evidence', 'Experience', 'Knowledge', 'Positioning'],
   },
   {
     num: '04',
-    title: 'Application Resume Library',
-    desc: 'Save company-specific resume JSON with source JD, role, accepted changes, and interview review context.',
+    title: 'Target Role Views',
+    desc: 'Project one confirmed career history toward different roles without deleting breadth or creating contradictions.',
     span: 'md:col-span-2',
-    pills: ['Company', 'Role', 'Source JD', 'Accepted Changes', 'Resume JSON', 'PDF Export'],
+    pills: ['Role requirements', 'Strongest proof', 'Open questions', 'Level alignment'],
   },
   {
     num: '05',
-    title: 'Truth-Check Signals',
-    desc: 'Unsupported numbers and JD-only skills are blocked or flagged before they become part of your resume.',
+    title: 'LinkedIn PDF Review',
+    desc: 'Compare a user-uploaded profile snapshot with confirmed evidence and the active target—without live account access.',
     span: 'md:col-span-1',
-    tag: 'PROOF-AWARE',
+    tag: 'NO SCRAPING',
   },
   {
     num: '06',
-    title: 'Transparent Credit System',
-    desc: '90 free credits every month — enough for about 30 JD tailor-and-export workflows during the freemium launch.',
+    title: 'Grounded Career Artifacts',
+    desc: 'Prepare resume changes, LinkedIn copy, interview stories, and a hiring-manager brief using confirmed non-private evidence only.',
     span: 'md:col-span-1',
-    creditBar: 60,
+    status: 'EVIDENCE-LINKED',
   },
 ];
 
@@ -95,19 +96,30 @@ export const BentoGrid: React.FC<BentoGridProps> = ({ isDark: _isDark }) => {
       };
 
   return (
-    <motion.div
-      ref={ref}
-      variants={staggerContainer}
-      initial="hidden"
-      animate={isInView ? 'visible' : 'hidden'}
-      className="grid grid-cols-1 md:grid-cols-3 gap-0 border-l border-t border-foreground/10 auto-rows-[260px]"
-    >
-      {CARDS.map((card) => (
-        <motion.div
-          key={card.num}
-          variants={fadeInUp}
-          className={`${card.span} border-r border-b border-foreground/10 p-8 flex flex-col justify-between group hover:bg-foreground/[0.025] transition-colors duration-200`}
+    <figure ref={ref}>
+      <div className="mb-4 flex items-center justify-between gap-4 border-y border-foreground/10 py-3">
+        <span
+          className="uppercase text-foreground/55"
+          style={humaneStyle(10, 700, '0.18em')}
         >
+          Planned concept preview
+        </span>
+        <span className="text-foreground/35" style={humaneStyle(10, 500, '0.08em')}>
+          NOT A PRODUCTION SCREENSHOT
+        </span>
+      </div>
+      <motion.div
+        variants={staggerContainer}
+        initial="hidden"
+        animate={isInView ? 'visible' : 'hidden'}
+        className="grid auto-rows-[260px] grid-cols-1 gap-0 border-l border-t border-foreground/10 md:grid-cols-3"
+      >
+        {CARDS.map((card) => (
+          <motion.div
+            key={card.num}
+            variants={fadeInUp}
+            className={`${card.span} group flex flex-col justify-between border-b border-r border-foreground/10 p-8 transition-colors duration-200 hover:bg-foreground/[0.025]`}
+          >
           {/* Card header */}
           <div>
             <div className="flex items-start justify-between mb-5">
@@ -153,23 +165,6 @@ export const BentoGrid: React.FC<BentoGridProps> = ({ isDark: _isDark }) => {
               </div>
             )}
 
-            {card.bar !== undefined && (
-              <div className="space-y-2">
-                <div className="h-[2px] w-full bg-foreground/10 overflow-hidden">
-                  <div
-                    className="h-full bg-foreground/50 transition-all duration-700"
-                    style={{ width: `${card.bar}%` }}
-                  />
-                </div>
-                <span
-                  className="text-foreground/30 uppercase"
-                  style={humaneStyle(10, 500, '0.15em')}
-                >
-                  READINESS SCORE — {card.bar}%
-                </span>
-              </div>
-            )}
-
             {card.pills && (
               <div className="flex gap-2 flex-wrap">
                 {card.pills.map((label) => (
@@ -184,25 +179,24 @@ export const BentoGrid: React.FC<BentoGridProps> = ({ isDark: _isDark }) => {
               </div>
             )}
 
-            {card.creditBar !== undefined && (
-              <div className="space-y-2">
-                <div className="h-[2px] w-full bg-foreground/10 overflow-hidden">
-                  <div
-                    className="h-full bg-foreground/40 transition-all duration-700"
-                    style={{ width: `${card.creditBar}%` }}
-                  />
-                </div>
+            {card.status && (
+              <div className="flex items-center gap-3">
+                <span className="h-2 w-2 rounded-full bg-foreground/35" />
                 <span
                   className="text-foreground/30 uppercase"
                   style={humaneStyle(10, 500, '0.15em')}
                 >
-                  12 / 20 CREDITS USED
+                  {card.status}
                 </span>
               </div>
             )}
           </div>
-        </motion.div>
-      ))}
-    </motion.div>
+          </motion.div>
+        ))}
+      </motion.div>
+      <figcaption className="mt-4 text-sm leading-relaxed text-foreground/50">
+        Planned experience shown for illustration. Public product access is not yet available.
+      </figcaption>
+    </figure>
   );
 };

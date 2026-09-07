@@ -110,6 +110,16 @@ security_config = {
         'requests_per_hour': 2000 if is_production else 10000,
         'burst_size': 20 if is_production else 1000,
         'route_limits': {
+            '/api/v1/waitlist': {
+                'requests_per_minute': 5 if is_production else 1000,
+                'requests_per_hour': 25 if is_production else 10000,
+                'burst_size': 3 if is_production else 1000,
+            },
+            '/api/v1/public-preview/events': {
+                'requests_per_minute': 30 if is_production else 1000,
+                'requests_per_hour': 200 if is_production else 10000,
+                'burst_size': 10 if is_production else 1000,
+            },
             '/api/v1/resumes/upload': {
                 'requests_per_minute': 6 if is_production else 1000,
                 'requests_per_hour': 60 if is_production else 10000,
@@ -155,8 +165,14 @@ security_config = {
         # Allow multipart framing while rejecting declared oversized resume
         # uploads before Starlette parses the request body.
         'route_size_limits': {
+            '/api/v1/waitlist': 8 * 1024,
+            '/api/v1/public-preview/events': 1024,
             '/api/v1/resumes/upload': settings.MAX_UPLOAD_SIZE + 1024 * 1024,
         },
+        'streamed_body_paths': [
+            '/api/v1/waitlist',
+            '/api/v1/public-preview/events',
+        ],
         'blocked_user_agents': ['sqlmap', 'nikto', 'nmap'] if is_production else [],
         'require_user_agent': is_production
     },
@@ -180,6 +196,7 @@ security_config = {
 
 # Add basic security headers middleware
 from starlette.middleware.base import BaseHTTPMiddleware
+from app.middleware.public_preview import PublicPreviewAccessMiddleware
 from app.middleware.security import RateLimitMiddleware, RequestValidationMiddleware
 
 class BasicSecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -203,6 +220,14 @@ app.add_middleware(BasicSecurityHeadersMiddleware)
 # middlewares do not consume request bodies, so uploads remain safe.
 app.add_middleware(RequestValidationMiddleware, **security_config["validation"])
 app.add_middleware(RateLimitMiddleware, **security_config["rate_limit"])
+app.add_middleware(
+    PublicPreviewAccessMiddleware,
+    enabled=settings.PRISM_PRO_PUBLIC_PREVIEW_ONLY,
+    allowed_paths={
+        "/api/v1/waitlist",
+        "/api/v1/public-preview/events",
+    },
+)
 
 # Include API router
 app.include_router(api_router, prefix="/api/v1")
@@ -227,12 +252,15 @@ async def health_check():
         logger.info("Health check successful", extra={"metrics": health_metrics})
         return JSONResponse(content=health_metrics, status_code=200)
 
-    except Exception as e:
-        logger.error(f"Health check failed: {str(e)}", exc_info=True)
+    except Exception as exc:
+        logger.error(
+            "Health check failed",
+            extra={"error_type": type(exc).__name__},
+        )
         return JSONResponse(
             content={
                 "status": "unhealthy",
-                "error": str(e),
+                "error": "Health check failed",
                 "version": "1.0.0"
             },
             status_code=503
