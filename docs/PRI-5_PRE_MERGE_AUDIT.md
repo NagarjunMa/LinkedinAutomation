@@ -6,7 +6,7 @@
 
 **Branch:** `codex/pri-5-publishing-trailer`
 
-**Audited branch commit:** `a148a6f35a8adea68b9c2b974ca7c124f7da09bd`
+**Audited code commit:** `de54bf60064286127933b02bc6d6aac6321fe678`
 
 **Merge base (`origin/main`):** `1270e849e5021e50d5cf170389ed25b4c313e2cf`
 
@@ -14,7 +14,7 @@
 
 ## Decision
 
-**Do not mark PRI-5 complete or merge for production release yet.** The complete 66-file merge-base diff was reviewed, all locally executable code checks pass after the corrections below, and no unresolved material code finding remains. Production-only acceptance criteria are still unverified and must be completed before release approval.
+**Do not mark PRI-5 complete or merge for production release yet.** The complete 69-file merge-base diff was reviewed, all locally executable code checks pass after the corrections below, and no unresolved material code finding remains. Production-only acceptance criteria are still unverified, and the currently deployed public services are not running this branch, so release approval remains blocked.
 
 Critical risk is appropriate because this change introduces an unauthenticated, internet-facing PII intake path, changes authentication and product-route availability, adds a database migration and RLS boundary, and depends on coordinated production configuration.
 
@@ -53,6 +53,7 @@ Critical risk is appropriate because this change introduces an unauthenticated, 
 4. **Fail-closed production configuration:** Added exact-origin validation plus single-replica/single-worker enforcement for production preview deployments.
 5. **Retention automation and evidence:** Added an idempotent `pg_cron` migration and a verifier that checks the schedule and successful execution history.
 6. **Cross-browser hydration:** Kept server-rendered landing content stable until client hydration, delayed motion-preference adaptation until hydration, and prevented local HTTP WebKit runs from being upgraded to HTTPS.
+7. **Backend preview boundary and health privacy:** Replaced product-path blocking with an explicit public-preview allow-list, blocking root, API documentation, OpenAPI, metrics, and all other backend surfaces. Production health responses are now minimal and non-cacheable, and the non-production dashboard smoke asserts that no hydration error occurs.
 
 ## Risk Review
 
@@ -66,15 +67,16 @@ Critical risk is appropriate because this change introduces an unauthenticated, 
 | Performance / memory | Landing assets build statically; request bodies and limiter state are bounded. No unbounded per-request payload or PII cache was found. |
 | Cost | No paid external service or uncontrolled background workload was introduced. Retention cleanup is a small scheduled database task. |
 | Compatibility | Node 22 production build, Chromium, Firefox, WebKit, Mobile Chrome, Mobile Safari, PostgreSQL migration rehearsal, and existing backend/frontend suites pass. Firefox system-color emulation is skipped because this local Playwright/macOS combination resets the emulated preference across navigation; manual dark-theme coverage passes in Firefox. |
-| Regression | Product data, internal development surfaces, webhooks, and health behavior were reviewed against the allow-list and covered by backend/frontend regression suites. The non-production authenticated-dashboard bypass logs a pre-existing hydration warning during its smoke test; the test passes, and public-preview middleware prevents that route from rendering in the release mode audited here. |
+| Regression | Product data, internal development surfaces, webhooks, documentation, OpenAPI, metrics, and health behavior were reviewed against the allow-list and covered by backend/frontend regression suites. The authenticated-dashboard hydration warning was corrected and the smoke test now fails if a page-level hydration error recurs. |
 
 ## Verification Evidence
 
 ### Passed
 
 - `git diff --check`
-- Complete diff review: 66 files, 3,797 additions, 1,200 deletions against the merge base
-- Backend: `pytest` from a clean worktree at the audited commit — 313 passed, 12 skipped, 86.63% coverage
+- Complete diff review: 69 files, 3,893 additions, 1,219 deletions against the merge base, including this audit record
+- Repository-native `make verify-ci` from a clean worktree at the audited commit — passed
+- Backend: `pytest` from that clean worktree — 314 passed, 12 skipped, 86.70% coverage
 - Backend: Ruff — passed
 - Backend production dependencies: `pip-audit -r requirements.lock` — no known vulnerabilities
 - Frontend: ESLint — passed with zero warnings
@@ -83,10 +85,17 @@ Critical risk is appropriate because this change introduces an unauthenticated, 
 - Frontend production dependencies: `npm audit --omit=dev --audit-level=high` — zero vulnerabilities
 - Frontend: Next.js 16.3 production build under repository CI runtime Node 22 — passed; 25 routes generated
 - End-to-end public-preview landing page: Chromium, Firefox, WebKit, Mobile Chrome, and Mobile Safari — 39 passed, 1 Firefox environment-emulation test skipped
-- End-to-end non-preview regression smoke: Chromium — 3 passed
+- End-to-end non-preview regression smoke: Chromium — 3 passed, including an assertion that no hydration error is emitted
 - Accessibility: axe light/dark/reduced-motion audit — zero violations
 - PostgreSQL: clean full upgrade through `2026_09_07_schedule_waitlist_retention`, RLS/role privilege assertions, downgrade to the prior revision, and re-upgrade — passed
-- Release verifier: unit coverage for origin normalization and Supabase Auth configuration; missing-input execution fails cleanly without a traceback
+- Release verifier: unit coverage for origin normalization and Supabase Auth configuration; deployed checks cover health cache policy and denial of root, docs, Redoc, OpenAPI, and metrics; missing-input execution fails cleanly without a traceback
+
+### Live deployment probe — 2026-09-07 UTC
+
+- `https://www.prismpro.live/` returns an older application build, and `/login` still returns `200`; the PRI-5 public-preview route lockdown is not deployed.
+- `https://api.prismpro.live/health` returns `503` and the existing deployment exposes an internal database connection failure. The audited branch masks this detail and returns a minimal non-cacheable production response.
+- `https://api.prismpro.live/docs` returns `200`; the audited branch blocks documentation and all non-allow-listed backend surfaces while public preview is enabled.
+- The current public deployment must not be treated as the verified PRI-5 release or used to collect production waitlist data. Redeployment and both verifier modes remain mandatory.
 
 ### Skipped or blocked
 
@@ -95,8 +104,8 @@ Critical risk is appropriate because this change introduces an unauthenticated, 
 - The Firefox system-color-preference emulation case was skipped because the local Playwright Firefox/macOS runtime resets `colorScheme` across navigation. Firefox dark-theme interaction and the remainder of the five-project matrix passed.
 - TruffleHog is CI-only in this repository and was not installed locally. Manual diff inspection found no committed credential, and the configured CI secret-scan gate must pass before merge.
 - The available Supabase CLI session exposes unrelated projects and this repository is not linked, so the production Auth setting, migration, scheduled-job history, and write smoke were not changed or asserted from this environment.
-- GitHub CLI authentication is invalid, so hosted CI and its secret-scan result could not be triggered or read from this environment.
-- Production configuration, ingress behavior, replica count, support deletion workflow, and deployed smoke checks cannot be completed from the local audit environment.
+- GitHub CLI authentication is invalid. A signed-in browser session can access the repository, but no pull request exists for this branch, so PR-triggered hosted CI and its secret-scan result have not run.
+- The available signed-in Supabase organization contains only unrelated projects, and the available Railway workspace contains no PrismPro service. No unrelated project was modified. Access to the PrismPro production Supabase and Railway workspaces is required to complete production configuration, ingress behavior, replica count, support deletion workflow, and deployed smoke checks.
 
 ## Rollout
 
