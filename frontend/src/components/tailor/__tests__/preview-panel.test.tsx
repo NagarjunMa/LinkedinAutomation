@@ -1,38 +1,34 @@
 /**
  * Task 14: PreviewPanel component tests
  *
- * 4 tests:
- * 1. iframe renders provided HTML (srcDoc)
- * 2. fallback message shown when previewHtml is empty
- * 3. filename input is editable
- * 4. Download button is enabled when not pending
+ * Covers preview rendering, download inputs, and recoverable export failures.
  *
  * useExportPdf is mocked so no network calls occur.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 
-// Mock useExportPdf so tests never hit the network
+const { mutateAsync, toast, mutation } = vi.hoisted(() => ({
+  mutateAsync: vi.fn(), toast: vi.fn(), mutation: { isPending: false },
+}));
+
 vi.mock('@/hooks/use-export-pdf', () => ({
   useExportPdf: () => ({
-    mutateAsync: vi.fn().mockResolvedValue({
-      export_id: 'test-export-id',
-      signed_url: 'https://example.com/file.pdf',
-      filename: 'test.pdf',
-    }),
-    isPending: false,
+    mutateAsync,
+    isPending: mutation.isPending,
   }),
 }));
 
 // Mock useToast to avoid Radix portal issues in jsdom
 vi.mock('@/components/ui/use-toast', () => ({
-  useToast: () => ({ toast: vi.fn() }),
+  useToast: () => ({ toast }),
 }));
 
 import { PreviewPanel } from '../preview-panel';
+import { APIError } from '@/app/lib/api/config';
 
 function makeClient() {
   return new QueryClient({
@@ -59,6 +55,8 @@ function renderPanel(overrides: Partial<React.ComponentProps<typeof PreviewPanel
 describe('PreviewPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mutateAsync.mockReset().mockResolvedValue({});
+    mutation.isPending = false;
   });
 
   it('renders an iframe with srcDoc when previewHtml is provided', () => {
@@ -107,5 +105,51 @@ describe('PreviewPanel', () => {
     const button = screen.getByRole('button', { name: /Download PDF/i });
     expect(button).toBeInTheDocument();
     expect(button).not.toBeDisabled();
+  });
+
+  it('inserts page styles into an existing head without removing preview content', () => {
+    renderPanel({ previewHtml: '<html><head><title>Resume</title></head><body>Experience</body></html>' });
+    const iframe = screen.getByTitle('Resume preview');
+    expect(iframe.getAttribute('srcdoc')).toContain('</style></head><body>Experience</body>');
+    expect(iframe.getAttribute('srcdoc')).toContain('<title>Resume</title>');
+    expect(iframe).toHaveAttribute('sandbox', 'allow-same-origin');
+  });
+
+  it('downloads the selected version/template with the edited filename', async () => {
+    renderPanel({ suggestedTemplate: 'in-swe' });
+    fireEvent.change(screen.getByPlaceholderText('firstname-lastname-company.pdf'), {
+      target: { value: 'my-resume.pdf' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Download PDF' }));
+    await waitFor(() => expect(toast).toHaveBeenCalledWith({ title: 'Downloaded', description: 'my-resume.pdf' }));
+    expect(mutateAsync).toHaveBeenCalledExactlyOnceWith({
+      resume_version_id: 'v-001', template_id: 'in-swe', filename: 'my-resume.pdf',
+    });
+  });
+
+  it('prevents repeat downloads while generating', () => {
+    mutation.isPending = true;
+    renderPanel();
+    const button = screen.getByRole('button', { name: 'Generating PDF…' });
+    expect(button).toBeDisabled();
+    fireEvent.click(button);
+    expect(mutateAsync).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [new APIError('Payment required', 402), 'Need more credits', 'Credits refresh monthly during the freemium launch.'],
+    [new Error('Insufficient CREDITS'), 'Need more credits', 'Credits refresh monthly during the freemium launch.'],
+    [new APIError('Preview unavailable', 503), 'Export failed', 'Preview unavailable'],
+    [new Error('Network unavailable'), 'Export failed', 'Network unavailable'],
+    [null, 'Export failed', 'Export failed'],
+  ])('shows an actionable export failure and permits retry: %s', async (error, title, description) => {
+    mutateAsync.mockRejectedValueOnce(error);
+    renderPanel();
+    fireEvent.click(screen.getByRole('button', { name: 'Download PDF' }));
+    await waitFor(() => expect(toast).toHaveBeenCalledExactlyOnceWith({ title, description, variant: 'destructive' }));
+    expect(screen.getByTitle('Resume preview')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Download PDF' }));
+    await waitFor(() => expect(toast).toHaveBeenCalledWith({ title: 'Downloaded', description: 'john-doe-acme.pdf' }));
+    expect(mutateAsync).toHaveBeenCalledTimes(2);
   });
 });

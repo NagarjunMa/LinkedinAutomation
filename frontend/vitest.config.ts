@@ -13,6 +13,8 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'cobertura'],
+      // Keep the artifact path consumed by CI across Vitest major upgrades.
+      reportsDirectory: './coverage',
       include: [
         'src/hooks/use-tailor-apply.ts',
         'src/hooks/use-export-pdf.ts',
