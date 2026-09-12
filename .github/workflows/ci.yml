@@ -123,6 +123,19 @@ jobs:
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
 
+      - name: Set up Python for offline API contracts
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.lock
+
+      - name: Install contract export dependencies
+        run: python -m pip install -r ../backend/requirements.lock ruff==0.5.0
+
+      - name: Verify API contract tooling and drift
+        run: make -C .. verify-contracts
+
       - name: Lint
         run: npm run lint
 
