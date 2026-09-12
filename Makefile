@@ -35,7 +35,21 @@ verify-ci: verify-backend-ci verify-frontend-ci ## Run both local CI suites exce
 
 verify-backend-ci: lint-backend test-backend audit-backend ## Run backend lint, coverage tests, and dependency audit
 
-verify-frontend-ci: lint-frontend typecheck build test-frontend audit-frontend ## Run frontend lint, types, build, tests, and audit
+verify-frontend-ci: verify-contracts lint-frontend typecheck build test-frontend audit-frontend ## Run contracts, frontend lint, types, build, tests, and audit
+
+.PHONY: contracts-generate contracts-check verify-contracts
+
+contracts-generate: ## Regenerate declared FastAPI/OpenAPI and TypeScript transport contracts offline
+	cd $(FRONTEND_DIR) && PYTHON=$(PYTHON) npm run contracts:generate
+
+contracts-check: ## Fail on missing or stale generated contracts without rewriting them
+	cd $(FRONTEND_DIR) && PYTHON=$(PYTHON) npm run contracts:check
+
+verify-contracts: ## Test contract tooling and verify committed artifacts (requires Python + Node)
+	cd $(BACKEND_DIR) && $(PYTHON) -m ruff check scripts/export_openapi.py tests/scripts/test_export_openapi.py --select=E,F --ignore=E501
+	cd $(FRONTEND_DIR) && npx eslint scripts/api-contracts.mjs scripts/api-contracts.test.mjs --max-warnings=0
+	cd $(FRONTEND_DIR) && npm run test:contracts
+	$(MAKE) contracts-check
 
 dev: ## Run backend + frontend together (Ctrl+C stops both)
 	@echo "→ backend  http://localhost:$(BACKEND_PORT)"
