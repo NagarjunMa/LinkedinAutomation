@@ -257,6 +257,104 @@
         "title": "BulletDiff",
         "type": "object"
       },
+      "BulletFitSignal": {
+        "properties": {
+          "bullet_id": {
+            "title": "Bullet Id",
+            "type": "string"
+          },
+          "evidence_level": {
+            "enum": [
+              "high",
+              "medium",
+              "low"
+            ],
+            "title": "Evidence Level",
+            "type": "string"
+          },
+          "matched_jd_phrases": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Matched Jd Phrases",
+            "type": "array"
+          },
+          "matched_requirements": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Matched Requirements",
+            "type": "array"
+          },
+          "noise_flags": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Noise Flags",
+            "type": "array"
+          },
+          "page_cost": {
+            "default": "low",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ],
+            "title": "Page Cost",
+            "type": "string"
+          },
+          "rationale": {
+            "title": "Rationale",
+            "type": "string"
+          },
+          "recommendation": {
+            "enum": [
+              "keep",
+              "rewrite",
+              "consider_trim"
+            ],
+            "title": "Recommendation",
+            "type": "string"
+          },
+          "relevance_score": {
+            "maximum": 100,
+            "minimum": 0,
+            "title": "Relevance Score",
+            "type": "integer"
+          },
+          "source_resume_evidence": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Source Resume Evidence",
+            "type": "array"
+          },
+          "truth_risk": {
+            "default": "low",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ],
+            "title": "Truth Risk",
+            "type": "string"
+          },
+          "why_stronger": {
+            "default": "",
+            "title": "Why Stronger",
+            "type": "string"
+          }
+        },
+        "required": [
+          "bullet_id",
+          "relevance_score",
+          "evidence_level",
+          "recommendation",
+          "rationale"
+        ],
+        "title": "BulletFitSignal",
+        "type": "object"
+      },
       "BulletFlag": {
         "properties": {
           "bullet_id": {
@@ -531,6 +629,54 @@
         "title": "Contact",
         "type": "object"
       },
+      "ContentBudget": {
+        "properties": {
+          "current_bullet_count": {
+            "minimum": 0,
+            "title": "Current Bullet Count",
+            "type": "integer"
+          },
+          "guidance": {
+            "title": "Guidance",
+            "type": "string"
+          },
+          "page_fit_risk": {
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ],
+            "title": "Page Fit Risk",
+            "type": "string"
+          },
+          "recommended_bullet_budget": {
+            "minimum": 1,
+            "title": "Recommended Bullet Budget",
+            "type": "integer"
+          },
+          "source_page_estimate": {
+            "minimum": 1,
+            "title": "Source Page Estimate",
+            "type": "number"
+          },
+          "target_max_pages": {
+            "maximum": 2,
+            "minimum": 1,
+            "title": "Target Max Pages",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "source_page_estimate",
+          "target_max_pages",
+          "recommended_bullet_budget",
+          "current_bullet_count",
+          "page_fit_risk",
+          "guidance"
+        ],
+        "title": "ContentBudget",
+        "type": "object"
+      },
       "Country": {
         "enum": [
           "US",
@@ -538,6 +684,19 @@
         ],
         "title": "Country",
         "type": "string"
+      },
+      "CreditBalanceResponse": {
+        "properties": {
+          "balance": {
+            "title": "Balance",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "balance"
+        ],
+        "title": "CreditBalanceResponse",
+        "type": "object"
       },
       "DailyJobStats": {
         "properties": {
@@ -560,6 +719,105 @@
           "jobs_applied"
         ],
         "title": "DailyJobStats",
+        "type": "object"
+      },
+      "DiffPlan": {
+        "properties": {
+          "bullet_fit": {
+            "items": {
+              "$ref": "#/components/schemas/BulletFitSignal"
+            },
+            "title": "Bullet Fit",
+            "type": "array"
+          },
+          "bullets": {
+            "items": {
+              "$ref": "#/components/schemas/BulletDiff"
+            },
+            "title": "Bullets",
+            "type": "array"
+          },
+          "content_budget": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContentBudget"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "good_to_have_coverage_found": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Good To Have Coverage Found",
+            "type": "array"
+          },
+          "good_to_have_coverage_missing": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Good To Have Coverage Missing",
+            "type": "array"
+          },
+          "match_score": {
+            "maximum": 100,
+            "minimum": 0,
+            "title": "Match Score",
+            "type": "integer"
+          },
+          "must_have_coverage_found": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Must Have Coverage Found",
+            "type": "array"
+          },
+          "must_have_coverage_missing": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Must Have Coverage Missing",
+            "type": "array"
+          },
+          "skills_reorder": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SkillsReorder"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "suggested_additions": {
+            "items": {
+              "$ref": "#/components/schemas/SuggestedAddition"
+            },
+            "title": "Suggested Additions",
+            "type": "array"
+          },
+          "summary_rewrite": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SummaryRewrite"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "match_score",
+          "must_have_coverage_found",
+          "must_have_coverage_missing",
+          "good_to_have_coverage_found",
+          "good_to_have_coverage_missing",
+          "bullets"
+        ],
+        "title": "DiffPlan",
         "type": "object"
       },
       "EducationEntry": {
@@ -997,6 +1255,119 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "JDAnalysisResponse": {
+        "properties": {
+          "diff_plan": {
+            "$ref": "#/components/schemas/DiffPlan"
+          },
+          "extracted_requirements": {
+            "$ref": "#/components/schemas/JDExtraction"
+          },
+          "jd_evaluation_id": {
+            "title": "Jd Evaluation Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "jd_evaluation_id",
+          "extracted_requirements",
+          "diff_plan"
+        ],
+        "title": "JDAnalysisResponse",
+        "type": "object"
+      },
+      "JDExtraction": {
+        "properties": {
+          "company_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Name"
+          },
+          "country_hint": {
+            "enum": [
+              "US",
+              "IN",
+              "other"
+            ],
+            "title": "Country Hint",
+            "type": "string"
+          },
+          "good_to_have": {
+            "items": {
+              "$ref": "#/components/schemas/Requirement"
+            },
+            "title": "Good To Have",
+            "type": "array"
+          },
+          "job_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Title"
+          },
+          "must_have": {
+            "items": {
+              "$ref": "#/components/schemas/Requirement"
+            },
+            "title": "Must Have",
+            "type": "array"
+          },
+          "primary_role_category": {
+            "enum": [
+              "SWE",
+              "DS",
+              "PM",
+              "other"
+            ],
+            "title": "Primary Role Category",
+            "type": "string"
+          },
+          "red_flags": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Red Flags",
+            "type": "array"
+          },
+          "seniority": {
+            "enum": [
+              "junior",
+              "mid",
+              "senior",
+              "staff"
+            ],
+            "title": "Seniority",
+            "type": "string"
+          },
+          "soft_skills": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Soft Skills",
+            "type": "array"
+          }
+        },
+        "required": [
+          "must_have",
+          "good_to_have",
+          "seniority",
+          "primary_role_category",
+          "country_hint"
+        ],
+        "title": "JDExtraction",
         "type": "object"
       },
       "JDProgressRow": {
@@ -2119,6 +2490,34 @@
         "title": "PublicPreviewValidationCategory",
         "type": "string"
       },
+      "Requirement": {
+        "properties": {
+          "evidence_from_jd": {
+            "title": "Evidence From Jd",
+            "type": "string"
+          },
+          "skill": {
+            "title": "Skill",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "technical",
+              "experience",
+              "credential"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "skill",
+          "evidence_from_jd",
+          "type"
+        ],
+        "title": "Requirement",
+        "type": "object"
+      },
       "ResumeDetailResponse": {
         "properties": {
           "evaluation": {
@@ -2780,6 +3179,79 @@
           }
         },
         "title": "Skills",
+        "type": "object"
+      },
+      "SkillsReorder": {
+        "properties": {
+          "new_order": {
+            "items": {
+              "type": "string"
+            },
+            "title": "New Order",
+            "type": "array"
+          },
+          "rationale": {
+            "title": "Rationale",
+            "type": "string"
+          }
+        },
+        "required": [
+          "new_order",
+          "rationale"
+        ],
+        "title": "SkillsReorder",
+        "type": "object"
+      },
+      "SuggestedAddition": {
+        "properties": {
+          "item": {
+            "title": "Item",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "section": {
+            "title": "Section",
+            "type": "string"
+          }
+        },
+        "required": [
+          "section",
+          "item",
+          "reason"
+        ],
+        "title": "SuggestedAddition",
+        "type": "object"
+      },
+      "SummaryRewrite": {
+        "properties": {
+          "new": {
+            "title": "New",
+            "type": "string"
+          },
+          "old": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Old"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "new",
+          "reason"
+        ],
+        "title": "SummaryRewrite",
         "type": "object"
       },
       "TailoredDownloadRequest": {
@@ -4281,7 +4753,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/CreditBalanceResponse"
+                }
               }
             },
             "description": "Successful Response"
@@ -4408,11 +4882,28 @@
         "responses": {
           "200": {
             "content": {
-              "application/json": {
-                "schema": {}
+              "application/pdf": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
               }
             },
-            "description": "Successful Response"
+            "description": "Successful Response",
+            "headers": {
+              "Cache-Control": {
+                "description": "private, no-store",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Content-Disposition": {
+                "description": "PDF attachment filename",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           },
           "422": {
             "content": {
@@ -4453,7 +4944,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/JDAnalysisResponse"
+                }
               }
             },
             "description": "Successful Response"

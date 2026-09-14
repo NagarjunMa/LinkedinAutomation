@@ -134,3 +134,30 @@ Primary references (checked 2026-09-12):
 
 - [FastAPI OpenAPI generation](https://fastapi.tiangolo.com/how-to/extending-openapi/)
 - [openapi-typescript Node API](https://openapi-ts.dev/node)
+
+## JD/export/credit response prerequisite (PRI-62)
+
+JD analysis now declares `JDAnalysisResponse`, reusing the existing `JDExtraction`
+and `DiffPlan` models. Credit balance declares `CreditBalanceResponse`; it retains
+the ledger's integer result without clamping or changing debit/refund behavior.
+PDF download declares only `application/pdf` with a binary schema. It still returns
+the same bytes, attachment filename and `private, no-store` headers; clients must
+decode it as a Blob rather than JSON.
+
+JD and credit routers opt into `PrivateResponseRoute`, the shared mechanism
+extracted from PRI-61's resume handler. Invalid response bodies return a static 500
+without logging validation inputs, identifiers or exception tracebacks. This also
+contains response-validation failures on JD apply/options. Existing application
+errors and request validation are unchanged. Resume-specific error text and log
+category remain unchanged through `ResumeResponseRoute`.
+
+No frontend consumers, model prompts, business services, dependencies or migrations
+change. Deploy this backend prerequisite before PRI-11. Response validation can
+follow committed work and does not undo it; do not automatically retry mutations.
+Before client migration, rollback reverts these declarations, shared helper and
+generated artifacts; after adoption coordinate with the frontend rollback.
+
+Implementation references (checked 2026-09-14):
+
+- [FastAPI additional response media types](https://fastapi.tiangolo.com/advanced/additional-responses/)
+- [Scoped APIRoute handling](https://fastapi.tiangolo.com/how-to/custom-request-and-route/)

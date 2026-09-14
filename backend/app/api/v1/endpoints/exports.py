@@ -38,7 +38,17 @@ def get_export(
         raise to_http_exception(exc) from exc
 
 
-@router.get("/{export_id}/download")
+@router.get(
+    "/{export_id}/download",
+    response_class=Response,
+    responses={200: {
+        "content": {"application/pdf": {"schema": {"type": "string", "format": "binary"}}},
+        "headers": {
+            "Content-Disposition": {"schema": {"type": "string"}, "description": "PDF attachment filename"},
+            "Cache-Control": {"schema": {"type": "string"}, "description": "private, no-store"},
+        },
+    }},
+)
 def download_export(
     export_id: str,
     service: ExportApplicationService = Depends(get_export_application_service),

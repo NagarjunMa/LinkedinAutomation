@@ -3,13 +3,12 @@
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
-from fastapi.exceptions import ResponseValidationError
-from fastapi.routing import APIRoute
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel, Field
 
 from app.api.dependencies import get_resume_application_service
 from app.api.error_mapping import to_http_exception
+from app.api.response_contracts import PrivateResponseRoute
 from app.application.errors import ApplicationError
 from app.application.resume_service import ResumeApplicationService
 from app.core.auth import get_current_user_id
@@ -27,21 +26,12 @@ from app.services.resume.file_security import ResumeFileError
 logger = logging.getLogger(__name__)
 
 
-class ResumeResponseRoute(APIRoute):
-    """Contain response-validation errors before a traceback can expose resume data."""
+class ResumeResponseRoute(PrivateResponseRoute):
+    """Keep the existing resume response-error contract and log category."""
 
-    def get_route_handler(self):
-        handler = super().get_route_handler()
-
-        async def safe_response(request: Request):
-            try:
-                return await handler(request)
-            except ResponseValidationError:
-                # Do not log the exception, inputs, URL, or user/document identifiers.
-                logger.error("Resume response contract validation failed")
-                raise HTTPException(500, "Resume response could not be processed") from None
-
-        return safe_response
+    validation_logger = logger
+    validation_log_message = "Resume response contract validation failed"
+    validation_detail = "Resume response could not be processed"
 
 
 router = APIRouter(tags=["resumes-v2"], route_class=ResumeResponseRoute)

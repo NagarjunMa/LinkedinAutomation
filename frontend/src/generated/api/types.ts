@@ -778,6 +778,50 @@ export interface components {
             reason: string;
             truth_check?: components["schemas"]["BulletTruthCheck"];
         };
+        /** BulletFitSignal */
+        BulletFitSignal: {
+            /** Bullet Id */
+            bullet_id: string;
+            /**
+             * Evidence Level
+             * @enum {string}
+             */
+            evidence_level: "high" | "medium" | "low";
+            /** Matched Jd Phrases */
+            matched_jd_phrases?: string[];
+            /** Matched Requirements */
+            matched_requirements?: string[];
+            /** Noise Flags */
+            noise_flags?: string[];
+            /**
+             * Page Cost
+             * @default low
+             * @enum {string}
+             */
+            page_cost?: "low" | "medium" | "high";
+            /** Rationale */
+            rationale: string;
+            /**
+             * Recommendation
+             * @enum {string}
+             */
+            recommendation: "keep" | "rewrite" | "consider_trim";
+            /** Relevance Score */
+            relevance_score: number;
+            /** Source Resume Evidence */
+            source_resume_evidence?: string[];
+            /**
+             * Truth Risk
+             * @default low
+             * @enum {string}
+             */
+            truth_risk?: "low" | "medium" | "high";
+            /**
+             * Why Stronger
+             * @default
+             */
+            why_stronger?: string;
+        };
         /** BulletFlag */
         BulletFlag: {
             /** Bullet Id */
@@ -876,11 +920,34 @@ export interface components {
             /** Phone */
             phone?: string | null;
         };
+        /** ContentBudget */
+        ContentBudget: {
+            /** Current Bullet Count */
+            current_bullet_count: number;
+            /** Guidance */
+            guidance: string;
+            /**
+             * Page Fit Risk
+             * @enum {string}
+             */
+            page_fit_risk: "low" | "medium" | "high";
+            /** Recommended Bullet Budget */
+            recommended_bullet_budget: number;
+            /** Source Page Estimate */
+            source_page_estimate: number;
+            /** Target Max Pages */
+            target_max_pages: number;
+        };
         /**
          * Country
          * @enum {string}
          */
         Country: "US" | "IN";
+        /** CreditBalanceResponse */
+        CreditBalanceResponse: {
+            /** Balance */
+            balance: number;
+        };
         /** DailyJobStats */
         DailyJobStats: {
             /** Date */
@@ -889,6 +956,28 @@ export interface components {
             jobs_applied: number;
             /** Jobs Extracted */
             jobs_extracted: number;
+        };
+        /** DiffPlan */
+        DiffPlan: {
+            /** Bullet Fit */
+            bullet_fit?: components["schemas"]["BulletFitSignal"][];
+            /** Bullets */
+            bullets: components["schemas"]["BulletDiff"][];
+            content_budget?: components["schemas"]["ContentBudget"] | null;
+            /** Good To Have Coverage Found */
+            good_to_have_coverage_found: string[];
+            /** Good To Have Coverage Missing */
+            good_to_have_coverage_missing: string[];
+            /** Match Score */
+            match_score: number;
+            /** Must Have Coverage Found */
+            must_have_coverage_found: string[];
+            /** Must Have Coverage Missing */
+            must_have_coverage_missing: string[];
+            skills_reorder?: components["schemas"]["SkillsReorder"] | null;
+            /** Suggested Additions */
+            suggested_additions?: components["schemas"]["SuggestedAddition"][];
+            summary_rewrite?: components["schemas"]["SummaryRewrite"] | null;
         };
         /** EducationEntry */
         EducationEntry: {
@@ -1048,6 +1137,43 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** JDAnalysisResponse */
+        JDAnalysisResponse: {
+            diff_plan: components["schemas"]["DiffPlan"];
+            extracted_requirements: components["schemas"]["JDExtraction"];
+            /** Jd Evaluation Id */
+            jd_evaluation_id: string;
+        };
+        /** JDExtraction */
+        JDExtraction: {
+            /** Company Name */
+            company_name?: string | null;
+            /**
+             * Country Hint
+             * @enum {string}
+             */
+            country_hint: "US" | "IN" | "other";
+            /** Good To Have */
+            good_to_have: components["schemas"]["Requirement"][];
+            /** Job Title */
+            job_title?: string | null;
+            /** Must Have */
+            must_have: components["schemas"]["Requirement"][];
+            /**
+             * Primary Role Category
+             * @enum {string}
+             */
+            primary_role_category: "SWE" | "DS" | "PM" | "other";
+            /** Red Flags */
+            red_flags?: string[];
+            /**
+             * Seniority
+             * @enum {string}
+             */
+            seniority: "junior" | "mid" | "senior" | "staff";
+            /** Soft Skills */
+            soft_skills?: string[];
         };
         /** JDProgressRow */
         JDProgressRow: {
@@ -1355,6 +1481,18 @@ export interface components {
          * @enum {string}
          */
         PublicPreviewValidationCategory: "consent" | "server_validation" | "rate_limit" | "unavailable";
+        /** Requirement */
+        Requirement: {
+            /** Evidence From Jd */
+            evidence_from_jd: string;
+            /** Skill */
+            skill: string;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "technical" | "experience" | "credential";
+        };
         /** ResumeDetailResponse */
         ResumeDetailResponse: {
             evaluation: components["schemas"]["ResumeSavedEvaluation"] | null;
@@ -1574,6 +1712,31 @@ export interface components {
             hard?: string[];
             /** Soft */
             soft?: string[];
+        };
+        /** SkillsReorder */
+        SkillsReorder: {
+            /** New Order */
+            new_order: string[];
+            /** Rationale */
+            rationale: string;
+        };
+        /** SuggestedAddition */
+        SuggestedAddition: {
+            /** Item */
+            item: string;
+            /** Reason */
+            reason: string;
+            /** Section */
+            section: string;
+        };
+        /** SummaryRewrite */
+        SummaryRewrite: {
+            /** New */
+            new: string;
+            /** Old */
+            old?: string | null;
+            /** Reason */
+            reason: string;
         };
         /** TailoredDownloadRequest */
         TailoredDownloadRequest: {
@@ -1997,7 +2160,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["CreditBalanceResponse"];
                 };
             };
         };
@@ -2080,10 +2243,14 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 headers: {
+                    /** @description private, no-store */
+                    "Cache-Control"?: string;
+                    /** @description PDF attachment filename */
+                    "Content-Disposition"?: string;
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/pdf": string;
                 };
             };
             /** @description Validation Error */
@@ -2183,7 +2350,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["JDAnalysisResponse"];
                 };
             };
             /** @description Validation Error */
