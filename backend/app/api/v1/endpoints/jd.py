@@ -5,14 +5,16 @@ from pydantic import BaseModel, Field
 
 from app.api.dependencies import get_jd_application_service
 from app.api.error_mapping import to_http_exception
+from app.api.response_contracts import PrivateResponseRoute
 from app.application.errors import ApplicationError
 from app.application.jd_service import JDTailoringApplicationService
 from app.core.auth import get_current_user_id
 from app.schemas.jd import BulletDiff
 from app.schemas.resume_v2 import ApplyTailorRequest, ApplyTailorResponse
+from app.schemas.workflow_responses import JDAnalysisResponse
 
 
-router = APIRouter(prefix="/jd", tags=["jd"])
+router = APIRouter(prefix="/jd", tags=["jd"], route_class=PrivateResponseRoute)
 
 
 class AnalyzeRequest(BaseModel):
@@ -20,7 +22,7 @@ class AnalyzeRequest(BaseModel):
     jd_text: str = Field(..., min_length=50)
 
 
-@router.post("/analyze")
+@router.post("/analyze", response_model=JDAnalysisResponse)
 async def analyze(
     body: AnalyzeRequest,
     service: JDTailoringApplicationService = Depends(get_jd_application_service),
