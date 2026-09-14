@@ -59,7 +59,7 @@ remain in the contract but contain no credentials.
 
 ## Current limitations and review
 
-Several existing resume/JD/credit responses have no declared response model. Their
+Several existing JD/credit/job/download responses have no declared response model. Their
 schemas remain unconstrained rather than fabricated. Before replacing handwritten
 consumer types, add accurate backend declarations and response tests in the
 appropriate follow-up issue. This change does not prove runtime response conformity,
@@ -69,9 +69,32 @@ consumers rather than treating generated types as runtime validators.
 
 Generated snapshots are mechanically large; review their paths, schemas, enums,
 nullability and operation IDs separately from the small handwritten tooling diff.
-No deployment or migration is required. Rollback removes this tooling and its CI
-check; existing clients continue using their current types. Never suppress drift or
+The generator itself requires no runtime deployment or database migration. Its rollback
+removes the tooling and CI check; existing clients continue using their current types. Never suppress drift or
 weaken existing gates to land an incompatible schema change.
+
+## Resume response contracts (PRI-61)
+
+The six resume JSON endpoints now declare response models. HTTP envelopes live in
+`backend/app/schemas/resume_responses.py`, reusing existing nested resume schemas;
+the LLM's evaluation schema and business services are unchanged. List/detail retain
+legacy aliases (`totalCount`, evaluation score aliases, and duplicate document IDs),
+nulls, and the service's timestamp strings. Delete still returns an empty 204.
+
+Invalid response data produces a generic 500 and a static error log without exception
+inputs, resume text, or identifiers. This is response-shape validation, not factual
+grounding. Validation happens after service execution: a 500 does not guarantee that
+a write or credit debit was rolled back, so clients must not blindly retry mutations.
+
+Deploy these backward-compatible backend declarations before migrating consumers in
+PRI-10. No database migration is needed. Revert the response declarations, scoped
+error handling and generated changes to roll back before consumer migration. After
+clients adopt these contracts, coordinate rollback with those clients.
+
+Implementation references (checked 2026-09-13):
+
+- [FastAPI response models](https://fastapi.tiangolo.com/tutorial/response-model/)
+- [Scoped APIRoute handling](https://fastapi.tiangolo.com/how-to/custom-request-and-route/)
 
 Primary references (checked 2026-09-12):
 
