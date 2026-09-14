@@ -16,6 +16,8 @@ export default defineConfig({
       // Keep the artifact path consumed by CI across Vitest major upgrades.
       reportsDirectory: './coverage',
       include: [
+        'src/hooks/use-tailor-workflow.ts',
+        'src/app/dashboard/resume/tailor/page.tsx',
         'src/hooks/use-tailor-apply.ts',
         'src/hooks/use-export-pdf.ts',
         'src/hooks/use-resume.ts',
