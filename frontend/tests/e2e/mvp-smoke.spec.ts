@@ -178,3 +178,88 @@ test('tailor MVP flow uploads, edits pointer, applies, and exposes download cont
     }],
   });
 });
+
+test('failed re-analysis clears old suggestions and preview until a manual retry succeeds', async ({ page, context }) => {
+  await context.addCookies([{ name: 'test-bypass-auth', value: '1', url: APP }]);
+  await page.route(`${API}/api/v1/credits/balance`, route =>
+    route.fulfill({ json: { balance: 90 } }));
+  await page.route(`${API}/api/v1/resumes/upload`, route =>
+    route.fulfill({ status: 201, json: UPLOAD_RESPONSE }));
+  let analyses = 0;
+  let releaseFailure!: () => void;
+  const failureGate = new Promise<void>(resolve => { releaseFailure = resolve; });
+  await page.route(`${API}/api/v1/jd/analyze`, async route => {
+    analyses += 1;
+    if (analyses === 2) {
+      await failureGate;
+      await route.fulfill({ status: 503, json: { detail: 'Analysis unavailable' } });
+    } else {
+      await route.fulfill({ json: { ...ANALYZE_RESPONSE, jd_evaluation_id: `jd-${analyses}` } });
+    }
+  });
+  const appliedEvaluations: string[] = [];
+  await page.route(`${API}/api/v1/jd/*/apply`, async route => {
+    appliedEvaluations.push(new URL(route.request().url()).pathname);
+    await route.fulfill({ json: APPLY_RESPONSE });
+  });
+
+  await page.goto('/dashboard/resume/tailor');
+  await page.getByRole('button', { name: 'Choose file' }).click();
+  await page.locator('input[type=file]').setInputFiles(path.resolve('tests/fixtures/sample-resume.pdf'));
+  await page.getByRole('button', { name: 'Upload' }).click();
+  await page.locator('#jd').fill('We are hiring a Python software engineer. '.repeat(3));
+  await page.getByRole('button', { name: /Analyze \(2 credits\)/ }).click();
+  await expect(page.getByTestId('change-bullet-b1')).toBeVisible();
+  await page.getByTestId('tailor-apply').click();
+  await expect(page.getByRole('button', { name: 'Download PDF' })).toBeVisible();
+
+  const newJd = 'A new role needs Python backend development experience. '.repeat(3);
+  await page.locator('#jd').fill(newJd);
+  await page.getByRole('button', { name: /Analyze \(2 credits\)/ }).click();
+  try {
+    await expect(page.getByRole('button', { name: 'Analyzing…' })).toBeDisabled();
+    await expect(page.getByTestId('change-bullet-b1')).toHaveCount(0);
+    await expect(page.getByTestId('tailor-apply')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Download PDF' })).toHaveCount(0);
+  } finally {
+    releaseFailure();
+  }
+  await expect(page.getByText('Analyze failed', { exact: true })).toBeVisible();
+  await expect(page.locator('#jd')).toHaveValue(newJd);
+  await expect(page.getByTestId('change-bullet-b1')).toHaveCount(0);
+  await expect(page.getByTestId('tailor-apply')).toHaveCount(0);
+  expect(analyses).toBe(2);
+
+  // Recovery instructions must remain readable in both supported themes.
+  const transitions = await page.addStyleTag({ content: '* { transition: none !important; }' });
+  for (const theme of ['light', 'dark']) {
+    await page.locator('html').evaluate((element, dark) => element.classList.toggle('dark', dark), theme === 'dark');
+    const contrast = await page.getByRole('alert').filter({ hasText: 'Analyze failed' }).evaluate(element => {
+      const luminance = (color: string) => {
+        const channels = color.match(/[\d.]+/g)!.slice(0, 3).map(value => {
+          const channel = Number(value) / 255;
+          return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+        });
+        return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+      };
+      let surface: Element | null = element;
+      while (surface && getComputedStyle(surface).backgroundColor === 'rgba(0, 0, 0, 0)') {
+        surface = surface.parentElement;
+      }
+      if (!surface) throw new Error('No opaque recovery-message surface found');
+      const foreground = luminance(getComputedStyle(element).color);
+      const background = luminance(getComputedStyle(surface).backgroundColor);
+      return (Math.max(foreground, background) + 0.05) / (Math.min(foreground, background) + 0.05);
+    });
+    expect(contrast, `${theme} recovery text contrast`).toBeGreaterThanOrEqual(4.5);
+    await test.info().attach(`recovery-${theme}`, { body: await page.screenshot(), contentType: 'image/png' });
+  }
+  await transitions.evaluate(element => element.parentNode?.removeChild(element));
+
+  await page.getByRole('button', { name: /Analyze \(2 credits\)/ }).click();
+  await expect(page.getByTestId('change-bullet-b1')).toBeVisible();
+  await page.getByTestId('tailor-apply').click();
+  await expect(page.getByRole('button', { name: 'Download PDF' })).toBeVisible();
+  expect(analyses).toBe(3);
+  expect(appliedEvaluations).toEqual(['/api/v1/jd/jd-1/apply', '/api/v1/jd/jd-3/apply']);
+});

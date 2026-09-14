@@ -1,68 +1,15 @@
 // frontend/src/app/dashboard/resume/tailor/page.tsx
 "use client";
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { JdInputForm } from '@/components/jd/jd-input-form';
 import { JdAnalysisPanel } from '@/components/jd/jd-analysis-panel';
 import { DiffView } from '@/components/jd/diff-view';
 import { PreviewPanel } from '@/components/tailor/preview-panel';
-import { useJdAnalyze } from '@/hooks/use-jd-analyze';
-import { useTailorApply } from '@/hooks/use-tailor-apply';
-import { useToast } from '@/components/ui/use-toast';
-import type { JDAnalyzeResponse, ApplyTailorResponse, ChangeItem } from '@/app/lib/api';
+import { useTailorWorkflow } from '@/hooks/use-tailor-workflow';
 
 export default function TailorPage() {
-  const { toast } = useToast();
-  const analyze = useJdAnalyze();
-  const [result, setResult] = useState<JDAnalyzeResponse | null>(null);
-  const [resumeId, setResumeId] = useState<string | null>(null);
-  const [acceptedChanges, setAcceptedChanges] = useState<ChangeItem[]>([]);
-  const [applyResult, setApplyResult] = useState<ApplyTailorResponse | null>(null);
-
-  const applyMut = useTailorApply(result?.jd_evaluation_id ?? '');
-
-  const onSubmit = async (args: { resumeDocumentId: string; jdText: string }) => {
-    setResumeId(args.resumeDocumentId);
-    setApplyResult(null);
-    setAcceptedChanges([]);
-    try {
-      const r = await analyze.mutateAsync(args);
-      setResult(r);
-    } catch (e: unknown) {
-      const err = e as { status?: number; message?: string };
-      if (err?.status === 402) {
-        toast({
-          title: 'Out of credits',
-          description: 'Tailoring costs 2 credits.',
-          variant: 'destructive',
-        });
-      } else if (err?.status === 422) {
-        toast({
-          title: 'Tailor rejected',
-          description: 'AI tried to fabricate a number. Try a different JD.',
-          variant: 'destructive',
-        });
-      } else {
-        toast({ title: 'Analyze failed', description: err?.message, variant: 'destructive' });
-      }
-    }
-  };
-
-  const onApplyClick = async () => {
-    if (!result) return;
-    try {
-      const r = await applyMut.mutateAsync({ accepted_changes: acceptedChanges });
-      setApplyResult(r);
-      toast({
-        title: 'Applied',
-        description: `${acceptedChanges.length} change${acceptedChanges.length !== 1 ? 's' : ''} saved`,
-      });
-    } catch (e: unknown) {
-      const err = e as { message?: string };
-      toast({ title: 'Apply failed', description: err?.message, variant: 'destructive' });
-    }
-  };
+  const { analysis, acceptedChanges, applyResult, analyzing, applying, errorTitle, submit, selectChanges, applyChanges } = useTailorWorkflow();
 
   return (
     <div className="max-w-[1400px] mx-auto p-6 space-y-6">
@@ -74,38 +21,46 @@ export default function TailorPage() {
       <Card>
         <CardHeader><CardTitle>Inputs</CardTitle></CardHeader>
         <CardContent>
-          <JdInputForm onSubmit={onSubmit} pending={analyze.isPending} />
+          <JdInputForm onSubmit={submit} pending={analyzing} />
         </CardContent>
       </Card>
 
-      {result && resumeId && (
+      {analyzing && <p role="status">Analyzing the current submission…</p>}
+      {errorTitle && (
+        <div role="alert" className="text-sm text-foreground">
+          <strong>{errorTitle}</strong>
+          <p>Your inputs are preserved. Review them and retry when ready.</p>
+        </div>
+      )}
+
+      {analysis && (
         <>
           <JdAnalysisPanel
-            extraction={result.extracted_requirements}
-            plan={result.diff_plan}
+            extraction={analysis.result.extracted_requirements}
+            plan={analysis.result.diff_plan}
           />
 
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(520px,640px)] gap-8 items-start">
             {/* Left column: diff view + Apply button */}
             <div className="space-y-4">
               <DiffView
-                key={result.jd_evaluation_id}
-                resumeId={resumeId}
-                jdEvaluationId={result.jd_evaluation_id}
-                plan={result.diff_plan}
+                key={analysis.generation}
+                resumeId={analysis.resumeId}
+                jdEvaluationId={analysis.result.jd_evaluation_id}
+                plan={analysis.result.diff_plan}
                 onApplied={() => {
                   // legacy path — not used when onAcceptedChangesChange is set
                 }}
-                onAcceptedChangesChange={setAcceptedChanges}
+                onAcceptedChangesChange={selectChanges}
               />
 
               <Button
-                onClick={onApplyClick}
-                disabled={applyMut.isPending || acceptedChanges.length === 0}
+                onClick={applyChanges}
+                disabled={analyzing || applying || acceptedChanges.length === 0}
                 className="w-full sm:w-auto"
                 data-testid="tailor-apply"
               >
-                {applyMut.isPending
+                {applying
                   ? 'Applying…'
                   : `Apply ${acceptedChanges.length} change${acceptedChanges.length !== 1 ? 's' : ''}`}
               </Button>
