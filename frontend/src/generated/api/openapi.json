@@ -189,6 +189,29 @@
         "title": "Body_upload_resume_api_v1_resumes_upload_post",
         "type": "object"
       },
+      "Bullet": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "raw_text": {
+            "title": "Raw Text",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "raw_text"
+        ],
+        "title": "Bullet",
+        "type": "object"
+      },
       "BulletDiff": {
         "properties": {
           "bullet_id": {
@@ -232,6 +255,47 @@
           "reason"
         ],
         "title": "BulletDiff",
+        "type": "object"
+      },
+      "BulletFlag": {
+        "properties": {
+          "bullet_id": {
+            "title": "Bullet Id",
+            "type": "string"
+          },
+          "category": {
+            "enum": [
+              "quantification",
+              "verb",
+              "structure",
+              "clarity",
+              "redundancy",
+              "ats"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "critical",
+              "warning",
+              "info"
+            ],
+            "title": "Severity",
+            "type": "string"
+          }
+        },
+        "required": [
+          "bullet_id",
+          "severity",
+          "reason",
+          "category"
+        ],
+        "title": "BulletFlag",
         "type": "object"
       },
       "BulletOption": {
@@ -425,6 +489,48 @@
         "title": "ChangeItem",
         "type": "object"
       },
+      "Contact": {
+        "properties": {
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "links": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Links",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "Contact",
+        "type": "object"
+      },
       "Country": {
         "enum": [
           "US",
@@ -454,6 +560,63 @@
           "jobs_applied"
         ],
         "title": "DailyJobStats",
+        "type": "object"
+      },
+      "EducationEntry": {
+        "properties": {
+          "dates": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dates"
+          },
+          "degree": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Degree"
+          },
+          "gpa": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gpa"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          },
+          "school": {
+            "title": "School",
+            "type": "string"
+          }
+        },
+        "required": [
+          "school"
+        ],
+        "title": "EducationEntry",
         "type": "object"
       },
       "EmailTrackingSettingsUpdate": {
@@ -508,6 +671,53 @@
           "target_role"
         ],
         "title": "EvalRequest",
+        "type": "object"
+      },
+      "ExperienceEntry": {
+        "properties": {
+          "bullets": {
+            "items": {
+              "$ref": "#/components/schemas/Bullet"
+            },
+            "title": "Bullets",
+            "type": "array"
+          },
+          "company": {
+            "title": "Company",
+            "type": "string"
+          },
+          "dates": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dates"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "company",
+          "role"
+        ],
+        "title": "ExperienceEntry",
         "type": "object"
       },
       "ExportRequest": {
@@ -621,6 +831,29 @@
           "role_template"
         ],
         "title": "ExportResponse",
+        "type": "object"
+      },
+      "FormatIssue": {
+        "properties": {
+          "fix_hint": {
+            "title": "Fix Hint",
+            "type": "string"
+          },
+          "location": {
+            "title": "Location",
+            "type": "string"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "location",
+          "fix_hint"
+        ],
+        "title": "FormatIssue",
         "type": "object"
       },
       "FrontendLogBatchSchema": {
@@ -1690,6 +1923,24 @@
         "title": "PaginatedJobApplications",
         "type": "object"
       },
+      "Placeholder": {
+        "properties": {
+          "token": {
+            "title": "Token",
+            "type": "string"
+          },
+          "what": {
+            "title": "What",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "what"
+        ],
+        "title": "Placeholder",
+        "type": "object"
+      },
       "PrivacySettingsUpdate": {
         "properties": {
           "analytics_enabled": {
@@ -1767,6 +2018,26 @@
           "changed_at"
         ],
         "title": "ProfileChangeHistoryResponse",
+        "type": "object"
+      },
+      "ProjectEntry": {
+        "properties": {
+          "bullets": {
+            "items": {
+              "$ref": "#/components/schemas/Bullet"
+            },
+            "title": "Bullets",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "ProjectEntry",
         "type": "object"
       },
       "PublicPreviewEventCreate": {
@@ -1848,6 +2119,503 @@
         "title": "PublicPreviewValidationCategory",
         "type": "string"
       },
+      "ResumeDetailResponse": {
+        "properties": {
+          "evaluation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResumeSavedEvaluation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "resume": {
+            "$ref": "#/components/schemas/ResumeListItem"
+          }
+        },
+        "required": [
+          "resume",
+          "evaluation"
+        ],
+        "title": "ResumeDetailResponse",
+        "type": "object"
+      },
+      "ResumeEvaluationResponse": {
+        "properties": {
+          "ats_parseability": {
+            "title": "Ats Parseability",
+            "type": "integer"
+          },
+          "ats_raw_text": {
+            "title": "Ats Raw Text",
+            "type": "string"
+          },
+          "bullet_flags": {
+            "items": {
+              "$ref": "#/components/schemas/BulletFlag"
+            },
+            "title": "Bullet Flags",
+            "type": "array"
+          },
+          "evaluation_id": {
+            "title": "Evaluation Id",
+            "type": "string"
+          },
+          "format_issues": {
+            "items": {
+              "$ref": "#/components/schemas/FormatIssue"
+            },
+            "title": "Format Issues",
+            "type": "array"
+          },
+          "overall_score": {
+            "maximum": 100,
+            "minimum": 0,
+            "title": "Overall Score",
+            "type": "integer"
+          },
+          "parser_confidence": {
+            "enum": [
+              "high",
+              "medium",
+              "low"
+            ],
+            "title": "Parser Confidence",
+            "type": "string"
+          },
+          "readiness_label": {
+            "enum": [
+              "ready",
+              "minor_edits",
+              "needs_work"
+            ],
+            "title": "Readiness Label",
+            "type": "string"
+          },
+          "score_breakdown": {
+            "$ref": "#/components/schemas/ScoreBreakdown"
+          },
+          "score_explanation": {
+            "items": {
+              "$ref": "#/components/schemas/ScoreExplanation"
+            },
+            "title": "Score Explanation",
+            "type": "array"
+          },
+          "summary_critique": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary Critique"
+          },
+          "top_actions_before_applying": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Top Actions Before Applying",
+            "type": "array"
+          }
+        },
+        "required": [
+          "overall_score",
+          "readiness_label",
+          "score_breakdown",
+          "score_explanation",
+          "top_actions_before_applying",
+          "parser_confidence",
+          "bullet_flags",
+          "format_issues",
+          "evaluation_id",
+          "summary_critique",
+          "ats_parseability",
+          "ats_raw_text"
+        ],
+        "title": "ResumeEvaluationResponse",
+        "type": "object"
+      },
+      "ResumeKeywordAnalysis": {
+        "properties": {
+          "missing": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing",
+            "type": "array"
+          },
+          "relevant": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Relevant",
+            "type": "array"
+          },
+          "score": {
+            "title": "Score",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "relevant",
+          "missing",
+          "score"
+        ],
+        "title": "ResumeKeywordAnalysis",
+        "type": "object"
+      },
+      "ResumeListItem": {
+        "properties": {
+          "evaluation_result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResumeSavedEvaluation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "evaluation_status": {
+            "enum": [
+              "pending",
+              "completed"
+            ],
+            "title": "Evaluation Status",
+            "type": "string"
+          },
+          "file_size": {
+            "title": "File Size",
+            "type": "integer"
+          },
+          "file_type": {
+            "title": "File Type",
+            "type": "string"
+          },
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "is_primary": {
+            "title": "Is Primary",
+            "type": "boolean"
+          },
+          "original_filename": {
+            "title": "Original Filename",
+            "type": "string"
+          },
+          "resume_document_id": {
+            "title": "Resume Document Id",
+            "type": "string"
+          },
+          "uploaded_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uploaded At"
+          }
+        },
+        "required": [
+          "id",
+          "resume_document_id",
+          "filename",
+          "original_filename",
+          "file_size",
+          "file_type",
+          "uploaded_at",
+          "evaluation_status",
+          "is_primary",
+          "evaluation_result"
+        ],
+        "title": "ResumeListItem",
+        "type": "object"
+      },
+      "ResumeListResponse": {
+        "properties": {
+          "resumes": {
+            "items": {
+              "$ref": "#/components/schemas/ResumeListItem"
+            },
+            "title": "Resumes",
+            "type": "array"
+          },
+          "totalCount": {
+            "title": "Totalcount",
+            "type": "integer"
+          },
+          "total_count": {
+            "title": "Total Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "resumes",
+          "total_count",
+          "totalCount"
+        ],
+        "title": "ResumeListResponse",
+        "type": "object"
+      },
+      "ResumeSavedEvaluation": {
+        "properties": {
+          "ats_compatibility": {
+            "enum": [
+              "good",
+              "fair"
+            ],
+            "title": "Ats Compatibility",
+            "type": "string"
+          },
+          "ats_compliance_score": {
+            "title": "Ats Compliance Score",
+            "type": "integer"
+          },
+          "ats_score": {
+            "title": "Ats Score",
+            "type": "integer"
+          },
+          "bullet_flags": {
+            "items": {
+              "$ref": "#/components/schemas/BulletFlag"
+            },
+            "title": "Bullet Flags",
+            "type": "array"
+          },
+          "content_quality_score": {
+            "title": "Content Quality Score",
+            "type": "integer"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "detailed_feedback": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detailed Feedback"
+          },
+          "experience_points_score": {
+            "title": "Experience Points Score",
+            "type": "integer"
+          },
+          "format_issues": {
+            "items": {
+              "$ref": "#/components/schemas/FormatIssue"
+            },
+            "title": "Format Issues",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "improvements": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Improvements",
+            "type": "array"
+          },
+          "job_relevance_score": {
+            "title": "Job Relevance Score",
+            "type": "integer"
+          },
+          "keyword_analysis": {
+            "$ref": "#/components/schemas/ResumeKeywordAnalysis"
+          },
+          "overall_score": {
+            "maximum": 100,
+            "minimum": 0,
+            "title": "Overall Score",
+            "type": "integer"
+          },
+          "parser_confidence": {
+            "enum": [
+              "high",
+              "medium",
+              "low"
+            ],
+            "title": "Parser Confidence",
+            "type": "string"
+          },
+          "quality_checks_score": {
+            "title": "Quality Checks Score",
+            "type": "integer"
+          },
+          "readiness_label": {
+            "enum": [
+              "ready",
+              "minor_edits",
+              "needs_work"
+            ],
+            "title": "Readiness Label",
+            "type": "string"
+          },
+          "resume_document_id": {
+            "title": "Resume Document Id",
+            "type": "string"
+          },
+          "resume_id": {
+            "title": "Resume Id",
+            "type": "string"
+          },
+          "score_breakdown": {
+            "$ref": "#/components/schemas/ScoreBreakdown"
+          },
+          "score_explanation": {
+            "items": {
+              "$ref": "#/components/schemas/ScoreExplanation"
+            },
+            "title": "Score Explanation",
+            "type": "array"
+          },
+          "strengths": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Strengths",
+            "type": "array"
+          },
+          "top_actions_before_applying": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Top Actions Before Applying",
+            "type": "array"
+          }
+        },
+        "required": [
+          "overall_score",
+          "readiness_label",
+          "score_breakdown",
+          "score_explanation",
+          "top_actions_before_applying",
+          "parser_confidence",
+          "bullet_flags",
+          "format_issues",
+          "id",
+          "resume_id",
+          "resume_document_id",
+          "ats_score",
+          "ats_compliance_score",
+          "content_quality_score",
+          "experience_points_score",
+          "job_relevance_score",
+          "quality_checks_score",
+          "strengths",
+          "improvements",
+          "ats_compatibility",
+          "detailed_feedback",
+          "keyword_analysis",
+          "created_at"
+        ],
+        "title": "ResumeSavedEvaluation",
+        "type": "object"
+      },
+      "ResumeUploadResponse": {
+        "properties": {
+          "certifications": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Certifications",
+            "type": "array"
+          },
+          "contact": {
+            "$ref": "#/components/schemas/Contact"
+          },
+          "education": {
+            "items": {
+              "$ref": "#/components/schemas/EducationEntry"
+            },
+            "title": "Education",
+            "type": "array"
+          },
+          "experience": {
+            "items": {
+              "$ref": "#/components/schemas/ExperienceEntry"
+            },
+            "title": "Experience",
+            "type": "array"
+          },
+          "projects": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectEntry"
+            },
+            "title": "Projects",
+            "type": "array"
+          },
+          "raw_text": {
+            "title": "Raw Text",
+            "type": "string"
+          },
+          "resume_document_id": {
+            "title": "Resume Document Id",
+            "type": "string"
+          },
+          "skills": {
+            "$ref": "#/components/schemas/Skills"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
+          }
+        },
+        "required": [
+          "contact",
+          "raw_text",
+          "resume_document_id"
+        ],
+        "title": "ResumeUploadResponse",
+        "type": "object"
+      },
+      "ResumeVersionResponse": {
+        "properties": {
+          "version_id": {
+            "title": "Version Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "version_id"
+        ],
+        "title": "ResumeVersionResponse",
+        "type": "object"
+      },
       "RewriteRequest": {
         "properties": {
           "country": {
@@ -1877,6 +2645,35 @@
         "title": "RewriteRequest",
         "type": "object"
       },
+      "RewriteResult": {
+        "properties": {
+          "applied_changes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Applied Changes",
+            "type": "array"
+          },
+          "placeholders": {
+            "items": {
+              "$ref": "#/components/schemas/Placeholder"
+            },
+            "title": "Placeholders",
+            "type": "array"
+          },
+          "rewritten": {
+            "title": "Rewritten",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rewritten",
+          "placeholders",
+          "applied_changes"
+        ],
+        "title": "RewriteResult",
+        "type": "object"
+      },
       "RoleTemplate": {
         "enum": [
           "swe",
@@ -1885,6 +2682,105 @@
         ],
         "title": "RoleTemplate",
         "type": "string"
+      },
+      "ScoreBreakdown": {
+        "properties": {
+          "content_quality": {
+            "maximum": 100,
+            "minimum": 0,
+            "title": "Content Quality",
+            "type": "integer"
+          },
+          "evidence_strength": {
+            "maximum": 100,
+            "minimum": 0,
+            "title": "Evidence Strength",
+            "type": "integer"
+          },
+          "recruiter_readability": {
+            "maximum": 100,
+            "minimum": 0,
+            "title": "Recruiter Readability",
+            "type": "integer"
+          },
+          "role_fit": {
+            "maximum": 100,
+            "minimum": 0,
+            "title": "Role Fit",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "content_quality",
+          "role_fit",
+          "evidence_strength",
+          "recruiter_readability"
+        ],
+        "title": "ScoreBreakdown",
+        "type": "object"
+      },
+      "ScoreExplanation": {
+        "properties": {
+          "before_applying_action": {
+            "title": "Before Applying Action",
+            "type": "string"
+          },
+          "category": {
+            "enum": [
+              "content_quality",
+              "role_fit",
+              "evidence_strength",
+              "recruiter_readability"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "evidence": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "score": {
+            "maximum": 100,
+            "minimum": 0,
+            "title": "Score",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "category",
+          "score",
+          "reason",
+          "before_applying_action"
+        ],
+        "title": "ScoreExplanation",
+        "type": "object"
+      },
+      "Skills": {
+        "properties": {
+          "hard": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Hard",
+            "type": "array"
+          },
+          "soft": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Soft",
+            "type": "array"
+          }
+        },
+        "title": "Skills",
+        "type": "object"
       },
       "TailoredDownloadRequest": {
         "properties": {
@@ -4750,7 +5646,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ResumeListResponse"
+                }
               }
             },
             "description": "Successful Response"
@@ -4785,7 +5683,9 @@
           "201": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ResumeUploadResponse"
+                }
               }
             },
             "description": "Successful Response"
@@ -4870,7 +5770,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ResumeDetailResponse"
+                }
               }
             },
             "description": "Successful Response"
@@ -4926,7 +5828,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ResumeEvaluationResponse"
+                }
               }
             },
             "description": "Successful Response"
@@ -4991,7 +5895,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/RewriteResult"
+                }
               }
             },
             "description": "Successful Response"
@@ -5047,7 +5953,9 @@
           "201": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ResumeVersionResponse"
+                }
               }
             },
             "description": "Successful Response"

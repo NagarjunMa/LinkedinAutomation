@@ -753,6 +753,15 @@ export interface components {
             /** File */
             file: string;
         };
+        /** Bullet */
+        Bullet: {
+            /** Id */
+            id: string;
+            /** Raw Text */
+            raw_text: string;
+            /** Text */
+            text: string;
+        };
         /** BulletDiff */
         BulletDiff: {
             /** Bullet Id */
@@ -768,6 +777,23 @@ export interface components {
             /** Reason */
             reason: string;
             truth_check?: components["schemas"]["BulletTruthCheck"];
+        };
+        /** BulletFlag */
+        BulletFlag: {
+            /** Bullet Id */
+            bullet_id: string;
+            /**
+             * Category
+             * @enum {string}
+             */
+            category: "quantification" | "verb" | "structure" | "clarity" | "redundancy" | "ats";
+            /** Reason */
+            reason: string;
+            /**
+             * Severity
+             * @enum {string}
+             */
+            severity: "critical" | "warning" | "info";
         };
         /** BulletOption */
         BulletOption: {
@@ -839,6 +865,17 @@ export interface components {
              */
             type: "bullet_update" | "skills_reorder" | "summary_update";
         };
+        /** Contact */
+        Contact: {
+            /** Email */
+            email?: string | null;
+            /** Links */
+            links?: string[];
+            /** Name */
+            name: string;
+            /** Phone */
+            phone?: string | null;
+        };
         /**
          * Country
          * @enum {string}
@@ -853,6 +890,19 @@ export interface components {
             /** Jobs Extracted */
             jobs_extracted: number;
         };
+        /** EducationEntry */
+        EducationEntry: {
+            /** Dates */
+            dates?: string | null;
+            /** Degree */
+            degree?: string | null;
+            /** Gpa */
+            gpa?: string | null;
+            /** Location */
+            location?: string | null;
+            /** School */
+            school: string;
+        };
         /** EmailTrackingSettingsUpdate */
         EmailTrackingSettingsUpdate: {
             /** Email Forwarding Enabled */
@@ -866,6 +916,19 @@ export interface components {
         EvalRequest: {
             /** Target Role */
             target_role: string;
+        };
+        /** ExperienceEntry */
+        ExperienceEntry: {
+            /** Bullets */
+            bullets?: components["schemas"]["Bullet"][];
+            /** Company */
+            company: string;
+            /** Dates */
+            dates?: string | null;
+            /** Location */
+            location?: string | null;
+            /** Role */
+            role: string;
         };
         /** ExportRequest */
         ExportRequest: {
@@ -895,6 +958,15 @@ export interface components {
             /** Filename */
             filename?: string | null;
             role_template: components["schemas"]["RoleTemplate"];
+        };
+        /** FormatIssue */
+        FormatIssue: {
+            /** Fix Hint */
+            fix_hint: string;
+            /** Location */
+            location: string;
+            /** Type */
+            type: string;
         };
         /**
          * FrontendLogBatchSchema
@@ -1221,6 +1293,13 @@ export interface components {
             /** Total Pages */
             total_pages: number;
         };
+        /** Placeholder */
+        Placeholder: {
+            /** Token */
+            token: string;
+            /** What */
+            what: string;
+        };
         /** PrivacySettingsUpdate */
         PrivacySettingsUpdate: {
             /** Analytics Enabled */
@@ -1246,6 +1325,13 @@ export interface components {
             /** User Id */
             user_id: string;
         };
+        /** ProjectEntry */
+        ProjectEntry: {
+            /** Bullets */
+            bullets?: components["schemas"]["Bullet"][];
+            /** Name */
+            name: string;
+        };
         /** PublicPreviewEventCreate */
         PublicPreviewEventCreate: {
             event_name: components["schemas"]["PublicPreviewEventName"];
@@ -1269,6 +1355,166 @@ export interface components {
          * @enum {string}
          */
         PublicPreviewValidationCategory: "consent" | "server_validation" | "rate_limit" | "unavailable";
+        /** ResumeDetailResponse */
+        ResumeDetailResponse: {
+            evaluation: components["schemas"]["ResumeSavedEvaluation"] | null;
+            resume: components["schemas"]["ResumeListItem"];
+        };
+        /** ResumeEvaluationResponse */
+        ResumeEvaluationResponse: {
+            /** Ats Parseability */
+            ats_parseability: number;
+            /** Ats Raw Text */
+            ats_raw_text: string;
+            /** Bullet Flags */
+            bullet_flags: components["schemas"]["BulletFlag"][];
+            /** Evaluation Id */
+            evaluation_id: string;
+            /** Format Issues */
+            format_issues: components["schemas"]["FormatIssue"][];
+            /** Overall Score */
+            overall_score: number;
+            /**
+             * Parser Confidence
+             * @enum {string}
+             */
+            parser_confidence: "high" | "medium" | "low";
+            /**
+             * Readiness Label
+             * @enum {string}
+             */
+            readiness_label: "ready" | "minor_edits" | "needs_work";
+            score_breakdown: components["schemas"]["ScoreBreakdown"];
+            /** Score Explanation */
+            score_explanation: components["schemas"]["ScoreExplanation"][];
+            /** Summary Critique */
+            summary_critique: string | null;
+            /** Top Actions Before Applying */
+            top_actions_before_applying: string[];
+        };
+        /** ResumeKeywordAnalysis */
+        ResumeKeywordAnalysis: {
+            /** Missing */
+            missing: string[];
+            /** Relevant */
+            relevant: string[];
+            /** Score */
+            score: number;
+        };
+        /** ResumeListItem */
+        ResumeListItem: {
+            evaluation_result: components["schemas"]["ResumeSavedEvaluation"] | null;
+            /**
+             * Evaluation Status
+             * @enum {string}
+             */
+            evaluation_status: "pending" | "completed";
+            /** File Size */
+            file_size: number;
+            /** File Type */
+            file_type: string;
+            /** Filename */
+            filename: string;
+            /** Id */
+            id: string;
+            /** Is Primary */
+            is_primary: boolean;
+            /** Original Filename */
+            original_filename: string;
+            /** Resume Document Id */
+            resume_document_id: string;
+            /** Uploaded At */
+            uploaded_at: string | null;
+        };
+        /** ResumeListResponse */
+        ResumeListResponse: {
+            /** Resumes */
+            resumes: components["schemas"]["ResumeListItem"][];
+            /** Total Count */
+            total_count: number;
+            /** Totalcount */
+            totalCount: number;
+        };
+        /** ResumeSavedEvaluation */
+        ResumeSavedEvaluation: {
+            /**
+             * Ats Compatibility
+             * @enum {string}
+             */
+            ats_compatibility: "good" | "fair";
+            /** Ats Compliance Score */
+            ats_compliance_score: number;
+            /** Ats Score */
+            ats_score: number;
+            /** Bullet Flags */
+            bullet_flags: components["schemas"]["BulletFlag"][];
+            /** Content Quality Score */
+            content_quality_score: number;
+            /** Created At */
+            created_at: string | null;
+            /** Detailed Feedback */
+            detailed_feedback: string | null;
+            /** Experience Points Score */
+            experience_points_score: number;
+            /** Format Issues */
+            format_issues: components["schemas"]["FormatIssue"][];
+            /** Id */
+            id: string;
+            /** Improvements */
+            improvements: string[];
+            /** Job Relevance Score */
+            job_relevance_score: number;
+            keyword_analysis: components["schemas"]["ResumeKeywordAnalysis"];
+            /** Overall Score */
+            overall_score: number;
+            /**
+             * Parser Confidence
+             * @enum {string}
+             */
+            parser_confidence: "high" | "medium" | "low";
+            /** Quality Checks Score */
+            quality_checks_score: number;
+            /**
+             * Readiness Label
+             * @enum {string}
+             */
+            readiness_label: "ready" | "minor_edits" | "needs_work";
+            /** Resume Document Id */
+            resume_document_id: string;
+            /** Resume Id */
+            resume_id: string;
+            score_breakdown: components["schemas"]["ScoreBreakdown"];
+            /** Score Explanation */
+            score_explanation: components["schemas"]["ScoreExplanation"][];
+            /** Strengths */
+            strengths: string[];
+            /** Top Actions Before Applying */
+            top_actions_before_applying: string[];
+        };
+        /** ResumeUploadResponse */
+        ResumeUploadResponse: {
+            /** Certifications */
+            certifications?: string[];
+            contact: components["schemas"]["Contact"];
+            /** Education */
+            education?: components["schemas"]["EducationEntry"][];
+            /** Experience */
+            experience?: components["schemas"]["ExperienceEntry"][];
+            /** Projects */
+            projects?: components["schemas"]["ProjectEntry"][];
+            /** Raw Text */
+            raw_text: string;
+            /** Resume Document Id */
+            resume_document_id: string;
+            skills?: components["schemas"]["Skills"];
+            /** Summary */
+            summary?: string | null;
+        };
+        /** ResumeVersionResponse */
+        ResumeVersionResponse: {
+            /** Version Id */
+            version_id: string;
+        };
         /** RewriteRequest */
         RewriteRequest: {
             /**
@@ -1281,11 +1527,54 @@ export interface components {
             /** Target Role */
             target_role: string;
         };
+        /** RewriteResult */
+        RewriteResult: {
+            /** Applied Changes */
+            applied_changes: string[];
+            /** Placeholders */
+            placeholders: components["schemas"]["Placeholder"][];
+            /** Rewritten */
+            rewritten: string;
+        };
         /**
          * RoleTemplate
          * @enum {string}
          */
         RoleTemplate: "swe" | "ds" | "pm";
+        /** ScoreBreakdown */
+        ScoreBreakdown: {
+            /** Content Quality */
+            content_quality: number;
+            /** Evidence Strength */
+            evidence_strength: number;
+            /** Recruiter Readability */
+            recruiter_readability: number;
+            /** Role Fit */
+            role_fit: number;
+        };
+        /** ScoreExplanation */
+        ScoreExplanation: {
+            /** Before Applying Action */
+            before_applying_action: string;
+            /**
+             * Category
+             * @enum {string}
+             */
+            category: "content_quality" | "role_fit" | "evidence_strength" | "recruiter_readability";
+            /** Evidence */
+            evidence?: string[];
+            /** Reason */
+            reason: string;
+            /** Score */
+            score: number;
+        };
+        /** Skills */
+        Skills: {
+            /** Hard */
+            hard?: string[];
+            /** Soft */
+            soft?: string[];
+        };
         /** TailoredDownloadRequest */
         TailoredDownloadRequest: {
             /** Filename */
@@ -2484,7 +2773,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ResumeDetailResponse"];
                 };
             };
             /** @description Validation Error */
@@ -2548,7 +2837,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ResumeEvaluationResponse"];
                 };
             };
             /** @description Validation Error */
@@ -2584,7 +2873,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["RewriteResult"];
                 };
             };
             /** @description Validation Error */
@@ -2619,7 +2908,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ResumeVersionResponse"];
                 };
             };
             /** @description Validation Error */
@@ -2648,7 +2937,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ResumeListResponse"];
                 };
             };
         };
@@ -2672,7 +2961,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ResumeUploadResponse"];
                 };
             };
             /** @description Validation Error */

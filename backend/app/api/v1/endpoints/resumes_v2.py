@@ -1,8 +1,11 @@
 """HTTP adapters for resume document workflows."""
 
+import logging
 from typing import Optional
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
+from fastapi.exceptions import ResponseValidationError
+from fastapi.routing import APIRoute
 from pydantic import BaseModel, Field
 
 from app.api.dependencies import get_resume_application_service
@@ -10,11 +13,38 @@ from app.api.error_mapping import to_http_exception
 from app.application.errors import ApplicationError
 from app.application.resume_service import ResumeApplicationService
 from app.core.auth import get_current_user_id
-from app.schemas.resume_v2 import ChangeItem
+from app.schemas.resume_responses import (
+    ResumeDetailResponse,
+    ResumeEvaluationResponse,
+    ResumeListResponse,
+    ResumeUploadResponse,
+    ResumeVersionResponse,
+)
+from app.schemas.resume_v2 import ChangeItem, RewriteResult
 from app.services.resume.file_security import ResumeFileError
 
 
-router = APIRouter(tags=["resumes-v2"])
+logger = logging.getLogger(__name__)
+
+
+class ResumeResponseRoute(APIRoute):
+    """Contain response-validation errors before a traceback can expose resume data."""
+
+    def get_route_handler(self):
+        handler = super().get_route_handler()
+
+        async def safe_response(request: Request):
+            try:
+                return await handler(request)
+            except ResponseValidationError:
+                # Do not log the exception, inputs, URL, or user/document identifiers.
+                logger.error("Resume response contract validation failed")
+                raise HTTPException(500, "Resume response could not be processed") from None
+
+        return safe_response
+
+
+router = APIRouter(tags=["resumes-v2"], route_class=ResumeResponseRoute)
 
 
 class EvalRequest(BaseModel):
@@ -32,7 +62,7 @@ class VersionRequest(BaseModel):
     change_set: list[ChangeItem]
 
 
-@router.post("/upload", status_code=201)
+@router.post("/upload", status_code=201, response_model=ResumeUploadResponse)
 async def upload_resume(
     file: UploadFile = File(...),
     service: ResumeApplicationService = Depends(get_resume_application_service),
@@ -45,7 +75,7 @@ async def upload_resume(
     except ApplicationError as exc:
         raise to_http_exception(exc) from exc
 
-@router.get("/list")
+@router.get("/list", response_model=ResumeListResponse)
 def list_resumes(
     service: ResumeApplicationService = Depends(get_resume_application_service),
     current_user_id: str = Depends(get_current_user_id),
@@ -53,7 +83,7 @@ def list_resumes(
     return service.list(current_user_id)
 
 
-@router.get("/{resume_document_id}")
+@router.get("/{resume_document_id}", response_model=ResumeDetailResponse)
 def get_resume(
     resume_document_id: str,
     service: ResumeApplicationService = Depends(get_resume_application_service),
@@ -78,7 +108,7 @@ def delete_resume(
     return None
 
 
-@router.post("/{resume_document_id}/evaluate")
+@router.post("/{resume_document_id}/evaluate", response_model=ResumeEvaluationResponse)
 async def evaluate(
     resume_document_id: str,
     body: EvalRequest,
@@ -91,7 +121,7 @@ async def evaluate(
         raise to_http_exception(exc) from exc
 
 
-@router.post("/{resume_document_id}/rewrite/{bullet_id}")
+@router.post("/{resume_document_id}/rewrite/{bullet_id}", response_model=RewriteResult)
 async def rewrite(
     resume_document_id: str,
     bullet_id: str,
@@ -112,7 +142,7 @@ async def rewrite(
         raise to_http_exception(exc) from exc
 
 
-@router.post("/{resume_document_id}/versions", status_code=201)
+@router.post("/{resume_document_id}/versions", status_code=201, response_model=ResumeVersionResponse)
 def create_version(
     resume_document_id: str,
     body: VersionRequest,
