@@ -17,11 +17,10 @@ describe('useUploadResume', () => {
     server.use(
       http.post('http://localhost:8000/api/v1/resumes/upload', () => {
         return HttpResponse.json({
-          resume_id: 'r-1',
           resume_document_id: 'r-1',
-          parsed: { contact: { name: 'Alice' } },
-          filename: 'resume.pdf',
-        });
+          contact: { name: 'Alice' },
+          raw_text: 'Synthetic resume',
+        }, { status: 201 });
       })
     );
 

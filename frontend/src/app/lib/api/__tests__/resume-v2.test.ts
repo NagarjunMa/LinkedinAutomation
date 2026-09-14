@@ -18,7 +18,7 @@ describe('resumeV2Api.upload', () => {
           projects: [],
           certifications: [],
           raw_text: 'test',
-        });
+        }, { status: 201 });
       })
     );
     const file = new File(['pdf content'], 'resume.pdf', { type: 'application/pdf' });
@@ -54,7 +54,7 @@ describe('resumeV2Api.upload', () => {
           projects: [],
           certifications: [],
           raw_text: 'test',
-        });
+        }, { status: 201 });
       })
     );
 
@@ -154,7 +154,7 @@ describe('resumeV2Api.createVersion', () => {
       http.post('http://localhost:8000/api/v1/resumes/rdoc-1/versions', async ({ request }) => {
         const body = await request.json() as Record<string, unknown>;
         expect(Array.isArray(body.change_set)).toBe(true);
-        return HttpResponse.json({ version_id: 'ver-1' });
+        return HttpResponse.json({ version_id: 'ver-1' }, { status: 201 });
       })
     );
     const result = await resumeV2Api.createVersion('rdoc-1', { change_set: [] });

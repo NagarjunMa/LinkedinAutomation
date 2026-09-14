@@ -22,6 +22,7 @@ export default defineConfig({
         'src/hooks/use-jd-analyze.ts',
         'src/hooks/use-credits.ts',
         'src/app/lib/api/resume-v2.ts',
+        'src/app/lib/api/resume-response-parser.ts',
         'src/app/lib/api/jd.ts',
         'src/app/lib/api/exports.ts',
         'src/app/lib/api/credits.ts',
