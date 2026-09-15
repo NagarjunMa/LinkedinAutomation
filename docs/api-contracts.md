@@ -96,6 +96,31 @@ Implementation references (checked 2026-09-13):
 - [FastAPI response models](https://fastapi.tiangolo.com/tutorial/response-model/)
 - [Scoped APIRoute handling](https://fastapi.tiangolo.com/how-to/custom-request-and-route/)
 
+## JD/export/credit frontend migration (PRI-11)
+
+`workflow-contracts.ts` derives request/response types from generated paths and
+components. `types-v2.ts` re-exports them so existing UI imports remain stable;
+tailored-library and analytics contracts are not migrated here. Apply commands
+retain the complete `ChangeItem` union, and the version-based export command still
+requires a non-null version ID rather than allowing the wire schema's empty shape.
+
+`workflow-response-parser.ts` checks successful status codes and nested response
+shapes with the existing Zod dependency. UI-required optional collections/nulls
+receive declared defaults, but IDs and truth-verification states never do. A null
+apply warning becomes undefined for the existing preview component. Validation
+failures use static API errors without inputs, causes, logging or mutation retries;
+non-success HTTP errors retain the shared client's behavior.
+
+PDF downloads use the generated media-type contract while returning browser Blobs.
+They require a full 200 response, application/pdf and non-empty content, preserving
+the bytes without claiming to validate PDF safety or factual grounding. Path IDs
+are encoded as individual segments. No backend, model, billing, authentication,
+dependency or generated-artifact changes are included.
+
+Deploy after the PRI-62 backend prerequisite. Rollback reverts this frontend
+migration without a database migration. Watch static response-validation failures
+and download failures; do not attach JD/resume content to telemetry.
+
 ## Resume v2 client migration (PRI-10)
 
 `resume-contracts.ts` derives the v2 client's seven operation contracts from the

@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import path from 'path';
+import type { components } from '../../src/generated/api/types';
 
 const API = 'http://localhost:8000';
 const APP = `http://localhost:${process.env.E2E_PORT ?? '3000'}`;
@@ -45,6 +46,7 @@ const ANALYZE_RESPONSE = {
     good_to_have_coverage_found: [],
     good_to_have_coverage_missing: [],
     content_budget: {
+      source_page_estimate: 1,
       target_max_pages: 1,
       current_bullet_count: 1,
       recommended_bullet_budget: 8,
@@ -54,6 +56,7 @@ const ANALYZE_RESPONSE = {
     bullet_fit: [{
       bullet_id: 'b1',
       relevance_score: 88,
+      evidence_level: 'medium',
       recommendation: 'rewrite',
       matched_requirements: ['Python'],
       noise_flags: [],
@@ -92,14 +95,15 @@ const ANALYZE_RESPONSE = {
     summary_rewrite: null,
     suggested_additions: [],
   },
-};
+} satisfies components['schemas']['JDAnalysisResponse'];
 
 const APPLY_RESPONSE = {
   version_id: 'ver-2',
+  company_name: null,
   preview_html: '<html><body><h1>Jane Doe</h1><p>Built Python services.</p></body></html>',
   suggested_template: 'us-swe',
   filename_hint: 'jane-doe-acme-swe.pdf',
-};
+} satisfies components['schemas']['ApplyTailorResponse'];
 
 test('protected dashboard route redirects when unauthenticated', async ({ page }) => {
   await page.goto('/dashboard');
