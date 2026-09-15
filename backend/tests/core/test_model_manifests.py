@@ -1,7 +1,7 @@
 """Characterize the five existing calls before changing their configuration source."""
 
 from types import SimpleNamespace
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock
 from dataclasses import FrozenInstanceError
 import hashlib
 import json
@@ -46,7 +46,9 @@ def fake_provider(result):
     call = AsyncMock(return_value=result)
     completions = SimpleNamespace(create=call, parse=call)
     chat = SimpleNamespace(completions=completions)
-    return SimpleNamespace(chat=chat, beta=SimpleNamespace(chat=chat)), call
+    client = SimpleNamespace(chat=chat, beta=SimpleNamespace(chat=chat))
+    client.with_options = Mock(return_value=client)
+    return client, call
 
 
 def case(name):
@@ -111,6 +113,7 @@ async def test_call_configuration_and_prompt_compatibility(name, custom, caplog)
         response_format=output_format,
         messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
     )
+    client.with_options.assert_called_once_with(max_retries=0)
     for sentinel in ("PRIVATE-RESUME", "PRIVATE-JD", "PRIVATE-RESPONSE", system):
         assert sentinel not in caplog.text
 
@@ -231,8 +234,9 @@ async def test_extractor_accepts_injected_client_and_manifest():
     fake_client = SimpleNamespace(beta=SimpleNamespace(
         chat=SimpleNamespace(completions=SimpleNamespace(parse=parse)),
     ))
+    fake_client.with_options = Mock(return_value=fake_client)
     manifest = SimpleNamespace(model_snapshot="test-snapshot", parameters=SimpleNamespace(temperature=0.7))
-    runtime = SimpleNamespace(client_factory=lambda: fake_client, manifests={"extractor": manifest})
+    runtime = ModelRuntime(client_factory=lambda: fake_client, manifests={"extractor": manifest})
 
     result = await extract_jd_requirements("Private JD fixture", runtime=runtime)
 

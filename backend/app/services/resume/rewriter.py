@@ -1,9 +1,9 @@
 import json
 import logging
 from typing import Optional
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_not_exception_type
+from app.core.model_retry import retry_model_call
 from app.schemas.resume_v2 import RewriteResult
-from app.services.resume.hallucination_guard import check_no_unprompted_numbers, HallucinationError
+from app.services.resume.hallucination_guard import check_no_unprompted_numbers
 from app.core.llm_logging import measure, log_cost
 from app.core.openai_client import ModelRuntime, get_model_runtime
 
@@ -42,8 +42,7 @@ JD context (may be empty): {jd_context}
 Rewrite the bullet."""
 
 
-@retry(stop=stop_after_attempt(2), wait=wait_exponential(multiplier=1, min=1, max=4),
-       retry=retry_if_not_exception_type(HallucinationError))
+@retry_model_call(attempts=2, max_wait=4)
 async def rewrite_bullet(
     original: str,
     target_role: str,
@@ -60,7 +59,7 @@ async def rewrite_bullet(
         country=country, jd_context=jd_context or "",
     )
     async with measure("rewriter", user_id=user_id):
-        resp = await runtime.client_factory().chat.completions.create(
+        resp = await runtime.single_attempt_client().chat.completions.create(
             model=manifest.model_snapshot,
             response_format={"type": "json_object"},
             messages=[{"role": "system", "content": REWRITER_SYSTEM},

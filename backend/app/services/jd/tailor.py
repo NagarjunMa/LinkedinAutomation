@@ -1,7 +1,6 @@
 import logging
 from itertools import chain
-from openai import RateLimitError, APIConnectionError, APITimeoutError
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+from app.core.model_retry import retry_model_call
 from app.schemas.resume_v2 import ResumeDocumentJSON
 from app.schemas.jd import BulletDiff, BulletOption, JDExtraction, DiffPlan, BulletTruthCheck
 from app.services.resume.hallucination_guard import analyze_rewrite_truth, HallucinationError
@@ -95,6 +94,16 @@ def _resume_supported_skill_terms(doc: ResumeDocumentJSON) -> list[str]:
     ]
 
 
+def _source_bullets(doc: ResumeDocumentJSON) -> dict[str, str]:
+    lookup: dict[str, str] = {}
+    for item in chain(doc.experience, doc.projects):
+        for bullet in item.bullets:
+            if bullet.id in lookup:
+                raise HallucinationError("Source resume has ambiguous bullet IDs")
+            lookup[bullet.id] = bullet.text
+    return lookup
+
+
 def _attach_truth_checks(
     *,
     diff: BulletDiff,
@@ -119,9 +128,7 @@ def _attach_truth_checks(
         target.truth_check = BulletTruthCheck.model_validate(truth)
 
 
-@retry(stop=stop_after_attempt(3),
-       wait=wait_exponential(multiplier=1, min=1, max=10),
-       retry=retry_if_exception_type((RateLimitError, APIConnectionError, APITimeoutError)))
+@retry_model_call()
 async def tailor_resume_to_jd(
     doc: ResumeDocumentJSON,
     jd: JDExtraction,
@@ -130,6 +137,7 @@ async def tailor_resume_to_jd(
     runtime: ModelRuntime | None = None,
 ) -> DiffPlan:
     """Tailor a resume to a JD via schema-enforced parse() API."""
+    bullet_lookup = _source_bullets(doc)
     runtime = runtime or get_model_runtime()
     manifest = runtime.manifests["tailor"]
     user = TAILOR_USER.format(
@@ -137,7 +145,7 @@ async def tailor_resume_to_jd(
         jd_json=jd.model_dump_json(),
     )
     async with measure("tailor", user_id=user_id):
-        resp = await runtime.client_factory().beta.chat.completions.parse(
+        resp = await runtime.single_attempt_client().beta.chat.completions.parse(
             model=manifest.model_snapshot,
             response_format=DiffPlan,
             messages=[{"role": "system", "content": TAILOR_SYSTEM},
@@ -148,18 +156,14 @@ async def tailor_resume_to_jd(
     plan = resp.choices[0].message.parsed
     if plan is None:
         raise ValueError("OpenAI returned no parsed content for JD tailor")
-    # Hallucination guard on each bullet rewrite.
-    # Include both experience AND project bullets so the guard always uses the
-    # actual stored text rather than falling back to diff.old (the LLM's own
-    # claimed original, which can itself be fabricated).
-    bullet_lookup = {
-        b.id: b.text
-        for item in chain(doc.experience, doc.projects)
-        for b in item.bullets
-    }
     jd_terms = _jd_skill_terms(jd)
     resume_terms = _resume_supported_skill_terms(doc)
     for diff in plan.bullets:
+        if diff.bullet_id not in bullet_lookup:
+            raise HallucinationError("Tailor response references an unknown source bullet")
+        original = bullet_lookup[diff.bullet_id]
+        # The model's claimed original is not evidence, including in the UI diff.
+        diff.old = original
         if not diff.options:
             diff.options = [
                 BulletOption(
@@ -169,7 +173,6 @@ async def tailor_resume_to_jd(
                     placeholders=diff.placeholders,
                 )
             ]
-        original = bullet_lookup.get(diff.bullet_id, diff.old)
         _attach_truth_checks(
             diff=diff,
             original=original,
@@ -179,9 +182,7 @@ async def tailor_resume_to_jd(
     return enrich_diff_plan_with_content_fit(doc, jd, plan)
 
 
-@retry(stop=stop_after_attempt(3),
-       wait=wait_exponential(multiplier=1, min=1, max=10),
-       retry=retry_if_exception_type((RateLimitError, APIConnectionError, APITimeoutError)))
+@retry_model_call()
 async def generate_bullet_options(
     *,
     doc: ResumeDocumentJSON,
@@ -192,6 +193,12 @@ async def generate_bullet_options(
     runtime: ModelRuntime | None = None,
 ) -> BulletDiff:
     """Generate three JD-aware alternatives for one bullet."""
+    bullet_lookup = _source_bullets(doc)
+    if bullet_id not in bullet_lookup:
+        raise HallucinationError("Options request references an unknown source bullet")
+    if original != bullet_lookup[bullet_id]:
+        raise HallucinationError("Original bullet does not match the stored source")
+    original = bullet_lookup[bullet_id]
     runtime = runtime or get_model_runtime()
     manifest = runtime.manifests["tailor_options"]
     user = OPTIONS_USER.format(
@@ -201,7 +208,7 @@ async def generate_bullet_options(
         jd_json=jd.model_dump_json(),
     )
     async with measure("tailor_options", user_id=user_id):
-        resp = await runtime.client_factory().beta.chat.completions.parse(
+        resp = await runtime.single_attempt_client().beta.chat.completions.parse(
             model=manifest.model_snapshot,
             response_format=BulletDiff,
             messages=[{"role": "system", "content": OPTIONS_SYSTEM},
@@ -212,6 +219,8 @@ async def generate_bullet_options(
     diff = resp.choices[0].message.parsed
     if diff is None:
         raise ValueError("OpenAI returned no parsed content for bullet options")
+    if diff.bullet_id != bullet_id:
+        raise HallucinationError("Options response does not match the requested source bullet")
     if not diff.options:
         diff.options = [
             BulletOption(
@@ -221,7 +230,6 @@ async def generate_bullet_options(
                 placeholders=diff.placeholders,
             )
         ]
-    diff.bullet_id = bullet_id
     diff.old = original
     _attach_truth_checks(
         diff=diff,
