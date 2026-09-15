@@ -3,7 +3,7 @@ from openai import RateLimitError, APIConnectionError, APITimeoutError
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from app.schemas.jd import JDExtraction
 from app.core.llm_logging import measure, log_cost
-from app.core.openai_client import get_openai_client
+from app.core.openai_client import ModelRuntime, get_model_runtime
 
 logger = logging.getLogger("llm")
 
@@ -27,17 +27,21 @@ Every item in must_have / good_to_have MUST be an object with all three fields p
 @retry(stop=stop_after_attempt(3),
        wait=wait_exponential(multiplier=1, min=1, max=10),
        retry=retry_if_exception_type((RateLimitError, APIConnectionError, APITimeoutError)))
-async def extract_jd_requirements(jd_text: str, user_id: str | None = None) -> JDExtraction:
+async def extract_jd_requirements(
+    jd_text: str, user_id: str | None = None, *, runtime: ModelRuntime | None = None,
+) -> JDExtraction:
     """Extract structured JD requirements via schema-enforced parse()."""
+    runtime = runtime or get_model_runtime()
+    manifest = runtime.manifests["extractor"]
     async with measure("extractor", user_id=user_id):
-        resp = await get_openai_client().beta.chat.completions.parse(
-            model="gpt-4o-2024-08-06",
+        resp = await runtime.client_factory().beta.chat.completions.parse(
+            model=manifest.model_snapshot,
             response_format=JDExtraction,
             messages=[
                 {"role": "system", "content": EXTRACTOR_SYSTEM},
                 {"role": "user", "content": f"Job description:\n\n{jd_text}\n\nExtract requirements."},
             ],
-            temperature=0.1,
+            temperature=manifest.parameters.temperature,
         )
     log_cost("extractor", resp.usage, user_id=user_id)
     parsed = resp.choices[0].message.parsed

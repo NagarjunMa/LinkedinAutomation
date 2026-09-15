@@ -13,6 +13,7 @@ from app.application.errors import (
     ResourceNotFoundError,
 )
 from app.application.credits import paid_operation
+from app.core.openai_client import ModelRuntime, get_model_runtime
 from app.models.resume_document import ResumeVersion
 from app.models.resume_evaluation_v2 import ResumeEvaluationV2
 from app.repositories.resume_repository import ResumeRepository
@@ -32,9 +33,10 @@ from app.services.storage.supabase_storage import get_storage
 
 
 class ResumeApplicationService:
-    def __init__(self, session: Session):
+    def __init__(self, session: Session, *, runtime: ModelRuntime | None = None):
         self.session = session
         self.resumes = ResumeRepository(session)
+        self.runtime = runtime or get_model_runtime()
 
     async def upload(self, file: UploadFile, user_id: str) -> dict:
         uploaded = await read_resume_upload(file)
@@ -95,7 +97,9 @@ class ResumeApplicationService:
         document = self._owned_ready(resume_document_id, user_id)
         with paid_operation(self.session, user_id, amount=1, reason="evaluate"):
             resume = ResumeDocumentJSON.model_validate(document.parsed_json)
-            report = await evaluate_resume(resume, target_role=target_role, user_id=user_id)
+            report = await evaluate_resume(
+                resume, target_role=target_role, user_id=user_id, runtime=self.runtime,
+            )
             storage = get_storage()
             content = storage.download(document.storage_path or document.file_path)
             ats = simulate_ats(content, filename=document.original_filename)
@@ -118,7 +122,7 @@ class ResumeApplicationService:
                 summary_critique=report.summary_critique,
                 ats_parseability=ats.parseability_score,
                 ats_raw_text=ats.raw_text,
-                model_version="gpt-4o-2024-08-06",
+                model_version=self.runtime.manifests["evaluator"].model_snapshot,
             )
             self.resumes.add_evaluation(row)
             payload = {
@@ -160,6 +164,7 @@ class ResumeApplicationService:
                 country=country,
                 jd_context=jd_context,
                 user_id=user_id,
+                runtime=self.runtime,
             )
         except HallucinationError as exc:
             raise OperationRejectedError(f"Rewrite rejected: {exc}") from exc

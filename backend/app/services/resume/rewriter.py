@@ -5,7 +5,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_not_e
 from app.schemas.resume_v2 import RewriteResult
 from app.services.resume.hallucination_guard import check_no_unprompted_numbers, HallucinationError
 from app.core.llm_logging import measure, log_cost
-from app.core.openai_client import get_openai_client
+from app.core.openai_client import ModelRuntime, get_model_runtime
 
 logger = logging.getLogger("llm")
 
@@ -50,18 +50,22 @@ async def rewrite_bullet(
     jd_context: Optional[str] = None,
     country: str = "US",
     user_id: str | None = None,
+    *,
+    runtime: ModelRuntime | None = None,
 ) -> RewriteResult:
+    runtime = runtime or get_model_runtime()
+    manifest = runtime.manifests["rewriter"]
     user = REWRITER_USER.format(
         original=original, target_role=target_role,
         country=country, jd_context=jd_context or "",
     )
     async with measure("rewriter", user_id=user_id):
-        resp = await get_openai_client().chat.completions.create(
-            model="gpt-4o-2024-08-06",
+        resp = await runtime.client_factory().chat.completions.create(
+            model=manifest.model_snapshot,
             response_format={"type": "json_object"},
             messages=[{"role": "system", "content": REWRITER_SYSTEM},
                       {"role": "user", "content": user}],
-            temperature=0.4,
+            temperature=manifest.parameters.temperature,
         )
     log_cost("rewriter", resp.usage, user_id=user_id)
     data = json.loads(resp.choices[0].message.content or "{}")
