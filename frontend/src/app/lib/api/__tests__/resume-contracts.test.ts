@@ -120,9 +120,13 @@ it('accepts delete only as empty 204', async () => {
 });
 
 it('preserves HTTP failures from the shared client', async () => {
-  server.use(http.post(API + '/doc-1/evaluate', () => HttpResponse.json({ detail: 'Insufficient credits' }, { status: 402 })));
+  server.use(http.post(API + '/doc-1/evaluate', () => HttpResponse.json({
+    code: 'insufficient_credits', message: 'Insufficient credits.', detail: 'Insufficient credits.',
+    request_id: '7018a0a3-9431-4bc4-b4ce-719a579588a1', retryable: false,
+  }, { status: 402 })));
   await expect(resumeV2Api.evaluate('doc-1', 'Engineer')).rejects.toMatchObject({
-    name: 'APIError', status: 402, message: 'Insufficient credits', data: 'Insufficient credits',
+    name: 'APIError', status: 402, message: 'Insufficient credits.', data: undefined,
+    code: 'insufficient_credits', requestId: '7018a0a3-9431-4bc4-b4ce-719a579588a1', retryable: false,
   });
 });
 

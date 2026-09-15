@@ -130,8 +130,11 @@ it('preserves PDF bytes and keeps request identifiers in one path segment', asyn
 });
 
 it('preserves HTTP failures rather than classifying them as response corruption', async () => {
-  server.use(http.post(API + '/jd/analyze', () => HttpResponse.json({ detail: 'Insufficient credits' }, { status: 402 })));
-  await expect(jdApi.analyze(input)).rejects.toMatchObject({ status: 402, message: 'Insufficient credits' });
+  server.use(http.post(API + '/jd/analyze', () => HttpResponse.json({
+    code: 'insufficient_credits', message: 'Insufficient credits.', detail: 'Insufficient credits.',
+    request_id: '7018a0a3-9431-4bc4-b4ce-719a579588a1', retryable: false,
+  }, { status: 402 })));
+  await expect(jdApi.analyze(input)).rejects.toMatchObject({ status: 402, message: 'Insufficient credits.', code: 'insufficient_credits', data: undefined });
 });
 
 it('preserves populated nested evidence, qualifiers and fit metadata', async () => {

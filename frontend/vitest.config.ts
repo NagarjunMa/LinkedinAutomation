@@ -24,6 +24,7 @@ export default defineConfig({
         'src/hooks/use-jd-analyze.ts',
         'src/hooks/use-credits.ts',
         'src/app/lib/api/resume-v2.ts',
+        'src/app/lib/api/config.ts',
         'src/app/lib/api/resume-response-parser.ts',
         'src/app/lib/api/workflow-response-parser.ts',
         'src/app/lib/api/jd.ts',

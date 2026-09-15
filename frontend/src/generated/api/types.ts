@@ -690,6 +690,44 @@ export interface components {
             /** Resume Document Id */
             resume_document_id: string;
         };
+        /** APIErrorEnvelope */
+        APIErrorEnvelope: {
+            /**
+             * Code
+             * @enum {string}
+             */
+            code: "invalid_request" | "authentication_required" | "insufficient_credits" | "access_denied" | "resource_not_found" | "method_not_allowed" | "resource_conflict" | "request_too_large" | "unsupported_media_type" | "rate_limited" | "service_unavailable" | "internal_error";
+            /**
+             * Detail
+             * @description Safe compatibility alias for message
+             */
+            detail: string;
+            /** Field Errors */
+            field_errors?: components["schemas"]["APIFieldError"][] | null;
+            /** Message */
+            message: string;
+            /**
+             * Request Id
+             * Format: uuid
+             */
+            request_id: string;
+            /** Retryable */
+            retryable: boolean;
+        };
+        /** APIFieldError */
+        APIFieldError: {
+            /**
+             * Code
+             * @default invalid
+             * @constant
+             */
+            code?: "invalid";
+            /**
+             * Location
+             * @enum {string}
+             */
+            location: "body" | "path" | "query";
+        };
         /**
          * ApplicationStatus
          * @enum {string}
@@ -2279,6 +2317,26 @@ export interface operations {
             };
         };
         responses: {
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
             /** @description Successful Response */
             200: {
                 headers: {
@@ -2288,13 +2346,14 @@ export interface operations {
                     "application/json": components["schemas"]["ApplyTailorResponse"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Unprocessable Entity */
             422: {
                 headers: {
+                    "X-Request-ID"?: string;
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
                 };
             };
         };
@@ -2311,6 +2370,26 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
             /** @description Successful Response */
             200: {
                 headers: {
@@ -2320,13 +2399,14 @@ export interface operations {
                     "application/json": components["schemas"]["BulletDiff"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Unprocessable Entity */
             422: {
                 headers: {
+                    "X-Request-ID"?: string;
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
                 };
             };
         };
@@ -2344,6 +2424,26 @@ export interface operations {
             };
         };
         responses: {
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
             /** @description Successful Response */
             200: {
                 headers: {
@@ -2353,13 +2453,14 @@ export interface operations {
                     "application/json": components["schemas"]["JDAnalysisResponse"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Unprocessable Entity */
             422: {
                 headers: {
+                    "X-Request-ID"?: string;
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
                 };
             };
         };
@@ -2934,6 +3035,26 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
             /** @description Successful Response */
             200: {
                 headers: {
@@ -2943,13 +3064,14 @@ export interface operations {
                     "application/json": components["schemas"]["ResumeDetailResponse"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Unprocessable Entity */
             422: {
                 headers: {
+                    "X-Request-ID"?: string;
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
                 };
             };
         };
@@ -2965,6 +3087,26 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
             /** @description Successful Response */
             204: {
                 headers: {
@@ -2972,13 +3114,14 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Validation Error */
+            /** @description Unprocessable Entity */
             422: {
                 headers: {
+                    "X-Request-ID"?: string;
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
                 };
             };
         };
@@ -2998,6 +3141,26 @@ export interface operations {
             };
         };
         responses: {
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
             /** @description Successful Response */
             200: {
                 headers: {
@@ -3007,13 +3170,14 @@ export interface operations {
                     "application/json": components["schemas"]["ResumeEvaluationResponse"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Unprocessable Entity */
             422: {
                 headers: {
+                    "X-Request-ID"?: string;
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
                 };
             };
         };
@@ -3034,6 +3198,26 @@ export interface operations {
             };
         };
         responses: {
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
             /** @description Successful Response */
             200: {
                 headers: {
@@ -3043,13 +3227,14 @@ export interface operations {
                     "application/json": components["schemas"]["RewriteResult"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Unprocessable Entity */
             422: {
                 headers: {
+                    "X-Request-ID"?: string;
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
                 };
             };
         };
@@ -3069,6 +3254,26 @@ export interface operations {
             };
         };
         responses: {
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
             /** @description Successful Response */
             201: {
                 headers: {
@@ -3078,13 +3283,14 @@ export interface operations {
                     "application/json": components["schemas"]["ResumeVersionResponse"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Unprocessable Entity */
             422: {
                 headers: {
+                    "X-Request-ID"?: string;
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
                 };
             };
         };
@@ -3098,6 +3304,26 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
             /** @description Successful Response */
             200: {
                 headers: {
@@ -3105,6 +3331,16 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ResumeListResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
                 };
             };
         };
@@ -3122,6 +3358,26 @@ export interface operations {
             };
         };
         responses: {
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
             /** @description Successful Response */
             201: {
                 headers: {
@@ -3131,13 +3387,14 @@ export interface operations {
                     "application/json": components["schemas"]["ResumeUploadResponse"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Unprocessable Entity */
             422: {
                 headers: {
+                    "X-Request-ID"?: string;
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
                 };
             };
         };

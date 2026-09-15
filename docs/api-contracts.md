@@ -1,5 +1,63 @@
 # API transport contract generation
 
+## Resume/JD error contract (PRI-12)
+
+This section supersedes older error-behavior notes below for `/api/v1/resumes`
+and `/api/v1/jd` only. Successful payloads/status codes and unrelated routes
+(including exports, credits, jobs and profiles) are unchanged.
+
+Errors now carry `code`, safe `message`, server-generated UUID `request_id`,
+`retryable`, and a safe `detail` alias for old clients. The optional `field_errors`
+schema permits only coarse locations and closed codes; this initial migration
+does not emit field details. Submitted values, dynamic field names, validation
+contexts, provider bodies and exception prose are never copied into the envelope.
+OpenAPI declares 4XX/5XX families and an explicit 422 override; generated
+TypeScript remains the transport type source.
+
+The middleware normalizes early preview/rate/size denials as well as handled HTTP,
+request/response validation and unexpected failures. Existing status codes and
+authentication/authorization decisions remain unchanged. Unknown exceptions before
+response start become a safe 500; a partially sent success cannot be rewritten and
+terminates with a static failure instead. Error bodies are discarded without
+buffering, while successful streams, bytes and empty 204 responses are preserved.
+Header metadata tied to a replaced representation is removed; protocol, cookies,
+security and rate-limit headers are preserved. Errors use `Cache-Control: no-store`.
+
+`X-Request-ID` matches the error body and request state, appears on successful
+workflow responses too, and is available through the existing CORS policy.
+Incoming IDs are deliberately ignored so caller-supplied identifiers cannot enter
+diagnostic logs. The rate limiter preserves the server-created ID. CORS response
+headers use Starlette's `simple_response` path so preflight still passes through
+the existing preview/rate/size controls before the inner CORS handler; origin,
+method and credential allowlists are not widened. Review this integration on
+Starlette upgrades. Existing development wildcard policy remains PRI-27 work.
+
+Frontend `APIError` exposes optional `code`, `requestId`, and `retryable` metadata.
+The shared client validates the envelope against a generated-compatible runtime
+schema and uses UI-owned messages keyed by the closed code, not server prose.
+Error reads are capped at 8 KiB; malformed/legacy workflow responses receive safe
+fallback text while preserving HTTP status and a valid header ID. Raw response data,
+status text and exception details are not retained in workflow errors. Non-workflow
+clients retain legacy error handling. No UI layout or retry orchestration changes.
+
+`retryable` is conservatively **false** in this first migration: status alone cannot
+prove a mutation was rolled back or distinguish transient throttling from quota
+exhaustion. It is not a ban on deliberate manual retry after reviewing state.
+Backend retry predicates and exhausted-quota classification remain PRI-14 work.
+
+Deployment: backend first, then frontend. The `detail` alias allows old clients to
+read safe text; newer clients handle old backend errors with a generic fallback.
+Rollback frontend then backend; no migration, dependency change or data rewrite.
+Monitor error codes/status and random request IDs using synthetic failures, never
+attach resume/JD content. Additional human review of middleware order and denial
+paths, hosted Docker/PostgreSQL/secret scanning and a browser error smoke are
+required before merge. Passing these checks is not production or grounding certification.
+
+References checked 2026-09-15: [FastAPI error handling](https://fastapi.tiangolo.com/tutorial/handling-errors/)
+and [Starlette CORS source](https://github.com/Kludex/starlette/blob/main/starlette/middleware/cors.py).
+The installed Starlette CORS implementation was also inspected directly; tests
+verify the pinned dependency's actual behavior.
+
 PRI-9 establishes generation and drift detection, not migration of API consumers.
 Pydantic/FastAPI declarations remain the source of truth. Handwritten frontend domain
 models and existing API clients are unchanged; resume consumer migration is PRI-10.
