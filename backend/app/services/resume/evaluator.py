@@ -4,7 +4,7 @@ from openai import RateLimitError, APIConnectionError, APITimeoutError
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from app.schemas.resume_v2 import ResumeDocumentJSON, EvaluationReport
 from app.core.llm_logging import measure, log_cost
-from app.core.openai_client import get_openai_client
+from app.core.openai_client import ModelRuntime, get_model_runtime
 
 logger = logging.getLogger("llm")
 
@@ -82,7 +82,11 @@ async def evaluate_resume(
     doc: ResumeDocumentJSON,
     target_role: str,
     user_id: str | None = None,
+    *,
+    runtime: ModelRuntime | None = None,
 ) -> EvaluationReport:
+    runtime = runtime or get_model_runtime()
+    manifest = runtime.manifests["evaluator"]
     payload = doc.model_dump_json(exclude={"raw_text"})
     user_msg = USER_PROMPT_TEMPLATE.format(
         target_role=target_role,
@@ -90,14 +94,14 @@ async def evaluate_resume(
         raw_text=(doc.raw_text or "")[:12000],
     )
     async with measure("evaluator", user_id=user_id):
-        resp = await get_openai_client().chat.completions.create(
-            model="gpt-4o-2024-08-06",
+        resp = await runtime.client_factory().chat.completions.create(
+            model=manifest.model_snapshot,
             response_format={"type": "json_object"},
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": user_msg},
             ],
-            temperature=0.2,
+            temperature=manifest.parameters.temperature,
         )
     log_cost("evaluator", resp.usage, user_id=user_id)
     content = resp.choices[0].message.content or "{}"

@@ -7,7 +7,7 @@ from app.schemas.jd import BulletDiff, BulletOption, JDExtraction, DiffPlan, Bul
 from app.services.resume.hallucination_guard import analyze_rewrite_truth, HallucinationError
 from app.services.resume.content_fit import enrich_diff_plan_with_content_fit
 from app.core.llm_logging import measure, log_cost
-from app.core.openai_client import get_openai_client
+from app.core.openai_client import ModelRuntime, get_model_runtime
 
 
 logger = logging.getLogger("llm")
@@ -126,19 +126,23 @@ async def tailor_resume_to_jd(
     doc: ResumeDocumentJSON,
     jd: JDExtraction,
     user_id: str | None = None,
+    *,
+    runtime: ModelRuntime | None = None,
 ) -> DiffPlan:
     """Tailor a resume to a JD via schema-enforced parse() API."""
+    runtime = runtime or get_model_runtime()
+    manifest = runtime.manifests["tailor"]
     user = TAILOR_USER.format(
         resume_json=doc.model_dump_json(exclude={"raw_text"}),
         jd_json=jd.model_dump_json(),
     )
     async with measure("tailor", user_id=user_id):
-        resp = await get_openai_client().beta.chat.completions.parse(
-            model="gpt-4o-2024-08-06",
+        resp = await runtime.client_factory().beta.chat.completions.parse(
+            model=manifest.model_snapshot,
             response_format=DiffPlan,
             messages=[{"role": "system", "content": TAILOR_SYSTEM},
                       {"role": "user", "content": user}],
-            temperature=0.3,
+            temperature=manifest.parameters.temperature,
         )
     log_cost("tailor", resp.usage, user_id=user_id)
     plan = resp.choices[0].message.parsed
@@ -185,8 +189,11 @@ async def generate_bullet_options(
     bullet_id: str,
     original: str,
     user_id: str | None = None,
+    runtime: ModelRuntime | None = None,
 ) -> BulletDiff:
     """Generate three JD-aware alternatives for one bullet."""
+    runtime = runtime or get_model_runtime()
+    manifest = runtime.manifests["tailor_options"]
     user = OPTIONS_USER.format(
         bullet_id=bullet_id,
         original=original,
@@ -194,12 +201,12 @@ async def generate_bullet_options(
         jd_json=jd.model_dump_json(),
     )
     async with measure("tailor_options", user_id=user_id):
-        resp = await get_openai_client().beta.chat.completions.parse(
-            model="gpt-4o-2024-08-06",
+        resp = await runtime.client_factory().beta.chat.completions.parse(
+            model=manifest.model_snapshot,
             response_format=BulletDiff,
             messages=[{"role": "system", "content": OPTIONS_SYSTEM},
                       {"role": "user", "content": user}],
-            temperature=0.4,
+            temperature=manifest.parameters.temperature,
         )
     log_cost("tailor_options", resp.usage, user_id=user_id)
     diff = resp.choices[0].message.parsed

@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.application.errors import OperationRejectedError, ResourceNotFoundError
 from app.application.credits import paid_operation
+from app.core.openai_client import ModelRuntime, get_model_runtime
 from app.models.jd_evaluation import JDEvaluation
 from app.models.resume_document import ResumeVersion
 from app.repositories.jd_repository import JDEvaluationRepository
@@ -30,10 +31,11 @@ _ROLE_MAP = {"SWE": "swe", "DS": "ds", "PM": "pm"}
 
 
 class JDTailoringApplicationService:
-    def __init__(self, session: Session):
+    def __init__(self, session: Session, *, runtime: ModelRuntime | None = None):
         self.session = session
         self.resumes = ResumeRepository(session)
         self.evaluations = JDEvaluationRepository(session)
+        self.runtime = runtime or get_model_runtime()
 
     async def analyze(
         self,
@@ -47,10 +49,10 @@ class JDTailoringApplicationService:
             raise ResourceNotFoundError("Resume document not found")
 
         with paid_operation(self.session, user_id, amount=2, reason="tailor"):
-            extraction = await extract_jd_requirements(jd_text, user_id=user_id)
+            extraction = await extract_jd_requirements(jd_text, user_id=user_id, runtime=self.runtime)
             resume = ResumeDocumentJSON.model_validate(document.parsed_json)
             try:
-                plan = await tailor_resume_to_jd(resume, extraction, user_id=user_id)
+                plan = await tailor_resume_to_jd(resume, extraction, user_id=user_id, runtime=self.runtime)
             except HallucinationError as exc:
                 raise OperationRejectedError(f"Tailor rejected: {exc}") from exc
             row = JDEvaluation(
@@ -157,6 +159,7 @@ class JDTailoringApplicationService:
                 bullet_id=bullet_id,
                 original=original,
                 user_id=user_id,
+                runtime=self.runtime,
             )
         except HallucinationError as exc:
             raise OperationRejectedError(f"Rewrite rejected: {exc}") from exc
