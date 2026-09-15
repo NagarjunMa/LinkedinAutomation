@@ -107,7 +107,11 @@ def test_invalid_response_fails_without_disclosing_payload(client, auth_headers,
     getattr(stub_service, name).return_value = {"private": "private-resume-sentinel"}
     response = request(client, method, path, auth_headers)
     assert response.status_code == 500
-    assert response.json() == {"detail": "Resume response could not be processed"}
+    assert response.json() == {
+        "code": "internal_error", "message": "Request failed. Please try again when ready.",
+        "detail": "Request failed. Please try again when ready.", "retryable": False,
+        "request_id": response.headers["x-request-id"],
+    }
     assert "private-resume-sentinel" not in caplog.text + response.text
     assert any(record.message == "Resume response contract validation failed" for record in caplog.records)
     assert all(record.exc_info is None for record in caplog.records)
@@ -149,7 +153,11 @@ def test_malformed_field_is_not_accepted(client, auth_headers, stub_service, pay
     getattr(stub_service, name).return_value = invalid
     response = request(client, method, path, auth_headers)
     assert response.status_code == 500
-    assert response.json() == {"detail": "Resume response could not be processed"}
+    assert response.json() == {
+        "code": "internal_error", "message": "Request failed. Please try again when ready.",
+        "detail": "Request failed. Please try again when ready.", "retryable": False,
+        "request_id": response.headers["x-request-id"],
+    }
 
 
 def test_saved_legacy_evaluation_preserves_service_fallbacks(

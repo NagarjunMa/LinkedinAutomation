@@ -12,6 +12,7 @@ from app.api.v1.endpoints import waitlist
 from app.api.v1.endpoints import public_preview
 from app.core.config import settings
 from app.core.auth import require_path_user_matches_current, get_current_user_id
+from app.schemas.api_errors import ERROR_RESPONSES
 
 api_router = APIRouter()
 
@@ -37,7 +38,7 @@ if settings.ENABLE_LEGACY_JOB_EXTRACTION:
         tags=["job-extraction"],
         dependencies=[Depends(get_current_user_id)],
     )
-api_router.include_router(resumes_v2.router, prefix="/resumes", tags=["resumes-v2"])
+api_router.include_router(resumes_v2.router, prefix="/resumes", tags=["resumes-v2"], responses=ERROR_RESPONSES)
 api_router.include_router(
     user_profiles.router,
     prefix="/user-profiles",
@@ -46,7 +47,7 @@ api_router.include_router(
 )
 api_router.include_router(logs.router, prefix="/logs", tags=["logging"])
 # Phase-1 new routes
-api_router.include_router(jd.router)
+api_router.include_router(jd.router, responses=ERROR_RESPONSES)
 api_router.include_router(credits.router)
 # Phase-2 new routes
 api_router.include_router(exports.router)

@@ -196,7 +196,10 @@ test('failed re-analysis clears old suggestions and preview until a manual retry
     analyses += 1;
     if (analyses === 2) {
       await failureGate;
-      await route.fulfill({ status: 503, json: { detail: 'Analysis unavailable' } });
+      await route.fulfill({ status: 503, headers: { 'X-Request-ID': '7018a0a3-9431-4bc4-b4ce-719a579588a1' }, json: {
+        code: 'service_unavailable', message: 'private-provider-sentinel', detail: 'private-provider-sentinel',
+        request_id: '7018a0a3-9431-4bc4-b4ce-719a579588a1', retryable: false,
+      } satisfies components['schemas']['APIErrorEnvelope'] });
     } else {
       await route.fulfill({ json: { ...ANALYZE_RESPONSE, jd_evaluation_id: `jd-${analyses}` } });
     }
@@ -229,6 +232,9 @@ test('failed re-analysis clears old suggestions and preview until a manual retry
     releaseFailure();
   }
   await expect(page.getByText('Analyze failed', { exact: true })).toBeVisible();
+  // This page renders a generic inline recovery banner; APIError copy and
+  // diagnostic metadata are asserted at the shared-client boundary.
+  await expect(page.getByText('private-provider-sentinel', { exact: false })).toHaveCount(0);
   await expect(page.locator('#jd')).toHaveValue(newJd);
   await expect(page.getByTestId('change-bullet-b1')).toHaveCount(0);
   await expect(page.getByTestId('tailor-apply')).toHaveCount(0);

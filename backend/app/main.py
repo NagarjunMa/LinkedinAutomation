@@ -84,8 +84,7 @@ allowed_origins = settings.CORS_ORIGINS if settings.CORS_ORIGINS else [
 if not is_production and not settings.CORS_ORIGINS:
     allowed_origins = ["*"]
 
-app.add_middleware(
-    CORSMiddleware,
+cors_options = dict(
     allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
@@ -102,6 +101,7 @@ app.add_middleware(
     expose_headers=["X-Request-ID", "X-Process-Time", "X-RateLimit-Remaining"],
     max_age=3600,  # Cache preflight requests for 1 hour
 )
+app.add_middleware(CORSMiddleware, **cors_options)
 
 # Setup comprehensive security middleware stack
 security_config = {
@@ -197,6 +197,7 @@ security_config = {
 # Add basic security headers middleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from app.middleware.public_preview import PublicPreviewAccessMiddleware
+from app.middleware.error_contracts import WorkflowErrorMiddleware
 from app.middleware.security import RateLimitMiddleware, RequestValidationMiddleware
 
 class BasicSecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -229,6 +230,9 @@ app.add_middleware(
         "/api/v1/public-preview/events",
     },
 )
+
+# Normalize only resume/JD responses, including the middleware's early denials.
+app.add_middleware(WorkflowErrorMiddleware, cors_options=cors_options)
 
 # Include API router
 app.include_router(api_router, prefix="/api/v1")

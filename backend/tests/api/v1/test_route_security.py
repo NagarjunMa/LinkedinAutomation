@@ -157,7 +157,13 @@ def test_oversized_request_rejected_before_endpoint_processing(client: TestClien
     )
 
     assert response.status_code == 413
-    assert response.json()["max_size"] == 11 * 1024 * 1024
+    assert response.json()["code"] == "request_too_large"
+    assert response.json()["request_id"] == response.headers["x-request-id"]
+    # Verify the same 11 MiB framing boundary, not just one large request.
+    over = client.post("/api/v1/resumes/upload", content=b"", headers={"Content-Length": str(11 * 1024 * 1024 + 1)})
+    assert over.status_code == 413
+    at_limit = client.post("/api/v1/resumes/upload", content=b"", headers={"Content-Length": str(11 * 1024 * 1024)})
+    assert at_limit.status_code == 422  # Size accepted; required file is absent.
 
 
 def test_resume_upload_limit_does_not_replace_global_request_limit(client: TestClient):

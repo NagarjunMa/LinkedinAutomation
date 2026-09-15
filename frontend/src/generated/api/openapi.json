@@ -1,6 +1,96 @@
 {
   "components": {
     "schemas": {
+      "APIErrorEnvelope": {
+        "properties": {
+          "code": {
+            "enum": [
+              "invalid_request",
+              "authentication_required",
+              "insufficient_credits",
+              "access_denied",
+              "resource_not_found",
+              "method_not_allowed",
+              "resource_conflict",
+              "request_too_large",
+              "unsupported_media_type",
+              "rate_limited",
+              "service_unavailable",
+              "internal_error"
+            ],
+            "title": "Code",
+            "type": "string"
+          },
+          "detail": {
+            "description": "Safe compatibility alias for message",
+            "maxLength": 200,
+            "title": "Detail",
+            "type": "string"
+          },
+          "field_errors": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/APIFieldError"
+                },
+                "maxItems": 3,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Field Errors"
+          },
+          "message": {
+            "maxLength": 200,
+            "title": "Message",
+            "type": "string"
+          },
+          "request_id": {
+            "format": "uuid",
+            "title": "Request Id",
+            "type": "string"
+          },
+          "retryable": {
+            "title": "Retryable",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "request_id",
+          "retryable",
+          "detail"
+        ],
+        "title": "APIErrorEnvelope",
+        "type": "object"
+      },
+      "APIFieldError": {
+        "properties": {
+          "code": {
+            "const": "invalid",
+            "default": "invalid",
+            "title": "Code",
+            "type": "string"
+          },
+          "location": {
+            "enum": [
+              "body",
+              "path",
+              "query"
+            ],
+            "title": "Location",
+            "type": "string"
+          }
+        },
+        "required": [
+          "location"
+        ],
+        "title": "APIFieldError",
+        "type": "object"
+      },
       "AnalyzeRequest": {
         "properties": {
           "jd_text": {
@@ -4955,11 +5045,55 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
                 }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Client Error",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Server Error",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -5012,11 +5146,55 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
                 }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Client Error",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Server Error",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -5068,11 +5246,55 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
                 }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Client Error",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Server Error",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -6145,6 +6367,60 @@
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Client Error",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Server Error",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -6187,11 +6463,55 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
                 }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Client Error",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Server Error",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -6228,11 +6548,55 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
                 }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Client Error",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Server Error",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -6274,11 +6638,55 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
                 }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Client Error",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Server Error",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -6332,11 +6740,55 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
                 }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Client Error",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Server Error",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -6399,11 +6851,55 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
                 }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Client Error",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Server Error",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -6457,11 +6953,55 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
                 }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Client Error",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Server Error",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
           }
         },
         "security": [

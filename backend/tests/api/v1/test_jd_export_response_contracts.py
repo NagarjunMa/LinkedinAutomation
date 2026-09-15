@@ -106,7 +106,11 @@ def test_nested_analysis_corruption_is_private(client, auth_headers, jd_service,
     jd_service.analyze.return_value = invalid
     response = analyze(client, auth_headers)
     assert response.status_code == 500
-    assert response.json() == {"detail": "Response could not be processed"}
+    assert response.json() == {
+        "code": "internal_error", "message": "Request failed. Please try again when ready.",
+        "detail": "Request failed. Please try again when ready.", "retryable": False,
+        "request_id": response.headers["x-request-id"],
+    }
     assert "private-jd-sentinel" not in response.text + caplog.text
     assert JD_TEXT not in caplog.text
     assert "doc-1" not in caplog.text
@@ -120,7 +124,11 @@ def test_missing_analysis_fields_fail_instead_of_fabricating_success(client, aut
     jd_service.analyze.return_value = {}
     response = analyze(client, auth_headers)
     assert response.status_code == 500
-    assert response.json() == {"detail": "Response could not be processed"}
+    assert response.json() == {
+        "code": "internal_error", "message": "Request failed. Please try again when ready.",
+        "detail": "Request failed. Please try again when ready.", "retryable": False,
+        "request_id": response.headers["x-request-id"],
+    }
 
 
 @pytest.mark.parametrize("balance", [0, 17, -3])
@@ -159,11 +167,15 @@ def test_pdf_bytes_and_headers_remain_unchanged(client, auth_headers, export_ser
     export_service.download.assert_called_once_with("exp-1", test_user_id)
 
 
-def test_application_errors_keep_existing_status_and_detail(client, auth_headers, jd_service, export_service):
+def test_application_errors_preserve_status_and_unmigrated_export_detail(client, auth_headers, jd_service, export_service):
     jd_service.analyze.side_effect = ResourceNotFoundError("Resume document not found")
     response = analyze(client, auth_headers)
     assert response.status_code == 404
-    assert response.json() == {"detail": "Resume document not found"}
+    assert response.json() == {
+        "code": "resource_not_found", "message": "Resource not found.",
+        "detail": "Resource not found.", "retryable": False,
+        "request_id": response.headers["x-request-id"],
+    }
     export_service.download.side_effect = ResourceNotFoundError("Export not found")
     response = client.get("/api/v1/exports/exp-1/download", headers=auth_headers)
     assert response.status_code == 404
@@ -177,10 +189,16 @@ def test_invalid_request_is_not_misclassified_as_response_failure(client, auth_h
     jd_service.analyze.assert_not_awaited()
 
 
-def test_non_contract_exceptions_are_not_swallowed(client, auth_headers, jd_service):
+def test_non_contract_exceptions_return_safe_failure_not_success(client, auth_headers, jd_service):
     jd_service.analyze.side_effect = RuntimeError("synthetic service failure")
-    with pytest.raises(RuntimeError, match="synthetic service failure"):
-        analyze(client, auth_headers)
+    response = analyze(client, auth_headers)
+    assert response.status_code == 500
+    assert response.json() == {
+        "code": "internal_error", "message": "Request failed. Please try again when ready.",
+        "detail": "Request failed. Please try again when ready.", "retryable": False,
+        "request_id": response.headers["x-request-id"],
+    }
+    assert "synthetic service failure" not in response.text
 
 
 def test_real_analysis_service_payload_matches_persisted_result(
@@ -218,6 +236,10 @@ def test_existing_jd_response_validation_uses_same_private_boundary(client, auth
     setattr(jd_service, method, factory(return_value={"private": "private-jd-sentinel"}))
     response = client.post(path, headers=auth_headers, json={"accepted_changes": []})
     assert response.status_code == 500
-    assert response.json() == {"detail": "Response could not be processed"}
+    assert response.json() == {
+        "code": "internal_error", "message": "Request failed. Please try again when ready.",
+        "detail": "Request failed. Please try again when ready.", "retryable": False,
+        "request_id": response.headers["x-request-id"],
+    }
     assert "private-jd-sentinel" not in response.text + caplog.text
     assert all(record.exc_info is None for record in caplog.records)

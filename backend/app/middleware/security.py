@@ -262,7 +262,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         # Add request ID to state
-        request.state.request_id = str(uuid.uuid4())
+        if not hasattr(request.state, "request_id"):
+            request.state.request_id = str(uuid.uuid4())
 
         # Cleanup old records periodically
         self._cleanup_old_requests()
