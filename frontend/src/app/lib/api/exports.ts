@@ -1,19 +1,20 @@
 // frontend/src/app/lib/api/exports.ts
 import { makeAPIRequest } from './config';
-import type { ExportPdfRequest, ExportPdfResponse } from './types-v2';
+import type { ExportPdfRequest, ExportPdfResponse } from './workflow-contracts';
+import { workflowResponseParser } from './workflow-response-parser';
 
 export const exportsApi = {
   exportPdf: (body: ExportPdfRequest): Promise<ExportPdfResponse> =>
     makeAPIRequest<ExportPdfResponse>('/api/v1/exports', {
       method: 'POST',
       body: JSON.stringify(body),
-    }),
+    }, workflowResponseParser.export),
 
   downloadPdf: async (exportId: string): Promise<Blob> => {
     return makeAPIRequest<Blob>(
-      `/api/v1/exports/${exportId}/download`,
+      `/api/v1/exports/${encodeURIComponent(exportId)}/download`,
       { method: 'GET' },
-      (response) => response.blob(),
+      workflowResponseParser.download,
     );
   },
 };

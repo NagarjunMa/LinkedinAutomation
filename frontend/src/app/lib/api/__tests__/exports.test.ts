@@ -13,7 +13,8 @@ describe('exportsApi.exportPdf', () => {
           export_id: 'exp-1',
           download_url: 'https://storage.example.com/resumes/resume-acme.pdf?token=abc',
           filename: 'resume-acme.pdf',
-        });
+          expires_at: '2026-09-14T12:00:00Z', country: 'US', role_template: 'swe',
+        }, { status: 201 });
       })
     );
     const result = await exportsApi.exportPdf({
@@ -35,7 +36,8 @@ describe('exportsApi.exportPdf', () => {
           export_id: 'exp-2',
           download_url: 'https://storage.example.com/resumes/resume.pdf?token=xyz',
           filename: 'resume.pdf',
-        });
+          expires_at: '2026-09-14T12:00:00Z', country: 'US', role_template: 'swe',
+        }, { status: 201 });
       })
     );
     const result = await exportsApi.exportPdf({ resume_version_id: 'ver-2' });
