@@ -1,6 +1,5 @@
 import logging
-from openai import RateLimitError, APIConnectionError, APITimeoutError
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+from app.core.model_retry import retry_model_call
 from app.schemas.jd import JDExtraction
 from app.core.llm_logging import measure, log_cost
 from app.core.openai_client import ModelRuntime, get_model_runtime
@@ -24,9 +23,7 @@ If a field has no items, return an EMPTY ARRAY []. Never use a dict where an arr
 Every item in must_have / good_to_have MUST be an object with all three fields populated."""
 
 
-@retry(stop=stop_after_attempt(3),
-       wait=wait_exponential(multiplier=1, min=1, max=10),
-       retry=retry_if_exception_type((RateLimitError, APIConnectionError, APITimeoutError)))
+@retry_model_call()
 async def extract_jd_requirements(
     jd_text: str, user_id: str | None = None, *, runtime: ModelRuntime | None = None,
 ) -> JDExtraction:
@@ -34,7 +31,7 @@ async def extract_jd_requirements(
     runtime = runtime or get_model_runtime()
     manifest = runtime.manifests["extractor"]
     async with measure("extractor", user_id=user_id):
-        resp = await runtime.client_factory().beta.chat.completions.parse(
+        resp = await runtime.single_attempt_client().beta.chat.completions.parse(
             model=manifest.model_snapshot,
             response_format=JDExtraction,
             messages=[

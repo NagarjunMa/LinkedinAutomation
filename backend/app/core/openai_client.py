@@ -74,6 +74,11 @@ class ModelRuntime:
         # Snapshot caller-owned mappings so metadata cannot drift during an await.
         object.__setattr__(self, "manifests", MappingProxyType(dict(self.manifests)))
 
+    def single_attempt_client(self) -> AsyncOpenAI:
+        # Reuse the transport without changing the shared/legacy client's policy.
+        # Application retries are the sole attempt budget for these operations.
+        return self.client_factory().with_options(max_retries=0)
+
 
 def get_model_runtime() -> ModelRuntime:
     return ModelRuntime(client_factory=get_openai_client)
