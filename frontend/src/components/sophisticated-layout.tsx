@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { SophisticatedSidebar, SidebarProvider, useSidebar } from "./sophisticated-sidebar"
 import { SophisticatedHeader } from "./sophisticated-header"
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 
 interface SophisticatedLayoutProps {
     children: React.ReactNode
@@ -38,10 +38,9 @@ const LayoutContent = ({ children, notificationCount, showHeader }: Sophisticate
             )}
 
             {/* Main Content Area */}
-            <motion.main
-                animate={{ marginLeft: isCollapsed ? 72 : 280 }}
-                transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                className="flex-1 min-h-screen flex flex-col lg:ml-[280px]" // Default margin for SSR matching, motion will override
+            {/* CSS keeps sidebar spacing desktop-only, including before hydration. */}
+            <main
+                className={`ml-0 min-w-0 flex-1 min-h-screen flex flex-col transition-[margin-left] [transition-duration:600ms] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${isCollapsed ? 'lg:ml-20' : 'lg:ml-[280px]'}`}
             >
                 {/* Header - if used, check if it needs integration with new design. 
                     The new dashboard has its own Header, so we might hide this global header on dashboard page 
@@ -59,7 +58,7 @@ const LayoutContent = ({ children, notificationCount, showHeader }: Sophisticate
                         {children}
                     </AnimatePresence>
                 </div>
-            </motion.main>
+            </main>
         </div>
     );
 };

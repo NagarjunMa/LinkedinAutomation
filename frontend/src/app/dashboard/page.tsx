@@ -23,7 +23,7 @@ const primaryActions = [
     {
         icon: <Upload className="w-6 h-6" />,
         title: 'Polish a Resume',
-        description: 'Upload your resume and get a recruiter-grade ATS score with specific bullet-point rewrites.',
+        description: 'Review content feedback and document checks, then consider bullet-point rewrites supported by your experience.',
         href: '/dashboard/resume',
         shortcut: 'R',
         cta: 'Open Resume Lab',
@@ -31,7 +31,7 @@ const primaryActions = [
     {
         icon: <Wand2 className="w-6 h-6" />,
         title: 'Tailor to a JD',
-        description: 'Paste a job description. Our AI surfaces missing keywords and rewrites your resume to match the role.',
+        description: 'Compare a job description with your resume. Review gaps and accept only changes supported by your actual experience.',
         href: '/dashboard/resume/tailor',
         shortcut: 'T',
         cta: 'Start Tailoring',
@@ -133,7 +133,7 @@ export default function DashboardPage() {
                     {userName ? `Welcome back, ${userName}.` : 'Welcome back.'}
                 </h1>
                 <p className="mt-4 text-sm text-app-text/60 font-medium max-w-xl">
-                    Your recruiter-grade resume workspace. Every evaluation is run against real hiring-manager criteria — not generic ATS rules.
+                    Your resume workspace. Review content suggestions separately from document checks; neither predicts a hiring outcome.
                 </p>
             </motion.div>
 
@@ -195,7 +195,7 @@ export default function DashboardPage() {
                         New here? Start with Resume Polish.
                     </p>
                     <p className="text-xs text-app-text/50 font-medium leading-relaxed">
-                        Upload your current resume, get an ATS score and a list of specific improvements — then use Tailor to match a target job description.
+                        Upload your current resume, review its content and document findings, then use Tailor to compare it with a target job description.
                     </p>
                 </div>
                 <Link

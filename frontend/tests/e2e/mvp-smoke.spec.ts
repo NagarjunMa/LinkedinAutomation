@@ -131,9 +131,39 @@ test('authenticated dashboard loads with non-production bypass', async ({ page, 
 
   await page.goto('/dashboard');
   await expect(page.locator('body')).toBeVisible();
+  await expect(page.getByText(/neither predicts a hiring outcome/)).toBeVisible();
+  await expect(page.getByText(/get.*ATS score/i)).toHaveCount(0);
   expect(pageErrors.map((error) => error.message)).not.toEqual(
     expect.arrayContaining([expect.stringContaining('Hydration failed')]),
   );
+});
+
+test('shared layout reserves sidebar space only on desktop, including collapse and resize', async ({ page, context }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await context.addCookies([{ name: 'test-bypass-auth', value: '1', url: APP }]);
+  await page.route(`${API}/api/v1/credits/balance`, route => route.fulfill({ json: { balance: 90 } }));
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/dashboard/resume');
+  const main = page.getByRole('main');
+  await expect(main).toHaveCSS('margin-left', '0px');
+  for (const width of [768, 1023, 1024, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    await expect(main).toHaveCSS('margin-left', width >= 1024 ? '280px' : '0px');
+  }
+  // The existing sidebar toggle is icon-only; scope it to the desktop navigation.
+  await page.locator('nav:visible button').first().click();
+  await expect(main).toHaveCSS('margin-left', '80px');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(main).toHaveCSS('margin-left', '0px');
+  await expect(main).toHaveCSS('transition-property', 'none');
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await expect(main).toHaveCSS('margin-left', '80px');
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await expect(main).toHaveCSS('transition-duration', '0.6s');
+  // Exercise keyboard expansion; the dev server's toolbar overlays this footer.
+  await page.locator('nav:visible button').last().focus();
+  await page.keyboard.press('Enter');
+  await expect(main).toHaveCSS('margin-left', '280px');
 });
 
 test('tailor MVP flow uploads, edits pointer, applies, and exposes download contract', async ({ page, context }) => {
@@ -170,6 +200,8 @@ test('tailor MVP flow uploads, edits pointer, applies, and exposes download cont
   await page.getByRole('button', { name: /Analyze \(2 credits\)/ }).click();
 
   await expect(page.getByTestId('change-bullet-b1')).toBeVisible();
+  await expect(page.getByTestId('match-score')).toHaveCount(0);
+  await expect(page.getByText(/Only add a skill.*actual experience/)).toBeVisible();
   await page.getByLabel('Generated pointer text').fill('Edited Python services pointer for Acme.');
 
   await page.getByTestId('tailor-apply').click();
@@ -181,6 +213,70 @@ test('tailor MVP flow uploads, edits pointer, applies, and exposes download cont
       new_text: 'Edited Python services pointer for Acme.',
     }],
   });
+});
+
+for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }]) {
+  test(`resume findings and document checks preserve evaluate/rewrite/save at ${viewport.width}px`, async ({ page, context }) => {
+    await page.setViewportSize(viewport);
+    await context.addCookies([{ name: 'test-bypass-auth', value: '1', url: APP }]);
+    await page.route(`${API}/api/v1/credits/balance`, route => route.fulfill({ json: { balance: 90 } }));
+    await page.route(`${API}/api/v1/resumes/upload`, route => route.fulfill({ status: 201, json: UPLOAD_RESPONSE }));
+    await page.route(`${API}/api/v1/resumes/doc-2/evaluate`, route => route.fulfill({ json: {
+      evaluation_id: 'eval-1', overall_score: 62, readiness_label: 'needs_work',
+      score_breakdown: { content_quality: 60, role_fit: 65, evidence_strength: 60, recruiter_readability: 70 },
+      score_explanation: [{ category: 'evidence_strength', score: 60, reason: 'Clarify your personal contribution.',
+        evidence: [], before_applying_action: 'Describe the component you built.' }],
+      top_actions_before_applying: ['Review ownership claims.'], parser_confidence: 'high',
+      bullet_flags: [{ bullet_id: 'b1', severity: 'warning', reason: 'Clarify ownership', category: 'clarity' }],
+      format_issues: [], summary_critique: 'Check suggestions against your actual work.',
+      ats_parseability: 88, ats_raw_text: '<script>synthetic-source</script>',
+    } satisfies components['schemas']['ResumeEvaluationResponse'] }));
+    await page.route(`${API}/api/v1/resumes/doc-2/rewrite/b1`, route => route.fulfill({ json: {
+      rewritten: 'Built backend services.', placeholders: [], applied_changes: ['Clarified contribution'],
+    } }));
+    let saved: unknown;
+    await page.route(`${API}/api/v1/resumes/doc-2/versions`, async route => {
+      saved = route.request().postDataJSON();
+      await route.fulfill({ status: 201, json: { version_id: 'version-1' } });
+    });
+    await page.goto('/dashboard/resume');
+    await page.locator('input[type=file]').setInputFiles(path.resolve('tests/fixtures/sample-resume.pdf'));
+    await page.getByRole('button', { name: 'Upload', exact: true }).click();
+    await expect(page).toHaveURL(/\/doc-2\/edit$/);
+    await expect(page.getByRole('tab', { name: 'Document checks' })).toBeDisabled();
+    await page.getByRole('button', { name: 'Evaluate (1 credit)' }).click();
+    await expect(page.getByText('Clarify your personal contribution.')).toBeVisible();
+    await expect(page.getByText('Review ownership claims.')).toBeVisible();
+    await expect(page.getByText(/Overall:|Potential Score/)).toHaveCount(0);
+    await expect(page.getByTestId('ats-raw-text')).toHaveCount(0);
+    await test.info().attach(`content-findings-${viewport.width}`, { body: await page.screenshot({ fullPage: true }), contentType: 'image/png' });
+    // Exercise keyboard tab activation, not only pointer navigation.
+    await page.getByRole('tab', { name: 'Document checks' }).focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByText(/not measure candidate quality or hiring probability/)).toBeVisible();
+    await expect(page.getByTestId('ats-raw-text')).toHaveText('<script>synthetic-source</script>');
+    await expect(page.getByRole('progressbar', { name: 'PrismPro document parseability' })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await test.info().attach(`document-checks-${viewport.width}`, { body: await page.screenshot({ fullPage: true }), contentType: 'image/png' });
+    await page.getByRole('tab', { name: 'Resume', exact: true }).click();
+    await page.getByTestId('bullet-b1').click();
+    await expect(page.getByText('Built backend services.', { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Accept', exact: true }).click();
+    await page.getByRole('button', { name: 'Save version (1)' }).click();
+    await expect(page.getByRole('button', { name: 'Save version (0)' })).toBeVisible();
+    expect(saved).toEqual({ change_set: [{ type: 'bullet_update', bullet_id: 'b1', new_text: 'Built backend services.' }] });
+  });
+}
+
+test('docs explain document limits and evidence-backed terminology on mobile', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/docs');
+  await page.getByRole('button', { name: /Document checks/ }).click();
+  await expect(page.getByText(/not a replica of any ATS/)).toBeVisible();
+  await page.getByRole('button', { name: /JD Tailoring/ }).click();
+  await expect(page.getByText(/Only add job-description terms.*actual experience/)).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await test.info().attach('diagnostic-docs-mobile', { body: await page.screenshot({ fullPage: true }), contentType: 'image/png' });
 });
 
 test('failed re-analysis clears old suggestions and preview until a manual retry succeeds', async ({ page, context }) => {

@@ -8,15 +8,15 @@ export function AtsTab({ evaluation }: { evaluation: EvaluationResponse }) {
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-xs uppercase opacity-70 mb-1">Parseability</p>
+        <p className="text-xs uppercase opacity-70 mb-1">Document parseability</p>
         <div className="flex items-center gap-3">
-          <Progress value={evaluation.ats_parseability} className="flex-1" />
+          <Progress aria-label="PrismPro document parseability" value={evaluation.ats_parseability} className="flex-1" />
           <span className="text-sm font-semibold w-10 text-right">
             {evaluation.ats_parseability}
           </span>
         </div>
-        <p className="text-xs opacity-60 mt-1">
-          How cleanly an ATS like Workday or Greenhouse will parse this file.
+        <p className="text-sm mt-2">
+          PrismPro&apos;s document diagnostic checks text extraction and formatting. It does not measure candidate quality or hiring probability, and cannot predict how another system will read this file.
         </p>
       </div>
 
@@ -26,7 +26,7 @@ export function AtsTab({ evaluation }: { evaluation: EvaluationResponse }) {
       </div>
 
       <div>
-        <p className="text-xs uppercase opacity-70 mb-2">Raw text (ATS view)</p>
+        <p className="text-xs uppercase opacity-70 mb-2">Extracted text (PrismPro parser)</p>
         <pre
           data-testid="ats-raw-text"
           className="text-xs bg-app-text/5 p-3 rounded max-h-96 overflow-auto whitespace-pre-wrap font-mono"

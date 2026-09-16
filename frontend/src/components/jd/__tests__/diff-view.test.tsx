@@ -361,16 +361,16 @@ describe('DiffView', () => {
     });
   });
 
-  it('renders match score via JdAnalysisPanel', () => {
-    // DiffView does not display match_score directly; the score is shown by
-    // the companion JdAnalysisPanel component that receives the same DiffPlan.
+  it('shows requirement findings instead of an aggregate score and bounds missing-term advice', () => {
     render(
       <JdAnalysisPanel
         extraction={mockExtraction as any}
         plan={mockPlan}
       />
     );
-    // match_score of 75 is rendered inside [data-testid="match-score"]
-    expect(screen.getByTestId('match-score')).toHaveTextContent('75');
+    expect(screen.queryByTestId('match-score')).not.toBeInTheDocument();
+    expect(screen.getByText('Must-have coverage')).toBeInTheDocument();
+    expect(screen.getByText(/Only add a skill.*actual experience/)).toBeInTheDocument();
+    expect(screen.getByText(/not.*hiring probability/i)).toBeInTheDocument();
   });
 });
