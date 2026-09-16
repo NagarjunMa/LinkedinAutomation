@@ -146,16 +146,39 @@ export default function ResumeEditPage() {
       <Tabs defaultValue="resume">
         <TabsList>
           <TabsTrigger value="resume">Resume</TabsTrigger>
-          <TabsTrigger value="ats" disabled={!evaluation}>ATS</TabsTrigger>
+          <TabsTrigger value="ats" disabled={!evaluation}>Document checks</TabsTrigger>
         </TabsList>
         <TabsContent value="resume">
           {evaluation && (
-            <div className="text-sm mb-3">
-              <strong>Overall: {evaluation.overall_score}</strong>
+            <section aria-label="Content findings" className="text-sm mb-6 space-y-3">
+              <h2 className="font-semibold">Content findings</h2>
+              <p>Model-assisted feedback, not a hiring assessment. Verify suggestions against your actual experience; document checks are separate.</p>
               {evaluation.summary_critique && (
-                <p className="opacity-70 mt-1">{evaluation.summary_critique}</p>
+                <p>{evaluation.summary_critique}</p>
               )}
-            </div>
+              {evaluation.score_explanation.length > 0 && (
+                <ul className="space-y-3">
+                  {evaluation.score_explanation.map((finding, index) => (
+                    <li key={`${finding.category}-${index}`}>
+                      <h3 className="font-semibold capitalize">{finding.category.replaceAll('_', ' ')}</h3>
+                      <p>{finding.reason}</p>
+                      <p>{finding.before_applying_action}</p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {evaluation.top_actions_before_applying.length > 0 && (
+                <div>
+                  <h3 className="font-semibold">Suggested next steps</h3>
+                  <ul className="list-disc ml-5">
+                    {evaluation.top_actions_before_applying.map((action, index) => <li key={index}>{action}</li>)}
+                  </ul>
+                </div>
+              )}
+              {!evaluation.summary_critique && evaluation.score_explanation.length === 0 && evaluation.top_actions_before_applying.length === 0 && (
+                <p>No content findings returned. This is not a hiring assessment.</p>
+              )}
+            </section>
           )}
           <ResumeRenderer
             doc={doc}

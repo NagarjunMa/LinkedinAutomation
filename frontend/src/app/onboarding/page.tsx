@@ -237,7 +237,7 @@ export default function OnboardingPage() {
                             <div className="space-y-5">
                                 <h3 className="text-base font-semibold">Target role and market</h3>
                                 <p className="text-sm text-muted-foreground">
-                                    This tells the AI which job market to optimise for. ATS rules, keyword expectations, and resume formats differ between the US and India hiring pipelines.
+                                    Choose the market you are targeting to guide presentation preferences. This does not predict employer screening rules or change the facts you can claim.
                                 </p>
                                 <div>
                                     <Label htmlFor="targetRole">Target Role *</Label>
@@ -287,7 +287,7 @@ export default function OnboardingPage() {
                                     <h3 className="text-base font-semibold">Education</h3>
                                 </div>
                                 <p className="text-sm text-muted-foreground">
-                                    Used to populate the Education section of your resume and help the AI calibrate expected seniority and keyword density.
+                                    Record your education accurately. It does not establish skills or seniority without supporting experience.
                                 </p>
 
                                 {formData.education.map((edu, index) => (
@@ -398,7 +398,7 @@ export default function OnboardingPage() {
                                 </div>
 
                                 <div className="text-xs text-muted-foreground p-3 bg-muted/30 rounded-md">
-                                    <strong>What happens next:</strong> You will land on your Resume workspace. Upload your resume to get your first ATS score and recruiter-grade feedback. Your 90 free monthly credits are waiting.
+                                    <strong>What happens next:</strong> You will land on your Resume workspace. Upload your resume to review content feedback and separate document checks. Accept only suggestions supported by your actual experience. Your 90 free monthly credits are waiting.
                                 </div>
                             </div>
                         )}

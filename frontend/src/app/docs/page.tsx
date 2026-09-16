@@ -39,10 +39,10 @@ const sections = [
                         <strong>Complete your profile.</strong> Navigate to <strong>Profile</strong> and fill in your target role, target location (USA / India), career level, and a short professional summary. This context powers the AI rewrite engine.
                     </li>
                     <li>
-                        <strong>Upload your resume.</strong> Go to <strong>Resume</strong> and upload a PDF or DOCX. The AI will parse it and present an ATS readiness score within seconds.
+                        <strong>Upload your resume.</strong> Go to <strong>Resume</strong> and upload a PDF or DOCX. Review the extracted content before requesting an evaluation.
                     </li>
                     <li>
-                        <strong>Run your first evaluation.</strong> Click <em>Evaluate</em> on any uploaded resume. You will receive a 0–100 score, a keyword gap analysis, and specific bullet-point rewrite suggestions.
+                        <strong>Run your first evaluation.</strong> Click <em>Evaluate</em> to review content findings and suggested next steps. Open <em>Document checks</em> for separate text-extraction and formatting diagnostics.
                     </li>
                 </ol>
                 <p className="text-sm font-medium mt-4">
@@ -55,31 +55,31 @@ const sections = [
         id: 'resume-polish',
         icon: <FileText className="w-5 h-5 text-sky-500" />,
         title: 'Resume Polish',
-        summary: 'Upload, score, and rewrite your resume using the Google XYZ formula and the 7-second scan rule.',
+        summary: 'Review content findings, inspect document checks, and consider truthful rewrites.',
         content: (
             <div className="space-y-4">
                 <p>
-                    The Resume Polish workflow evaluates your resume against recruiter-grade criteria — not just ATS keyword matching.
+                    Resume Polish offers model-assisted content feedback. It is not a hiring assessment; review each suggestion against work you actually did.
                 </p>
                 <h4 className="font-bold text-sm uppercase tracking-wider mt-6 mb-2">What is evaluated</h4>
                 <ul className="list-disc pl-5 space-y-2">
                     <li>
-                        <strong>ATS Compliance:</strong> Flags parsing blockers such as tables, columns, headers/footers, and non-standard fonts.
+                        <strong>Document checks:</strong> Inspect extracted text and format findings. A layout warning is a reason to check reading order, not proof that an employer will reject the file.
                     </li>
                     <li>
-                        <strong>Above-the-fold content:</strong> Checks whether your summary and top two roles are strong enough to pass the 7-second recruiter scan.
+                        <strong>Clarity and relevance:</strong> Review how clearly the resume communicates your contribution and target role.
                     </li>
                     <li>
-                        <strong>Bullet-point quality (Google XYZ Formula):</strong> Each bullet is scored on whether it follows the pattern "Accomplished [X] as measured by [Y], by doing [Z]".
+                        <strong>Bullet-point content:</strong> Clarify your action, method, ownership, and supported outcome. STAR, CAR, and XYZ are optional structures; do not invent a metric to fit one.
                     </li>
                     <li>
-                        <strong>Keyword density:</strong> Identifies hard and soft skills present versus absent relative to your target role.
+                        <strong>Evidence gaps:</strong> Check whether a suggestion needs clarification or additional experience. Missing terminology does not prove a missing skill.
                     </li>
                 </ul>
                 <h4 className="font-bold text-sm uppercase tracking-wider mt-6 mb-2">How to use rewrites</h4>
                 <ol className="list-decimal pl-5 space-y-2">
-                    <li>After evaluation, click on any low-scoring bullet to see AI-generated alternatives.</li>
-                    <li>Accept, reject, or edit each rewrite suggestion.</li>
+                    <li>After evaluation, click a bullet to review a suggested rewrite.</li>
+                    <li>Accept a rewrite only if its skills, ownership, and outcomes reflect your actual experience.</li>
                     <li>Download the updated resume as PDF once you are satisfied.</li>
                 </ol>
                 <p className="text-sm italic mt-4 text-muted-foreground">
@@ -92,7 +92,7 @@ const sections = [
         id: 'jd-tailoring',
         icon: <Wand2 className="w-5 h-5 text-violet-500" />,
         title: 'JD Tailoring',
-        summary: 'Paste a job description to surface keyword gaps and get a tailored resume variant in seconds.',
+        summary: 'Compare job requirements with your resume and review proposed changes.',
         content: (
             <div className="space-y-4">
                 <p>
@@ -104,13 +104,14 @@ const sections = [
                     <li>Select the resume version you want to tailor (your most recent evaluation is pre-selected).</li>
                     <li>Paste the full job description text into the JD input field.</li>
                     <li>Click <em>Analyse</em>. The AI extracts required skills, seniority signals, and company-specific language.</li>
-                    <li>Review the keyword diff — green terms are present in your resume; red terms are missing.</li>
-                    <li>Accept individual rewrites or run <em>Auto-Tailor All</em> to accept all high-confidence suggestions at once.</li>
+                    <li>Review requirements found and not found in the uploaded resume. These are model-assisted findings, not verified skills or hiring probabilities.</li>
+                    <li>Review proposed changes, select those you can defend, and apply your selection.</li>
                     <li>Export the tailored version as a new resume revision.</li>
                 </ol>
                 <h4 className="font-bold text-sm uppercase tracking-wider mt-6 mb-2">Tips</h4>
                 <ul className="list-disc pl-5 space-y-2">
                     <li>Use the full JD text, not just the "Requirements" section — job titles, team descriptions, and tech-stack mentions also inform the AI.</li>
+                    <li>Only add job-description terms when your actual experience supports them. Do not insert a skill, technology, or outcome merely because it appears in the job description.</li>
                     <li>Each JD analysis costs 1 credit. Generating rewrites from the same analysis is free within the session.</li>
                 </ul>
             </div>
@@ -119,24 +120,22 @@ const sections = [
     {
         id: 'ats-simulator',
         icon: <Shield className="w-5 h-5 text-green-500" />,
-        title: 'ATS Simulator',
-        summary: 'Preview how an Applicant Tracking System parses your resume before you submit.',
+        title: 'Document checks',
+        summary: 'Inspect PrismPro text extraction and formatting diagnostics separately from content feedback.',
         content: (
             <div className="space-y-4">
                 <p>
-                    The ATS Simulator shows you a plain-text rendering of your resume as an ATS system would parse it. This helps you catch invisible issues that cause qualified candidates to be filtered out before a human ever reads their resume.
+                    This is PrismPro&apos;s document diagnostic, not a replica of any ATS. It does not measure candidate quality, hiring probability, or future score improvements. Different systems may extract or display the same file differently.
                 </p>
-                <h4 className="font-bold text-sm uppercase tracking-wider mt-6 mb-2">Common ATS blockers detected</h4>
+                <h4 className="font-bold text-sm uppercase tracking-wider mt-6 mb-2">What to inspect</h4>
                 <ul className="list-disc pl-5 space-y-2">
-                    <li>Multi-column layouts (common in visually designed templates)</li>
-                    <li>Tables used for skill grids or work history</li>
-                    <li>Information embedded in headers or footers</li>
-                    <li>Non-standard section headings (e.g., "Where I Have Worked" instead of "Experience")</li>
-                    <li>Logos, icons, and non-text graphics</li>
-                    <li>Fonts not in the standard web-safe set</li>
+                    <li>Whether extracted text preserves the intended reading order</li>
+                    <li>Whether contact details, roles, dates, and bullet text are present</li>
+                    <li>Whether the exported file stays readable without clipping or overflow</li>
+                    <li>Any reported format issue, checked against the original file rather than treated as universal ATS behavior</li>
                 </ul>
                 <p className="text-sm mt-4">
-                    The simulator is run automatically as part of every Resume Polish evaluation. No separate action is required.
+                    After evaluation, open the Document checks tab. Its parseability value is an internal document heuristic, not an ATS success percentage.
                 </p>
             </div>
         ),
@@ -153,8 +152,8 @@ const sections = [
                 </p>
                 <h4 className="font-bold text-sm uppercase tracking-wider mt-6 mb-2">Credit usage</h4>
                 <ul className="list-disc pl-5 space-y-2">
-                    <li><strong>1 credit:</strong> Full resume evaluation (ATS score + keyword analysis + bullet-point scoring)</li>
-                    <li><strong>1 credit:</strong> JD analysis (keyword diff + tailoring suggestions)</li>
+                    <li><strong>1 credit:</strong> Resume evaluation (content feedback and document checks)</li>
+                    <li><strong>1 credit:</strong> JD analysis (requirement comparison and tailoring suggestions)</li>
                     <li><strong>Free:</strong> Viewing past evaluations, accepting / rejecting rewrites within an existing session, downloading PDFs of already-evaluated resumes</li>
                 </ul>
                 <h4 className="font-bold text-sm uppercase tracking-wider mt-6 mb-2">Checking your balance</h4>
@@ -172,19 +171,19 @@ const sections = [
         id: 'export',
         icon: <Download className="w-5 h-5 text-rose-500" />,
         title: 'Export Templates',
-        summary: 'Download ATS-clean PDF exports in formats optimised for US and India hiring pipelines.',
+        summary: 'Download a PDF and check its text, layout, and reading order before submitting.',
         content: (
             <div className="space-y-4">
                 <p>
-                    After evaluating and tailoring your resume, you can export a clean PDF version designed to parse correctly through major ATS systems (Workday, Greenhouse, Lever, iCIMS) and Indian hiring portals (Naukri, LinkedIn India).
+                    After reviewing proposed changes, export a PDF and inspect it before submitting. No template guarantees acceptance or identical parsing across employers&apos; systems.
                 </p>
                 <h4 className="font-bold text-sm uppercase tracking-wider mt-6 mb-2">Export options</h4>
                 <ul className="list-disc pl-5 space-y-2">
                     <li>
-                        <strong>Standard PDF (US):</strong> Single-column, US Letter size, ATS-clean formatting. Recommended for applications via US-based ATS platforms.
+                        <strong>Standard PDF (US):</strong> A US-oriented presentation option. Check the exported document against the employer&apos;s file requirements.
                     </li>
                     <li>
-                        <strong>Standard PDF (India / A4):</strong> Single-column, A4 size, ATS-clean formatting. Recommended for Naukri uploads and Indian company portals.
+                        <strong>Standard PDF (India / A4):</strong> An India-oriented presentation option. Check page layout and reading order rather than assuming compatibility with a hiring portal.
                     </li>
                 </ul>
                 <h4 className="font-bold text-sm uppercase tracking-wider mt-6 mb-2">Resume versioning</h4>
@@ -208,19 +207,19 @@ const sections = [
                     No. Prism Pro is a resume intelligence platform. We do not aggregate jobs, connect to LinkedIn, or automate job applications. Our focus is on helping you prepare a recruiter-grade resume before you apply.
                 </FaqItem>
                 <FaqItem q="Which file formats are supported for upload?">
-                    PDF and DOCX. We strongly recommend PDF uploads for the most accurate ATS simulation, as DOCX rendering can vary across systems.
+                    PDF and DOCX. Inspect the extracted text and exported document; file support does not guarantee identical results in an employer&apos;s system.
                 </FaqItem>
                 <FaqItem q="Does Prism Pro store my resume permanently?">
                     Your resumes are stored securely in your account and are only accessible to you. You can delete any resume version at any time from your Profile page. See our <a href="/privacy-policy" className="underline underline-offset-2">Privacy Policy</a> for full details.
                 </FaqItem>
-                <FaqItem q="How accurate is the ATS score?">
-                    The scoring model is trained against publicly documented ATS parsing logic (Workday, Greenhouse, Lever, iCIMS) and validated by a "Hyper-Critical Senior Hiring Manager" prompt persona designed to replicate real-world recruiter screening behaviour. Scores are directional — a score of 40 does not mean you will be rejected, but it signals areas that real recruiters and ATS systems are likely to flag.
+                <FaqItem q="What does document parseability tell me?">
+                    It summarizes PrismPro&apos;s own extraction and formatting checks. It is not validated against an employer&apos;s ATS and does not predict screening, interviews, or employment. Inspect individual findings instead of treating the value as a candidate-quality score.
                 </FaqItem>
                 <FaqItem q="Does sign-in with Google give Prism Pro access to my Gmail?">
                     No. Prism Pro requests only your name and email address during sign-in. We do not request Gmail read access. This is confirmed by Google's OAuth verification process — our app has passed Google's review for Limited Use compliance.
                 </FaqItem>
                 <FaqItem q="What is the difference between Resume Polish and JD Tailoring?">
-                    Resume Polish evaluates your resume in isolation — it scores your bullets, checks ATS compliance, and suggests general improvements. JD Tailoring compares your resume against a specific job description and generates a targeted variant for that role. For best results, Polish first, then Tailor for each application.
+                    Resume Polish offers content feedback and document diagnostics. JD Tailoring compares the uploaded resume with a specific job description and proposes changes. Both require your review; neither establishes the truth of a claim or predicts a hiring outcome.
                 </FaqItem>
                 <FaqItem q="I ran out of credits. What can I do?">
                     Credits refresh monthly during the freemium launch. If you believe your balance is incorrect, contact <a href="mailto:support@prismpro.live" className="underline underline-offset-2">support@prismpro.live</a>.
@@ -317,7 +316,7 @@ export default function Documentation() {
                         How to use Prism Pro
                     </h1>
                     <p className="text-lg opacity-60 max-w-2xl mx-auto">
-                        A practical guide to recruiter-grade resume tailoring, ATS optimisation, and JD matching — for experienced engineers and product professionals.
+                        A practical guide to reviewing resume content, document diagnostics, and job requirements — without promises about hiring outcomes.
                     </p>
                 </div>
 

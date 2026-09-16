@@ -15,20 +15,14 @@ export function JdAnalysisPanel({ extraction, plan }: JdAnalysisPanelProps) {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>JD analysis</CardTitle>
-        <div className="text-right">
-          <p className="text-xs uppercase opacity-70">Match score</p>
-          <p
-            data-testid="match-score"
-            className={`text-2xl font-bold ${
-              plan.match_score >= 70 ? 'text-emerald-500' :
-              plan.match_score >= 40 ? 'text-amber-500' : 'text-red-500'
-            }`}
-          >
-            {plan.match_score}
-          </p>
-        </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        <p className="text-sm">
+          These are model-assisted comparisons with the uploaded resume, not verified skills or hiring probability. Review each finding against your experience.
+        </p>
+        <p className="text-sm">
+          Only add a skill or job-description term when your actual experience supports it. A missing term may reflect a communication gap or an experience gap; do not invent a claim to fill it.
+        </p>
         <div className="flex gap-3 text-xs">
           <Badge variant="outline">{extraction.primary_role_category}</Badge>
           <Badge variant="outline">{extraction.seniority}</Badge>
@@ -38,6 +32,7 @@ export function JdAnalysisPanel({ extraction, plan }: JdAnalysisPanelProps) {
         <div>
           <p className="text-xs uppercase opacity-70 mb-1">Must-have coverage</p>
           <Progress
+            aria-label="Requirements found in the uploaded resume"
             value={
               plan.must_have_coverage_found.length /
               Math.max(1, plan.must_have_coverage_found.length + plan.must_have_coverage_missing.length) * 100
@@ -48,7 +43,7 @@ export function JdAnalysisPanel({ extraction, plan }: JdAnalysisPanelProps) {
           </p>
           {plan.must_have_coverage_missing.length > 0 && (
             <p className="text-xs text-red-500">
-              Missing: {plan.must_have_coverage_missing.join(', ')}
+              Not found in this resume: {plan.must_have_coverage_missing.join(', ')}
             </p>
           )}
         </div>
@@ -60,7 +55,7 @@ export function JdAnalysisPanel({ extraction, plan }: JdAnalysisPanelProps) {
           </p>
           {plan.good_to_have_coverage_missing.length > 0 && (
             <p className="text-xs opacity-70">
-              Missing: {plan.good_to_have_coverage_missing.join(', ')}
+              Not found in this resume: {plan.good_to_have_coverage_missing.join(', ')}
             </p>
           )}
         </div>

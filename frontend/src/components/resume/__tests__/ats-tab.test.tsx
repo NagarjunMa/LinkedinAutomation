@@ -40,6 +40,15 @@ function makeEvaluation(
 }
 
 describe('AtsTab', () => {
+  it('bounds parseability to a document diagnostic and preserves escaped source text', () => {
+    render(<AtsTab evaluation={makeEvaluation({ ats_raw_text: '<script>private-source</script>' })} />);
+    expect(screen.getByText(/PrismPro.*document diagnostic/)).toBeInTheDocument();
+    expect(screen.getByText(/not.*candidate quality.*hiring probability/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Workday|Greenhouse/)).not.toBeInTheDocument();
+    expect(screen.getByTestId('ats-raw-text')).toHaveTextContent('<script>private-source</script>');
+    expect(document.querySelector('script')).toBeNull();
+  });
+
   it('shows parseability score', () => {
     const evaluation = makeEvaluation({ ats_parseability: 85 });
     render(<AtsTab evaluation={evaluation} />);
