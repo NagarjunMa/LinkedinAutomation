@@ -1,0 +1,143 @@
+[
+  {
+    "file": "simple.pdf",
+    "provenance": "synthetic PRI-19; no real person",
+    "sha256": "d82736b8afdd47e92dbfa3cd2eaa28e4ad4666c67dddece1e45f72dd7aced401",
+    "fields": {
+      "contact.name": "Alex Example",
+      "contact.email": "alex@example.invalid",
+      "experience.0.company": "Example Labs",
+      "experience.0.role": "Engineer",
+      "experience.0.dates": "2020-2024",
+      "experience.0.bullets.0.text": "Built a parser.",
+      "education.0.school": "Example University",
+      "skills.hard.0": "Python"
+    },
+    "order": [
+      "Alex Example",
+      "EXPERIENCE",
+      "EDUCATION",
+      "SKILLS"
+    ]
+  },
+  {
+    "file": "columns.pdf",
+    "provenance": "synthetic PRI-19; no real person",
+    "sha256": "1be0d5d21495b4f00da076b768ced0a23617e50c23291eebda2d5aafbf841c34",
+    "fields": {
+      "contact.name": "Alex Example",
+      "contact.email": "alex@example.invalid",
+      "experience.0.company": "Example Labs",
+      "experience.0.role": "Engineer",
+      "experience.0.dates": "2020-2024",
+      "experience.0.bullets.0.text": "Built a parser.",
+      "education.0.school": "Example University",
+      "skills.hard.0": "Python"
+    },
+    "order": [
+      "Alex Example",
+      "EXPERIENCE",
+      "EDUCATION",
+      "SKILLS"
+    ]
+  },
+  {
+    "file": "linkedin-style.pdf",
+    "provenance": "synthetic PRI-19; no real person",
+    "sha256": "e9ade922feac5a0814a3266da9743141bf96fc4d10649c7023d79857db26985f",
+    "fields": {
+      "contact.name": "Alex Example",
+      "contact.email": "alex@example.invalid",
+      "experience.0.company": "Example Labs",
+      "experience.0.role": "Engineer",
+      "experience.0.dates": "2020-2024",
+      "experience.0.bullets.0.text": "Built a parser.",
+      "education.0.school": "Example University",
+      "skills.hard.0": "Python"
+    },
+    "order": [
+      "Alex Example",
+      "Experience",
+      "Education"
+    ]
+  },
+  {
+    "file": "scanned.pdf",
+    "provenance": "synthetic PRI-19; no real person",
+    "sha256": "663627370d201e04de5165ae811308ee2f7b98963c0fbc0f5aafe571f250d640",
+    "fields": {},
+    "order": [
+      "Alex Example",
+      "EXPERIENCE",
+      "EDUCATION",
+      "SKILLS"
+    ]
+  },
+  {
+    "file": "over-page-limit.pdf",
+    "provenance": "synthetic PRI-19; no real person",
+    "sha256": "7362b0d2c57a58d2add5f1560c7f08ce606a5853f2809eab8adbee0534dd63a5",
+    "fields": {},
+    "order": [
+      "Alex Example",
+      "EXPERIENCE",
+      "EDUCATION",
+      "SKILLS"
+    ]
+  },
+  {
+    "file": "simple.docx",
+    "provenance": "synthetic PRI-19; no real person",
+    "sha256": "ce9f25e1493c9c83beb7c94e8eac10ab203269f9bca0d6459ca91ed87a4dbf7a",
+    "fields": {
+      "contact.name": "Alex Example",
+      "contact.email": "alex@example.invalid",
+      "experience.0.company": "Example Labs",
+      "experience.0.role": "Engineer",
+      "experience.0.dates": "2020-2024",
+      "experience.0.bullets.0.text": "Built a parser.",
+      "education.0.school": "Example University",
+      "skills.hard.0": "Python"
+    },
+    "order": [
+      "Alex Example",
+      "EXPERIENCE",
+      "EDUCATION",
+      "SKILLS"
+    ]
+  },
+  {
+    "file": "prism-export.pdf",
+    "provenance": "synthetic PRI-19; no real person",
+    "sha256": "2dc2756b2f56395dfa7a3060b1fee7ecc1a930c12ae5713de844ff0cbc936e14",
+    "fields": {
+      "contact.name": "Alex Example",
+      "contact.email": "alex@example.invalid",
+      "experience.0.company": "Example Labs",
+      "experience.0.role": "Engineer",
+      "experience.0.dates": "2020-2024",
+      "experience.0.bullets.0.text": "Built a parser.",
+      "education.0.school": "Example University",
+      "skills.hard.0": "Python"
+    },
+    "order": [
+      "Alex Example",
+      "WORK EXPERIENCE",
+      "EDUCATION"
+    ]
+  },
+  {
+    "file": "malformed.pdf",
+    "provenance": "synthetic PRI-19; no real person",
+    "sha256": "b9e295f0c86730ee956a72a38716ba58f3ab765ee596bbd92d70ad7b7218ed97",
+    "fields": {},
+    "order": []
+  },
+  {
+    "file": "unsafe.docx",
+    "provenance": "synthetic PRI-19; no real person",
+    "sha256": "484932f25847239ed0c4c388c68d36316b2a476c27a2b2a696e327df34040e6b",
+    "fields": {},
+    "order": []
+  }
+]

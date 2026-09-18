@@ -1,0 +1,4 @@
+# Evaluation only: macOS arm64 and Linux x86_64 wheels; never production requirements.
+firecrawl-anydoc==0.2.4 \
+    --hash=sha256:b2a01eecaa0b99f99ff6749a098f8c7a5250d41db9c53673eb93536ad575bfed \
+    --hash=sha256:0e5aed01bf6d4e5c588d3363888293f2ceeb9feb00449a32e0ba993797cf0bd3
