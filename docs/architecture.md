@@ -44,3 +44,5 @@ Public preview, internal product testing and a full product launch are separate
 release states. [README](../README.md) describes repository defaults;
 [the checklist](../DEPLOYMENT_READINESS_CHECKLIST.md) defines required evidence.
 No document synchronization in PRI-18 changes application behavior.
+
+Parser evaluation: [PRI-19 AnyDoc benchmark](anydoc-benchmark.md) records the synthetic corpus, verified code locations, limits and adoption decision; it does not change the production parser.
