@@ -1,228 +1,112 @@
-# Prism Pro
+# PrismPro
 
-**Recruiter-grade resume prep for working engineers.** Polish your resume the way a senior recruiter would, tailor it to any JD with a per-change diff view, and export country-aware PDFs for US and Indian markets.
+PrismPro currently provides resume parsing, document diagnostics, JD analysis,
+reviewable tailoring, saved versions and PDF export. The approved direction is a
+career-evidence product: application rules select eligible facts; an optional LLM
+may propose wording, never invent or confirm evidence.
 
-For engineers who refuse generic AI bullets.
+## Release status
 
-![Backend tests](https://img.shields.io/badge/backend--tests-157%20pass-green) ![Backend coverage](https://img.shields.io/badge/backend--coverage-87%25-green) ![Frontend tests](https://img.shields.io/badge/frontend--tests-44%20pass-green) ![Frontend coverage](https://img.shields.io/badge/frontend--coverage-84%25-green)
+The public deployment is intended to remain **preview-only**:
+`PRISM_PRO_PUBLIC_PREVIEW_ONLY=true` on frontend and backend. Existing product
+code is not evidence of public availability or launch approval. Billing remains
+disabled. Use a separate local/internal environment for authenticated product QA.
 
----
+The Career Evidence controller, canonical evidence ledger and deterministic
+bullet-plan renderer are target architecture, not claims about today's
+implementation. Document diagnostics and JD coverage are not external ATS
+rankings, hiring probabilities or guarantees of factual grounding.
 
-## What's shipped
+## Start here
 
-### Resume polish
-- Upload PDF or DOCX (parsed structurally — bullets, skills, sections preserved)
-- Single-agent GPT-4o evaluator with specialized passes (ATS, XYZ formula, 7-second scan, country-aware tone)
-- Bullet-level severity flags: **Strong / Weak / Vague Impact** — same lens a senior recruiter uses
-- ATS raw-text simulator shows your resume as a parser sees it (tables stripped, columns lost, etc.)
-- Per-bullet rewrite with hallucination guard — hard numbers stay as `[X%]` / `[N users]` placeholders; verbs, structure, framing are rewritten
+- [Documentation index](docs/README.md): supported guides versus historical material.
+- [Architecture and durable planning](docs/architecture.md): approved Linear specifications.
+- [Deployment entrypoint](DEPLOYMENT.md), [production runbook](docs/production-mvp-runbook.md)
+  and [release checklist](DEPLOYMENT_READINESS_CHECKLIST.md).
+- [Known gaps](BLOCKERS.md): source-backed findings, not a launch certificate.
+- [API contracts](docs/api-contracts.md) and [model/prompt manifests](docs/model-manifests.md).
 
-### JD-driven tailoring
-- Paste any job description
-- Backend extracts must-have / good-to-have / soft-skills + seniority + country hint + company name
-- Tailor produces a diff plan: bullet rewrites + skill reorder + summary rewrite
-- Per-change accept; version history preserved
+## Current stack
 
-### Apply → Preview → Export pipeline (new)
-- Apply accepted changes via `POST /jd/{id}/apply` — creates a JD-linked `ResumeVersion` (star-pattern: always branches from original ResumeDocument)
-- Inline iframe preview with sticky template picker
-- Download PDF in the matching country/role template
-- Per-JD funnel analytics via `GET /analytics/jd-progress`
+Checked against repository manifests on 2026-09-18; these are installed targets,
+not claims that they are the latest available versions.
 
-### PDF export
-- Playwright + Chromium renders 6 country-aware templates (USA / India × SWE / DS / PM)
-- Files persist to Supabase Storage; signed-URL access for downloads
-- 1 credit per export
+| Layer | Repository target / authority |
+| --- | --- |
+| Frontend | Next.js 16.3.4, React 19.2.7, TypeScript; [package manifest](frontend/package.json) and [lock](frontend/package-lock.json) |
+| Backend | Python 3.11, FastAPI 0.138.0, Pydantic 2.13.4, SQLAlchemy 2.0.51; [lock](backend/requirements.lock) |
+| Persistence | PostgreSQL, Alembic 1.18.4; Supabase Auth and private Storage |
+| PDF | Jinja2 templates and Playwright Chromium |
+| CI runtime | Python 3.11, Node 22, PostgreSQL 15; [workflow](.github/workflows/ci.yml) |
 
-### Credit system
-- 90 free credits / month (auto-granted via `_ensure_user_row()` and Supabase **pg_cron** → `grant_monthly_credits()`)
-- Billing is disabled for the freemium launch; Stripe routes stay dormant behind `ENABLE_BILLING=true`
-- Per-operation cost: evaluate = 1, tailor = 2, rewrite = 0, apply = 0, export = 1
-- MVP production launch steps live in [`docs/production-mvp-runbook.md`](docs/production-mvp-runbook.md).
+The supported topology is frontend, backend and PostgreSQL, with hosted Supabase
+Auth/Storage. No Redis service, Celery worker or Gmail automation is required.
+See [local infrastructure](docs/local-infrastructure.md) for dependency ownership
+and Compose limitations. Monthly credits use database scheduling, not Celery;
+the schedule and safety checks require separate operator verification.
 
----
+## Local setup
 
-## Tech stack
-
-### Frontend
-- Next.js 16.2.7 (App Router)
-- Tailwind CSS + shadcn/ui
-- TanStack Query for API state
-- Framer Motion for animations (restrained — fade-up, scroll reveals, marquee)
-- Typography: **Humane** (display + nav), **Fraunces** (serif headings), **Geist Sans** (body / UI)
-
-### Backend
-- FastAPI + SQLAlchemy 2.0 + Pydantic v2 (production installs use `backend/requirements.lock`)
-- OpenAI (`gpt-4o-2024-08-06` for eval/rewrite/tailor, `gpt-4o-mini` for extraction)
-- Schema-enforced LLM responses via `client.beta.chat.completions.parse()` with typed Pydantic models
-- Tenacity retries on `RateLimitError` / `APIConnectionError` / `APITimeoutError`
-- Hallucination guard (regex) rejects unprompted digits incl. scientific notation + `x` multipliers
-
-### Database & infra
-- Supabase Postgres + Row-Level Security on every user-owned table
-- Supabase Storage (private bucket, signed URLs)
-- Supabase Auth (ES256 JWT via JWKS — migrated from HS256)
-- Supabase pg_cron for the monthly credit grant (no Redis / Celery — see `docs/supabase-pg-cron-setup.md`)
-- Railway deploy targets (`main` branch = production; no separate staging)
-
----
-
-## API endpoints (`/api/v1/`)
-
-| Method | Path | Credits | What |
-|---|---|---|---|
-| POST | `/resumes/upload` | 0 | PDF/DOCX → parsed JSON + Supabase Storage |
-| POST | `/resumes/{id}/evaluate` | 1 | Single-agent eval + ATS simulator |
-| POST | `/resumes/{id}/rewrite/{bullet_id}` | 0 | Per-bullet rewrite (hallucination-guarded) |
-| POST | `/resumes/{id}/versions` | 0 | Apply accepted changes, save version |
-| POST | `/jd/analyze` | 2 | JD extract + tailor diff plan |
-| POST | `/jd/{id}/apply` | 0 | Create JD-linked version + preview HTML |
-| POST | `/exports` | 1 | Render to PDF via Playwright (accepts version_id + template_id) |
-| GET | `/exports/{id}` | 0 | Refresh signed URL |
-| GET | `/analytics/jd-progress` | 0 | Per-JD funnel counts |
-| GET | `/credits/balance` | 0 | Current balance |
-| POST | `/webhooks/stripe` | — | Billing-gated webhook, disabled for freemium launch |
-| GET | `/admin/metrics/cost-per-user` | — | Admin allowlist gated |
-
-Legacy job-tracking routes (`/jobs`, `/job-extraction`, `/profiles`, `/user-profiles`, `/logs`) are kept and demoted.
-
----
-
-## Local development
-
-### One command — backend + frontend
+Use Python 3.11 and Node 22. Create a virtual environment, then install the locked
+dependencies from the repository root:
 
 ```bash
+python3.11 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r backend/requirements.lock
+npm --prefix frontend ci
+python -m playwright install chromium
+```
+
+Create `backend/.env` and `frontend/.env.local` using
+[backend settings](backend/.env.example) and the
+[frontend template](frontend/.env.example). Never overwrite existing local files
+or commit credentials. Use an isolated development database and provider project,
+not production data. URL-encode database credentials; do not weaken passwords.
+
+For authenticated local product testing, explicitly set
+`PRISM_PRO_PUBLIC_PREVIEW_ONLY=false` in **both** files, use
+`NEXT_PUBLIC_API_URL=http://localhost:8000`, and allow that local frontend origin
+in backend CORS. Configure local OAuth as described in the
+[runbook](docs/production-mvp-runbook.md#oauth-redirects), then restart both servers.
+Do not change the public deployment's preview flags.
+
+Initialize the development database through the reviewed Alembic chain:
+
+```bash
+cd backend
+python -m alembic upgrade head
+cd ..
 make dev
 ```
 
-Boots FastAPI on `:8000` and Next.js on `:3000` together. Ctrl+C stops both.
+This starts the backend on port 8000 and frontend on 3000. If migration fails,
+stop and diagnose the revision/schema mismatch; do not bypass migrations.
+The [deployment guide](DEPLOYMENT.md) defines the stricter production procedure.
 
-### Other Makefile targets
-
-```bash
-make install        # pip install + npm install
-make backend        # backend only
-make frontend       # frontend only
-make test           # backend pytest + frontend lint/tsc/build
-make lint           # ruff + next lint
-make build          # frontend production build
-make clean          # wipe .next/, __pycache__/, .pytest_cache/
-make stop           # kill processes on :8000 and :3000
-make migrate        # alembic upgrade head
-```
-
-### Required env vars
-
-`backend/.env`:
-```
-SQLALCHEMY_DATABASE_URI=postgresql://postgres:<pwd>@db.<ref>.supabase.co:5432/postgres
-SUPABASE_URL=https://<ref>.supabase.co
-SUPABASE_ANON_KEY=sb_publishable_xxxxx
-SUPABASE_SERVICE_ROLE_KEY=sb_secret_xxxxx
-SUPABASE_STORAGE_BUCKET=resume
-OPENAI_API_KEY=sk-proj-xxxxx
-FREEMIUM_MONTHLY_CREDITS=90
-ENABLE_BILLING=false
-ADMIN_USER_IDS=user-id-1,user-id-2     # comma-separated; for admin/metrics endpoint
-```
-
-`frontend/.env.local`:
-```
-NEXT_PUBLIC_API_URL=http://localhost:8000
-NEXT_PUBLIC_SUPABASE_URL=https://<ref>.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_xxxxx
-NEXT_PUBLIC_GOOGLE_CLIENT_ID=...
-```
-
-URL-encode special characters in your Postgres password (`@` → `%40`, `#` → `%23`, etc.) OR set a password without special chars.
-
-**Production (Railway):** use Supabase **session pooler** URI, not direct connection:
-```
-SQLALCHEMY_DATABASE_URI=postgresql://postgres.<ref>:<pwd>@aws-0-<region>.pooler.supabase.com:5432/postgres
-```
-Direct connection (`db.<ref>.supabase.co:5432`) resolves to IPv6 only — Railway containers can't reach it. Get the exact URI from Supabase Dashboard → Project Settings → Database → "Session pooler" tab.
-
-### DB bootstrap on a fresh Supabase project
+## Verification
 
 ```bash
-make migrate     # alembic upgrade head — relies on existing chain
-# If migration chain conflicts (known issue, see TECH_DEBT.md):
-cd backend && python3.11 -c "from app.main import app; from app.db.base_class import Base; from app.db.session import engine; from app.models import *; Base.metadata.create_all(bind=engine)" && alembic stamp head
+make verify              # mocked agent/service and startup sanity checks
+make verify-backend-ci   # Ruff, pytest coverage, locked dependency audit
+make verify-frontend-ci  # contracts, ESLint, types, build, unit/E2E, audit
+make verify-ci           # both local suites
 ```
 
-Then apply RLS policies via Supabase SQL editor — see `CLAUDE.md` for the canonical RLS + Storage policy SQL.
+Use `make help` and the [Makefile](Makefile) for exact commands.
+Local suites do not prove hosted PostgreSQL, Docker, secret scanning or deployed
+smoke gates passed. CI supplies Ruff and pip-audit separately from the runtime
+lock; match its tool versions when preparing a verification environment.
+Real-provider golden tests require explicit credentials, consent and cost awareness;
+they are not part of routine offline verification.
 
----
+## Contribution boundaries
 
-## Repo layout
-
-```
-backend/                       FastAPI app
-  app/
-    api/v1/endpoints/          Route handlers
-    services/resume/           parser, evaluator, ATS sim, rewriter, hallucination_guard
-    services/jd/               extractor, tailor
-    services/pdf/              Playwright renderer + 6 templates
-    services/storage/          Supabase Storage client
-    services/credits/          ledger (debit/refund/grant)
-    services/payments/         Stripe webhook handler
-    core/                      auth (ES256), config, llm_logging
-    middleware/                credits, security
-  migrations/                  Alembic
-  tests/                       services, api, integration, fixtures
-frontend/                      Next.js 16.2.7
-  src/app/                     Routes
-  src/components/landing/      Navigation, BentoGrid
-docs/superpowers/
-  specs/                       Pivot design spec
-  plans/                       Phase 0/1/4 implementation plans
-Makefile                       make dev / make test / make stop
-TECH_DEBT.md                   Deferred refactors
-BLOCKERS.md                    Pre-deploy must-fix
-progress.txt                   Phase-by-phase delivery status
-```
-
----
-
-## Test coverage
-
-- **Backend pytest:** 157 pass, 12 skip — `make test` or `cd backend && pytest` (86.7% coverage, gate at 80%)
-- **Frontend Vitest:** 81 tests pass across 24 test files — `cd frontend && npm run test:coverage` (87.6% lines, 75.6% branches)
-- **Frontend e2e (Playwright):** `cd frontend && npm run test:e2e`
-- **Coverage report:** `cd backend && pytest --cov=app --cov-report=term-missing` or `cd frontend && npm run test:coverage`
-- **Pre-push hook** (Lefthook) always runs both local CI suites before every `git push`, regardless of which application changed. It blocks on backend Ruff/tests/coverage/audit and frontend lint/types/build/unit coverage/Playwright/audit. Docker, PostgreSQL service checks, and TruffleHog remain blocking GitHub CI jobs.
-- Core Prism Pro paths are 90%+ covered; legacy job-tracking modules (excluded via `.coveragerc`) are not gated.
-
----
-
-## Publication readiness
-
-Use `docs/production-mvp-runbook.md` and `DEPLOYMENT_READINESS_CHECKLIST.md`
-as the authoritative launch references. Public sharing is blocked until:
-
-- GitHub CI is green for backend, frontend, audits, Docker builds, and the MVP
-  Playwright smoke suite.
-- Supabase RLS/storage audit results are captured and show user-owned tables,
-  ownership predicates, `WITH CHECK` update policies, and a private `resume`
-  bucket.
-- Manual production smoke passes for Google sign-in, 90-credit grants,
-  PDF/DOCX upload, evaluation, tailoring, pointer apply, tailored resume
-  library, PDF download, zero-credit `402`, and multi-user isolation.
-- Resume PDF layout QA passes on real resumes/JDs for one-page output,
-  A4/Letter scaling, margins, overflow, empty sections, long bullets, and
-  downloaded PDF content.
-
-Post-MVP maintenance items are tracked separately in `TECH_DEBT.md`; they must
-not be used as launch instructions.
-
----
-
-## Status
-
-See `progress.txt` for phase-by-phase delivery state.
-
----
+Read [CLAUDE.md](CLAUDE.md) and [architecture routing](docs/architecture.md) before
+development. Use the verified PrismPro Linear issue as durable task context.
+Preserve unrelated work; keep changes reviewable; obtain owner approval before
+commit/push. A merged PR, passing tests and a production deployment are distinct
+states. Do not promote any one of them into an unsupported readiness claim.
 
 ## License
 

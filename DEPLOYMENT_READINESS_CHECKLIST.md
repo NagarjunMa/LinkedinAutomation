@@ -1,8 +1,10 @@
 # Production Readiness Checklist
 
-This checklist is the phase tracker for work that must be resolved before Prism
-Pro is publicly shared. Long-term cleanup that does not block the 50-100 user
-MVP belongs in `TECH_DEBT.md`; anything below is a release gate.
+Reconciled 2026-09-18. This checklist defines gates, not a statement that the
+current revision is deployed or launch-approved. Record revision, environment,
+timestamp and reviewer in the PrismPro Linear release issue for every result.
+Historical 2026-06-30 results below require revalidation for the release target.
+Linear owns current task status; old TECH_DEBT/progress notes are historical.
 
 ## Phase 1: Configuration And Documentation Hygiene
 
@@ -11,7 +13,7 @@ MVP belongs in `TECH_DEBT.md`; anything below is a release gate.
 | Remove stale `SUPABASE_JWT_SECRET` references | Complete | CI/test config uses Supabase ES256 + JWKS only |
 | Remove stale build-ignore documentation | Complete | README no longer claims `ignoreBuildErrors` is masking TypeScript issues |
 | Keep launch docs authoritative | Complete | README points to this checklist and `docs/production-mvp-runbook.md` |
-| Keep frontend secrets out of public env | Pending production check | Frontend has only `NEXT_PUBLIC_*`; no service role/admin vars |
+| Keep frontend secrets out of public env | Pending production check | Public variables contain no secrets; service role/admin credentials stay backend-only |
 
 ## Phase 2: CI And Dependency Gates
 
@@ -24,37 +26,40 @@ MVP belongs in `TECH_DEBT.md`; anything below is a release gate.
 | Frontend lint/type/build/test/e2e | CI gated | GitHub frontend job passes |
 | Frontend production audit | CI gated | `npm audit --omit=dev --audit-level=high` passes |
 | Secret scanning | CI gated | TruffleHog verified scan passes |
-| Docker images | CI gated | Backend and frontend Docker builds pass |
+| Service Docker images | CI gated | Backend and frontend Docker builds pass |
+| Root multi-stage Docker image | Separate evidence required if used | Not built by current CI; build the actual deployment target |
 
 ## Phase 3: Supabase Security Gate
 
 | Item | Status | Verification Gate |
 | --- | --- | --- |
-| User-owned table RLS | Complete | Live Supabase audit on 2026-06-30 reports all public tables with `rowsecurity=true` |
-| Ownership policies | Complete | Live policies use user predicates or explicit authenticated read-only access for shared job listings |
-| Update policy safety | Complete | Live `UPDATE`/`ALL` policies include `WITH CHECK` for user-owned write paths |
-| Private storage bucket | Complete | Live `storage.buckets.public=false` for bucket `resume` |
-| User-scoped storage paths | Complete | Live `storage.objects` policies restrict paths to the authenticated user |
+| User-owned table RLS | Historical; revalidate | Live Supabase audit on 2026-06-30 reports all public tables with `rowsecurity=true` |
+| Ownership policies | Historical; revalidate | Live policies use user predicates or explicit authenticated read-only access for shared job listings |
+| Update policy safety | Historical; revalidate | Live `UPDATE`/`ALL` policies include `WITH CHECK` for user-owned write paths |
+| Private storage bucket | Historical; revalidate | Live `storage.buckets.public=false` for bucket `resume` |
+| User-scoped storage paths | Historical; revalidate | Live `storage.objects` policies restrict paths to the authenticated user |
 | Service role isolation | Pending production check | Service role key exists only in backend env |
 
-Run the SQL checks in `docs/production-mvp-runbook.md` and paste results into
-the release ticket before publication.
+Run the authorized read-only SQL checks in `docs/production-mvp-runbook.md` and
+record sanitized findings in the release ticket. Also exercise positive and
+negative cross-user isolation in an approved sandbox; policy listings alone
+are not sufficient. Do not copy production identifiers or user records.
 
 ## Phase 4: Product Smoke Gate
 
 | Item | Status | Verification Gate |
 | --- | --- | --- |
-| Google sign-in | Complete | User-confirmed production smoke passed on 2026-06-30 |
-| Monthly credits | Complete | User-confirmed 90-credit grant smoke passed on 2026-06-30 |
-| Uploads | Complete | User-confirmed PDF and DOCX upload smoke passed on 2026-06-30 |
-| Resume evaluation | Complete | User-confirmed evaluation debit smoke passed on 2026-06-30 |
-| JD tailoring | Complete | User-confirmed tailor debit smoke passed on 2026-06-30 |
-| Pointer apply | Complete | User-confirmed pointer apply smoke passed on 2026-06-30 |
-| Tailored resume library | Complete | User-confirmed library smoke passed on 2026-06-30 |
-| PDF download | Complete | User-confirmed PDF download debit smoke passed on 2026-06-30 |
-| Low-credit path | Complete | User-confirmed `402` smoke passed on 2026-06-30 |
-| Multi-user isolation | Complete | User-confirmed multi-user isolation smoke passed on 2026-06-30 |
-| Stripe hidden | Complete | User-confirmed no payment/top-up/Stripe UI smoke passed on 2026-06-30 |
+| Google sign-in | Historical; revalidate | User-confirmed production smoke passed on 2026-06-30 |
+| Monthly credits | Historical; revalidate | User-confirmed 90-credit grant smoke passed on 2026-06-30 |
+| Uploads | Historical; revalidate | User-confirmed PDF and DOCX upload smoke passed on 2026-06-30 |
+| Resume evaluation | Historical; revalidate | User-confirmed evaluation debit smoke passed on 2026-06-30 |
+| JD tailoring | Historical; revalidate | User-confirmed tailor debit smoke passed on 2026-06-30 |
+| Pointer apply | Historical; revalidate | User-confirmed pointer apply smoke passed on 2026-06-30 |
+| Tailored resume library | Historical; revalidate | User-confirmed library smoke passed on 2026-06-30 |
+| PDF download | Historical; revalidate | User-confirmed PDF download debit smoke passed on 2026-06-30 |
+| Low-credit path | Historical; revalidate | User-confirmed `402` smoke passed on 2026-06-30 |
+| Multi-user isolation | Historical; revalidate | User-confirmed multi-user isolation smoke passed on 2026-06-30 |
+| Stripe hidden | Historical; revalidate | User-confirmed no payment/top-up/Stripe UI smoke passed on 2026-06-30 |
 
 ## Phase 5: Resume PDF Layout Gate
 
@@ -71,7 +76,7 @@ the release ticket before publication.
 
 | Item | Status | Verification Gate |
 | --- | --- | --- |
-| Public preview flags | Code-enforced; pending production evidence | Set `PRISM_PRO_PUBLIC_PREVIEW_ONLY=true` on frontend and backend; backend production validation fails closed |
+| Public preview flags | Code-enforced; pending production evidence | Keep `PRISM_PRO_PUBLIC_PREVIEW_ONLY=true` on both services; omitted flags default true, but explicit false is allowed in code and forbidden by public-release policy |
 | Supabase public signup | Verifier added; pending production evidence | Auth → General configuration → **Allow new users to sign up** is disabled; anonymous sign-ins are disabled; release verifier passes |
 | Preview database migration | Migration/verifier ready; pending production run | `alembic upgrade head` creates `waitlist_entries` with RLS enabled and no `anon`/`authenticated` grants |
 | Waitlist API | Pending production smoke | Valid and duplicate submissions return the same `202` response; rate limits and 8 KiB request cap are active |
@@ -88,5 +93,12 @@ Do not set either preview flag to `false` on the public deployment.
 
 ## Phase 6: Launch Decision
 
-Public launch is approved only when Phases 2-5 are complete and the production
-runbook has captured the actual Supabase audit output and manual smoke results.
+For a public trailer, require applicable configuration/CI/security gates and every
+public-preview trailer gate above, with explicit owner approval. Product paths
+must remain blocked. Internal product QA is a separate deployment.
+
+A full product launch additionally requires current Phases 2–5 evidence,
+resolution or explicit reviewed disposition of known gaps, and owner approval of
+any preview/auth-policy transition. Old completion labels, merged PRs and local
+tests are not launch authorization. Critical operational guidance in PRI-18 also
+requires an explicit additional human review before merge.
