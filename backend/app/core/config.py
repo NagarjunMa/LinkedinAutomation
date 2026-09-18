@@ -218,42 +218,6 @@ class Settings(BaseSettings):
     """Display name for email sender"""
 
     # ==========================================
-    # Google OAuth Configuration (Email Agent)
-    # ==========================================
-
-    GOOGLE_CLIENT_ID: str = ""
-    """Google OAuth client ID for Gmail integration"""
-
-    GOOGLE_CLIENT_SECRET: str = ""
-    """Google OAuth client secret for Gmail integration"""
-
-    GOOGLE_REDIRECT_URI: str = ""
-    """OAuth redirect URI for Google authentication flow"""
-
-    GOOGLE_SCOPES: List[str] = [
-        "openid",
-        "https://www.googleapis.com/auth/gmail.readonly",
-        "https://www.googleapis.com/auth/userinfo.email"
-    ]
-    """Gmail API scopes required for email scanning features"""
-
-    # ==========================================
-    # Email Processing Configuration
-    # ==========================================
-
-    EMAIL_CLASSIFICATION_MODEL: str = "gpt-4o-mini"
-    """AI model for email classification and job status extraction"""
-
-    EMAIL_SYNC_FREQUENCY_MINUTES: int = 15
-    """How often to sync emails from Gmail (in minutes)"""
-
-    EMAIL_CONFIDENCE_THRESHOLD: float = 0.8
-    """Minimum confidence score for automatic email classification"""
-
-    AUTO_UPDATE_THRESHOLD: float = 0.85
-    """Confidence threshold for automatic job status updates"""
-
-    # ==========================================
     # Logging Configuration
     # ==========================================
 
@@ -319,9 +283,6 @@ class Settings(BaseSettings):
     # ==========================================
     # Feature Flags
     # ==========================================
-
-    ENABLE_EMAIL_SCANNING: bool = True
-    """Enable/disable email scanning functionality"""
 
     ENABLE_AI_FEATURES: bool = True
     """Enable/disable AI-powered features (requires OpenAI API key)"""

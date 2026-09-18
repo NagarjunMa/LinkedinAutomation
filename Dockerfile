@@ -37,9 +37,9 @@ RUN apt-get update && apt-get install -y \
     fonts-liberation \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy backend requirements and install Python dependencies
-COPY backend/requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+# Install the same locked backend dependencies used by CI and backend/Dockerfile.
+COPY backend/requirements.in backend/requirements.lock ./
+RUN pip install --no-cache-dir -r requirements.lock
 
 # Install the browser binary used by Playwright PDF rendering.
 RUN playwright install chromium

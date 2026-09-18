@@ -35,7 +35,7 @@ sys.addaudithook(deny_network)
 retired = set(json.loads(sys.argv[2]))
 class RetiredImportBlocker(importlib.abc.MetaPathFinder):
     def find_spec(self, fullname, path=None, target=None):
-        if fullname in retired:
+        if any(fullname == name or fullname.startswith(name + '.') for name in retired):
             raise AssertionError(f'Retired module imported: {fullname}')
 sys.meta_path.insert(0, RetiredImportBlocker())
 with contextlib.redirect_stdout(sys.stderr):
@@ -49,11 +49,11 @@ print(json.dumps({'openapi': document, 'loaded': sorted(sys.modules)}))
 """
 
 
-def inspect_app(directory: Path, flags: dict[str, str]) -> dict:
+def inspect_app(directory: Path, flags: dict[str, str], blocked_modules=RETIRED_MODULES) -> dict:
     """Return the full schema under dummy settings, with all network I/O denied."""
     result = subprocess.run(
         [sys.executable, "-I", "-c", APP_PROBE, str(BACKEND_ROOT),
-         json.dumps(RETIRED_MODULES)],
+         json.dumps(blocked_modules)],
         cwd=directory, env={**EXPORT_ENV, **flags},
         capture_output=True, text=True, timeout=30, check=True,
     )
