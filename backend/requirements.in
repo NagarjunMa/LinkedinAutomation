@@ -58,19 +58,13 @@ resend>=0.8,<3
 # HTML / web scraping (legacy demoted)
 beautifulsoup4>=4.12,<5
 
-# Google OAuth (Supabase OAuth flow + future Gmail integration)
-google-auth>=2.23,<3
-google-auth-oauthlib>=1.1,<2
-google-auth-httplib2>=0.1,<1
-google-api-python-client>=2.108,<3
-
 # Transitive security floors. Keep these explicit so a fresh lock cannot
 # resolve versions with known vulnerabilities through optional integrations.
 cryptography>=50.0.0,<51
 h2>=4.4.1,<5
-httplib2>=0.32.0,<1
 pillow>=12.3.0,<13
-pyasn1>=0.6.4,<1
+# GHSA-j934-xhv5-fg8f and GHSA-gjv8-xp57-g29c (BeautifulSoup selector parsing).
+soupsieve>=2.9.0,<3
 
 # Env loading
 python-dotenv>=1.0,<2
