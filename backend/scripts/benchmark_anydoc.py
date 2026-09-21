@@ -15,6 +15,13 @@ BACKEND = Path(__file__).resolve().parents[1]
 CORPUS = BACKEND / "tests/fixtures/anydoc"
 
 
+def parser_budgets():
+    from app.core.config import settings
+    return {name: getattr(settings, name) for name in (
+        "MAX_UPLOAD_SIZE", "MAX_PDF_PAGES", "MAX_EXTRACTED_TEXT_CHARS",
+        "MAX_DOCX_ENTRIES", "MAX_DOCX_UNCOMPRESSED_SIZE", "MAX_DOCX_COMPRESSION_RATIO")}
+
+
 def digest(value):
     return hashlib.sha256(value).hexdigest()
 
@@ -72,6 +79,7 @@ def worker(engine, filename, content):
         result = {"status": "ok", "document": document}
     except Exception as exc:
         result = {"status": type(exc).__name__}  # Never persist exception content.
+    result["budgets"] = parser_budgets()
     result["parse_ms"] = round((time.perf_counter() - started) * 1000, 3)
     rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
     result["peak_rss_bytes"] = rss if sys.platform == "darwin" else rss * 1024
@@ -85,6 +93,7 @@ def run(engine, path, timeout=15):
            "SUPABASE_SERVICE_ROLE_KEY": "test", "DATABASE_URL": "sqlite:///:memory:",
            "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:"}
     from app.core.config import settings
+    env.update({name: str(value) for name, value in parser_budgets().items()})
     with path.open("rb") as stream:
         content = stream.read(settings.MAX_UPLOAD_SIZE + 1)
     started = time.perf_counter()
@@ -97,6 +106,7 @@ def run(engine, path, timeout=15):
         except subprocess.TimeoutExpired:
             result = {"status": "timeout"}  # subprocess.run kills and waits.
     result["wall_ms"] = round((time.perf_counter() - started) * 1000, 3)
+    result["timeout_seconds"] = timeout
     return result
 
 
