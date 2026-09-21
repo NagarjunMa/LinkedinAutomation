@@ -24,6 +24,11 @@ def test_exports_client_routes_and_declared_transport_semantics(document):
     assert {"type": "null"} in schemas["WaitlistCreate"]["properties"]["career_stage"]["anyOf"]
     assert "student" in schemas["CareerStage"]["enum"]
     assert document["paths"]["/api/v1/resumes/list"]["get"]["security"]
+    bootstrap = document["paths"]["/api/v1/auth/bootstrap"]["post"]
+    assert bootstrap["security"]
+    assert "204" in bootstrap["responses"]
+    assert "content" not in bootstrap["responses"]["204"]
+    assert "requestBody" not in bootstrap
 
 
 def test_excludes_operational_admin_and_disabled_routes(document):

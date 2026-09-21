@@ -1,76 +1,17 @@
-"""Tests for app.core.auth — _ensure_user_row."""
+"""Tests for pure JWT authentication and stable error semantics."""
 
 import os
 os.environ.setdefault("OPENAI_API_KEY", "test")
 os.environ.setdefault("SUPABASE_URL", "https://test.supabase.co")
 
 import pytest
-from sqlalchemy.exc import IntegrityError
-from unittest.mock import patch
 
 from fastapi import HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
 
-from datetime import datetime, timezone
 
-from app.core.auth import _ensure_user_row, get_current_user_id, get_current_user_email
+from app.core.auth import get_current_user_id, get_current_user_email
 from app.models.user import User
-from app.models.credit_ledger import CreditLedger
-
-
-def test_ensure_user_row_creates_user_and_grants_monthly_credits(db_session, test_user_id):
-    """First-time sign-in creates User row + 90 monthly freemium credits."""
-    new_user_id = "brand-new-user"
-    _ensure_user_row(db_session, new_user_id, "new@example.com")
-    # _ensure_user_row commits internally; no extra commit needed
-
-    user = db_session.query(User).filter(User.user_id == new_user_id).first()
-    assert user is not None
-    assert user.email == "new@example.com"
-
-    ledger_entries = db_session.query(CreditLedger).filter_by(user_id=new_user_id).all()
-    assert len(ledger_entries) == 1
-    assert ledger_entries[0].delta == 90
-    assert ledger_entries[0].reason == "grant"
-    period = datetime.now(timezone.utc).strftime("%Y-%m")
-    assert ledger_entries[0].external_ref == f"monthly:{period}:{new_user_id}"
-
-
-def test_ensure_user_row_idempotent_on_existing_user(db_session, test_user_id):
-    """Repeat call on existing user does not duplicate this month's credits."""
-    # First call: user already exists (created by test_user_id fixture)
-    _ensure_user_row(db_session, test_user_id, "existing@example.com")
-
-    # Second call: also no-op
-    _ensure_user_row(db_session, test_user_id, "existing@example.com")
-
-    ledger_entries = db_session.query(CreditLedger).filter_by(user_id=test_user_id).all()
-    assert len(ledger_entries) == 1
-    assert ledger_entries[0].delta == 90
-
-
-def test_ensure_user_row_handles_integrity_error_race(db_session):
-    """Concurrent first sign-in: IntegrityError on commit is swallowed gracefully."""
-    new_user_id = "race-condition-user"
-
-    # Patch db.commit to raise IntegrityError on the first call (simulating a
-    # race where another request inserted the row between our SELECT and INSERT).
-    original_commit = db_session.commit
-    call_count = {"n": 0}
-
-    def flaky_commit(*args, **kwargs):
-        call_count["n"] += 1
-        if call_count["n"] == 1:
-            # Roll back manually so the session stays usable after the patch
-            db_session.rollback()
-            raise IntegrityError("statement", "params", Exception("duplicate key"))
-        return original_commit(*args, **kwargs)
-
-    with patch.object(db_session, "commit", side_effect=flaky_commit):
-        # Should swallow the IntegrityError and return without raising
-        _ensure_user_row(db_session, new_user_id, "race@example.com")
-
-    # No exception raised = pass
 
 
 # ---------------------------------------------------------------------------
@@ -156,7 +97,8 @@ def test_decode_supabase_jwt_rejects_wrong_issuer_without_leaking_details(monkey
 
 def test_decode_supabase_jwt_returns_stable_503_when_jwks_is_unavailable(monkeypatch):
     fake_client = MagicMock()
-    fake_client.get_signing_key_from_jwt.side_effect = RuntimeError("network details")
+    from jwt.exceptions import PyJWKClientConnectionError
+    fake_client.get_signing_key_from_jwt.side_effect = PyJWKClientConnectionError("network details")
     monkeypatch.setattr("app.core.auth._jwks_client", lambda: fake_client)
 
     with pytest.raises(HTTPException) as exc_info:
@@ -173,20 +115,20 @@ def test_decode_supabase_jwt_returns_stable_503_when_jwks_is_unavailable(monkeyp
 
 
 def test_get_current_user_id_returns_sub_claim(monkeypatch, db_session):
-    """Valid bearer token → returns sub claim, ensures user row exists."""
+    """Valid bearer token → returns sub claim, does not create a user row."""
     monkeypatch.setattr(
         "app.core.auth.decode_supabase_jwt",
         lambda token: {"sub": "user-from-jwt", "email": "jwt@x.com", "aud": "authenticated"},
     )
 
     creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials="fake-token")
-    user_id = get_current_user_id(credentials=creds, db=db_session)
+    user_id = get_current_user_id(credentials=creds)
 
     assert user_id == "user-from-jwt"
 
-    # Verify _ensure_user_row was called (user row was created)
+    # Authentication must not initialize application state.
     user = db_session.query(User).filter_by(user_id="user-from-jwt").first()
-    assert user is not None
+    assert user is None
 
 
 def test_get_current_user_id_raises_401_on_bad_token(monkeypatch, db_session):
@@ -198,7 +140,7 @@ def test_get_current_user_id_raises_401_on_bad_token(monkeypatch, db_session):
 
     creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials="bad")
     with pytest.raises(HTTPException) as exc_info:
-        get_current_user_id(credentials=creds, db=db_session)
+        get_current_user_id(credentials=creds)
     assert exc_info.value.status_code == 401
 
 
@@ -224,7 +166,7 @@ from app.core.auth import get_optional_user_id, get_authenticated_user_id
 def test_get_current_user_id_raises_401_when_no_credentials(db_session):
     """Missing credentials → 401."""
     with pytest.raises(HTTPException) as exc_info:
-        get_current_user_id(credentials=None, db=db_session)
+        get_current_user_id(credentials=None)
     assert exc_info.value.status_code == 401
 
 
@@ -236,7 +178,7 @@ def test_get_current_user_id_raises_401_when_sub_missing(monkeypatch, db_session
     )
     creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials="token-no-sub")
     with pytest.raises(HTTPException) as exc_info:
-        get_current_user_id(credentials=creds, db=db_session)
+        get_current_user_id(credentials=creds)
     assert exc_info.value.status_code == 401
 
 
@@ -261,7 +203,7 @@ def test_get_current_user_email_raises_401_when_email_missing(monkeypatch):
 
 def test_get_optional_user_id_returns_none_when_no_credentials(db_session):
     """No credentials → returns None (not 401)."""
-    result = get_optional_user_id(credentials=None, db=db_session)
+    result = get_optional_user_id(credentials=None)
     assert result is None
 
 
@@ -272,7 +214,7 @@ def test_get_optional_user_id_returns_user_id_on_valid_token(monkeypatch, db_ses
         lambda token: {"sub": "optional-user", "email": "opt@x.com", "aud": "authenticated"},
     )
     creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials="valid-token")
-    result = get_optional_user_id(credentials=creds, db=db_session)
+    result = get_optional_user_id(credentials=creds)
     assert result == "optional-user"
 
 
@@ -283,7 +225,7 @@ def test_get_optional_user_id_returns_none_on_bad_token(monkeypatch, db_session)
         lambda token: (_ for _ in ()).throw(HTTPException(status_code=401, detail="bad")),
     )
     creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials="bad-token")
-    result = get_optional_user_id(credentials=creds, db=db_session)
+    result = get_optional_user_id(credentials=creds)
     assert result is None
 
 
@@ -294,12 +236,12 @@ def test_get_authenticated_user_id_returns_sub_claim(monkeypatch, db_session):
         lambda token: {"sub": "auth-user", "email": "auth@x.com", "aud": "authenticated"},
     )
     creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials="auth-token")
-    result = get_authenticated_user_id(credentials=creds, db=db_session)
+    result = get_authenticated_user_id(credentials=creds)
     assert result == "auth-user"
 
 
 def test_get_authenticated_user_id_raises_401_when_no_credentials(db_session):
     """No credentials → 401 from get_authenticated_user_id."""
     with pytest.raises(HTTPException) as exc_info:
-        get_authenticated_user_id(credentials=None, db=db_session)
+        get_authenticated_user_id(credentials=None)
     assert exc_info.value.status_code == 401

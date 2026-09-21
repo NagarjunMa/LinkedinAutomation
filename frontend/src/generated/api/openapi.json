@@ -4835,6 +4835,25 @@
         ]
       }
     },
+    "/api/v1/auth/bootstrap": {
+      "post": {
+        "operationId": "bootstrap_api_v1_auth_bootstrap_post",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Bootstrap",
+        "tags": [
+          "authentication"
+        ]
+      }
+    },
     "/api/v1/credits/balance": {
       "get": {
         "description": "GET /credits/balance — return current credit balance for authenticated user.",
