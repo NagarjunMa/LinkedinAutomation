@@ -30,6 +30,22 @@ def test_real_worker_rejects_unsafe_corpus(filename, status):
     assert "document" not in result
 
 
+@pytest.mark.parametrize("setting,value,filename,status", [
+    ("MAX_UPLOAD_SIZE", 20, "simple.pdf", "ResumeFileTooLargeError"),
+    ("MAX_EXTRACTED_TEXT_CHARS", 20, "simple.pdf", "ResumeFileComplexityError"),
+    ("MAX_PDF_PAGES", 12, "over-page-limit.pdf", "ok"),
+    ("MAX_DOCX_ENTRIES", 1, "simple.docx", "ResumeFileComplexityError"),
+    ("MAX_DOCX_UNCOMPRESSED_SIZE", 20, "simple.docx", "ResumeFileComplexityError"),
+    ("MAX_DOCX_COMPRESSION_RATIO", 1, "simple.docx", "ResumeFileComplexityError"),
+])
+def test_real_worker_preserves_configured_budgets(monkeypatch, setting, value, filename, status):
+    from app.core.config import settings
+    monkeypatch.setattr(settings, setting, value)
+    result = run("existing", CORPUS / filename)
+    assert result["status"] == status
+    assert result["budgets"][setting] == value
+
+
 def test_timeout_and_credential_isolation(monkeypatch):
     def timeout(command, **kwargs):
         assert kwargs["env"].get("PRIVATE_TEST_SECRET") is None
