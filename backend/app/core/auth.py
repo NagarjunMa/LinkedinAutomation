@@ -8,16 +8,13 @@ them, and verify access tokens against the matching `kid`.
 
 import jwt
 import logging
-from datetime import datetime, timezone
 from typing import Optional
 from fastapi import HTTPException, Security, Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt import PyJWTError, PyJWKClient
+from jwt.exceptions import PyJWKClientConnectionError
 from functools import lru_cache
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
 
-from app.db.session import get_db
 from app.core.config import settings
 
 security = HTTPBearer(auto_error=False)
@@ -55,6 +52,9 @@ def decode_supabase_jwt(token: str) -> dict:
             },
         )
         return payload
+    except PyJWKClientConnectionError as exc:
+        _auth_logger.warning("Supabase JWKS connection unavailable")
+        raise HTTPException(status_code=503, detail="Authentication service unavailable") from exc
     except PyJWTError as exc:
         _auth_logger.info("JWT verification rejected: %s", type(exc).__name__)
         raise HTTPException(status_code=401, detail=_INVALID_TOKEN_DETAIL) from exc
@@ -66,73 +66,28 @@ def decode_supabase_jwt(token: str) -> dict:
         ) from exc
 
 
-def _ensure_user_row(db: Session, user_id: str, email: str) -> None:
-    """Upsert a ``users`` row for *user_id* and grant this month's freemium credits.
-
-    The credit grant uses ``external_ref="monthly:YYYY-MM:<user_id>"`` which is
-    UNIQUE-constrained in the credit_ledger table, so duplicate first-contact or
-    monthly backfill attempts are safely ignored.
-    """
-    from app.models.user import User
-    from app.services.credits.ledger import grant_monthly
-
-    existing = db.query(User).filter(User.user_id == user_id).first()
-    if not existing:
-        try:
-            db.add(User(user_id=user_id, email=email))
-            db.commit()
-        except IntegrityError:
-            db.rollback()
-
-    period = datetime.now(timezone.utc).strftime("%Y-%m")
-    external_ref = f"monthly:{period}:{user_id}"
-    try:
-        grant_monthly(
-            db,
-            user_id=user_id,
-            amount=settings.FREEMIUM_MONTHLY_CREDITS,
-            external_ref=external_ref,
-        )
-        db.commit()
-    except IntegrityError:
-        db.rollback()
-    except Exception as exc:
-        db.rollback()
-        _auth_logger.warning("Freemium credit grant failed for %s: %s", user_id, exc)
+def get_current_user_claims(
+    credentials: HTTPAuthorizationCredentials = Security(security),
+) -> dict:
+    """Validate identity without accessing application storage."""
+    if not credentials:
+        raise HTTPException(status_code=401, detail="Authorization token required")
+    payload = decode_supabase_jwt(credentials.credentials)
+    subject = payload.get("sub")
+    if not isinstance(subject, str) or not subject:
+        raise HTTPException(status_code=401, detail=_INVALID_TOKEN_DETAIL)
+    return payload
 
 
 def get_current_user_id(
     credentials: HTTPAuthorizationCredentials = Security(security),
-    db: Session = Depends(get_db),
 ) -> str:
-    """Decode JWT, ensure a ``users`` row exists, and return the user ID.
+    """Return the verified identity; account setup is an explicit use case."""
+    return get_current_user_claims(credentials)["sub"]
 
-    On first contact for a new OAuth user the row is created and the current
-    monthly freemium credits are granted before the user_id is returned.
-    """
-    if not credentials:
-        raise HTTPException(status_code=401, detail="Authorization token required")
-
-    try:
-        payload = decode_supabase_jwt(credentials.credentials)
-        user_id = payload.get("sub")
-
-        if not user_id:
-            raise HTTPException(status_code=401, detail=_INVALID_TOKEN_DETAIL)
-
-        email = payload.get("email") or f"{user_id}@unknown.local"
-        _ensure_user_row(db, user_id, email)
-
-        return user_id
-    except HTTPException:
-        raise
-    except Exception as exc:
-        _auth_logger.warning("Authentication dependency failed: %s", type(exc).__name__)
-        raise HTTPException(status_code=401, detail=_INVALID_TOKEN_DETAIL) from exc
 
 def get_optional_user_id(
     credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
-    db: Session = Depends(get_db),
 ) -> Optional[str]:
     """Extract user ID from JWT token, but allow None for optional authentication."""
     if not credentials:
@@ -143,8 +98,6 @@ def get_optional_user_id(
         user_id = payload.get("sub")
         if not user_id:
             return None
-        email = payload.get("email") or f"{user_id}@unknown.local"
-        _ensure_user_row(db, user_id, email)
         return user_id
     except HTTPException:
         return None
@@ -173,22 +126,12 @@ def get_current_user_email(credentials: HTTPAuthorizationCredentials = Security(
 # Main authentication dependency - use this in endpoints
 def get_authenticated_user_id(
     credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
-    db: Session = Depends(get_db),
 ) -> str:
     """Main authentication dependency for API endpoints.
 
     Requires proper authentication in all environments.
     """
-    if not credentials:
-        raise HTTPException(status_code=401, detail="Authorization token required")
-
-    payload = decode_supabase_jwt(credentials.credentials)
-    user_id = payload.get("sub")
-    if not user_id:
-        raise HTTPException(status_code=401, detail=_INVALID_TOKEN_DETAIL)
-    email = payload.get("email") or f"{user_id}@unknown.local"
-    _ensure_user_row(db, user_id, email)
-    return user_id
+    return get_current_user_id(credentials)
 
 
 def require_path_user_matches_current(

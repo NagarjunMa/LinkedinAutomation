@@ -46,3 +46,7 @@ release states. [README](../README.md) describes repository defaults;
 No document synchronization in PRI-18 changes application behavior.
 
 Parser evaluation: [PRI-19 AnyDoc benchmark](anydoc-benchmark.md) records the synthetic corpus, verified code locations, limits and adoption decision; it does not change the production parser.
+
+Account setup: [PRI-20 explicit bootstrap](account-bootstrap.md) defines the
+read-only authentication boundary, transactional first-account allowance and
+existing database job's recurring-grant ownership, with rollout prerequisites.

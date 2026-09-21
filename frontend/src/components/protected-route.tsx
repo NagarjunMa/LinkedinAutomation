@@ -14,7 +14,7 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children, fallback }: ProtectedRouteProps) {
   const [isTestBypass, setIsTestBypass] = useState(false)
-  const { user, loading } = useAuth()
+  const { user, session, loading } = useAuth()
   const router = useRouter()
   const [showAuthRequired, setShowAuthRequired] = useState(false)
 
@@ -116,5 +116,52 @@ export function ProtectedRoute({ children, fallback }: ProtectedRouteProps) {
     )
   }
 
-  return <>{children}</>
+  if (!session?.access_token || session.user.id !== user.id) {
+    return <p role="status">Waiting for your sign-in session…</p>
+  }
+
+  return <AccountBootstrap key={user.id} token={session.access_token}>
+    {children}
+  </AccountBootstrap>
+}
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+function AccountBootstrap({ token, children }: { token: string; children: React.ReactNode }) {
+  const [status, setStatus] = useState<'pending' | 'ready' | 'failed'>('pending');
+  const [attempt, setAttempt] = useState(0);
+
+  useEffect(() => {
+    if (status !== 'pending') return;
+    let active = true;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15000);
+    // Bind the request to this gate's identity. The ordinary API client instead
+    // reads the latest global session, which may change during account switching.
+    fetch(`${API_BASE_URL}/api/v1/auth/bootstrap`, {
+      method: 'POST', headers: { Authorization: `Bearer ${token}` },
+      signal: controller.signal,
+    }).then(response => {
+      if (active) setStatus(response.status === 204 ? 'ready' : 'failed');
+    }).catch(() => {
+      if (active) setStatus('failed');
+    }).finally(() => clearTimeout(timer));
+    return () => {
+      active = false;
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [token, attempt, status]);
+
+  if (status === 'ready') return <>{children}</>;
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-6">
+      {status === 'pending' ? <p role="status">Preparing your account…</p> : <>
+        <p role="alert">We couldn’t prepare your account. Please try again.</p>
+        <Button onClick={() => { setStatus('pending'); setAttempt(value => value + 1); }}>
+          Try again
+        </Button>
+      </>}
+    </div>
+  );
 }

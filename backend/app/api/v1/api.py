@@ -10,6 +10,7 @@ from app.api.v1.endpoints import admin_metrics
 from app.api.v1.endpoints import analytics
 from app.api.v1.endpoints import waitlist
 from app.api.v1.endpoints import public_preview
+from app.api.v1.endpoints import bootstrap
 from app.core.config import settings
 from app.core.auth import require_path_user_matches_current, get_current_user_id
 from app.schemas.api_errors import ERROR_RESPONSES
@@ -21,6 +22,7 @@ api_router = APIRouter()
 # content-free dimensions and never accepts waitlist fields.
 api_router.include_router(waitlist.router)
 api_router.include_router(public_preview.router)
+api_router.include_router(bootstrap.router)
 
 # Core feature endpoints only
 api_router.include_router(
