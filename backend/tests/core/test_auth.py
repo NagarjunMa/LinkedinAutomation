@@ -6,7 +6,7 @@ os.environ.setdefault("SUPABASE_URL", "https://test.supabase.co")
 
 import pytest
 
-from fastapi import HTTPException
+from fastapi import HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials
 
 
@@ -203,7 +203,7 @@ def test_get_current_user_email_raises_401_when_email_missing(monkeypatch):
 
 def test_get_optional_user_id_returns_none_when_no_credentials(db_session):
     """No credentials → returns None (not 401)."""
-    result = get_optional_user_id(credentials=None)
+    result = get_optional_user_id(request=Request({"type": "http", "headers": []}), credentials=None)
     assert result is None
 
 
@@ -214,19 +214,22 @@ def test_get_optional_user_id_returns_user_id_on_valid_token(monkeypatch, db_ses
         lambda token: {"sub": "optional-user", "email": "opt@x.com", "aud": "authenticated"},
     )
     creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials="valid-token")
-    result = get_optional_user_id(credentials=creds)
+    request = Request({"type": "http", "headers": [(b"authorization", b"Bearer valid-token")]})
+    result = get_optional_user_id(request=request, credentials=creds)
     assert result == "optional-user"
 
 
-def test_get_optional_user_id_returns_none_on_bad_token(monkeypatch, db_session):
-    """Invalid token → returns None (not 401)."""
+def test_get_optional_user_id_rejects_bad_token(monkeypatch, db_session):
+    """Invalid credentials must never become an anonymous identity."""
     monkeypatch.setattr(
         "app.core.auth.decode_supabase_jwt",
         lambda token: (_ for _ in ()).throw(HTTPException(status_code=401, detail="bad")),
     )
     creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials="bad-token")
-    result = get_optional_user_id(credentials=creds)
-    assert result is None
+    request = Request({"type": "http", "headers": [(b"authorization", b"Bearer bad-token")]})
+    with pytest.raises(HTTPException) as exc_info:
+        get_optional_user_id(request=request, credentials=creds)
+    assert exc_info.value.status_code == 401
 
 
 def test_get_authenticated_user_id_returns_sub_claim(monkeypatch, db_session):

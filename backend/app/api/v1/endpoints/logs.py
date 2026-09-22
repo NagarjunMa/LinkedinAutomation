@@ -3,7 +3,7 @@ Frontend Logging Endpoint
 Centralizes frontend error logging to backend's enhanced logging system
 """
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field, field_validator
 from typing import Optional, Dict, Any, List
 from datetime import datetime, timezone
@@ -11,10 +11,9 @@ import logging
 import json
 from app.core.enhanced_logging import enhanced_logger
 from app.core.rate_limiter import RateLimiter
-from app.core.auth import decode_supabase_jwt
+from app.core.auth import get_optional_user_id, security
 
 router = APIRouter()
-security = HTTPBearer(auto_error=False)
 
 # Rate limiter to prevent log spam (100 logs per minute per IP)
 rate_limiter = RateLimiter(max_requests=100, window_seconds=60)
@@ -83,23 +82,11 @@ def get_logger() -> logging.Logger:
     return logging.getLogger('frontend')
 
 
-def get_verified_log_user_id(
-    credentials: Optional[HTTPAuthorizationCredentials],
-) -> Optional[str]:
-    """Return the JWT subject for log attribution, ignoring caller-supplied IDs."""
-    if not credentials:
-        return None
-    try:
-        payload = decode_supabase_jwt(credentials.credentials)
-    except Exception:
-        return None
-    return payload.get("sub")
-
 @router.post("/frontend", response_model=LogResponse)
 async def log_frontend_error(
     log_entry: FrontendLogSchema,
     request: Request,
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
 ):
     """
     Log a single frontend error to the centralized logging system
@@ -115,9 +102,12 @@ async def log_frontend_error(
             detail="Rate limit exceeded for frontend logging"
         )
 
+    # Charge the IP budget before JWT work; keep auth errors outside the
+    # logging handler so invalid credentials/provider failures retain 401/503.
+    verified_user_id = get_optional_user_id(request, credentials)
+
     try:
         frontend_logger = get_logger()
-        verified_user_id = get_verified_log_user_id(credentials)
 
         # Create log context
         log_context = {
@@ -181,7 +171,7 @@ async def log_frontend_error(
 async def log_frontend_errors_batch(
     batch: FrontendLogBatchSchema,
     request: Request,
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
 ):
     """
     Log multiple frontend errors in a single request (more efficient)
@@ -197,10 +187,12 @@ async def log_frontend_errors_batch(
             detail="Rate limit exceeded for batch frontend logging"
         )
 
+    # Preserve weighted IP limiting before JWT work and before any batch write.
+    verified_user_id = get_optional_user_id(request, credentials)
+
     processed = 0
     errors = []
     frontend_logger = get_logger()
-    verified_user_id = get_verified_log_user_id(credentials)
 
     for log_entry in batch.logs:
         try:
