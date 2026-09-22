@@ -50,3 +50,6 @@ Parser evaluation: [PRI-19 AnyDoc benchmark](anydoc-benchmark.md) records the sy
 Account setup: [PRI-20 explicit bootstrap](account-bootstrap.md) defines the
 read-only authentication boundary, transactional first-account allowance and
 existing database job's recurring-grant ownership, with rollout prerequisites.
+
+Optional identity: [PRI-21 optional authentication](optional-authentication.md) owns
+absent-versus-invalid credentials and shared frontend-log attribution behavior.

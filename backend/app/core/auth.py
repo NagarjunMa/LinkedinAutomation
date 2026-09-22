@@ -87,20 +87,17 @@ def get_current_user_id(
 
 
 def get_optional_user_id(
+    request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
 ) -> Optional[str]:
-    """Extract user ID from JWT token, but allow None for optional authentication."""
+    """Allow anonymous access only when no Authorization header was supplied."""
+    # HTTPBearer(auto_error=False) also returns None for malformed/non-Bearer
+    # headers. Those are rejected credentials, not an anonymous request.
+    if "authorization" not in request.headers:
+        return None
     if not credentials:
-        return None
-
-    try:
-        payload = decode_supabase_jwt(credentials.credentials)
-        user_id = payload.get("sub")
-        if not user_id:
-            return None
-        return user_id
-    except HTTPException:
-        return None
+        raise HTTPException(status_code=401, detail=_INVALID_TOKEN_DETAIL)
+    return get_current_user_id(credentials)
 
 
 def get_current_user_email(credentials: HTTPAuthorizationCredentials = Security(security)) -> str:
