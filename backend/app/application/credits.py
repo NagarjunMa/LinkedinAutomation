@@ -5,9 +5,10 @@ import logging
 from contextlib import contextmanager
 
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
 
-from app.application.errors import CreditReconciliationError, InsufficientBalanceError
-from app.services.credits.ledger import InsufficientCredits, debit, refund
+from app.application.errors import CreditReconciliationError, ExternalServiceError, InsufficientBalanceError
+from app.services.credits.ledger import CreditLockUnavailable, InsufficientCredits, debit, refund
 
 
 logger = logging.getLogger(__name__)
@@ -21,6 +22,12 @@ def paid_operation(db: Session, user_id: str, amount: int, reason: str):
     except InsufficientCredits as exc:
         db.rollback()
         raise InsufficientBalanceError("Insufficient credits") from exc
+    except (SQLAlchemyError, CreditLockUnavailable) as exc:
+        db.rollback()
+        raise ExternalServiceError("Credit service unavailable") from exc
+    except Exception:
+        db.rollback()
+        raise
 
     try:
         yield
