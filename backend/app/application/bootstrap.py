@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from app.application.errors import ExternalServiceError, ResourceConflictError
 from app.core.config import settings
 from app.models.user import User
-from app.services.credits.ledger import grant_monthly
+from app.services.credits.ledger import CreditLockUnavailable, grant_monthly, validate_credit_transaction
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,8 @@ def bootstrap_account(db: Session, *, user_id: str, email: str | None) -> None:
     so handle both and verify identity rather than swallowing an email collision.
     """
     try:
-        insert = sqlite_insert if db.get_bind().dialect.name == "sqlite" else pg_insert
+        dialect = validate_credit_transaction(db)
+        insert = sqlite_insert if dialect == "sqlite" else pg_insert
         created = db.execute(
             insert(User).values(user_id=user_id, email=email)
             .on_conflict_do_nothing()
@@ -46,7 +47,7 @@ def bootstrap_account(db: Session, *, user_id: str, email: str | None) -> None:
         db.rollback()
         logger.warning("Account bootstrap constraint conflict")
         raise ResourceConflictError("Account setup conflicts with existing data") from exc
-    except SQLAlchemyError as exc:
+    except (SQLAlchemyError, CreditLockUnavailable) as exc:
         db.rollback()
         logger.warning("Account bootstrap database unavailable: %s", type(exc).__name__)
         raise ExternalServiceError("Account setup service unavailable") from exc

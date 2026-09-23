@@ -4,20 +4,56 @@ Provides debit / refund / grant_monthly operations against the credit_ledger
 table.  All writes are flushed (not committed) so the caller controls the
 transaction boundary.
 
-Row-locking: ``_append`` uses SELECT … FOR UPDATE on Postgres to prevent
-concurrent double-spend.  On SQLite (used in tests) FOR UPDATE is a no-op —
-correctness is preserved because SQLite is single-writer.
+PostgreSQL writes require a users-row lock in a READ COMMITTED transaction.
+SQLite is supported only for sequential local development/tests, not as proof
+of production concurrency safety. Lock failures always propagate to the caller.
 """
 
 import uuid
 from sqlalchemy import select, func
 from sqlalchemy.orm import Session
+from app.core.config import settings
 from app.models.credit_ledger import CreditLedger
 from app.models.user import User
 
 
 class InsufficientCredits(Exception):
     """Raised when a debit would take the balance below zero."""
+
+
+class CreditLockUnavailable(RuntimeError):
+    """The configured database cannot provide the required credit write boundary."""
+
+
+def validate_credit_transaction(db: Session) -> str:
+    """Require a supported write transaction before any caller-owned mutation.
+
+    Return the validated dialect for callers that also insert the account.
+    """
+    dialect = db.get_bind().dialect.name
+    if dialect == "postgresql":
+        connection = db.connection()
+        # get_isolation_level() alone does not report DBAPI autocommit. The
+        # supported synchronous PostgreSQL driver (psycopg2) exposes it here.
+        if (connection.connection.dbapi_connection.autocommit
+                or connection.get_isolation_level() != "READ COMMITTED"):
+            raise CreditLockUnavailable("Credit writes require transactional READ COMMITTED")
+    elif dialect == "sqlite":
+        if settings.ENVIRONMENT.lower() not in {"development", "test"}:
+            raise CreditLockUnavailable("SQLite credit writes are limited to development/test")
+    else:
+        raise CreditLockUnavailable("Unsupported credit database")
+    return dialect
+
+
+def _lock_user(db: Session, user_id: str) -> None:
+    dialect = validate_credit_transaction(db)
+    statement = select(User.user_id).where(User.user_id == user_id)
+    if dialect == "postgresql":
+        statement = statement.with_for_update()
+    # A successful SELECT with no matching row provides no lock. Missing users
+    # and database errors must escape before balance calculation or appending.
+    db.execute(statement).scalar_one()
 
 
 def get_balance(db: Session, user_id: str) -> int:
@@ -51,25 +87,11 @@ def _append(
     """Low-level: append one ledger row and flush (no commit).
 
     Acquires a row-level lock on the ``users`` row for *user_id* before
-    computing the new balance.  Locking the users row (unique per user_id)
-    ensures that all concurrent credit operations for the same user serialise
-    through that single, deterministic row — avoiding the LIMIT-1 race where
-    two transactions could previously lock *different* ledger rows and both
-    pass the balance check.  On SQLite the FOR UPDATE clause is silently
-    ignored — the DB-level single-writer guarantee provides equivalent safety.
+    computing the new balance. Every Python ledger write for the same user
+    serializes through this row; READ COMMITTED gives the subsequent balance
+    query a fresh snapshot after waiting. The caller must roll back on failure.
     """
-    # Lock the users row for this user_id.  On Postgres this serialises all
-    # concurrent credit operations for the same user (SELECT … FOR UPDATE on a
-    # unique row is deterministic — no LIMIT-induced non-determinism).
-    # On SQLite the FOR UPDATE clause is a no-op, so correctness is still
-    # guaranteed by SQLite's single-writer model.
-    try:
-        db.execute(
-            select(User).where(User.user_id == user_id).with_for_update()
-        )
-    except Exception:
-        # Safety net: if the dialect rejects FOR UPDATE, swallow and continue.
-        pass
+    _lock_user(db, user_id)
 
     balance = get_balance(db, user_id)
     new_balance = balance + delta
@@ -95,14 +117,19 @@ def _append(
 def debit(db: Session, user_id: str, amount: int, reason: str) -> CreditLedger:
     """Debit *amount* credits from *user_id*.  Raises InsufficientCredits if
     the resulting balance would be negative."""
-    assert amount > 0, "Debit amount must be positive"
+    _validate_amount(amount, "Debit")
     return _append(db, user_id, -amount, reason)
 
 
 def refund(db: Session, user_id: str, amount: int, reason: str) -> CreditLedger:
     """Refund *amount* credits to *user_id* (inverse of a failed debit)."""
-    assert amount > 0, "Refund amount must be positive"
+    _validate_amount(amount, "Refund")
     return _append(db, user_id, amount, f"refund:{reason}")
+
+
+def _validate_amount(amount: int, operation: str) -> None:
+    if type(amount) is not int or amount <= 0:
+        raise ValueError(f"{operation} amount must be a positive integer")
 
 
 def grant_monthly(

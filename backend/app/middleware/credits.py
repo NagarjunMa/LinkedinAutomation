@@ -7,6 +7,7 @@
   4. Raises ``HTTPException(402)`` immediately when the user has insufficient
      credits (before yielding).
   5. Raises ``HTTPException(503)`` when a refund requires reconciliation.
+  6. Raises ``HTTPException(503)`` before work when debit storage is unavailable.
 
 ``require_credits`` wraps an async FastAPI endpoint function.  It expects the
 endpoint to accept ``db: Session`` and ``current_user_id: str`` keyword
@@ -21,7 +22,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.application.credits import paid_operation
-from app.application.errors import CreditReconciliationError, InsufficientBalanceError
+from app.application.errors import CreditReconciliationError, ExternalServiceError, InsufficientBalanceError
 
 
 @contextmanager
@@ -37,6 +38,8 @@ def credit_transaction(db: Session, user_id: str, amount: int, reason: str):
             status_code=503,
             detail="Credit refund requires reconciliation",
         ) from exc
+    except ExternalServiceError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
 def require_credits(amount: int, reason: str):

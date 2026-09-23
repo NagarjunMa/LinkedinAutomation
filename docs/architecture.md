@@ -53,3 +53,6 @@ existing database job's recurring-grant ownership, with rollout prerequisites.
 
 Optional identity: [PRI-21 optional authentication](optional-authentication.md) owns
 absent-versus-invalid credentials and shared frontend-log attribution behavior.
+
+Credit serialization: [PRI-22 credit locking](credit-locking.md) defines supported
+transaction modes, fail-closed locks and paid-operation rollback behavior.
