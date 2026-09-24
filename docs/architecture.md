@@ -32,7 +32,8 @@ document and issue; do not create a competing canonical copy in local notes.
 Current code has a Next.js frontend, FastAPI delivery/application/service layers,
 SQLAlchemy/Alembic persistence, Supabase Auth/private Storage, resume/JD model
 calls and Playwright PDF rendering. See [API contracts](api-contracts.md),
-[model manifests](model-manifests.md) and [local infrastructure](local-infrastructure.md).
+[model manifests](model-manifests.md), [LLM telemetry](llm-telemetry.md) and
+[local infrastructure](local-infrastructure.md).
 
 The proposed evidence ledger, interview controller, confirmed-evidence bullet
 plans and claim-revision lineage are target work. Existing parsing, model schemas,

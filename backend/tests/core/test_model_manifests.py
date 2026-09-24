@@ -103,7 +103,7 @@ async def test_call_configuration_and_prompt_compatibility(name, custom, caplog)
         [system, template], ensure_ascii=False, separators=(",", ":"),
     ).encode()).hexdigest()
     if custom:
-        manifest = ModelManifest(**{**manifest.model_dump(), "model_snapshot": "test-snapshot",
+        manifest = ModelManifest(**{**manifest.model_dump(), "model_snapshot": "test-snapshot", "pricing": None,
                                     "parameters": {"temperature": 0.7}})
     runtime = ModelRuntime(client_factory=lambda: client, manifests={name: manifest})
     with caplog.at_level(logging.INFO, logger="llm"):
@@ -159,7 +159,7 @@ def test_dependency_override_persists_exact_call_model(
     fake, call = fake_provider(response(content=evaluation_content()))
     manifests = dict(DEFAULT_MANIFESTS)
     manifests["evaluator"] = ModelManifest(**{
-        **manifests["evaluator"].model_dump(), "model_snapshot": "injected-evaluator-snapshot",
+        **manifests["evaluator"].model_dump(), "model_snapshot": "injected-evaluator-snapshot", "pricing": None,
     })
     runtime = ModelRuntime(client_factory=lambda: fake, manifests=manifests)
     app.dependency_overrides[get_model_runtime] = lambda: runtime
@@ -183,7 +183,7 @@ def test_jd_dependency_override_reaches_analysis_and_options(
         response(parsed=jd_fixture()), response(parsed=plan_fixture()),
         response(parsed=BulletDiff(bullet_id="b1", old=original, new=original, reason="Safe")),
     ]
-    manifests = {name: ModelManifest(**{**manifest.model_dump(), "model_snapshot": f"test-{name}"})
+    manifests = {name: ModelManifest(**{**manifest.model_dump(), "model_snapshot": f"test-{name}", "pricing": None})
                  for name, manifest in DEFAULT_MANIFESTS.items()}
     app.dependency_overrides[get_model_runtime] = lambda: ModelRuntime(
         client_factory=lambda: fake, manifests=manifests,
@@ -211,7 +211,7 @@ def test_rewrite_dependency_override_reaches_provider(client, auth_headers, uplo
     fake, call = fake_provider(response(content={
         "rewritten": original, "placeholders": [], "applied_changes": [],
     }))
-    manifest = ModelManifest(**{**DEFAULT_MANIFESTS["rewriter"].model_dump(), "model_snapshot": "test-rewriter"})
+    manifest = ModelManifest(**{**DEFAULT_MANIFESTS["rewriter"].model_dump(), "model_snapshot": "test-rewriter", "pricing": None})
     app.dependency_overrides[get_model_runtime] = lambda: ModelRuntime(
         client_factory=lambda: fake, manifests={"rewriter": manifest},
     )

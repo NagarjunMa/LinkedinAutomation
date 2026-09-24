@@ -30,7 +30,7 @@ async def extract_jd_requirements(
     """Extract structured JD requirements via schema-enforced parse()."""
     runtime = runtime or get_model_runtime()
     manifest = runtime.manifests["extractor"]
-    async with measure("extractor", user_id=user_id):
+    async with measure("extractor", manifest=manifest):
         resp = await runtime.single_attempt_client().beta.chat.completions.parse(
             model=manifest.model_snapshot,
             response_format=JDExtraction,
@@ -40,8 +40,8 @@ async def extract_jd_requirements(
             ],
             temperature=manifest.parameters.temperature,
         )
-    log_cost("extractor", resp.usage, user_id=user_id)
-    parsed = resp.choices[0].message.parsed
-    if parsed is None:
-        raise ValueError("OpenAI returned no parsed content for JD extraction")
-    return parsed
+        log_cost("extractor", resp.usage, manifest=manifest, response_model=getattr(resp, "model", None))
+        parsed = resp.choices[0].message.parsed
+        if parsed is None:
+            raise ValueError("OpenAI returned no parsed content for JD extraction")
+        return parsed

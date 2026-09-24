@@ -85,8 +85,8 @@ async def test_evaluator_returns_report():
 
 @pytest.mark.asyncio
 @respx.mock
-async def test_evaluator_logs_cost(caplog):
-    """Verify that cost logging event is emitted after a successful evaluate call."""
+async def test_evaluator_logs_usage_without_fabricating_cost(caplog):
+    """Missing cache detail cannot support an exact price calculation."""
     import logging
     mock_payload = {
         "id": "x", "object": "chat.completion", "created": 0, "model": "gpt-4o-2024-08-06",
@@ -102,16 +102,15 @@ async def test_evaluator_logs_cost(caplog):
     )
     with caplog.at_level(logging.INFO, logger="llm"):
         await evaluate_resume(make_doc(), target_role="SWE")
-    messages = [r.message for r in caplog.records]
-    assert any("llm_cost" in str(m) for m in messages), (
-        f"Expected 'llm_cost' log record from llm logger; got: {messages}"
-    )
+    messages = [r.msg for r in caplog.records if isinstance(r.msg, dict)]
+    assert any(m.get("event") == "llm_usage" and m.get("cost_status") == "unavailable"
+               and m.get("cost_usd") is None for m in messages)
 
 
 @pytest.mark.asyncio
 @respx.mock
-async def test_evaluator_logs_user_id(caplog):
-    """Verify that user_id is propagated to LLM log records."""
+async def test_evaluator_logs_usage_without_user_id(caplog):
+    """The model call remains observable without exposing its subject."""
     import logging
     mock_payload = {
         "id": "x", "object": "chat.completion", "created": 0, "model": "gpt-4o-2024-08-06",
@@ -131,9 +130,13 @@ async def test_evaluator_logs_user_id(caplog):
     with caplog.at_level(logging.INFO, logger="llm"):
         await evaluate_resume(make_doc(), target_role="SWE", user_id="u1")
     messages = [str(r.message) for r in caplog.records]
-    assert any("u1" in m for m in messages), (
-        f"Expected 'u1' in llm log records; got: {messages}"
-    )
+    assert messages
+    assert all("u1" not in m for m in messages)
+    assert "u1" not in str([r.__dict__ for r in caplog.records])
+    assert any(isinstance(r.msg, dict) and r.msg.get("event") == "llm_call"
+               for r in caplog.records)
+    assert any(isinstance(r.msg, dict) and r.msg.get("prompt_tokens") == 100
+               and r.msg.get("completion_tokens") == 50 for r in caplog.records)
 
 
 @pytest.mark.asyncio
@@ -174,7 +177,7 @@ async def test_evaluator_prompt_includes_raw_text_and_parser_guardrails():
 
 @pytest.mark.asyncio
 @respx.mock
-async def test_evaluator_invalid_schema_raises():
+async def test_evaluator_invalid_schema_raises_and_records_safe_failure(caplog):
     bad = {"id": "x", "object": "chat.completion", "created": 0, "model": "gpt-4o",
            "choices": [{"index": 0, "finish_reason": "stop",
                         "message": {"role": "assistant", "content": "{\"overall_score\": \"not-an-int\"}"}}],
@@ -183,5 +186,12 @@ async def test_evaluator_invalid_schema_raises():
         return_value=httpx.Response(200, json=bad)
     )
     from pydantic import ValidationError
-    with pytest.raises(ValidationError):
-        await evaluate_resume(make_doc(), target_role="SWE")
+    import logging
+    with caplog.at_level(logging.INFO, logger="llm"):
+        with pytest.raises(ValidationError):
+            await evaluate_resume(make_doc(), target_role="SWE", user_id="PRIVATE-USER")
+    call = next(r.msg for r in caplog.records if isinstance(r.msg, dict)
+                and r.msg.get("event") == "llm_call")
+    assert call["failure_category"] == "invalid_response"
+    assert "PRIVATE-USER" not in caplog.text
+    assert "not-an-int" not in caplog.text
