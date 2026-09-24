@@ -23,6 +23,9 @@ services:
       - "8000:8000"
     volumes:
       - ./backend:/app
+    tmpfs:
+      - /app/logs:uid=10001,gid=10001
+      - /app/uploads:uid=10001,gid=10001
     environment:
       - POSTGRES_SERVER=db
       - POSTGRES_USER=postgres

@@ -57,3 +57,7 @@ absent-versus-invalid credentials and shared frontend-log attribution behavior.
 
 Credit serialization: [PRI-22 credit locking](credit-locking.md) defines supported
 transaction modes, fail-closed locks and paid-operation rollback behavior.
+
+Backend image privileges: [PRI-24 container runtime](backend-container-runtime.md)
+defines the non-root account, writable paths, browser-sandbox limit and image
+smoke gate.

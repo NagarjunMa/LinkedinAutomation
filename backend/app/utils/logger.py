@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 
 # Create logs directory if it doesn't exist
-log_dir = Path(__file__).parent.parent.parent.parent / "logs"
+log_dir = Path(__file__).resolve().parents[2] / "logs"
 log_dir.mkdir(exist_ok=True)
 
 # Configure logging
@@ -21,4 +21,4 @@ logger = logging.getLogger("linkedin_scraper")
 
 def get_logger(name: str):
     """Get a logger instance for the given name"""
-    return logging.getLogger(name) 
+    return logging.getLogger(name)

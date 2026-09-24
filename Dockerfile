@@ -3,6 +3,12 @@
 
 FROM node:22-alpine AS frontend-builder
 WORKDIR /app/frontend
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_SUPABASE_URL
+ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
+    NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL \
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
 COPY frontend/package*.json ./
 RUN npm ci
 COPY frontend/ ./
@@ -13,6 +19,9 @@ RUN npm run build
 
 FROM python:3.11-slim AS backend
 WORKDIR /app
+
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
+    PYTHONDONTWRITEBYTECODE=1
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -41,8 +50,8 @@ RUN apt-get update && apt-get install -y \
 COPY backend/requirements.in backend/requirements.lock ./
 RUN pip install --no-cache-dir -r requirements.lock
 
-# Install the browser binary used by Playwright PDF rendering.
-RUN playwright install chromium
+# Install the browser in a shared, root-owned location readable by the runtime user.
+RUN playwright install chromium && chmod -R a+rX /ms-playwright
 
 # Copy backend code
 COPY backend/ ./
@@ -50,15 +59,22 @@ COPY backend/ ./
 # Copy built frontend from frontend-builder stage
 COPY --from=frontend-builder /app/frontend/.next ./static/frontend
 
-# Create uploads directory
-RUN mkdir -p uploads/resumes
+# Keep application code and browser binaries root-owned. Only runtime data paths
+# and the user's cache/home need write permission.
+RUN groupadd --gid 10001 prism && \
+    useradd --uid 10001 --gid prism --create-home --home-dir /home/prism --shell /usr/sbin/nologin prism && \
+    mkdir -p /app/logs /app/uploads/resumes && \
+    chown -R prism:prism /app/logs /app/uploads /home/prism
+
+ENV HOME=/home/prism
+USER prism:prism
 
 # Expose port
 EXPOSE 8000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+    CMD curl -f -A PrismPro-Container-Health/1.0 http://localhost:8000/health || exit 1
 
 # Start the application. The backend start script applies Alembic migrations
 # first so deployed code and database schema stay in sync.

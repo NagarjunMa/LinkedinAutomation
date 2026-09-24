@@ -101,7 +101,80 @@ jobs:
 
       - name: Docker build
         working-directory: .
-        run: docker build -t prism-backend-ci ./backend
+        run: |
+          docker build -t prism-backend-ci ./backend
+          docker build \
+            --build-arg NEXT_PUBLIC_API_URL=https://api.example.com \
+            --build-arg NEXT_PUBLIC_SUPABASE_URL=https://test.supabase.co \
+            --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=test \
+            -t prism-combined-ci .
+
+      - name: Backend image runtime smoke
+        working-directory: .
+        run: |
+          python - <<'PY'
+          from sqlalchemy import create_engine, text
+          engine = create_engine(
+              "postgresql://postgres:postgres@localhost:5432/postgres",
+              isolation_level="AUTOCOMMIT",
+          )
+          with engine.connect() as connection:
+              for database in ("prism_backend_smoke", "prism_combined_smoke"):
+                  connection.execute(text(f"CREATE DATABASE {database}"))
+          PY
+
+          for pair in "prism-backend-ci prism_backend_smoke" "prism-combined-ci prism_combined_smoke"; do
+            read -r image database <<< "$pair"
+            docker run --rm \
+              -e OPENAI_API_KEY=test \
+              -e SUPABASE_URL=https://test.supabase.co \
+              -e SUPABASE_ANON_KEY=test \
+              -e SUPABASE_SERVICE_ROLE_KEY=test \
+              -e SQLALCHEMY_DATABASE_URI=sqlite:///:memory: \
+              "$image" python -m scripts.smoke_container
+
+            container_id=$(docker run -d --network host \
+              -e OPENAI_API_KEY=test \
+              -e SUPABASE_URL=https://test.supabase.co \
+              -e SUPABASE_ANON_KEY=test \
+              -e SUPABASE_SERVICE_ROLE_KEY=test \
+              -e SQLALCHEMY_DATABASE_URI="postgresql://postgres:postgres@localhost:5432/$database" \
+              "$image")
+            trap 'docker rm -f "$container_id" >/dev/null 2>&1 || true' EXIT
+            healthy=false
+            for attempt in $(seq 1 60); do
+              if curl -fsS -A PrismPro-Container-Health/1.0 http://127.0.0.1:8000/health > /tmp/prism-health.json 2>/dev/null && \
+                  python -c 'import json; assert json.load(open("/tmp/prism-health.json"))["status"] == "healthy"'; then
+                healthy=true
+                break
+              fi
+              sleep 1
+            done
+            if [ "$healthy" != true ]; then
+              docker logs "$container_id"
+              exit 1
+            fi
+            for attempt in $(seq 1 40); do
+              probe_status=$(docker inspect --format '{{.State.Health.Status}}' "$container_id")
+              if [ "$probe_status" = healthy ]; then
+                break
+              fi
+              sleep 1
+            done
+            if [ "$probe_status" != healthy ]; then
+              docker logs "$container_id"
+              exit 1
+            fi
+            python - "$database" <<'PY'
+          import sys
+          from sqlalchemy import create_engine, text
+          engine = create_engine(f"postgresql://postgres:postgres@localhost:5432/{sys.argv[1]}")
+          with engine.connect() as connection:
+              assert connection.execute(text("SELECT count(*) FROM alembic_version")).scalar_one() >= 1
+          PY
+            docker rm -f "$container_id" >/dev/null
+            trap - EXIT
+          done
 
   frontend:
     name: Frontend (lint + build + types)
