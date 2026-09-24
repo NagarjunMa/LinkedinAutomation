@@ -7,6 +7,8 @@ from email.utils import parsedate_to_datetime
 from openai import APIConnectionError, RateLimitError
 from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
+from app.core.llm_logging import _set_retry_attempt
+
 
 def is_transient_model_error(error: BaseException) -> bool:
     if isinstance(error, APIConnectionError):
@@ -67,4 +69,5 @@ def retry_model_call(*, attempts: int = 3, max_wait: int = 10):
         stop=stop_after_attempt(attempts),
         wait=wait,
         retry=retry_if_exception(should_retry),
+        before=lambda state: _set_retry_attempt(state.attempt_number),
     )

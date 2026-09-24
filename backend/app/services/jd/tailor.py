@@ -144,7 +144,7 @@ async def tailor_resume_to_jd(
         resume_json=doc.model_dump_json(exclude={"raw_text"}),
         jd_json=jd.model_dump_json(),
     )
-    async with measure("tailor", user_id=user_id):
+    async with measure("tailor", manifest=manifest):
         resp = await runtime.single_attempt_client().beta.chat.completions.parse(
             model=manifest.model_snapshot,
             response_format=DiffPlan,
@@ -152,34 +152,34 @@ async def tailor_resume_to_jd(
                       {"role": "user", "content": user}],
             temperature=manifest.parameters.temperature,
         )
-    log_cost("tailor", resp.usage, user_id=user_id)
-    plan = resp.choices[0].message.parsed
-    if plan is None:
-        raise ValueError("OpenAI returned no parsed content for JD tailor")
-    jd_terms = _jd_skill_terms(jd)
-    resume_terms = _resume_supported_skill_terms(doc)
-    for diff in plan.bullets:
-        if diff.bullet_id not in bullet_lookup:
-            raise HallucinationError("Tailor response references an unknown source bullet")
-        original = bullet_lookup[diff.bullet_id]
-        # The model's claimed original is not evidence, including in the UI diff.
-        diff.old = original
-        if not diff.options:
-            diff.options = [
-                BulletOption(
-                    option_id="recommended",
-                    text=diff.new,
-                    reason=diff.reason,
-                    placeholders=diff.placeholders,
-                )
-            ]
-        _attach_truth_checks(
-            diff=diff,
-            original=original,
-            jd_skill_terms=jd_terms,
-            resume_supported_skill_terms=resume_terms,
-        )
-    return enrich_diff_plan_with_content_fit(doc, jd, plan)
+        log_cost("tailor", resp.usage, manifest=manifest, response_model=getattr(resp, "model", None))
+        plan = resp.choices[0].message.parsed
+        if plan is None:
+            raise ValueError("OpenAI returned no parsed content for JD tailor")
+        jd_terms = _jd_skill_terms(jd)
+        resume_terms = _resume_supported_skill_terms(doc)
+        for diff in plan.bullets:
+            if diff.bullet_id not in bullet_lookup:
+                raise HallucinationError("Tailor response references an unknown source bullet")
+            original = bullet_lookup[diff.bullet_id]
+            # The model's claimed original is not evidence, including in the UI diff.
+            diff.old = original
+            if not diff.options:
+                diff.options = [
+                    BulletOption(
+                        option_id="recommended",
+                        text=diff.new,
+                        reason=diff.reason,
+                        placeholders=diff.placeholders,
+                    )
+                ]
+            _attach_truth_checks(
+                diff=diff,
+                original=original,
+                jd_skill_terms=jd_terms,
+                resume_supported_skill_terms=resume_terms,
+            )
+        return enrich_diff_plan_with_content_fit(doc, jd, plan)
 
 
 @retry_model_call()
@@ -207,7 +207,7 @@ async def generate_bullet_options(
         resume_json=doc.model_dump_json(exclude={"raw_text"}),
         jd_json=jd.model_dump_json(),
     )
-    async with measure("tailor_options", user_id=user_id):
+    async with measure("tailor_options", manifest=manifest):
         resp = await runtime.single_attempt_client().beta.chat.completions.parse(
             model=manifest.model_snapshot,
             response_format=BulletDiff,
@@ -215,26 +215,26 @@ async def generate_bullet_options(
                       {"role": "user", "content": user}],
             temperature=manifest.parameters.temperature,
         )
-    log_cost("tailor_options", resp.usage, user_id=user_id)
-    diff = resp.choices[0].message.parsed
-    if diff is None:
-        raise ValueError("OpenAI returned no parsed content for bullet options")
-    if diff.bullet_id != bullet_id:
-        raise HallucinationError("Options response does not match the requested source bullet")
-    if not diff.options:
-        diff.options = [
-            BulletOption(
-                option_id="recommended",
-                text=diff.new,
-                reason=diff.reason,
-                placeholders=diff.placeholders,
-            )
-        ]
-    diff.old = original
-    _attach_truth_checks(
-        diff=diff,
-        original=original,
-        jd_skill_terms=_jd_skill_terms(jd),
-        resume_supported_skill_terms=_resume_supported_skill_terms(doc),
-    )
-    return diff
+        log_cost("tailor_options", resp.usage, manifest=manifest, response_model=getattr(resp, "model", None))
+        diff = resp.choices[0].message.parsed
+        if diff is None:
+            raise ValueError("OpenAI returned no parsed content for bullet options")
+        if diff.bullet_id != bullet_id:
+            raise HallucinationError("Options response does not match the requested source bullet")
+        if not diff.options:
+            diff.options = [
+                BulletOption(
+                    option_id="recommended",
+                    text=diff.new,
+                    reason=diff.reason,
+                    placeholders=diff.placeholders,
+                )
+            ]
+        diff.old = original
+        _attach_truth_checks(
+            diff=diff,
+            original=original,
+            jd_skill_terms=_jd_skill_terms(jd),
+            resume_supported_skill_terms=_resume_supported_skill_terms(doc),
+        )
+        return diff

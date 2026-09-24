@@ -58,7 +58,7 @@ async def rewrite_bullet(
         original=original, target_role=target_role,
         country=country, jd_context=jd_context or "",
     )
-    async with measure("rewriter", user_id=user_id):
+    async with measure("rewriter", manifest=manifest):
         resp = await runtime.single_attempt_client().chat.completions.create(
             model=manifest.model_snapshot,
             response_format={"type": "json_object"},
@@ -66,12 +66,12 @@ async def rewrite_bullet(
                       {"role": "user", "content": user}],
             temperature=manifest.parameters.temperature,
         )
-    log_cost("rewriter", resp.usage, user_id=user_id)
-    data = json.loads(resp.choices[0].message.content or "{}")
-    result = RewriteResult.model_validate(data)
-    check_no_unprompted_numbers(
-        original=original,
-        rewritten=result.rewritten,
-        placeholders=[p.model_dump() for p in result.placeholders],
-    )
-    return result
+        log_cost("rewriter", resp.usage, manifest=manifest, response_model=getattr(resp, "model", None))
+        data = json.loads(resp.choices[0].message.content or "{}")
+        result = RewriteResult.model_validate(data)
+        check_no_unprompted_numbers(
+            original=original,
+            rewritten=result.rewritten,
+            placeholders=[p.model_dump() for p in result.placeholders],
+        )
+        return result

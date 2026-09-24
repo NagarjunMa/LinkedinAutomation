@@ -90,7 +90,7 @@ async def evaluate_resume(
         resume_json=payload,
         raw_text=(doc.raw_text or "")[:12000],
     )
-    async with measure("evaluator", user_id=user_id):
+    async with measure("evaluator", manifest=manifest):
         resp = await runtime.single_attempt_client().chat.completions.create(
             model=manifest.model_snapshot,
             response_format={"type": "json_object"},
@@ -100,7 +100,7 @@ async def evaluate_resume(
             ],
             temperature=manifest.parameters.temperature,
         )
-    log_cost("evaluator", resp.usage, user_id=user_id)
-    content = resp.choices[0].message.content or "{}"
-    data = json.loads(content)
-    return EvaluationReport.model_validate(data)
+        log_cost("evaluator", resp.usage, manifest=manifest, response_model=getattr(resp, "model", None))
+        content = resp.choices[0].message.content or "{}"
+        data = json.loads(content)
+        return EvaluationReport.model_validate(data)

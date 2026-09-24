@@ -14,7 +14,8 @@ generation or factual-grounding policy.
 
 All use the unchanged `gpt-4o-2024-08-06` snapshot and prompt version `1`.
 Each immutable manifest records provider, model snapshot, prompt name/version,
-template hash, schema version, and temperature parameters. Schema versions label
+template hash, schema version, temperature and exact-snapshot pricing metadata.
+Schema versions label
 the existing response contracts; they do not introduce new API fields.
 
 ## Configuration and injection
@@ -48,9 +49,12 @@ Do not merely regenerate hashes to dismiss unexpected drift. Hashes detect sourc
 drift in CI; this is not runtime prompt attestation or proof of output truth.
 
 No prompt or response content is added to ordinary logs. Credentials remain in
-the existing settings/client boundary, not manifests. Existing cost estimates
-still assume the current model: changing a model requires a separate pricing,
-capability, quality, and rollout review, not just a manifest edit.
+the existing settings/client boundary, not manifests. PRI-23 ties estimated
+cost to versioned rates for the exact requested and returned model snapshot;
+unknown pricing or cache usage produces an explicit unavailable cost. Changing
+a model requires a pricing, capability, quality and rollout review, not just a
+manifest edit. See [LLM telemetry](llm-telemetry.md) for the privacy and usage
+contract.
 
 ## Verification and rollout
 
@@ -62,7 +66,7 @@ evaluation model metadata. Provider interactions use fixtures, not paid calls.
 Backend-only rollout; no migration, dependency upgrade, or frontend coordination
 required. Roll back by reverting the refactor. Hosted CI and owner review are
 still required before merge. Monitor existing model-call errors, latency and
-cost telemetry without collecting private prompt/response content. Existing
+aggregate cost telemetry without collecting private prompt/response content. Existing
 retry/quota and unknown-bullet-ID behavior is unchanged and belongs to PRI-14.
 
 Reference checked 2026-09-15: [OpenAI Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs).
