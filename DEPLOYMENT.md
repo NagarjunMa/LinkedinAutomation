@@ -42,8 +42,9 @@ Alembic stamping updates revision metadata without running migrations; see the
 
 Require the applicable hosted CI jobs, image build for the actual Dockerfile being
 deployed, explicit human review and environment-specific smoke evidence.
-CI builds `backend/Dockerfile` and `frontend/Dockerfile`; it does not build the
-separate root multi-stage `Dockerfile`. Verify that image separately if used.
+CI builds `backend/Dockerfile`, `frontend/Dockerfile`, and the root multi-stage
+`Dockerfile`. It smokes the backend process in both backend-capable images;
+verify the exact selected image and environment again before deployment.
 Do not infer deployed state from a green PR or merge.
 
 Deploy only the approved revision after migration compatibility is confirmed.
