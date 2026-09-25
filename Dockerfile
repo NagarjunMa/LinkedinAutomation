@@ -76,6 +76,6 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f -A PrismPro-Container-Health/1.0 http://localhost:8000/health || exit 1
 
-# Start the application. The backend start script applies Alembic migrations
-# first so deployed code and database schema stay in sync.
+# Start the application. The backend start script checks the schema revision;
+# release migrations run separately before this image receives traffic.
 CMD ["sh", "scripts/start.sh"]

@@ -1,6 +1,6 @@
 # Production Readiness Checklist
 
-Reconciled 2026-09-18. This checklist defines gates, not a statement that the
+Updated for PRI-25 on 2026-09-25. This checklist defines gates, not a statement that the
 current revision is deployed or launch-approved. Record revision, environment,
 timestamp and reviewer in the PrismPro Linear release issue for every result.
 Historical 2026-06-30 results below require revalidation for the release target.
@@ -20,14 +20,15 @@ Linear owns current task status; old TECH_DEBT/progress notes are historical.
 | Item | Status | Verification Gate |
 | --- | --- | --- |
 | Backend lint/test/coverage | CI gated | GitHub backend job passes |
-| Clean Postgres migration smoke | CI gated | `alembic upgrade head` passes against CI Postgres |
+| Clean and existing-schema Postgres migration smoke | CI gated | Explicit `scripts/migrate.sh` passes against both disposable CI databases; existing data remains intact |
+| Release-time migration gate | Pending production configuration | Verified backend Railway service runs `sh scripts/migrate.sh` as Pre-Deploy Command and blocks a failed deployment before traffic shift; web startup only checks current heads |
 | Postgres concurrent credit tests | CI gated | `tests/services/credits/ -k concurrent` passes |
 | Backend dependency audit | CI gated | `pip-audit -r backend/requirements.lock` passes |
 | Frontend lint/type/build/test/e2e | CI gated | GitHub frontend job passes |
 | Frontend production audit | CI gated | `npm audit --omit=dev --audit-level=high` passes |
 | Secret scanning | CI gated | TruffleHog verified scan passes |
 | Service Docker images | CI gated | Backend and frontend Docker builds pass |
-| Root multi-stage Docker image | Separate evidence required if used | Not built by current CI; build the actual deployment target |
+| Root multi-stage Docker image | CI gated | CI builds and runs the backend smoke in the root image; verify the actual deployment target again before release |
 
 ## Phase 3: Supabase Security Gate
 

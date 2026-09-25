@@ -1,10 +1,9 @@
 #!/bin/sh
 set -eu
 
-if [ "${RUN_DB_MIGRATIONS:-true}" = "true" ]; then
-  echo "Running database migrations..."
-  alembic upgrade head
-fi
+# A release must migrate first. This read-only check prevents an unmigrated
+# instance from serving if its pre-deploy step was omitted or failed.
+alembic current --check-heads
 
 exec uvicorn app.main:app \
   --host 0.0.0.0 \

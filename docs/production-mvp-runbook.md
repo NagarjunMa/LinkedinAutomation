@@ -1,6 +1,6 @@
 # Prism Pro MVP Production Runbook
 
-This is the supported operational runbook, reconciled on 2026-09-18. Use it with
+This is the supported operational runbook, updated for PRI-25 on 2026-09-25. Use it with
 the [deployment entrypoint](../DEPLOYMENT.md) and
 [release checklist](../DEPLOYMENT_READINESS_CHECKLIST.md). Public preview and
 authenticated internal product testing are separate modes; neither green CI nor
@@ -311,12 +311,16 @@ No monthly schedule or production balance was inspected or changed by PRI-18.
 
 1. Confirm CI is green on the PR branch.
 2. Confirm the repository's dependency audits pass without unapproved exceptions.
-3. Build backend and frontend Docker images, plus the root multi-stage image if
-   that is the deployment target (it is not built by current CI).
+3. Confirm CI builds backend, frontend and root multi-stage images, then verify
+   the exact image selected by the deployment target.
 4. Test the migration chain on clean and representative existing-schema staging
    databases; verify a backup and migration-specific rollback plan.
-5. Obtain explicit operator approval, verify the target, then apply reviewed
-   Alembic migrations to production. Stop on errors; never bypass the chain.
+5. Obtain explicit operator approval and verify the target, backup and
+   migration-specific recovery plan. Set the verified Railway backend service's
+   pre-deploy command to `sh scripts/migrate.sh` as described in
+   [DEPLOYMENT.md](../DEPLOYMENT.md), and inspect its result before traffic
+   shifts. Stop on errors; never bypass the chain or rely on web startup to
+   apply it.
 6. Verify Supabase auth redirects, RLS policies, and storage bucket.
 7. Deploy backend.
 8. Deploy frontend.
