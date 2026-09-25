@@ -64,7 +64,42 @@ jobs:
           SUPABASE_URL: https://test.supabase.co
           SUPABASE_ANON_KEY: test
           SUPABASE_SERVICE_ROLE_KEY: test
-        run: python -m alembic upgrade head
+        run: sh scripts/migrate.sh
+
+      - name: Migration smoke (Postgres existing schema)
+        env:
+          OPENAI_API_KEY: test
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/prism_existing_smoke"
+          SQLALCHEMY_DATABASE_URI: "postgresql://postgres:postgres@localhost:5432/prism_existing_smoke"
+          SUPABASE_URL: https://test.supabase.co
+          SUPABASE_ANON_KEY: test
+          SUPABASE_SERVICE_ROLE_KEY: test
+        run: |
+          python - <<'PY'
+          from sqlalchemy import create_engine, text
+          engine = create_engine("postgresql://postgres:postgres@localhost:5432/postgres", isolation_level="AUTOCOMMIT")
+          with engine.connect() as connection:
+              connection.execute(text("CREATE DATABASE prism_existing_smoke"))
+          PY
+          python -m alembic upgrade 2026_09_06_waitlist
+          python - <<'PY'
+          from sqlalchemy import create_engine, text
+          engine = create_engine("postgresql://postgres:postgres@localhost:5432/prism_existing_smoke")
+          with engine.begin() as connection:
+              connection.execute(text("""INSERT INTO waitlist_entries
+                  (id, normalized_email, consent_granted, consent_version,
+                   consented_at, source, retention_expires_at)
+                  VALUES ('ci-existing-schema', 'ci@example.invalid', true, 'test',
+                          now(), 'test', now() + interval '30 days')"""))
+          PY
+          sh scripts/migrate.sh
+          python -m alembic current --check-heads
+          python - <<'PY'
+          from sqlalchemy import create_engine, text
+          engine = create_engine("postgresql://postgres:postgres@localhost:5432/prism_existing_smoke")
+          with engine.connect() as connection:
+              assert connection.execute(text("SELECT count(*) FROM waitlist_entries WHERE id = 'ci-existing-schema'")).scalar_one() == 1
+          PY
 
       - name: Run tests (SQLite default — fast)
         env:
@@ -132,6 +167,37 @@ jobs:
               -e SUPABASE_SERVICE_ROLE_KEY=test \
               -e SQLALCHEMY_DATABASE_URI=sqlite:///:memory: \
               "$image" python -m scripts.smoke_container
+
+            if timeout 20s docker run --rm --network host \
+              -e OPENAI_API_KEY=test \
+              -e SUPABASE_URL=https://test.supabase.co \
+              -e SUPABASE_ANON_KEY=test \
+              -e SUPABASE_SERVICE_ROLE_KEY=test \
+              -e SQLALCHEMY_DATABASE_URI="postgresql://postgres:postgres@localhost:5432/$database" \
+              "$image"; then
+              echo "Web started before release migration" >&2
+              exit 1
+            else
+              start_status=$?
+              if [ "$start_status" -eq 124 ]; then
+                echo "Web did not reject an unmigrated schema" >&2
+                exit 1
+              fi
+            fi
+            python - "$database" <<'PY'
+          import sys
+          from sqlalchemy import create_engine, text
+          engine = create_engine(f"postgresql://postgres:postgres@localhost:5432/{sys.argv[1]}")
+          with engine.connect() as connection:
+              assert connection.execute(text("SELECT to_regclass('public.alembic_version')")).scalar_one() is None
+          PY
+            docker run --rm --network host \
+              -e OPENAI_API_KEY=test \
+              -e SUPABASE_URL=https://test.supabase.co \
+              -e SUPABASE_ANON_KEY=test \
+              -e SUPABASE_SERVICE_ROLE_KEY=test \
+              -e SQLALCHEMY_DATABASE_URI="postgresql://postgres:postgres@localhost:5432/$database" \
+              "$image" sh scripts/migrate.sh
 
             container_id=$(docker run -d --network host \
               -e OPENAI_API_KEY=test \

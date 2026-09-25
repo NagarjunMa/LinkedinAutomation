@@ -121,7 +121,7 @@ stop: ## Kill processes on dev ports
 	@echo "stopped processes on ports $(BACKEND_PORT) and $(FRONTEND_PORT)"
 
 migrate: ## Apply Alembic migrations to current DB
-	cd $(BACKEND_DIR) && alembic upgrade head
+	cd $(BACKEND_DIR) && sh scripts/migrate.sh
 
 shell-backend: ## Open backend Python REPL with app + db loaded
 	cd $(BACKEND_DIR) && $(PYTHON) -c "from app.main import app; from app.db.session import SessionLocal; db = SessionLocal(); print('app, db ready')" -i

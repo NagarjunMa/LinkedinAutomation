@@ -1,9 +1,9 @@
 # PRI-24 backend container runtime
 
-Status: implemented locally on `security/pri-24-backend-non-root`; the backend
-image smoke passed, while the combined image and clean-PostgreSQL startup remain
-unverified. The [PrismPro issue](https://linear.app/prismpro/issue/PRI-24/run-the-backend-container-as-a-non-root-user)
-is the durable plan and progress record.
+Status: PRI-24 merged in PR #61. Both backend-capable images passed hosted
+non-root/PDF/health smokes. The [PrismPro issue](https://linear.app/prismpro/issue/PRI-24/run-the-backend-container-as-a-non-root-user)
+is the durable verification record. PRI-25 separates release migrations from
+web startup.
 
 ## Contract and design
 
@@ -17,9 +17,10 @@ image's normal temporary-file permissions. The browser is installed at
 The local Compose source bind mount masks image permissions, so Compose mounts
 the two data directories as UID/GID 10001 temporary filesystems.
 
-The existing startup command still runs Alembic before Uvicorn when
-`RUN_DB_MIGRATIONS=true`; the health endpoint still checks database
-connectivity. Supabase Storage credentials and API contracts are unchanged.
+The web startup command checks Alembic heads without changing the schema,
+while `scripts/migrate.sh` runs the explicit release upgrade. The health
+endpoint still checks database connectivity. Supabase Storage credentials
+and API contracts are unchanged.
 Both image health probes use a dedicated User-Agent because request validation
 blocks curl's default User-Agent. The probe path and request validation policy
 are otherwise unchanged.
@@ -40,11 +41,11 @@ browser-process sandboxing or permission to alter Railway seccomp policy.
 
 | Criterion | Check | Current evidence |
 | --- | --- | --- |
-| Non-root API and browser process | Dockerfile regression test and built-image `id`/write-denial smoke | Static test red before change, green after; backend image smoke passed as UID 10001; combined image pending |
-| Health and PDF | CI runs `/health` and the real `render_pdf_from_doc` path in both backend-capable images | Backend image rendered a visible one-page PDF and Docker reported healthy; combined image pending |
-| Writable paths | Built-image smoke checks home, logs and uploads writable; app and browser paths denied | Backend image passed; combined image pending; Compose config parses |
-| No image-layer production secret | Root `.dockerignore` excludes `.env*`; Dockerfiles use no secret build arguments | Source inspection; built-image inspection pending |
-| Startup migrations | CI starts each image with migrations enabled against its own clean disposable PostgreSQL database, then checks health and `alembic_version` | Pending hosted CI execution |
+| Non-root API and browser process | Dockerfile regression test and built-image `id`/write-denial smoke | Both hosted image smokes passed as UID 10001 in PR #61 and post-merge CI |
+| Health and PDF | CI runs `/health` and the real `render_pdf_from_doc` path in both backend-capable images | Both hosted image smokes passed in PR #61 and post-merge CI |
+| Writable paths | Built-image smoke checks home, logs and uploads writable; app and browser paths denied | Both hosted image smokes passed; Compose config parses |
+| No image-layer production secret | Root `.dockerignore` excludes `.env*`; Dockerfiles use no secret build arguments | Source inspection and hosted secret scan passed; exact production image inspection remains a release check |
+| Release migrations | PRI-25 CI runs an explicit migration command before each image's web start | Pending PRI-25 hosted CI; PRI-24's previous startup-migration smoke passed historically |
 
 The backend native gate passed with 694 tests, 26 skips, 88.82% coverage and no
 known dependency vulnerabilities. Docker Desktop initially had no usable daemon;
@@ -58,9 +59,9 @@ write-permission and real PDF smoke; `/health` returned healthy and Docker's
 health state became healthy. The test container and temporary image were removed
 afterward because available disk fell below 200 MB.
 
-The combined root image and clean-PostgreSQL migration/startup remain not run
-locally because disk space is insufficient for another large image and a new
-PostgreSQL image. Hosted CI must execute both before PRI-24 can be verified.
+The combined root image and clean-PostgreSQL migration/startup could not run
+locally during PRI-24 because disk space was insufficient. PR #61 and
+post-merge hosted CI subsequently passed both image smokes.
 
 ## Delivery limits
 

@@ -65,7 +65,6 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f -A PrismPro-Container-Health/1.0 http://localhost:8000/health || exit 1
 
-# Start the application with dynamic port for Railway.
-# The start script applies Alembic migrations first so deployed code and
-# database schema do not drift during Railway rollouts.
+# Start the application with dynamic port for Railway. The start script checks
+# the schema revision but never upgrades it; release migrations run separately.
 CMD ["sh", "scripts/start.sh"]
