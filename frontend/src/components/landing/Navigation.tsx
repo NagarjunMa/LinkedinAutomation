@@ -25,7 +25,7 @@ export const Navigation: React.FC = () => {
           className="transition-colors duration-300"
           style={{ backgroundColor: 'hsl(var(--background) / 0.95)' }}
         >
-          <div className="max-w-[1400px] mx-auto px-8 py-7 flex items-center justify-between">
+          <div className="max-w-[1400px] mx-auto px-4 py-7 flex items-center justify-between sm:px-8">
 
             {/* Left: wordmark */}
             <Link href="/" className="flex min-h-11 items-center gap-3">
@@ -51,7 +51,7 @@ export const Navigation: React.FC = () => {
             </Link>
 
             {/* Center: nav links */}
-            <div className="hidden lg:flex items-center gap-8">
+            <div className="hidden lg:flex items-center gap-9">
               {[
                 { label: 'HOW IT WORKS', href: '/#how-it-works' },
                 { label: "WHAT YOU'LL GET", href: '/#experience' },
@@ -61,8 +61,8 @@ export const Navigation: React.FC = () => {
                 <Link
                   key={item.label}
                   href={item.href}
-                  className="text-foreground/85 hover:text-foreground transition-colors duration-200 uppercase font-humane"
-                  style={{ fontSize: '18px', fontWeight: 600, fontVariationSettings: '"wght" 600', letterSpacing: '0.12em', lineHeight: 1 }}
+                  className="flex min-h-11 items-center text-foreground/90 hover:text-foreground transition-colors duration-200 uppercase font-humane"
+                  style={{ fontSize: '22px', fontWeight: 600, fontVariationSettings: '"wght" 600', letterSpacing: '0.14em', lineHeight: 1 }}
                 >
                   {item.label}
                 </Link>
@@ -70,7 +70,7 @@ export const Navigation: React.FC = () => {
             </div>
 
             {/* Right: pre-launch CTA + theme toggle. Authentication stays closed. */}
-            <div className="flex items-center gap-5">
+            <div className="flex items-center gap-2 sm:gap-5">
               <button
                 onClick={toggleTheme}
                 className="flex h-11 w-11 items-center justify-center text-foreground/50 hover:text-foreground transition-colors duration-200"
@@ -103,8 +103,8 @@ export const Navigation: React.FC = () => {
 
               <Link
                 href="/#early-access"
-                className="inline-flex min-h-11 items-center gap-2 border border-foreground/30 px-3 text-foreground/85 transition-colors duration-200 hover:border-foreground hover:text-foreground sm:px-4"
-                style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '11px', fontWeight: 700, letterSpacing: '0.12em', lineHeight: 1 }}
+                className="inline-flex min-h-11 items-center gap-2 border border-foreground/30 px-3 text-foreground/90 transition-colors duration-200 hover:border-foreground hover:text-foreground sm:px-4"
+                style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '13px', fontWeight: 700, letterSpacing: '0.14em', lineHeight: 1 }}
               >
                 <span className="uppercase"><span className="hidden sm:inline">JOIN THE </span>PREVIEW</span>
                 <ArrowRight size={14} aria-hidden="true" />
