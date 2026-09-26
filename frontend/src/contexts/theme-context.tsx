@@ -19,7 +19,7 @@ interface ThemeProviderProps {
 }
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
-  const [theme, setThemeState] = useState<Theme>('light');
+  const [theme, setThemeState] = useState<Theme>('dark');
 
   useEffect(() => {
     // Initialize theme on client side only
@@ -31,11 +31,9 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
         setThemeState(savedTheme);
         applyTheme(savedTheme);
       } else {
-        // Check system preference as fallback
-        const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-        setThemeState(systemTheme);
-        applyTheme(systemTheme);
-        localStorage.setItem('prism-theme', systemTheme);
+        setThemeState('dark');
+        applyTheme('dark');
+        localStorage.setItem('prism-theme', 'dark');
       }
     }
   }, []);

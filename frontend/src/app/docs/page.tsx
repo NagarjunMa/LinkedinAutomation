@@ -301,7 +301,7 @@ export default function Documentation() {
     return (
         <div
             className={`min-h-screen ${
-                isDark ? 'bg-[#0a0a0a] text-[#f0eff2]' : 'bg-[#f0eff2] text-[#0a0a0a]'
+                isDark ? 'bg-background text-foreground' : 'bg-[#f0eff2] text-[#0a0a0a]'
             } transition-colors duration-300 font-sans`}
         >
             <Navigation />

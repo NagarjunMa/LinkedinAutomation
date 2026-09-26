@@ -138,17 +138,17 @@
        Goal: cool editorial neutral — NOT brown, clean sophisticated dark
     ────────────────────────────────────────────────────────────────────────── */
 
-    /* #0d0d0d — near-black background */
-    --background: 0 0% 5%;
+    /* #141414 — shadow background */
+    --background: 0 0% 7.843137%;
     /* #e8e5de — warm off-white foreground */
     --foreground: 40 10% 89%;
 
-    /* Cards: slightly lighter than near-black */
-    --card: 0 0% 8%;
+    /* Cards: slightly lighter than the shadow background */
+    --card: 0 0% 11%;
     --card-foreground: 40 10% 89%;
 
     /* Popovers match card */
-    --popover: 0 0% 8%;
+    --popover: 0 0% 11%;
     --popover-foreground: 40 10% 89%;
 
     /* #e8e5de — off-white primary (inverted from light) */
@@ -186,9 +186,9 @@
     --chart-5: 0 0% 20%;
 
     /* ─── App-wide theme vars for dark mode ─────────────────────────────────── */
-    --app-bg: hsl(0, 0%, 5%);
+    --app-bg: #141414;
     --app-text: hsl(40, 10%, 89%);
-    --app-card: rgba(20, 20, 18, 0.80);
+    --app-card: rgba(28, 28, 28, 0.80);
     --app-card-border: rgba(232, 229, 222, 0.10);
     --app-muted: rgba(232, 229, 222, 0.45);
     --app-accent: rgba(232, 229, 222, 0.70);
@@ -467,7 +467,7 @@
 :root {
   --bg-light: #f0eff2;
   --accent-light: #3b3b3b;
-  --bg-dark: #3b3b3b;
+  --bg-dark: #141414;
   --accent-dark: #f0eff2;
 }
 
