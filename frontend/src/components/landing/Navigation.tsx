@@ -23,7 +23,7 @@ export const Navigation: React.FC = () => {
       <nav className="fixed top-[14px] left-0 right-0 z-[100] transition-colors duration-300 border-b border-foreground/[0.08]">
         <div
           className="transition-colors duration-300"
-          style={{ backgroundColor: isDark ? 'hsl(0 0% 5% / 0.95)' : 'hsl(40 14% 91% / 0.95)' }}
+          style={{ backgroundColor: 'hsl(var(--background) / 0.95)' }}
         >
           <div className="max-w-[1400px] mx-auto px-8 py-7 flex items-center justify-between">
 

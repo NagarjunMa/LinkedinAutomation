@@ -11,7 +11,7 @@ export default function PrivacyPolicy() {
   const appOrigin = getConfiguredAppOrigin();
 
   return (
-    <div className={`min-h-screen ${isDark ? 'bg-[#0a0a0a] text-[#f0eff2]' : 'bg-[#f0eff2] text-[#0a0a0a]'} font-sans transition-colors duration-300`}>
+    <div className={`min-h-screen ${isDark ? 'bg-background text-foreground' : 'bg-[#f0eff2] text-[#0a0a0a]'} font-sans transition-colors duration-300`}>
       <Navigation />
 
       <main className="mx-auto max-w-4xl px-6 pb-20 pt-36">
