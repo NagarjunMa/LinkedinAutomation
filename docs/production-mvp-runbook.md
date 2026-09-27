@@ -309,6 +309,38 @@ No monthly schedule or production balance was inspected or changed by PRI-18.
 
 ## Deployment Order
 
+### Updating CI actions and the secret scanner
+
+The release gates in [CI](../.github/workflows/ci.yml) use full action commit SHAs.
+Each adjacent version comment identifies the upstream release reviewed when the SHA
+was selected. To update an action, choose a published release in the publisher's
+repository, inspect its release notes and action definition for input/runtime or
+permission changes, resolve the tag to its commit (including annotated-tag
+peeling), and verify the full SHA belongs to that repository. Update every use of
+that action and its version comments together. Do not replace the SHA with a
+branch or version tag. [GitHub's secure-use guidance](https://docs.github.com/en/actions/reference/security/secure-use)
+explains why the full SHA is the immutable action reference.
+
+TruffleHog runs directly from a digest-pinned container. Review the upstream
+release, then resolve its matching `ghcr.io/trufflesecurity/trufflehog` image's
+multi-platform digest with `docker buildx imagetools inspect`. Update the digest
+and nearby release comment together, and verify the pulled image reports the
+expected version. Do not fall back to `latest`. The upstream action wrapper's
+PR/push defaults scan only the event's commit range, and its command cannot
+express an omitted `--since-commit` argument when `head` is supplied. The
+direct invocation instead uses `fetch-depth: 0`, `--branch "$GITHUB_SHA"`, no
+`--since-commit`, and `--only-verified` to scan the full reachable history for
+verified findings. A full-history scan may identify a verified legacy finding;
+investigate and remediate it rather than narrowing the scan without an approved
+security decision.
+
+Run the focused CI pin test, inspect the complete workflow diff, and validate the
+workflow syntax. After owner-authorized push, require the actual PR CI jobs to
+pass, including the verified secret scan, PostgreSQL/Docker checks, and both
+application suites. A local structural test cannot prove the hosted action and
+container executed successfully. Roll back to the previously reviewed SHAs and
+digest if an update breaks CI, then investigate before attempting another update.
+
 1. Confirm CI is green on the PR branch.
 2. Confirm the repository's dependency audits pass without unapproved exceptions.
 3. Confirm CI builds backend, frontend and root multi-stage images, then verify
