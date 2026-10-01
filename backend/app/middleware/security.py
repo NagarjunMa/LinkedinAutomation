@@ -64,9 +64,6 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             # Content Security Policy
             "Content-Security-Policy": self._build_csp_header(),
 
-            # XSS Protection
-            "X-XSS-Protection": "1; mode=block",
-
             # Content Type Options
             "X-Content-Type-Options": "nosniff",
 
@@ -75,11 +72,6 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
             # Referrer Policy
             "Referrer-Policy": "strict-origin-when-cross-origin",
-
-            # Cross-Origin Policies
-            "Cross-Origin-Opener-Policy": "same-origin",
-            "Cross-Origin-Resource-Policy": "same-origin",
-            "Cross-Origin-Embedder-Policy": "require-corp",
 
             # Permissions Policy
             "Permissions-Policy": "camera=(), microphone=(), geolocation=(), interest-cohort=()",

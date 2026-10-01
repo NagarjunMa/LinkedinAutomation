@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { headers } from "next/headers"
 import localFont from "next/font/local"
 import { GeistSans } from "geist/font/sans"
 import { GeistMono } from "geist/font/mono"
@@ -85,16 +86,20 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  // Reading request headers makes every page dynamic, so the Proxy's nonce
+  // can be applied to Next.js scripts and this structured-data block.
+  const nonce = (await headers()).get('x-nonce') ?? undefined
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
         <script
           id="prismpro-structured-data"
+          nonce={nonce}
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
@@ -116,7 +121,7 @@ export default function RootLayout({
       <body className={`${GeistSans.variable} ${GeistMono.variable} ${humane.variable}`}>
         <ErrorBoundary fallback={PageErrorFallback}>
           <ThemeProvider>
-            <Providers>{children}</Providers>
+            <Providers nonce={nonce}>{children}</Providers>
           </ThemeProvider>
         </ErrorBoundary>
       </body>

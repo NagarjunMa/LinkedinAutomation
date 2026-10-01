@@ -110,6 +110,31 @@ test('protected dashboard route redirects when unauthenticated', async ({ page }
   await expect(page).toHaveURL(/\/$/);
 });
 
+test('landing and login deliver a nonce CSP without blocking hydration', async ({ page }) => {
+  const blockedScripts: string[] = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error' && /Content Security Policy.*script|Refused to execute.*script/i.test(message.text())) {
+      blockedScripts.push(message.text());
+    }
+  });
+
+  const landing = await page.goto('/');
+  const policy = landing?.headers()['content-security-policy'] ?? '';
+  const nonce = policy.match(/script-src[^;]*'nonce-([^']+)'/)?.[1];
+  expect(nonce).toBeTruthy();
+  expect(policy).not.toMatch(/script-src[^;]*'unsafe-inline'/);
+  expect(policy).toContain("frame-ancestors 'none'");
+  expect(policy).toContain("object-src 'none'");
+  expect(landing?.headers()['x-xss-protection']).toBeUndefined();
+  expect(landing?.headers()['cross-origin-embedder-policy']).toBeUndefined();
+  expect(await page.locator('#prismpro-structured-data').evaluate((script: HTMLScriptElement) => script.nonce)).toBe(nonce);
+  await page.getByRole('button', { name: /toggle theme/i }).click();
+
+  const login = await page.goto('/login');
+  expect(login?.headers()['content-security-policy']).toMatch(/script-src[^;]*'nonce-[^']+'/);
+  expect(blockedScripts).toEqual([]);
+});
+
 test('authenticated dashboard loads with non-production bypass', async ({ page, context }) => {
   const pageErrors: Error[] = [];
   page.on('pageerror', (error) => pageErrors.push(error));
@@ -206,6 +231,9 @@ test('tailor MVP flow uploads, edits pointer, applies, and exposes download cont
 
   await page.getByTestId('tailor-apply').click();
   await expect(page.getByRole('button', { name: 'Download PDF' })).toBeVisible();
+  const resumePreview = page.getByTitle('Resume preview');
+  await expect(resumePreview).toBeVisible();
+  await expect(page.frameLocator('iframe[title="Resume preview"]').locator('h1')).toHaveText('Jane Doe');
   expect(applyPayload).toEqual({
     accepted_changes: [{
       type: 'bullet_update',

@@ -5,8 +5,6 @@ import fs from 'fs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const isProduction = process.env.NODE_ENV === 'production';
-const apiOrigin = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-const supabaseOrigin = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const noStoreHeaders = [
   {
     key: 'Cache-Control',
@@ -91,29 +89,6 @@ const nextConfig = {
         // Apply security headers to all routes
         source: '/(.*)',
         headers: [
-          // Content Security Policy
-          {
-            key: 'Content-Security-Policy',
-            value: [
-              "default-src 'self'",
-              `script-src 'self' 'unsafe-inline'${isProduction ? '' : " 'unsafe-eval'"}`,
-              "style-src 'self' 'unsafe-inline'",
-              "font-src 'self' data:",
-              `img-src 'self' data: blob: https:${isProduction ? '' : ' http:'}`,
-              `connect-src 'self' ${apiOrigin} ${supabaseOrigin} https://*.supabase.co https://accounts.google.com`,
-              "frame-src 'self' https://www.google.com",
-              "object-src 'none'",
-              "base-uri 'self'",
-              "form-action 'self'",
-              "frame-ancestors 'none'",
-              ...(isProduction ? ["upgrade-insecure-requests"] : [])
-            ].join('; ')
-          },
-          // Prevent XSS attacks
-          {
-            key: 'X-XSS-Protection',
-            value: '1; mode=block'
-          },
           // Prevent clickjacking
           {
             key: 'X-Frame-Options',
@@ -141,31 +116,12 @@ const nextConfig = {
               'camera=()',
               'microphone=()',
               'geolocation=()',
-              'interest-cohort=()',
               'payment=()',
               'usb=()',
               'screen-wake-lock=()',
               'web-share=()'
             ].join(', ')
           },
-          // Cross-Origin policies
-          {
-            key: 'Cross-Origin-Opener-Policy',
-            value: 'same-origin'
-          },
-          {
-            key: 'Cross-Origin-Resource-Policy',
-            value: 'same-origin'
-          },
-          {
-            key: 'Cross-Origin-Embedder-Policy',
-            value: 'require-corp'
-          },
-          // Remove server information
-          {
-            key: 'X-Powered-By',
-            value: ''
-          }
         ]
       },
       {
