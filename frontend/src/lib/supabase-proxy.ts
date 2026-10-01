@@ -46,14 +46,14 @@ export async function updateSession(request: NextRequest) {
   // Public marketing and legal routes do not need Supabase. Avoid refreshing
   // old sessions or requiring auth configuration on the trailer deployment.
   if (publicPreviewOnly) {
-    return NextResponse.next()
+    return NextResponse.next({ request })
   }
 
   if (
     process.env.NODE_ENV !== 'production' &&
     request.cookies.get('test-bypass-auth')?.value === '1'
   ) {
-    return NextResponse.next()
+    return NextResponse.next({ request })
   }
 
   let supabaseResponse = NextResponse.next({ request })

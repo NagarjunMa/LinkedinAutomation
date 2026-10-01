@@ -74,15 +74,14 @@ app.state.debug_mode = not is_production
 # Setup error handlers first (temporarily disabled)
 # setup_error_handlers(app)
 
-# Enhanced CORS middleware with tighter security
-allowed_origins = settings.CORS_ORIGINS if settings.CORS_ORIGINS else [
-    "http://localhost:3000",  # Development frontend
-    "http://127.0.0.1:3000",
-]
+def credentialed_cors_origins(configured_origins: list[str]) -> list[str]:
+    origins = configured_origins or ["http://localhost:3000", "http://127.0.0.1:3000"]
+    if "*" in origins:
+        raise ValueError("Credentialed CORS requires explicit origins")
+    return origins
 
-# In development, allow all origins for easier testing if no specific origins are set
-if not is_production and not settings.CORS_ORIGINS:
-    allowed_origins = ["*"]
+
+allowed_origins = credentialed_cors_origins(settings.CORS_ORIGINS)
 
 cors_options = dict(
     allow_origins=allowed_origins,
@@ -207,15 +206,12 @@ class BasicSecurityHeadersMiddleware(BaseHTTPMiddleware):
         # Add essential security headers
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
-        response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
 
         if is_production:
             response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
 
         return response
-
-app.add_middleware(BasicSecurityHeadersMiddleware)
 
 # Activate request protection without the older body-logging middleware. These
 # middlewares do not consume request bodies, so uploads remain safe.
@@ -233,6 +229,9 @@ app.add_middleware(
 
 # Normalize only resume/JD responses, including the middleware's early denials.
 app.add_middleware(WorkflowErrorMiddleware, cors_options=cors_options)
+# Keep response protections outside the early-error normalizer and request
+# guards so denials receive the same headers as ordinary API responses.
+app.add_middleware(BasicSecurityHeadersMiddleware)
 
 # Include API router
 app.include_router(api_router, prefix="/api/v1")

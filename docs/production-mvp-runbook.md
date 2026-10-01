@@ -309,6 +309,28 @@ No monthly schedule or production balance was inspected or changed by PRI-18.
 
 ## Deployment Order
 
+### Browser headers and development CORS
+
+The frontend Proxy generates a fresh CSP script nonce for each HTML request and
+passes it through the root layout to Next.js and `next-themes` scripts. This
+requires dynamic HTML rendering in the current Next.js version, including the
+public landing page; account for the loss of static HTML/CDN caching when
+reviewing hosting cost and latency. Inline styles remain permitted because the
+current React UI and sandboxed resume `srcDoc` preview use them. The policy
+keeps `frame-ancestors 'none'`, `object-src 'none'`, and production HSTS. Site-wide
+COEP/COOP/CORP headers are omitted because cross-origin isolation is not a
+product requirement and can block the current auth and preview resources.
+
+The backend permits credentialed development CORS only for exact configured
+origins, defaulting to `http://localhost:3000` and
+`http://127.0.0.1:3000`; a configured `*` is rejected. Production still requires
+the explicit HTTPS origin list. Before a header rollout, inspect the delivered
+CSP and browser console on the landing, login, authenticated dashboard, and
+resume preview flows; exercise Supabase callback/confirmation and allowed and
+denied CORS preflights. A CI or local smoke does not establish live Supabase
+compatibility. If a header change breaks a required flow, revert the reviewed
+header revision and investigate the blocked resource before reapplying it.
+
 ### Updating CI actions and the secret scanner
 
 The release gates in [CI](../.github/workflows/ci.yml) use full action commit SHAs.
