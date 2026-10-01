@@ -1,5 +1,155 @@
 # PRI-22 — Fail-closed credit locking
 
+## Post-merge CI repair — 2026-10-01
+
+### Current execution context and contract
+
+The historical PRI-22 implementation and audit below are retained. This follow-up
+repairs only the lock-observation test on `fix/postgres-credit-lock-test-polling`,
+based on merged `main` revision `b83d9d41e7ee6122562e67437f6fbc99d5cdce9f`.
+The owner authorized the repair branch while post-merge CI is red. The previous
+local PRI-27 branch was removed after verifying its tree matched merged `main`.
+The owner authorized commit and push on 2026-10-01 after local verification and
+review. PR creation is manual; merge and production operations are not authorized.
+
+Problem: [post-merge CI run 36819595257](https://github.com/NagarjunMa/LinkedinAutomation/actions/runs/36819595257)
+failed the `grant` case of `test_each_credit_operation_waits_for_its_user_only`.
+The observer polls `pg_stat_activity` within one transaction. If its first
+snapshot precedes the worker connection, later polls can miss the blocked worker.
+A disposable PostgreSQL 14 probe first reproduced that observation failure.
+On PostgreSQL 15.19, forcing the observer sample before worker connection caused
+all three operation cases to fail the existing blocking assertion. Refreshing the
+activity snapshot before every poll made those cases pass.
+
+Risk: **Significant** because this changes concurrency verification used as a CI
+gate. This is test-only; no production billing, transaction, API, migration, RLS,
+pricing, or authentication behavior is in scope. Full documentation is retained
+in the existing feature record, with local acceptance criteria because the required
+`linear_prismpro` connection is unavailable. The generic Linear plugin is excluded
+by the owner's routing instruction; no issue was read or updated for this repair.
+The catalog provides `production-engineering-loop`, used here, rather than the
+repository's requested `engineering-loop` alias.
+
+### Acceptance and planned evaluations
+
+| ID | Required outcome | Evidence / plausible defect rejected |
+| --- | --- | --- |
+| R1 | The observer detects a worker that connects after its first activity sample | Force that ordering in all three existing debit/grant/refund cases; observe a failure before the polling fix, then a pass on PostgreSQL 15. Removing snapshot refresh must fail the same assertion. |
+| R2 | The tested row lock remains real, user-specific, and precedes balance calculation | Preserve `blocked`, unfinished-worker, independent Bob debit, and final-balance assertions. Record worker statements and forbid SUM/INSERT while the holder owns the user lock. An isolated mutation removing the ledger lock must fail that pre-balance assertion. Retain the existing overspend, timeout, rollback and unsupported-mode cases. |
+| R3 | The repair preserves repository gates and source boundaries | Native backend lint/coverage/audit, CI-selected real PostgreSQL suite, test lint, diff review and fresh independent review. No lowered thresholds, skips, changed production files, or dependencies. |
+
+Design: keep database observation in the existing test. The production ledger
+remains the owner of locking and balance rules; the application retains transaction
+ownership. Create an activity sample before launching the worker to exercise the
+previously uncontrolled interleaving. After establishing the failing regression,
+call `pg_stat_clear_snapshot()` before each observation. An observer-only autocommit
+transaction would also refresh activity between queries, but the explicit refresh
+retains the existing transaction configuration and states the reason directly.
+Keep existing deadlines, lock timeouts, future cleanup and schema cleanup.
+Use explicit synthetic settings and
+an isolated local PostgreSQL 15 container; never load a production connection for
+these tests.
+
+Planned commands: `make verify-backend-ci PYTHON=/tmp/pri27-push-venv/bin/python`;
+`python -m pytest tests/services/credits/ -v -k concurrent` with the isolated
+PostgreSQL URL; focused regression and isolated mutation checks with
+`-o addopts=''`; Ruff on the changed test; `git diff --check`.
+Implemented and verified locally; fresh independent review found no material
+findings. Commit and push are authorized; hosted CI on the manually created PR
+remains pending.
+PRI-28 remains deferred until the repair is merged and `main` CI is green.
+
+Compatibility and recovery: test-only, no application rollout, migration or data
+backfill. Reverting the repair restores the intermittent observation failure;
+the production lock implementation is unchanged. No frontend/accessibility/model
+behavior or production performance/cost claim is involved. Test polling remains
+bounded, and evidence must distinguish local container checks from hosted gates.
+
+Primary source accessed 2026-10-01:
+[PostgreSQL 15 statistics snapshots](https://www.postgresql.org/docs/15/monitoring-stats.html#MONITORING-STATS-VIEWS).
+PostgreSQL documents transaction-scoped activity snapshots and the explicit
+`pg_stat_clear_snapshot()` refresh operation.
+
+### Evidence and findings resolution
+
+- **Red:** forced-order cases failed for debit, grant and refund on PostgreSQL
+  15.19 at the intended blocking assertion (three failures, no setup failures);
+  `/tmp/pri27-lock-repair-red.log`, with pre-fix diff retained at
+  `/tmp/pri27-lock-repair-red.diff`.
+- **Green:** after refresh and the additional pre-balance assertion, the exact
+  CI-selected credit command passed: 15 passed, one existing hard-coded legacy
+  skip, 32 deselected; `/tmp/pri27-lock-repair-postgres-final2.log`. No new skip or
+  lowered threshold. The earlier full PostgreSQL attempt lacked migrated public
+  tables; that environment setup failure is not behavioral red evidence. Applying
+  `python -m alembic upgrade head` in the sandbox passed and supplied the same
+  prerequisite as CI; `/tmp/pri27-lock-repair-migration.log`.
+- **Confirmed evaluation gap:** the first missing-lock mutation passed because
+  the ledger insert's foreign-key wait also satisfies a generic wait assertion.
+  The test now records only worker statements and rejects a balance read or insert
+  before the held user lock is released. This strengthens the existing production
+  invariant without modifying the ledger. The neighboring lock-timeout test uses
+  the same statement-recording pattern. Evidence:
+  `/tmp/pri27-lock-repair-no-lock.log` (old wait-only assertion accepted the
+  defect), `/tmp/pri27-lock-repair-no-lock-final.log` (all three cases now reject
+  it at the pre-balance assertion). Removing snapshot refresh is also rejected in
+  all three cases; `/tmp/pri27-lock-repair-no-refresh-final.log`. All mutations
+  occurred in a disposable copy and were restored there.
+- Final-state native backend gate: 703 passed,
+  26 skipped, 89% displayed combined coverage (80% required), Ruff and locked
+  dependency audit passed; `/tmp/pri27-lock-repair-backend-final.log`.
+  Changed-test Ruff and `git diff --check` also passed. The changed PG tests are
+  verified on the actual database rather than counting their SQLite skips as
+  passes. Live golden model tests remain excluded by the unchanged native target.
+
+The sandbox uses synthetic identities, loopback-only PostgreSQL, no host data
+volume and image digest
+`sha256:724292da1f2e50bdccfc3302ce75bbba7f4a6076701b588cc795fcac65683550`.
+Its database is disposable. Local PostgreSQL 15 evidence is not a hosted CI pass.
+The container and its database were removed after verification and review.
+The foreground Docker client stalled on its credential helper; a temporary empty
+client config downloaded the public image without reading real registry credentials
+or changing the user's Docker configuration.
+
+Scoped lesson: an activity observer needs a fresh snapshot when new sessions may
+appear; observing a wait alone does not establish that locking precedes balance
+calculation. Keep both the forced-order regression and forbidden-statement check.
+Additional source accessed 2026-10-01:
+[PostgreSQL 15 row lock conflicts](https://www.postgresql.org/docs/15/explicit-locking.html#LOCKING-ROWS).
+
+### Final local review and remaining gates
+
+Fresh-context reviewer `/root/credit_lock_polling_review` inspected the complete
+two-file diff, source/callers, contract and repository guidance in an isolated copy.
+Exact model identities were unavailable; no cross-model review is claimed.
+Reviewed snapshot ID:
+`0874d2cb4fba2bd36b6859306a689c2048211a2802bad9da94909469dce29f46`.
+All 774 captured paths plus three supplemental architecture/sequence files retained
+their hashes and modes through review. The original-source provenance check passed.
+Report: `/tmp/pri27-lock-repair-independent-review.md`.
+
+The reviewer freshly ran 14 schema-contained PostgreSQL tests with one existing
+skip, repeated both three-case mutation checks, verified the cached-activity
+behavior directly, checked schema cleanup, and passed test lint and diff hygiene.
+The unchanged public-schema legacy case was checked through the coordinator's full
+15-pass suite log, rather than repeated under the reviewer's schema-only boundary.
+The native backend final log was inspected, not independently rerun. Verdict:
+**no material findings**. R1, R2 and applicable local R3 evidence are met.
+
+Only this record's evidence/status text changed after review. The executable test
+retains reviewed SHA-256
+`6d1080a6534a0bf4c955ce0f322c3c6626de5975e7175bde580c88d7fd06b374`.
+No production file, dependency, threshold, CI setting or migration changed. Backend
+Docker context excludes tests; frontend/API/UI, authentication/RLS, model behavior
+and production performance are unaffected, so their native suites/image rebuilds
+were not repeated for this test-only repair. Existing deadlines can still fail
+under extreme host scheduling delays; no universal absence of flakiness is claimed.
+
+Remaining: authorized commit/push, manual repair PR; normal hosted CI including
+backend Docker/migrations/PostgreSQL/audit and verified secret scan; owner review
+and merge; green post-merge `main` CI. Linear evidence synchronization is blocked
+by unavailable `linear_prismpro` access. No issue is marked complete, and neither
+the repair's merge nor PRI-28 implementation has occurred.
+
 ## Execution context
 
 Source: [PRI-22](https://linear.app/prismpro/issue/PRI-22/fail-closed-when-postgresql-credit-row-locking-fails), re-read 2026-09-22. Base/main: `f20e4881f040feca588ef17cc578fac64eb71a5b` (PRI-21 PR58 and post-merge CI passed). Branch: `security/pri-22-fail-closed-credit-locking`. Original checkout's unrelated frontend edits are excluded.
