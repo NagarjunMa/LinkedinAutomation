@@ -58,8 +58,12 @@ def postgres_ledger():
 @pytest.mark.parametrize("operation", ["debit", "grant", "refund"])
 def test_each_credit_operation_waits_for_its_user_only(postgres_ledger, operation):
     started = Event()
+    statements = []
+    def record(conn, cursor, statement, parameters, context, executemany):
+        statements.append(statement)
     def run():
         with Session(postgres_ledger) as db:
+            event.listen(db.connection(), "before_cursor_execute", record)
             started.set()
             if operation == "grant":
                 grant_monthly(db, "alice", 3)
@@ -67,24 +71,38 @@ def test_each_credit_operation_waits_for_its_user_only(postgres_ledger, operatio
                 {"debit": debit, "refund": refund}[operation](db, "alice", 3, "test")
             db.commit()
 
-    with Session(postgres_ledger) as holder, ThreadPoolExecutor(max_workers=1) as pool:
+    with (
+        Session(postgres_ledger) as holder,
+        ThreadPoolExecutor(max_workers=1) as pool,
+        postgres_ledger.connect() as observer,
+    ):
         pid = holder.scalar(text("SELECT pg_backend_pid()"))
         holder.execute(select(User.user_id).where(User.user_id == "alice").with_for_update())
+        # Exercise the race where the observer samples activity before the
+        # worker opens its connection. Later polls must see the new backend.
+        observer.execute(text("SELECT pid FROM pg_stat_activity")).all()
         future = pool.submit(run)
         try:
             assert started.wait(timeout=3)
             deadline = time.monotonic() + 1.5
-            with postgres_ledger.connect() as observer:
-                while True:
-                    blocked = observer.scalar(text(
-                        "SELECT EXISTS (SELECT 1 FROM pg_stat_activity "
-                        "WHERE :pid = ANY(pg_blocking_pids(pid)))"
-                    ), {"pid": pid})
-                    if blocked or future.done() or time.monotonic() >= deadline:
-                        break
-                    time.sleep(0.01)
+            while True:
+                # Activity snapshots are cached for the observer transaction.
+                observer.execute(text("SELECT pg_stat_clear_snapshot()"))
+                blocked = observer.scalar(text(
+                    "SELECT EXISTS (SELECT 1 FROM pg_stat_activity "
+                    "WHERE :pid = ANY(pg_blocking_pids(pid)))"
+                ), {"pid": pid})
+                if blocked or future.done() or time.monotonic() >= deadline:
+                    break
+                time.sleep(0.01)
             assert blocked, "credit operation did not wait on its user's row lock"
             assert not future.done()
+            # An insert's foreign-key lock also waits on the holder, but is too
+            # late to protect the balance read. Require the ledger's early lock.
+            assert not any(
+                "sum(" in sql.lower() or "insert into credit_ledger" in sql.lower()
+                for sql in statements
+            ), "balance reads and ledger inserts must wait for the user's lock"
             # A different user's debit must not wait for Alice's lock.
             with Session(postgres_ledger) as other:
                 debit(other, "bob", 3, "independent")
