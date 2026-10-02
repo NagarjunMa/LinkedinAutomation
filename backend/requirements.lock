@@ -170,7 +170,7 @@ pyjwt[crypto]==2.15.1
     #   supabase-auth
 pymupdf==1.27.2.3
     # via -r requirements.in
-pypdf==6.17.0
+pypdf==6.19.0
     # via -r requirements.in
 pypdfium2==5.10.1
     # via pdfplumber
