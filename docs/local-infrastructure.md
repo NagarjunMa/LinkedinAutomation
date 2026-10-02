@@ -33,6 +33,9 @@ PRI-17 includes one owner-approved security exception: Soup Sieve is raised from
 security floor prevents resolving an affected release again. All other retained
 locked versions remain unchanged.
 
+For the subsequent PRI-65 `pypdf` security update and its complete dependency
+audit/compatibility evidence, see [Dependency security repair](dependency-security.md).
+
 The Google/Gmail Python SDK family and its orphan transitives are removed after
 import/consumer review. Backend-only `GOOGLE_*` Gmail settings, email processing
 thresholds and `ENABLE_EMAIL_SCANNING` are no longer recognized. Old environment
