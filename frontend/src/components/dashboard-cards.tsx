@@ -160,7 +160,7 @@ export function ActivityCard({ title, activities }: ActivityCardProps) {
           return (
             <div key={activity.id} className="flex items-start space-x-3">
               <div className={cn(
-                "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0",
+                "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
                 typeClasses[activity.type]
               )}>
                 <IconComponent className="h-4 w-4" />

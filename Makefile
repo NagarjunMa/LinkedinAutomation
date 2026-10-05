@@ -107,8 +107,9 @@ audit: audit-backend audit-frontend ## Run backend + frontend dependency audits
 audit-backend: ## Run backend dependency audit
 	cd $(BACKEND_DIR) && $(PYTHON) -m pip_audit -r requirements.lock
 
-audit-frontend: ## Run frontend production dependency audit
+audit-frontend: ## Run frontend production and complete dependency audits
 	cd $(FRONTEND_DIR) && npm audit --omit=dev --audit-level=high
+	cd $(FRONTEND_DIR) && npm audit --include=dev --audit-level=high
 
 clean: ## Wipe build artifacts + caches
 	rm -rf $(FRONTEND_DIR)/.next $(FRONTEND_DIR)/node_modules/.cache

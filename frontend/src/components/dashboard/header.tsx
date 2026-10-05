@@ -29,7 +29,7 @@ export const DashboardHeader = () => {
                     <input
                         type="text"
                         placeholder="Search resumes, evaluations... (⌘F)"
-                        className="bg-[#f0eff2]/50 border border-[#3b3b3b]/5 pl-12 pr-6 py-2.5 text-[11px] w-80 focus:outline-none focus:border-[#3b3b3b]/20 transition-all duration-700 font-light"
+                        className="bg-[#f0eff2]/50 border border-[#3b3b3b]/5 pl-12 pr-6 py-2.5 text-[11px] w-80 focus:outline-hidden focus:border-[#3b3b3b]/20 transition-all duration-700 font-light"
                     />
                 </div>
             </div>

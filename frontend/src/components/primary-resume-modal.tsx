@@ -138,14 +138,14 @@ export function PrimaryResumeModal({ resumes, open, onOpenChange, onPrimaryChang
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-3">
                   <div className="flex items-start gap-2">
-                    <Target className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <Target className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
                     <div>
                       <h4 className="font-semibold text-blue-900">AI Evaluation Focus</h4>
                       <p className="text-sm text-blue-900">Our AI recruiter will prioritize analyzing this resume for detailed feedback</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
-                    <Calendar className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <Calendar className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
                     <div>
                       <h4 className="font-semibold text-blue-900">Study Timeline</h4>
                       <p className="text-sm text-blue-900">Personalized learning path created based on this resume&apos;s analysis</p>
@@ -154,14 +154,14 @@ export function PrimaryResumeModal({ resumes, open, onOpenChange, onPrimaryChang
                 </div>
                 <div className="space-y-3">
                   <div className="flex items-start gap-2">
-                    <TrendingUp className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <TrendingUp className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
                     <div>
                       <h4 className="font-semibold text-blue-900">Career Tracking</h4>
                       <p className="text-sm text-blue-900">Progress monitoring and improvement recommendations based on this resume</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
-                    <Users className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <Users className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
                     <div>
                       <h4 className="font-semibold text-blue-900">Future Reference</h4>
                       <p className="text-sm text-blue-900">All future operations will reference this resume as your main profile</p>

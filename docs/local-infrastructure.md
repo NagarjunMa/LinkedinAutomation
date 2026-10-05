@@ -35,6 +35,8 @@ locked versions remain unchanged.
 
 For the subsequent PRI-65 `pypdf` security update and its complete dependency
 audit/compatibility evidence, see [Dependency security repair](dependency-security.md).
+For PRI-66's Tailwind migration, browser requirements and remaining development
+audit finding, see [Frontend dependency security](frontend-dependency-security.md).
 
 The Google/Gmail Python SDK family and its orphan transitives are removed after
 import/consumer review. Backend-only `GOOGLE_*` Gmail settings, email processing

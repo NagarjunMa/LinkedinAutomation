@@ -217,7 +217,7 @@ export function JobStatusModal({ isOpen, onClose, job, onStatusUpdate }: JobStat
                     onClick={() => handleStatusSelect(option.id)}
                     className={cn(
                       "p-4 rounded-lg border-2 transition-all duration-200 hover:shadow-md",
-                      "text-left focus:outline-none focus:ring-2 focus:ring-offset-2",
+                      "text-left focus:outline-hidden focus:ring-2 focus:ring-offset-2",
                       isSelected
                         ? `${option.borderColor} ${option.bgColor} ring-2 ring-offset-2 ring-blue-500`
                         : "border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500"

@@ -105,6 +105,54 @@ const APPLY_RESPONSE = {
   filename_hint: 'jane-doe-acme-swe.pdf',
 } satisfies components['schemas']['ApplyTailorResponse'];
 
+test('compiled theme preserves shared control geometry, focus and dark colors', async ({ page }) => {
+  await page.goto('/login');
+  // Exercise the real application stylesheet, including utilities consumed by
+  // shared inputs, popovers and responsive dashboard controls.
+  await page.evaluate(() => {
+    const host = document.createElement('div');
+    host.id = 'style-contract';
+    host.innerHTML = '<input aria-label="Style contract" class="bg-background text-foreground border border-input rounded-md shadow-sm focus:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background" /><div class="rounded-sm backdrop-blur-sm shrink-0"></div><div id="variable-contract" class="h-(--cell-size) max-h-(--radix-select-content-available-height) origin-(--radix-popover-content-transform-origin)" style="--cell-size:32px;--radix-select-content-available-height:160px;--radix-popover-content-transform-origin:10px 20px"></div>';
+    document.body.append(host);
+    const swatch = document.createElement('div');
+    swatch.id = 'chart-contract';
+    swatch.className = 'border border-(--color-border) bg-(--color-bg)';
+    swatch.style.setProperty('--color-border', 'rgb(0, 0, 255)');
+    swatch.style.setProperty('--color-bg', 'rgb(255, 0, 0)');
+    host.append(swatch);
+  });
+  const control = page.getByRole('textbox', { name: 'Style contract' });
+  const decoration = page.locator('#style-contract > div').first();
+  await expect(control).toHaveCSS('border-radius', '2px');
+  await expect(control).toHaveCSS('border-top-width', '1px');
+  await expect(control).toHaveCSS('box-shadow', /0px 1px 2px/);
+  await expect(decoration).toHaveCSS('border-radius', '0px');
+  await expect(decoration).toHaveCSS('backdrop-filter', 'blur(4px)');
+  await expect(decoration).toHaveCSS('flex-shrink', '0');
+  await control.focus();
+  await expect(control).toHaveCSS('box-shadow', /0px 0px 0px 4px/);
+  // Tailwind 4 hides the normal outline and restores it in forced-colors mode;
+  // preserve the accessibility behavior rather than its normal-mode encoding.
+  await page.emulateMedia({ forcedColors: 'active' });
+  await expect(control).toHaveCSS('outline-style', 'solid');
+  await expect(control).toHaveCSS('outline-width', '2px');
+  await page.emulateMedia({ forcedColors: 'none' });
+  const variableControl = page.locator('#variable-contract');
+  await expect(variableControl).toHaveCSS('height', '32px');
+  await expect(variableControl).toHaveCSS('max-height', '160px');
+  await expect(variableControl).toHaveCSS('transform-origin', '10px 20px');
+  await expect(page.locator('#chart-contract')).toHaveCSS('background-color', 'rgb(255, 0, 0)');
+  await expect(page.locator('#chart-contract')).toHaveCSS('border-top-color', 'rgb(0, 0, 255)');
+  for (const [theme, background, foreground] of [
+    ['light', 'rgb(235, 233, 229)', 'rgb(26, 26, 26)'],
+    ['dark', 'rgb(20, 20, 20)', 'rgb(230, 228, 224)'],
+  ]) {
+    await page.locator('html').evaluate((element, dark) => element.classList.toggle('dark', dark), theme === 'dark');
+    await expect(control).toHaveCSS('background-color', background);
+    await expect(control).toHaveCSS('color', foreground);
+  }
+});
+
 test('protected dashboard route redirects when unauthenticated', async ({ page }) => {
   await page.goto('/dashboard');
   await expect(page).toHaveURL(/\/$/);

@@ -236,7 +236,7 @@ export function ResumeUploadModal({ open, onOpenChange, onUploadSuccess, onEvalu
             {/* Success Message with Graphics */}
             <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-6">
               <div className="flex items-center gap-4">
-                <div className="flex-shrink-0">
+                <div className="shrink-0">
                   <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
                     <CheckCircle className="w-8 h-8 text-green-600" />
                   </div>
@@ -315,19 +315,19 @@ export function ResumeUploadModal({ open, onOpenChange, onUploadSuccess, onEvalu
               <CardContent>
                 <div className="space-y-3 text-sm text-blue-900">
                   <div className="flex items-start gap-2">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 shrink-0"></div>
                     <span>AI recruiter analyzes your resume with 15+ years of experience</span>
                   </div>
                   <div className="flex items-start gap-2">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 shrink-0"></div>
                     <span>Get detailed ATS scoring and keyword analysis</span>
                   </div>
                   <div className="flex items-start gap-2">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 shrink-0"></div>
                     <span>Receive actionable improvement recommendations</span>
                   </div>
                   <div className="flex items-start gap-2">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 shrink-0"></div>
                     <span>Create personalized study timeline for career growth</span>
                   </div>
                 </div>
@@ -414,12 +414,12 @@ export function ResumeUploadModal({ open, onOpenChange, onUploadSuccess, onEvalu
               <CardContent className="pt-0">
                 {storageInfo.totalCount >= 5 ? (
                   <div className="text-sm text-orange-300 flex items-center gap-2">
-                    <span className="w-2 h-2 bg-orange-400 rounded-full flex-shrink-0"></span>
+                    <span className="w-2 h-2 bg-orange-400 rounded-full shrink-0"></span>
                     Storage limit reached. Please delete an old resume before uploading a new one.
                   </div>
                 ) : (
                   <div className="text-sm text-accent-300 flex items-center gap-2">
-                    <span className="w-2 h-2 bg-accent-400 rounded-full flex-shrink-0"></span>
+                    <span className="w-2 h-2 bg-accent-400 rounded-full shrink-0"></span>
                     You have {5 - storageInfo.totalCount} upload slots remaining.
                   </div>
                 )}

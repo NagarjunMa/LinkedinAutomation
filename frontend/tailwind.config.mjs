@@ -1,4 +1,6 @@
 /** @type {import('tailwindcss').Config} */
+import animate from 'tailwindcss-animate';
+
 export default {
     darkMode: ['class'],
     content: [
@@ -143,6 +145,8 @@ export default {
   			'gradient-gold':       'linear-gradient(135deg, hsl(42 45% 58%), hsl(42 45% 70%))',
   		},
   		boxShadow: {
+            // Preserve the v3 small-shadow scale used by shared controls.
+            sm: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
   			// ── Earth-tone glow shadows ──────────────────────────────────────────
   			'glow-terracotta': '0 0 20px hsl(18 52% 48% / 0.28)',
   			'glow-gold':       '0 0 20px hsl(42 45% 60% / 0.28)',
@@ -174,10 +178,12 @@ export default {
   			'micro-sm': '10px',
   			'11px': '11px',
   		},
-  		backdropBlur: {
+        blur: { sm: '4px' },
+        backdropBlur: {
+            sm: '4px',
   			'xs': '2px',
   		}
   	}
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [animate],
 }

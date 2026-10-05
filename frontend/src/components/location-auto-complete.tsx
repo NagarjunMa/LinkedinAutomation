@@ -143,7 +143,7 @@ export function LocationAutoComplete({
                             onClick={() => handleSuggestionClick(suggestion)}
                             onMouseEnter={() => setHighlightedIndex(index)}
                         >
-                            <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                            <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
                             <span className="truncate">{suggestion}</span>
                         </div>
                     ))}

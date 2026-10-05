@@ -199,7 +199,7 @@ export function TailoredResumeLibrary({
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Search company, role, or file"
-              className="w-full border border-app-text/10 bg-transparent py-3 pl-10 pr-3 text-xs font-mono outline-none transition-colors focus:border-app-text/40"
+              className="w-full border border-app-text/10 bg-transparent py-3 pl-10 pr-3 text-xs font-mono outline-hidden transition-colors focus:border-app-text/40"
             />
           </div>
           <Link

@@ -255,7 +255,7 @@ export default function OnboardingPage() {
                                         id="targetCountry"
                                         value={formData.targetCountry}
                                         onChange={(e) => handleInputChange('targetCountry', e.target.value)}
-                                        className="mt-1 w-full border border-input bg-background px-3 py-2 text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
+                                        className="mt-1 w-full border border-input bg-background px-3 py-2 text-sm rounded-md focus:outline-hidden focus:ring-2 focus:ring-ring"
                                     >
                                         <option value="USA">United States</option>
                                         <option value="India">India</option>
@@ -268,7 +268,7 @@ export default function OnboardingPage() {
                                         id="careerLevel"
                                         value={formData.careerLevel}
                                         onChange={(e) => handleInputChange('careerLevel', e.target.value)}
-                                        className="mt-1 w-full border border-input bg-background px-3 py-2 text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
+                                        className="mt-1 w-full border border-input bg-background px-3 py-2 text-sm rounded-md focus:outline-hidden focus:ring-2 focus:ring-ring"
                                     >
                                         <option value="mid">Mid-level (3–6 years)</option>
                                         <option value="senior">Senior (6–10 years)</option>

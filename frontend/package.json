@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build --webpack",
     "start": "next start",
-    "lint": "eslint src --max-warnings=0",
+    "lint": "npm run test:lint-tooling && eslint src scripts/next-root-glob.test.mjs tools/next-root-glob/index.cjs --max-warnings=0",
     "test": "vitest run src/",
     "test:coverage": "vitest run src/ --coverage",
     "contracts:generate": "node scripts/api-contracts.mjs",
@@ -16,7 +16,8 @@
     "test:e2e:all": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
-    "test:e2e:debug": "playwright test --debug"
+    "test:e2e:debug": "playwright test --debug",
+    "test:lint-tooling": "node --test scripts/next-root-glob.test.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.0",
@@ -41,9 +42,9 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@supabase/ssr": "0.12.4",
     "@supabase/supabase-js": "2.112.3",
+    "@tailwindcss/postcss": "4.3.3",
     "@tanstack/react-query": "5.101.0",
     "@types/react-window": "^2.0.0",
-    "autoprefixer": "^10.4.16",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -64,7 +65,7 @@
     "react-window": "^2.2.5",
     "recharts": "^3.6.0",
     "tailwind-merge": "^3.3.1",
-    "tailwindcss": "^3.3.0",
+    "tailwindcss": "4.3.3",
     "tailwindcss-animate": "^1.0.7",
     "zod": "^3.25.56"
   },
@@ -89,20 +90,12 @@
     "playwright": "1.60.0",
     "typescript": "^5.8.3",
     "vite": "^7.3.6",
-    "vitest": "^5.0.0"
+    "vitest": "^5.0.0",
+    "fast-glob": "file:tools/next-root-glob"
   },
   "overrides": {
-    "sucrase": {
-      "glob": "10.5.0"
-    },
-    "anymatch": {
-      "picomatch": "2.3.2"
-    },
-    "micromatch": {
-      "picomatch": "2.3.2"
-    },
-    "readdirp": {
-      "picomatch": "2.3.2"
+    "@next/eslint-plugin-next": {
+      "fast-glob": "$fast-glob"
     }
   }
 }
