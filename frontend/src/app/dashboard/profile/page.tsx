@@ -342,7 +342,7 @@ export default function ProfilePage() {
                     <div>
                       <label className="text-[9px] uppercase tracking-widest font-bold text-foreground/40 mb-2 block">Roles (comma separated)</label>
                       <input
-                        className="w-full bg-transparent border-b border-foreground/10 py-2 focus:border-foreground outline-none text-sm font-mono text-foreground"
+                        className="w-full bg-transparent border-b border-foreground/10 py-2 focus:border-foreground outline-hidden text-sm font-mono text-foreground"
                         value={editedPrefs.roles.join(', ')}
                         onChange={(e) => setEditedPrefs({ ...editedPrefs, roles: e.target.value.split(',').map(s => s.trim()) })}
                       />
@@ -350,7 +350,7 @@ export default function ProfilePage() {
                     <div>
                       <label className="text-[9px] uppercase tracking-widest font-bold text-foreground/40 mb-2 block">Locations (comma separated)</label>
                       <input
-                        className="w-full bg-transparent border-b border-foreground/10 py-2 focus:border-foreground outline-none text-sm font-mono text-foreground"
+                        className="w-full bg-transparent border-b border-foreground/10 py-2 focus:border-foreground outline-hidden text-sm font-mono text-foreground"
                         value={editedPrefs.locations.join(', ')}
                         onChange={(e) => setEditedPrefs({ ...editedPrefs, locations: e.target.value.split(',').map(s => s.trim()) })}
                       />
@@ -358,7 +358,7 @@ export default function ProfilePage() {
                     <div>
                       <label className="text-[9px] uppercase tracking-widest font-bold text-foreground/40 mb-2 block">Salary Range (e.g. 100k - 120k)</label>
                       <input
-                        className="w-full bg-transparent border-b border-foreground/10 py-2 focus:border-foreground outline-none text-sm font-mono text-foreground"
+                        className="w-full bg-transparent border-b border-foreground/10 py-2 focus:border-foreground outline-hidden text-sm font-mono text-foreground"
                         value={editedPrefs.salaryRange}
                         onChange={(e) => setEditedPrefs({ ...editedPrefs, salaryRange: e.target.value })}
                       />

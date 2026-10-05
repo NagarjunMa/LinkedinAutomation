@@ -98,9 +98,9 @@ export function SophisticatedSidebar({ onClose }: { onClose?: () => void }) {
             className="fixed left-0 top-0 h-full border-r border-app-text/5 flex flex-col bg-app-bg z-50 overflow-hidden shadow-2xl shadow-black/5"
         >
             {/* Header */}
-            <div className="p-6 flex items-center justify-between border-b border-app-text border-opacity-5 h-24 shrink-0 bg-app-bg bg-opacity-50 backdrop-blur-sm">
+            <div className="p-6 flex items-center justify-between border-b border-app-text/5 h-24 shrink-0 bg-app-bg/50 backdrop-blur-sm">
                 <Link href="/dashboard" className="flex items-center gap-4 overflow-hidden">
-                    <div className="shrink-0 w-10 h-10 border border-app-text border-opacity-20 flex items-center justify-center bg-app-card shadow-sm rounded-sm">
+                    <div className="shrink-0 w-10 h-10 border border-app-text/20 flex items-center justify-center bg-app-card shadow-sm rounded-sm">
                         <LayoutGrid className="w-5 h-5 text-app-text" />
                     </div>
                     {!isCollapsed && (
@@ -116,7 +116,7 @@ export function SophisticatedSidebar({ onClose }: { onClose?: () => void }) {
                 {!isCollapsed && (
                     <button
                         onClick={() => { toggle(); if (onClose) onClose(); }}
-                        className="text-app-text opacity-40 hover:opacity-100 transition-colors p-2 hover:bg-app-text hover:bg-opacity-5 rounded-full"
+                        className="text-app-text opacity-40 hover:opacity-100 transition-colors p-2 hover:bg-app-text/5 rounded-full"
                     >
                         <PanelLeft className="w-5 h-5" />
                     </button>
@@ -151,9 +151,9 @@ export function SophisticatedSidebar({ onClose }: { onClose?: () => void }) {
                 </div>
             </div>
             {/* Footer */}
-            <div className="p-5 border-t border-app-text border-opacity-5 bg-app-card bg-opacity-30 shrink-0 backdrop-blur-md">
+            <div className="p-5 border-t border-app-text/5 bg-app-card/30 shrink-0 backdrop-blur-md">
                 <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-4'}`}>
-                    <div className="w-12 h-12 border border-app-text border-opacity-10 flex items-center justify-center bg-app-bg text-sm font-bold shrink-0 rounded-full shadow-sm text-app-text">
+                    <div className="w-12 h-12 border border-app-text/10 flex items-center justify-center bg-app-bg text-sm font-bold shrink-0 rounded-full shadow-sm text-app-text">
                         {userName.charAt(0).toUpperCase()}
                     </div>
                     {!isCollapsed && (

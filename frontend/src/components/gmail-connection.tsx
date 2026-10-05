@@ -145,7 +145,7 @@ export function GmailConnection({
           animate={{ opacity: 1, y: 0 }}
           className="flex items-center p-3 mb-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400"
         >
-          <AlertCircle className="w-4 h-4 mr-2 flex-shrink-0" />
+          <AlertCircle className="w-4 h-4 mr-2 shrink-0" />
           <span className="text-sm">{error}</span>
         </motion.div>
       )}
@@ -160,7 +160,7 @@ export function GmailConnection({
             <div className="space-y-3">
               {features.map((feature, index) => (
                 <div key={index} className="flex items-start space-x-3">
-                  <feature.icon className="w-5 h-5 text-accent-400 mt-0.5 flex-shrink-0" />
+                  <feature.icon className="w-5 h-5 text-accent-400 mt-0.5 shrink-0" />
                   <div>
                     <div className="text-sm font-medium text-cream-200">
                       {feature.title}
@@ -214,7 +214,7 @@ export function GmailConnection({
           {/* Privacy Note */}
           <div className="mt-4 p-3 bg-primary-700/50 rounded-lg border border-primary-600">
             <div className="flex items-start space-x-2">
-              <Shield className="w-4 h-4 text-cream-400 mt-0.5 flex-shrink-0" />
+              <Shield className="w-4 h-4 text-cream-400 mt-0.5 shrink-0" />
               <div className="text-xs text-cream-300">
                 <strong>Privacy & Security:</strong> We only request read-only access to detect
                 job-related emails. Your email content is processed securely and never stored permanently.

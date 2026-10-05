@@ -375,7 +375,7 @@ function LoginForm() {
                   animate={{ opacity: 1, y: 0 }}
                   className="flex items-center p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400"
                 >
-                  <AlertCircle className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <AlertCircle className="w-4 h-4 mr-2 shrink-0" />
                   <span className="text-sm">{authError}</span>
                 </motion.div>
               )}
@@ -386,7 +386,7 @@ function LoginForm() {
                   animate={{ opacity: 1, y: 0 }}
                   className="flex items-center p-3 bg-green-500/10 border border-green-500/20 rounded-lg text-green-400"
                 >
-                  <CheckCircle className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <CheckCircle className="w-4 h-4 mr-2 shrink-0" />
                   <span className="text-sm">{authSuccess}</span>
                 </motion.div>
               )}

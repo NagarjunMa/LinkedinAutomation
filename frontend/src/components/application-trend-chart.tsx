@@ -122,7 +122,7 @@ export function ApplicationTrendChart({
             "premium-card hover:scale-105 transition-all duration-300 group max-h-[600px] flex flex-col",
             className
         )}>
-            <CardHeader className="pb-3 flex-shrink-0">
+            <CardHeader className="pb-3 shrink-0">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                         <BarChart3 className="h-5 w-5 text-accent-400 group-hover:text-accent-300 transition-colors" />
@@ -303,7 +303,7 @@ function ApplicationTrendChartSkeleton({ title, className }: { title: string; cl
             "premium-card h-full flex flex-col",
             className
         )}>
-            <CardHeader className="pb-3 flex-shrink-0">
+            <CardHeader className="pb-3 shrink-0">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                         <BarChart3 className="h-5 w-5 text-accent-400" />
@@ -353,7 +353,7 @@ function InsufficientDataCard({
             "premium-card h-full flex flex-col",
             className
         )}>
-            <CardHeader className="pb-3 flex-shrink-0">
+            <CardHeader className="pb-3 shrink-0">
                 <div className="flex items-center space-x-2">
                     <BarChart3 className="h-5 w-5 text-accent-400" />
                     <CardTitle className="text-cream-50 text-lg">{title}</CardTitle>
@@ -403,7 +403,7 @@ function ErrorCard({
             "premium-card h-full flex flex-col",
             className
         )}>
-            <CardHeader className="pb-3 flex-shrink-0">
+            <CardHeader className="pb-3 shrink-0">
                 <div className="flex items-center space-x-2">
                     <BarChart3 className="h-5 w-5 text-accent-400" />
                     <CardTitle className="text-cream-50 text-lg">{title}</CardTitle>

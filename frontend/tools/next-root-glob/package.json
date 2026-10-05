@@ -1,0 +1,16 @@
+{
+  "name": "@prismpro/next-root-glob",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Bounded directory-glob adapter for Next ESLint root discovery (PRI-66)",
+  "main": "index.cjs",
+  "files": [
+    "index.cjs"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "glob": "13.0.6"
+  }
+}

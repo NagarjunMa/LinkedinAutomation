@@ -4,6 +4,7 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 
 COPY package*.json ./
+COPY tools/next-root-glob ./tools/next-root-glob
 RUN npm ci
 
 FROM node:22-alpine AS builder

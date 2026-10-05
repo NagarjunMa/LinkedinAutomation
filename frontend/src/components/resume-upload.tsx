@@ -919,7 +919,7 @@ export function ResumeUpload() {
                               {resume.evaluation_result.critical_issues.immediate_fixes.map((fix: string, index: number) => (
                                 <div key={index} className="p-4 bg-red-900/20 rounded-lg border border-red-500/20">
                                   <div className="flex items-start gap-3">
-                                    <div className="w-6 h-6 bg-red-600 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    <div className="w-6 h-6 bg-red-600 rounded-full flex items-center justify-center shrink-0 mt-0.5">
                                       <span className="text-white text-xs font-bold">{index + 1}</span>
                                     </div>
                                     <div className="flex-1">
@@ -943,7 +943,7 @@ export function ResumeUpload() {
                               {resume.evaluation_result.critical_issues.strategic_improvements.map((improvement: string, index: number) => (
                                 <div key={index} className="p-4 bg-orange-900/20 rounded-lg border border-orange-500/20">
                                   <div className="flex items-start gap-3">
-                                    <div className="w-6 h-6 bg-orange-600 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    <div className="w-6 h-6 bg-orange-600 rounded-full flex items-center justify-center shrink-0 mt-0.5">
                                       <span className="text-white text-xs font-bold">{index + 1}</span>
                                     </div>
                                     <div className="flex-1">
@@ -967,7 +967,7 @@ export function ResumeUpload() {
                               {((resume.evaluation_result.critical_issues as Record<string, unknown>).timeline_issues as string[]).map((issue: string, index: number) => (
                                 <div key={index} className="p-4 bg-yellow-900/20 rounded-lg border border-yellow-500/20">
                                   <div className="flex items-start gap-3">
-                                    <div className="w-6 h-6 bg-yellow-600 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    <div className="w-6 h-6 bg-yellow-600 rounded-full flex items-center justify-center shrink-0 mt-0.5">
                                       <span className="text-white text-xs font-bold">{index + 1}</span>
                                     </div>
                                     <div className="flex-1">
@@ -991,7 +991,7 @@ export function ResumeUpload() {
                               {((resume.evaluation_result.critical_issues as Record<string, unknown>).ats_critical_fixes as string[]).map((fix: string, index: number) => (
                                 <div key={index} className="p-4 bg-purple-900/20 rounded-lg border border-purple-500/20">
                                   <div className="flex items-start gap-3">
-                                    <div className="w-6 h-6 bg-purple-600 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    <div className="w-6 h-6 bg-purple-600 rounded-full flex items-center justify-center shrink-0 mt-0.5">
                                       <span className="text-white text-xs font-bold">{index + 1}</span>
                                     </div>
                                     <div className="flex-1">
@@ -1015,7 +1015,7 @@ export function ResumeUpload() {
                               {resume.evaluation_result.critical_issues.nice_to_have.map((enhancement: string, index: number) => (
                                 <div key={index} className="p-4 bg-blue-900/20 rounded-lg border border-blue-500/20">
                                   <div className="flex items-start gap-3">
-                                    <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center shrink-0 mt-0.5">
                                       <span className="text-white text-xs font-bold">{index + 1}</span>
                                     </div>
                                     <div className="flex-1">
@@ -1038,7 +1038,7 @@ export function ResumeUpload() {
                         <ul className="space-y-2">
                           {resume.evaluation_result.strengths.map((strength, index) => (
                             <li key={index} className="text-sm flex items-start gap-2 p-3 bg-green-900/20 rounded-lg border border-green-500/20">
-                              <div className="w-2 h-2 bg-green-400 rounded-full mt-2 flex-shrink-0" />
+                              <div className="w-2 h-2 bg-green-400 rounded-full mt-2 shrink-0" />
                               <span className="text-gray-300">{strength}</span>
                             </li>
                           ))}

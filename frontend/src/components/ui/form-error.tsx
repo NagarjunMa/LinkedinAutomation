@@ -29,7 +29,7 @@ export function FormError({
 
   return (
     <div className={cn(baseStyles, variants[variant], className)}>
-      {icon && <IconComponent className="h-4 w-4 mr-2 flex-shrink-0" />}
+      {icon && <IconComponent className="h-4 w-4 mr-2 shrink-0" />}
       <span>{message}</span>
     </div>
   )
@@ -60,7 +60,7 @@ export function FormSuccess({
 
   return (
     <div className={cn(baseStyles, variants[variant], className)}>
-      {icon && <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" />}
+      {icon && <AlertCircle className="h-4 w-4 mr-2 shrink-0" />}
       <span>{message}</span>
     </div>
   )

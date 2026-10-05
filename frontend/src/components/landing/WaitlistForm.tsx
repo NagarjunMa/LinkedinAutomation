@@ -205,7 +205,7 @@ export function WaitlistForm({
               name="career_stage"
               value={careerStage}
               onChange={(event) => setCareerStage(event.target.value as CareerStage | '')}
-              className="flex min-h-12 w-full rounded-none border border-foreground/25 bg-background/60 px-4 text-base text-foreground outline-none focus-visible:ring-2 focus-visible:ring-foreground"
+              className="flex min-h-12 w-full rounded-none border border-foreground/25 bg-background/60 px-4 text-base text-foreground outline-hidden focus-visible:ring-2 focus-visible:ring-foreground"
             >
               <option value="">Select your stage</option>
               {CAREER_STAGES.map((stage) => (

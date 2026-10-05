@@ -219,7 +219,7 @@ export function ProfileCompletionBanner() {
                         key={item.id}
                         className="flex items-center gap-3 p-3 bg-white/60 dark:bg-black/20 rounded-lg border border-amber-200 dark:border-amber-700"
                       >
-                        <item.icon className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                        <item.icon className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                             {item.title}

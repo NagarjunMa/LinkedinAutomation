@@ -67,7 +67,7 @@ export function SophisticatedHeader({
     }, [])
 
     return (
-        <header className="flex items-center justify-between h-24 bg-app-bg bg-opacity-80 border-b border-app-text border-opacity-5 px-6 backdrop-blur-md sticky top-0 z-40 transition-colors duration-300">
+        <header className="flex items-center justify-between h-24 bg-app-bg/80 border-b border-app-text/5 px-6 backdrop-blur-md sticky top-0 z-40 transition-colors duration-300">
             <div className="flex items-center gap-8">
                 {/* Mobile Menu Toggle */}
                 {onMenuClick && (
@@ -80,7 +80,7 @@ export function SophisticatedHeader({
                 )}
 
                 <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 border border-app-text border-opacity-10 flex items-center justify-center bg-app-card hidden sm:flex shadow-sm rounded-sm">
+                    <div className="w-10 h-10 border border-app-text/10 flex items-center justify-center bg-app-card hidden sm:flex shadow-sm rounded-sm">
                         <LayoutGrid className="w-5 h-5 text-app-text" />
                     </div>
                     <Link href="/dashboard" className="hidden sm:block">
@@ -88,7 +88,7 @@ export function SophisticatedHeader({
                     </Link>
                 </div>
 
-                <div className="h-8 w-px bg-app-text bg-opacity-10 hidden md:block" />
+                <div className="h-8 w-px bg-app-text/10 hidden md:block" />
 
                 {/* Search Bar */}
                 <div className="relative group hidden md:block">
@@ -99,7 +99,7 @@ export function SophisticatedHeader({
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         onFocus={() => setIsSearchModalOpen(true)}
-                        className="bg-app-card border border-app-text border-opacity-10 pl-11 pr-6 py-2.5 text-xs w-80 focus:outline-none focus:border-app-text focus:border-opacity-30 transition-all duration-700 font-medium rounded-sm text-app-text placeholder:text-app-text placeholder:opacity-30"
+                        className="bg-app-card border border-app-text/10 pl-11 pr-6 py-2.5 text-xs w-80 focus:outline-hidden focus:border-app-text/30 transition-all duration-700 font-medium rounded-sm text-app-text placeholder:text-app-text placeholder:opacity-30"
                     />
                 </div>
             </div>
@@ -141,7 +141,7 @@ export function SophisticatedHeader({
                     </button>
                 </div>
 
-                <div className="h-8 w-px bg-app-text bg-opacity-10 hidden sm:block" />
+                <div className="h-8 w-px bg-app-text/10 hidden sm:block" />
 
                 {/* User Dropdown */}
                 <DropdownMenu>
@@ -153,7 +153,7 @@ export function SophisticatedHeader({
                                 </p>
                                 <p className="text-[10px] text-app-text opacity-50 italic font-medium">Professional Account</p>
                             </div>
-                            <div className="w-10 h-10 bg-app-card border border-app-text border-opacity-10 flex items-center justify-center text-xs font-bold group-hover:bg-app-text group-hover:text-app-bg transition-all duration-700 text-app-text shadow-sm rounded-sm">
+                            <div className="w-10 h-10 bg-app-card border border-app-text/10 flex items-center justify-center text-xs font-bold group-hover:bg-app-text group-hover:text-app-bg transition-all duration-700 text-app-text shadow-sm rounded-sm">
                                 {user?.email?.[0].toUpperCase() || 'U'}
                             </div>
                             <ChevronDown className="w-3 h-3 text-app-text opacity-30" />

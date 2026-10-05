@@ -10,6 +10,7 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
     NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL \
     NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
 COPY frontend/package*.json ./
+COPY frontend/tools/next-root-glob ./tools/next-root-glob
 RUN npm ci
 COPY frontend/ ./
 # Verify files are copied correctly

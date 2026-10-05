@@ -320,6 +320,9 @@ jobs:
       - name: Production dependency audit
         run: npm audit --omit=dev --audit-level=high
 
+      - name: Complete dependency audit
+        run: npm audit --include=dev --audit-level=high
+
       - name: Docker build
         working-directory: .
         run: |

@@ -122,7 +122,7 @@ export function JobExtractionChart({ data }: JobExtractionChartProps) {
 
     return (
         <Card className="premium-card hover:scale-105 transition-all duration-300 group h-full flex flex-col">
-            <CardHeader className="pb-3 flex-shrink-0">
+            <CardHeader className="pb-3 shrink-0">
                 <div className="flex items-center space-x-2">
                     <TrendingUp className="h-5 w-5 text-accent-500" />
                     <CardTitle className="text-cream-50 text-lg group-hover:text-accent-400 transition-colors">

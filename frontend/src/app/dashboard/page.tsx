@@ -93,7 +93,7 @@ export default function DashboardPage() {
                     className="mb-8 md:mb-12 p-6 md:p-10 border border-app-text/10 bg-app-card/40 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-8 backdrop-blur-sm rounded-lg overflow-hidden"
                 >
                     <div className="flex flex-col sm:flex-row gap-6 items-start max-w-full">
-                        <div className="w-14 h-14 border border-app-text/10 flex-shrink-0 flex items-center justify-center text-app-text/40 bg-app-bg shadow-sm">
+                        <div className="w-14 h-14 border border-app-text/10 shrink-0 flex items-center justify-center text-app-text/40 bg-app-bg shadow-sm">
                             <BarChart3 className="w-6 h-6" />
                         </div>
                         <div className="space-y-3">

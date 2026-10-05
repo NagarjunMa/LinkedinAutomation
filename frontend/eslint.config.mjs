@@ -5,6 +5,13 @@ const eslintConfig = [
   ...nextCoreWebVitals,
   ...nextTypescript,
   {
+    files: ["tools/next-root-glob/index.cjs"],
+    rules: {
+      // Next's plugin loads this adapter synchronously through CommonJS.
+      "@typescript-eslint/no-require-imports": ["error", { allow: ["^node:", "^glob$"] }],
+    },
+  },
+  {
     rules: {
       "react-hooks/preserve-manual-memoization": "off",
       "react-hooks/set-state-in-effect": "off",
