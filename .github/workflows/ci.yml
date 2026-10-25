@@ -332,6 +332,28 @@ jobs:
             --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=test \
             -t prism-frontend-ci ./frontend
 
+      - name: Frontend image health smoke
+        working-directory: .
+        run: |
+          smoke_container_id=$(docker run -d --rm \
+            --health-interval=1s --health-start-period=1s \
+            --health-timeout=5s --health-retries=3 \
+            -e PRISM_PRO_PUBLIC_PREVIEW_ONLY=true prism-frontend-ci)
+          trap 'docker rm -f "$smoke_container_id" >/dev/null 2>&1 || true' EXIT
+          for smoke_attempt in $(seq 1 30); do
+            smoke_status=$(docker inspect --format '{{.State.Health.Status}}' "$smoke_container_id")
+            if [ "$smoke_status" = healthy ]; then
+              exit 0
+            fi
+            if [ "$smoke_status" = unhealthy ]; then
+              break
+            fi
+            sleep 1
+          done
+          docker logs "$smoke_container_id"
+          echo "Frontend container did not become healthy" >&2
+          exit 1
+
       - name: Upload frontend coverage
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

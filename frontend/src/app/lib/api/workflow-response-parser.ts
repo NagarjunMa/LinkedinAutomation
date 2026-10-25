@@ -18,7 +18,7 @@ const truth = z.object({
 const bullet = z.object({
   bullet_id: id, old: text, new: text, reason: text, placeholders, truth_check: truth.optional(),
   options: z.array(z.object({ option_id: id, text, reason: text, placeholders, truth_check: truth.optional() })).optional(),
-}) satisfies z.ZodType<BulletDiff, z.ZodTypeDef, unknown>;
+}) satisfies z.ZodType<BulletDiff>;
 const requirement = z.object({ skill: text, evidence_from_jd: text, type: z.enum(['technical', 'experience', 'credential']) });
 const analysis = z.object({
   jd_evaluation_id: id,
@@ -45,18 +45,18 @@ const analysis = z.object({
       recommended_bullet_budget: integer.min(1), current_bullet_count: integer.min(0), page_fit_risk: risk, guidance: text,
     }).nullable().optional(),
   }),
-}) satisfies z.ZodType<JDAnalyzeResponse, z.ZodTypeDef, unknown>;
+}) satisfies z.ZodType<JDAnalyzeResponse>;
 const applied = z.object({
   version_id: id, preview_html: text, company_name: nullableText, target_role_title: nullableText.optional(),
   suggested_template: text, filename_hint: text, warning: nullableText.optional().transform(value => value ?? undefined),
-}) satisfies z.ZodType<ApplyTailorResponse, z.ZodTypeDef, unknown>;
+}) satisfies z.ZodType<ApplyTailorResponse>;
 const exported = z.object({
   export_id: id, download_url: text, expires_at: text, country: z.enum(['US', 'IN']),
   role_template: z.enum(['swe', 'ds', 'pm']), filename: nullableText.optional(),
-}) satisfies z.ZodType<ExportPdfResponse, z.ZodTypeDef, unknown>;
-const balance = z.object({ balance: integer }) satisfies z.ZodType<CreditsBalance, z.ZodTypeDef, unknown>;
+}) satisfies z.ZodType<ExportPdfResponse>;
+const balance = z.object({ balance: integer }) satisfies z.ZodType<CreditsBalance>;
 
-function parse<T>(schema: z.ZodType<T, z.ZodTypeDef, unknown>, status: number, message: string) {
+function parse<T>(schema: z.ZodType<T>, status: number, message: string) {
   return async (response: Response): Promise<T> => {
     try {
       if (response.status !== status) throw new Error();

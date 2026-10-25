@@ -45,15 +45,15 @@ const upload = z.object({
   education: z.array(z.object({
     school: text, degree: optionalText, location: optionalText, dates: optionalText, gpa: optionalText,
   })).default([]),
-  skills: z.object({ hard: strings.default([]), soft: strings.default([]) }).default({}),
+  skills: z.object({ hard: strings.default([]), soft: strings.default([]) }).prefault({}),
   projects: z.array(z.object({ name: text, bullets: z.array(bullet).default([]) })).default([]),
   certifications: strings.default([]),
-}) satisfies z.ZodType<UploadResponse, z.ZodTypeDef, unknown>;
+}) satisfies z.ZodType<UploadResponse>;
 
 const evaluation = z.object({
   ...evaluationFields, evaluation_id: id, summary_critique: text.nullable(),
   ats_parseability: integer, ats_raw_text: text,
-}) satisfies z.ZodType<EvaluationResponse, z.ZodTypeDef, unknown>;
+}) satisfies z.ZodType<EvaluationResponse>;
 
 const savedEvaluation = z.object({
   ...evaluationFields, id, resume_id: id, resume_document_id: id,
@@ -63,7 +63,7 @@ const savedEvaluation = z.object({
   detailed_feedback: text.nullable(),
   keyword_analysis: z.object({ relevant: strings, missing: strings, score: integer }),
   created_at: text.nullable(),
-}) satisfies z.ZodType<components['schemas']['ResumeSavedEvaluation'], z.ZodTypeDef, unknown>;
+}) satisfies z.ZodType<components['schemas']['ResumeSavedEvaluation']>;
 
 const row = z.object({
   id, resume_document_id: id, filename: text, original_filename: text,
@@ -72,15 +72,15 @@ const row = z.object({
   evaluation_result: savedEvaluation.nullable(),
 });
 const list = z.object({ resumes: z.array(row), total_count: integer, totalCount: integer }) satisfies
-  z.ZodType<ResumeListResponse, z.ZodTypeDef, unknown>;
+  z.ZodType<ResumeListResponse>;
 const detail = z.object({ resume: row, evaluation: savedEvaluation.nullable() }) satisfies
-  z.ZodType<ResumeDetailResponse, z.ZodTypeDef, unknown>;
+  z.ZodType<ResumeDetailResponse>;
 const rewrite = z.object({
   rewritten: text, placeholders: z.array(z.object({ token: text, what: text })), applied_changes: strings,
-}) satisfies z.ZodType<RewriteResult, z.ZodTypeDef, unknown>;
-const version = z.object({ version_id: id }) satisfies z.ZodType<VersionResponse, z.ZodTypeDef, unknown>;
+}) satisfies z.ZodType<RewriteResult>;
+const version = z.object({ version_id: id }) satisfies z.ZodType<VersionResponse>;
 
-function parse<T>(schema: z.ZodType<T, z.ZodTypeDef, unknown>, status: number) {
+function parse<T>(schema: z.ZodType<T>, status: number) {
   return async (response: Response): Promise<T> => {
     try {
       if (response.status !== status) throw new Error();

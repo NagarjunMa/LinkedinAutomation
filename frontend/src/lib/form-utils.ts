@@ -27,7 +27,7 @@ export interface ProfileFormData {
 type ProfileApiData = ProfileFormData & Record<string, unknown>
 
 interface ZodIssueLike {
-  path: (string | number)[]
+  path: PropertyKey[]
   message: string
 }
 
@@ -171,7 +171,7 @@ export function extractZodErrors(zodError: ZodErrorLike | undefined | null): For
   if (!zodError?.issues) return []
 
   return zodError.issues.map((issue: ZodIssueLike) => ({
-    field: issue.path.join('.'),
+    field: issue.path.map(String).join('.'),
     message: issue.message
   }))
 }
