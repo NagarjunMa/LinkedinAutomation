@@ -64,6 +64,13 @@ retention and payment behavior remain unchanged. The earlier frontend review is
 historical evidence for unchanged frontend paths; the backend expansion requires
 its own fresh review and final combined-diff inspection before delivery.
 
+The first hosted run exposed a separate execution-boundary incompatibility:
+`ubuntu-latest` selected Ubuntu 26.04, but locked Playwright 1.60.0 cannot install
+Chromium there. Pin the backend and frontend browser-test jobs to supported
+`ubuntu-24.04`; keep the same tests, browser version and required gates. The failed
+hosted browser-install step is the red evidence; YAML/diff review and a new hosted
+run validate the correction. Local macOS passes cannot establish Linux browser setup.
+
 ## Behavior and regression contract
 
 Generated backend transport types remain unchanged. Both response parsers retain
