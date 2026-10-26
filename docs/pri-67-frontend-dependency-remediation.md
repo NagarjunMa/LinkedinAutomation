@@ -1,4 +1,4 @@
-# PRI-67: frontend dependency remediation
+# PRI-67: frontend and backend dependency remediation
 
 Date: 2026-10-25. Canonical plan, acceptance criteria, current verification results,
 review findings and delivery status: [PRI-67](https://linear.app/prismpro/issue/PRI-67/patch-october-frontend-dependency-advisories-without-weakening).
@@ -11,8 +11,10 @@ Branch: `security/pri-67-frontend-dependency-advisories`.
 This changes frontend dependency families and the minimum Zod compatibility code.
 The local image smoke also identified a hostname/probe mismatch; include the
 frontend image bind setting and a CI container-health regression gate in this slice.
-Backend dependencies, rate limiting, production configuration, deployment and new
-product capabilities remain separate work. No API or database migration is needed.
+On 2026-10-25 the owner additionally authorized the five backend dependency repairs
+in this same PR after the normal pre-push hook rejected the frontend-only commit.
+Rate limiting, deployed configuration, deployment and new product capabilities
+remain separate work. No API or database migration is needed.
 
 | Dependency | Previous lock | Updated lock |
 | --- | --- | --- |
@@ -28,6 +30,39 @@ product capabilities remain separate work. No API or database migration is neede
 Use Node 22 (validated locally with 22.23.4). Vitest requires at least 22.12.0
 on the Node 22 line. Preserve the existing root-glob adapter and npm override;
 its tests continue to enforce the supported ESLint consumer boundary.
+
+## Owner-approved backend dependency increment
+
+Preserve the frontend commit and update only the five advisory-affected backend
+families in `requirements.in` and the pip-tools-generated `requirements.lock`:
+aiohttp 3.14.3 to 3.14.4, multidict 6.7.1 to 6.9.1, certifi 2026.6.17 to
+2026.10.19, Pillow 12.3.0 to 13.0.0, and pypdf 6.19.0 to 6.21.2. aiohttp 3.14.4
+requires yarl >=1.25.1, so yarl also changes from 1.24.2 to 1.25.1. A constrained
+resolution retaining the old yarl failed; verified PyPI metadata confirms that
+dependency requirement. All unrelated locked versions remain unchanged.
+The owner authorized the combined PR, checks, commit and normal push; this does
+not authorize bypassing hooks or deployment.
+
+The existing 58-advisory lock audit and rejected normal push are the red security
+gate. This is dependency configuration, so use lock generation/audits and observable
+behavior regressions rather than a new test asserting literal package versions.
+Install the full lock plus CI tools in a clean Python 3.11 environment; run
+`pip check`, inventory verification, PDF/parser/upload security tests, the complete
+backend and frontend Make gates, and independent review of this new increment.
+Record actual results and blocked gates in the canonical Linear issue.
+
+Pillow 13 drops Python 3.10. Repository CI and backend/combined images use Python
+3.11. Production parsing uses pdfplumber, while export validation and page counts
+use pypdf. Existing regressions cover visible text, dimensions, fonts, contact links,
+export/re-upload, page limits, malformed input, worker timeout and stable errors.
+Inspect actual image consumers and the Pillow release notes for removed API use;
+do not infer compatibility from a successful resolver alone. Local global packages
+differ from the lock, so run this increment's checks with the clean locked runtime.
+
+The aggregate risk remains Critical. Backend APIs, migrations, authorization,
+retention and payment behavior remain unchanged. The earlier frontend review is
+historical evidence for unchanged frontend paths; the backend expansion requires
+its own fresh review and final combined-diff inspection before delivery.
 
 ## Behavior and regression contract
 
@@ -70,6 +105,8 @@ No exploit is sent to a deployed service.
 | Criterion / material failure | Required evidence |
 | --- | --- |
 | Vulnerable packages remain in either dependency tree | Clean `npm ci`; `npm audit --omit=dev --audit-level=high`; `npm audit --include=dev --audit-level=high`, both zero advisories |
+| Backend advisories or incompatible installed packages remain | Clean Python 3.11 lock install, `pip check`, installed-version inventory and `pip_audit -r requirements.lock`, with no ignored findings |
+| PDF/image major upgrade changes observable behavior | Existing PDF/parser/upload regressions and `make verify-backend-ci` in the clean locked environment; no weakened thresholds or skip additions |
 | Manifest/lock drift, generated API drift or build incompatibility | `make verify-frontend-ci` under Node 22, including contract-tool tests, lint, TypeScript, webpack build, coverage and MVP Playwright smoke |
 | Defaults/nulls change or malformed private payloads are accepted/disclosed | Resume/workflow response-contract tests plus profile validation tests; preserve generic API errors |
 | Preview opens account routes or breaks consent/PII-safe analytics | `PRISM_PRO_PUBLIC_PREVIEW_ONLY=true` landing-page Chromium suite with mocked waitlist/events |
@@ -101,7 +138,7 @@ PRI-67 open while required gates are pending. Deploy only with separate authorit
 retain preview restrictions, and smoke the deployed landing/CSP before accepting
 traffic. This patch does not complete PRI-28's production verification.
 
-Rollback dependency manifest, lockfile and Zod compatibility changes together,
+Rollback dependency manifests, lockfiles and compatibility changes together,
 preferably by restoring the prior known image. That image restores known advisory
 exposure, so it is only a temporary recovery option pending a corrected image.
 
@@ -114,3 +151,6 @@ Accessed 2026-10-25:
 - [Zod 4 migration guide](https://zod.dev/v4/changelog)
 - [happy-dom advisory](https://github.com/capricorn86/happy-dom/security/advisories/GHSA-834v-8h66-3h79)
 - [Vitest advisory](https://github.com/vitest-dev/vitest/security/advisories/GHSA-qxg6-89mg-rqv8)
+- [Pillow 13 release and compatibility notes](https://pillow.readthedocs.io/en/stable/releasenotes/13.0.0.html)
+- [pypdf changelog](https://pypdf.readthedocs.io/en/stable/meta/CHANGELOG.html)
+- [aiohttp changelog](https://docs.aiohttp.org/en/stable/changes.html)
