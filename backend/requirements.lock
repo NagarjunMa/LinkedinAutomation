@@ -54,8 +54,10 @@ deprecation==2.1.0
     #   storage3
 distro==1.9.0
     # via openai
-dnspython==2.8.0
-    # via email-validator
+dnspython==2.9.0
+    # via
+    #   -r requirements.in
+    #   email-validator
 email-validator==2.3.0
     # via -r requirements.in
 fastapi==0.138.0
@@ -172,7 +174,7 @@ pyjwt[crypto]==2.15.1
     #   supabase-auth
 pymupdf==1.27.2.3
     # via -r requirements.in
-pypdf==6.21.2
+pypdf==6.21.4
     # via -r requirements.in
 pypdfium2==5.10.1
     # via pdfplumber
