@@ -114,6 +114,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         blacklist_ips: Optional[List[str]] = None,
         rate_limit_by_user: bool = True,
         route_limits: Optional[Dict[str, Dict[str, int]]] = None,
+        peer_only_paths: Optional[set[str]] = None,
     ):
         super().__init__(app)
         self.requests_per_minute = requests_per_minute
@@ -123,6 +124,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.blacklist_ips = set(blacklist_ips or [])
         self.rate_limit_by_user = rate_limit_by_user
         self.route_limits = route_limits or {}
+        self.peer_only_paths = frozenset(peer_only_paths or ())
 
         # Rate limiting storage
         self.request_counts: Dict[str, deque] = defaultdict(deque)
@@ -135,12 +137,15 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     def _get_client_identifier(self, request: Request) -> str:
         """Get unique identifier for rate limiting"""
+        peer = request.client.host if request.client else "unknown"
+        if not self.rate_limit_by_user or request.url.path.rstrip("/") in self.peer_only_paths:
+            return peer
+
         # Try to get user ID from request state (set by auth middleware)
-        if self.rate_limit_by_user and hasattr(request.state, 'user_id'):
+        if hasattr(request.state, 'user_id'):
             return f"user:{request.state.user_id}"
 
-        # Auth dependencies run after middleware, so use a hash of the bearer
-        # token as the stable authenticated caller key without logging secrets.
+        # Preserve the existing private-route partition before auth dependencies run.
         authorization = request.headers.get("Authorization", "")
         if authorization.lower().startswith("bearer "):
             token_hash = hashlib.sha256(authorization.encode("utf-8")).hexdigest()[:32]
@@ -148,7 +153,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         # Fall back to the direct peer. Do not trust client-supplied
         # X-Forwarded-For here; proxy-aware identity needs a trusted proxy list.
-        return request.client.host if request.client else "unknown"
+        return peer
 
     def _is_whitelisted(self, client_ip: str) -> bool:
         """Check if IP is whitelisted"""
@@ -264,6 +269,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         base_client_id = self._get_client_identifier(request)
         requests_per_minute, requests_per_hour, burst_size, route_prefix = self._get_limits_for_path(request.url.path)
         client_id = f"{base_client_id}:route:{route_prefix}" if route_prefix else base_client_id
+        if request.method == "OPTIONS" and request.url.path.rstrip("/") in self.peer_only_paths:
+            # Keep preflights capped without consuming the submission budget.
+            client_id += ":options"
 
         # Check blacklist
         if self._is_blacklisted(client_ip):

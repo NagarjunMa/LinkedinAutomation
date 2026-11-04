@@ -281,12 +281,7 @@ def verify_waitlist_write_smoke(
         "consent": True,
         "company_website": "",
     }
-    headers = {
-        "User-Agent": USER_AGENT,
-        # The middleware hashes this value only to isolate the bounded smoke
-        # from live anonymous traffic. The endpoint does not authenticate it.
-        "Authorization": f"Bearer prismpro-release-write-{uuid.uuid4().hex}",
-    }
+    headers = {"User-Agent": USER_AGENT}
 
     try:
         oversized = session.post(
@@ -317,7 +312,10 @@ def verify_waitlist_write_smoke(
         _require(count == 1, f"Waitlist write smoke persisted {count} rows, expected one")
 
         limited = session.post(
-            f"{backend_url}/api/v1/waitlist", headers=headers, json=payload, timeout=15
+            f"{backend_url}/api/v1/waitlist",
+            headers={**headers, "Authorization": "Bearer release-verification-untrusted"},
+            json=payload,
+            timeout=15,
         )
         _require(limited.status_code == 429, f"Waitlist burst limit returned HTTP {limited.status_code}, expected 429")
     finally:

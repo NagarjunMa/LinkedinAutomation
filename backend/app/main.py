@@ -103,11 +103,17 @@ cors_options = dict(
 app.add_middleware(CORSMiddleware, **cors_options)
 
 # Setup comprehensive security middleware stack
+PUBLIC_PREVIEW_PATHS = {
+    "/health",
+    "/api/v1/waitlist",
+    "/api/v1/public-preview/events",
+}
 security_config = {
     'rate_limit': {
         'requests_per_minute': 100 if is_production else 1000,
         'requests_per_hour': 2000 if is_production else 10000,
         'burst_size': 20 if is_production else 1000,
+        'peer_only_paths': PUBLIC_PREVIEW_PATHS,
         'route_limits': {
             '/api/v1/waitlist': {
                 'requests_per_minute': 5 if is_production else 1000,
@@ -220,11 +226,7 @@ app.add_middleware(RateLimitMiddleware, **security_config["rate_limit"])
 app.add_middleware(
     PublicPreviewAccessMiddleware,
     enabled=settings.PRISM_PRO_PUBLIC_PREVIEW_ONLY,
-    allowed_paths={
-        "/health",
-        "/api/v1/waitlist",
-        "/api/v1/public-preview/events",
-    },
+    allowed_paths=PUBLIC_PREVIEW_PATHS,
 )
 
 # Normalize only resume/JD responses, including the middleware's early denials.

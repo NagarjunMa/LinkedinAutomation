@@ -61,6 +61,16 @@ defaults to true, but code permits an explicit false value: keeping it true on t
 public deployment is also an operator release requirement. Verify actual hosted
 replica/process settings, not just environment declarations.
 
+The waitlist, preview analytics, and health routes key their limits on the
+client address supplied by the ASGI server. Authorization headers do not
+change those budgets. Public `OPTIONS` requests have a separate capped budget.
+Before rollout, verify the Railway ingress chain in
+development. Configure Uvicorn to trust only verified proxy peers, never
+`FORWARDED_ALLOW_IPS=*`. Confirm that two independent clients have separate
+budgets and that changing Bearer or forwarding headers from one client cannot
+reset its budget. Use synthetic inputs and keep one replica and one worker.
+The private-route token partition is unchanged by PRI-72's public-route fix.
+
 ## Public-preview release verification (PRI-5)
 
 ### Supabase Auth lockdown
@@ -133,7 +143,9 @@ python scripts/verify_public_preview_release.py \
 That default command is read-only. After reviewing the target project and
 database, add `--write-smoke` to create one unique `example.com` waitlist row,
 verify the 8 KiB limit, neutral duplicate response, unique persistence, and
-burst limit, then delete only that generated row.
+burst limit, then delete only that generated row. Run the write smoke from an
+approved test egress address with an unused waitlist submission budget. The
+final request adds an unverified Bearer header and must still receive `429`.
 
 Do not pass `--allow-http` in production. It exists only for local testing.
 
