@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { ResumeUploadDropzone } from '@/components/resume/resume-upload-dropzone';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { UploadResponse } from '@/app/lib/api';
+import { useAuth } from '@/contexts/auth-context';
+import { recentResumesKey, resumeDocKey } from '@/lib/resume-cache';
 
 interface RecentItem {
   id: string;
@@ -13,27 +15,25 @@ interface RecentItem {
   uploaded_at: string;
 }
 
-const LS_KEY = 'prism.recentResumes';
-
-function loadRecent(): RecentItem[] {
+function loadRecent(userId: string): RecentItem[] {
   if (typeof window === 'undefined') return [];
   try {
-    return JSON.parse(localStorage.getItem(LS_KEY) || '[]');
+    return JSON.parse(localStorage.getItem(recentResumesKey(userId)) || '[]');
   } catch {
     return [];
   }
 }
 
-function pushRecent(item: RecentItem) {
-  const next = [item, ...loadRecent().filter((r) => r.id !== item.id)].slice(0, 10);
-  localStorage.setItem(LS_KEY, JSON.stringify(next));
+export default function ResumeLibraryPage() {
+  const { user } = useAuth();
+  return user?.id ? <ResumeLibrary key={user.id} userId={user.id} /> : null;
 }
 
-export default function ResumeLibraryPage() {
+function ResumeLibrary({ userId }: { userId: string }) {
   const router = useRouter();
   const [recent, setRecent] = useState<RecentItem[]>([]);
 
-  useEffect(() => { setRecent(loadRecent()); }, []);
+  useEffect(() => { setRecent(loadRecent(userId)); }, [userId]);
 
   const onUploaded = (res: UploadResponse) => {
     const item: RecentItem = {
@@ -41,8 +41,9 @@ export default function ResumeLibraryPage() {
       name: res.contact.name || 'Resume',
       uploaded_at: new Date().toISOString(),
     };
-    pushRecent(item);
-    sessionStorage.setItem(`resumeDoc:${res.resume_document_id}`, JSON.stringify(res));
+    const next = [item, ...loadRecent(userId).filter((r) => r.id !== item.id)].slice(0, 10);
+    localStorage.setItem(recentResumesKey(userId), JSON.stringify(next));
+    sessionStorage.setItem(resumeDocKey(userId, res.resume_document_id), JSON.stringify(res));
     router.push(`/dashboard/resume/${res.resume_document_id}/edit`);
   };
 

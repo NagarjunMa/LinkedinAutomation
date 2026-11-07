@@ -2,12 +2,19 @@ import { describe, it, expect, vi } from 'vitest';
 import { server, http, HttpResponse } from '@/test-utils/msw-server';
 import { resumeV2Api } from '@/app/lib/api/resume-v2';
 
+vi.mock('@/lib/supabase', () => ({
+  createClient: () => ({ auth: { getSession: async () => ({
+    data: { session: { user: { id: 'owner-a' }, access_token: 'synthetic-token' } },
+  }) } }),
+}));
+
 describe('resumeV2Api.upload', () => {
   it('sends multipart FormData and returns resume_document_id', async () => {
     server.use(
       http.post('http://localhost:8000/api/v1/resumes/upload', async ({ request }) => {
         const ct = request.headers.get('content-type') || '';
         expect(ct).toContain('multipart/form-data');
+        expect(request.headers.get('authorization')).toBe('Bearer synthetic-token');
         return HttpResponse.json({
           resume_document_id: 'rdoc-1',
           contact: { name: 'Test User', email: null, phone: null, links: [] },
@@ -22,7 +29,7 @@ describe('resumeV2Api.upload', () => {
       })
     );
     const file = new File(['pdf content'], 'resume.pdf', { type: 'application/pdf' });
-    const result = await resumeV2Api.upload(file);
+    const result = await resumeV2Api.upload(file, 'owner-a');
     expect(result.resume_document_id).toBe('rdoc-1');
   });
 
@@ -33,7 +40,7 @@ describe('resumeV2Api.upload', () => {
       })
     );
     const file = new File(['bad'], 'bad.exe', { type: 'application/octet-stream' });
-    await expect(resumeV2Api.upload(file)).rejects.toThrow();
+    await expect(resumeV2Api.upload(file, 'owner-a')).rejects.toMatchObject({ status: 400 });
   });
 
   it('falls back to localhost when API URL env is absent', async () => {
@@ -59,7 +66,7 @@ describe('resumeV2Api.upload', () => {
     );
 
     const file = new File(['pdf content'], 'resume.pdf', { type: 'application/pdf' });
-    const result = await freshApi.upload(file);
+    const result = await freshApi.upload(file, 'owner-a');
 
     expect(result.resume_document_id).toBe('fallback-doc');
     if (originalApiUrl === undefined) {

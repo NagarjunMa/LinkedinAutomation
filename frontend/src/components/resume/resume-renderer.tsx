@@ -11,8 +11,8 @@ export interface ResumeRendererProps {
 
 export function ResumeRenderer({ doc, flags = [], onBulletClick }: ResumeRendererProps) {
   const flagByBullet = useMemo(() => {
-    const m = new Map<string, BulletFlag>();
-    for (const f of flags) m.set(f.bullet_id, f);
+    const m = new Map<string, BulletFlag[]>();
+    for (const f of flags) m.set(f.bullet_id, [...(m.get(f.bullet_id) ?? []), f]);
     return m;
   }, [flags]);
 
@@ -48,7 +48,7 @@ export function ResumeRenderer({ doc, flags = [], onBulletClick }: ResumeRendere
                   <BulletHighlight
                     key={b.id}
                     bullet={b}
-                    flag={flagByBullet.get(b.id)}
+                    flags={flagByBullet.get(b.id)}
                     onClick={onBulletClick}
                   />
                 ))}
@@ -69,7 +69,7 @@ export function ResumeRenderer({ doc, flags = [], onBulletClick }: ResumeRendere
                   <BulletHighlight
                     key={b.id}
                     bullet={b}
-                    flag={flagByBullet.get(b.id)}
+                    flags={flagByBullet.get(b.id)}
                     onClick={onBulletClick}
                   />
                 ))}

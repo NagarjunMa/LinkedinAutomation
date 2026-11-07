@@ -17,7 +17,7 @@ from app.core.openai_client import ModelRuntime, get_model_runtime
 from app.models.resume_document import ResumeVersion
 from app.models.resume_evaluation_v2 import ResumeEvaluationV2
 from app.repositories.resume_repository import ResumeRepository
-from app.schemas.resume_v2 import ChangeItem, ResumeDocumentJSON
+from app.schemas.resume_v2 import BulletFlag, ChangeItem, ResumeDocumentJSON
 from app.services.resume.ats_simulator import simulate_ats
 from app.services.resume.changes import apply_changes, find_bullet_text
 from app.services.resume.evaluator import evaluate_resume
@@ -93,20 +93,20 @@ class ResumeApplicationService:
         except ResumeStorageWorkflowError as exc:
             raise ExternalServiceError(str(exc)) from exc
 
-    async def evaluate(self, resume_document_id: str, target_role: str, user_id: str) -> dict:
+    async def evaluate(self, resume_document_id: str, target_role: str, user_id: str,
+                       version_id: str | None = None) -> dict:
         document = self._owned_ready(resume_document_id, user_id)
+        resume = self._version_content(document, version_id)
         with paid_operation(self.session, user_id, amount=1, reason="evaluate"):
-            resume = ResumeDocumentJSON.model_validate(document.parsed_json)
             report = await evaluate_resume(
                 resume, target_role=target_role, user_id=user_id, runtime=self.runtime,
             )
             storage = get_storage()
             content = storage.download(document.storage_path or document.file_path)
             ats = simulate_ats(content, filename=document.original_filename)
-            format_issues = [
-                item.model_dump()
-                for item in (report.format_issues + ats.format_issues)
-            ]
+            # Version feedback describes edited text. Document checks still describe the uploaded file.
+            document_issues = ats.format_issues if version_id else report.format_issues + ats.format_issues
+            format_issues = [item.model_dump() for item in document_issues]
             row = ResumeEvaluationV2(
                 id=str(uuid.uuid4()),
                 resume_document_id=resume_document_id,
@@ -151,12 +151,16 @@ class ResumeApplicationService:
         country: str,
         jd_context: str | None,
         user_id: str,
+        version_id: str | None = None,
+        findings: list[BulletFlag] | None = None,
     ) -> dict:
         document = self._owned_ready(resume_document_id, user_id)
-        resume = ResumeDocumentJSON.model_validate(document.parsed_json)
+        resume = self._version_content(document, version_id)
         original = find_bullet_text(resume, bullet_id)
         if original is None:
             raise ResourceNotFoundError("Bullet not found")
+        if any(finding.bullet_id != bullet_id for finding in findings or []):
+            raise OperationRejectedError("Findings must refer to the selected bullet")
         try:
             result = await rewrite_bullet(
                 original=original,
@@ -165,6 +169,7 @@ class ResumeApplicationService:
                 jd_context=jd_context,
                 user_id=user_id,
                 runtime=self.runtime,
+                findings=findings,
             )
         except HallucinationError as exc:
             raise OperationRejectedError(f"Rewrite rejected: {exc}") from exc
@@ -179,13 +184,7 @@ class ResumeApplicationService:
         user_id: str,
     ) -> dict:
         document = self._owned_ready(resume_document_id, user_id)
-        if parent_version_id:
-            parent = self.resumes.get_version(parent_version_id)
-            if not parent or parent.resume_document_id != resume_document_id:
-                raise ResourceNotFoundError("Parent version not found")
-            base = ResumeDocumentJSON.model_validate(parent.parsed_json)
-        else:
-            base = ResumeDocumentJSON.model_validate(document.parsed_json)
+        base = self._version_content(document, parent_version_id)
 
         new_document = apply_changes(base, change_set)
         version = ResumeVersion(
@@ -198,6 +197,20 @@ class ResumeApplicationService:
         self.resumes.add_version(version)
         self.session.commit()
         return {"version_id": version.id}
+
+    def _version_content(self, document, version_id: str | None) -> ResumeDocumentJSON:
+        if not version_id:
+            return ResumeDocumentJSON.model_validate(document.parsed_json)
+        version = self.resumes.get_version(version_id)
+        if not version or version.resume_document_id != document.id:
+            raise ResourceNotFoundError("Version not found")
+        resume = ResumeDocumentJSON.model_validate(version.parsed_json)
+        # Original PDF text must not override edits in a saved version's model input.
+        resume.raw_text = ""
+        for entry in [*resume.experience, *resume.projects]:
+            for bullet in entry.bullets:
+                bullet.raw_text = bullet.text
+        return resume
 
     def _owned_ready(self, resume_document_id: str, user_id: str):
         document = self.resumes.get_owned_ready(resume_document_id, user_id)

@@ -11,17 +11,18 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { fireEvent, render } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { BulletHighlight } from '@/components/resume/bullet-highlight';
+import { ResumeRenderer } from '@/components/resume/resume-renderer';
 import type { Bullet, BulletFlag } from '@/app/lib/api';
 
 function renderBullet(bullet: Bullet, flag?: BulletFlag) {
   const onClick = vi.fn();
   return render(
     <TooltipProvider>
-      <BulletHighlight bullet={bullet} flag={flag} onClick={onClick} />
+      <BulletHighlight bullet={bullet} flags={flag ? [flag] : []} onClick={onClick} />
     </TooltipProvider>
   );
 }
@@ -83,7 +84,19 @@ describe('BulletHighlight', () => {
     const li = container.querySelector('li');
     expect(li).not.toBeNull();
     expect(li!.getAttribute('data-severity')).toBe('none');
-    fireEvent.click(li!);
+    fireEvent.click(screen.getByRole('button', { name: baseBullet.text }));
     expect(onClick).toHaveBeenCalledWith('b1');
+  });
+
+  it('preserves a critical finding when a later informational finding shares the bullet', () => {
+    const flags: BulletFlag[] = [
+      { bullet_id: 'b1', severity: 'critical', category: 'clarity', reason: 'Explain ownership.' },
+      { bullet_id: 'b1', severity: 'info', category: 'verb', reason: 'Action is clear.' },
+    ];
+    render(<TooltipProvider><ResumeRenderer doc={{ contact: { name: 'Synthetic', links: [] },
+      experience: [{ role: 'Engineer', company: 'Example', bullets: [baseBullet] }],
+      projects: [], education: [], skills: { hard: [], soft: [] },
+    } as any} flags={flags} onBulletClick={vi.fn()} /></TooltipProvider>);
+    expect(screen.getByTestId('bullet-b1')).toHaveAttribute('data-severity', 'critical');
   });
 });

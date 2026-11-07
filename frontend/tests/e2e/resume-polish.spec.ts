@@ -1,6 +1,7 @@
 // frontend/tests/e2e/resume-polish.spec.ts
 import { test, expect } from '@playwright/test';
 import path from 'path';
+import { seedResumeSession } from './resume-session';
 
 const UPLOAD_RESPONSE = {
   resume_document_id: 'doc-1',
@@ -27,6 +28,11 @@ const UPLOAD_RESPONSE = {
 const EVAL_RESPONSE = {
   evaluation_id: 'eval-1',
   overall_score: 62,
+  readiness_label: 'needs_work',
+  score_breakdown: { content_quality: 60, role_fit: 65, evidence_strength: 60, recruiter_readability: 70 },
+  score_explanation: [],
+  top_actions_before_applying: [],
+  parser_confidence: 'high',
   bullet_flags: [
     {
       bullet_id: 'b1',
@@ -50,9 +56,7 @@ const REWRITE_RESPONSE = {
 const VERSION_RESPONSE = { version_id: 'ver-1' };
 
 test('resume polish happy path', async ({ page, context }) => {
-  await context.addCookies([{
-    name: 'test-bypass-auth', value: '1', url: 'http://localhost:3000',
-  }]);
+  await seedResumeSession(context);
   await page.route('**/api/v1/resumes/upload', (route) =>
     route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify(UPLOAD_RESPONSE) }));
   await page.route('**/api/v1/resumes/doc-1/evaluate', (route) =>

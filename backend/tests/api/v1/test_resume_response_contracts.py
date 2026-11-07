@@ -78,6 +78,19 @@ def request(client, method, path, headers):
     return client.request(method, "/api/v1/resumes" + path, **options)
 
 
+def test_version_and_findings_reach_application_boundary(client, auth_headers, stub_service):
+    finding = {"bullet_id": "b1", "severity": "warning", "category": "clarity", "reason": "Show ownership"}
+    evaluated = client.post("/api/v1/resumes/doc-1/evaluate", headers=auth_headers,
+                            json={"target_role": "Engineer", "version_id": "v1"})
+    assert evaluated.status_code == 200
+    assert stub_service.evaluate.call_args.kwargs["version_id"] == "v1"
+    rewritten = client.post("/api/v1/resumes/doc-1/rewrite/b1", headers=auth_headers,
+                            json={"target_role": "Engineer", "version_id": "v1", "findings": [finding]})
+    assert rewritten.status_code == 200
+    assert stub_service.rewrite.call_args.kwargs["version_id"] == "v1"
+    assert stub_service.rewrite.call_args.kwargs["findings"][0].model_dump() == finding
+
+
 @pytest.fixture(scope="module")
 def exported():
     return export_document()

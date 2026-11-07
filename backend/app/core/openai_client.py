@@ -73,20 +73,21 @@ _GPT_4O_AUG_2024_PRICING = ModelPricing(
 )
 
 
-# Hashes lock the unchanged [system, user-template] pair as compact UTF-8 JSON.
+# Hashes lock the versioned [system, user-template] pair as compact UTF-8 JSON.
 # Prompt text stays with its service; characterization tests detect version drift.
 DEFAULT_MANIFESTS: Mapping[str, ModelManifest] = MappingProxyType({
     name: ModelManifest(
         model_snapshot="gpt-4o-2024-08-06",
         prompt_name=name,
         prompt_hash=prompt_hash,
+        prompt_version="2" if name == "rewriter" else "1",
         schema_version=schema_version,
         parameters=ModelParameters(temperature=temperature),
         pricing=_GPT_4O_AUG_2024_PRICING,
     )
     for name, prompt_hash, schema_version, temperature in (
         ("evaluator", "c2778f00e0be9bccec41c3330bb131893d7d1de6a80c632a33aedafa75346943", "EvaluationReport.v1", 0.2),
-        ("rewriter", "e6a37a4da9d5d4a201a671ce6c60056d932ebc109c75f6f91412f4fdadaeebed", "RewriteResult.v1", 0.4),
+        ("rewriter", "a3c2822388cea07cbdbd5bbc33bc92da33e0790d131e51a1d2ba796bd55de9f8", "RewriteResult.v1", 0.4),
         ("extractor", "3a6d86b1f4fa066a95d0b3003fcdaa926b1a162d9f1c98e01aefbeba88879af8", "JDExtraction.v1", 0.1),
         ("tailor", "59c6811de30c33b0a0340e0900a87c50607063a09fc3d317e3e0a403a3ed0d09", "DiffPlan.v1", 0.3),
         ("tailor_options", "eb423c08e9c2eaaa8e0c936102ecf60cf6a5f3affbffdb2398233dd929bb65ca", "BulletDiff.v1", 0.4),

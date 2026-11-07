@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 
@@ -85,20 +85,58 @@ describe('RewriteModal', () => {
     });
   });
 
-  it('calls onAccept with bulletId when Accept button is clicked', async () => {
+  it('blocks acceptance until every placeholder contains a value', async () => {
     const handler = vi.fn();
     renderModal({ onAccept: handler });
 
-    // Wait for rewrite result to appear
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: /accept/i })).not.toBeDisabled();
-    });
-
+    expect(screen.getByRole('button', { name: /accept/i })).toBeDisabled();
+    fireEvent.change(screen.getByTestId('placeholder-[X%]'), { target: { value: '25%' } });
+    fireEvent.change(screen.getByTestId('placeholder-[N]'), { target: { value: '   ' } });
+    expect(screen.getByRole('button', { name: /accept/i })).toBeDisabled();
+    fireEvent.change(screen.getByTestId('placeholder-[N]'), { target: { value: '3' } });
     fireEvent.click(screen.getByRole('button', { name: /accept/i }));
     expect(handler).toHaveBeenCalledWith(
       'b1',
-      expect.stringContaining('Reduced latency')
+      'Reduced latency by 25% across 3 services'
     );
+  });
+
+  it('shows every original finding in the existing rewrite modal', () => {
+    const findings = [
+      { bullet_id: 'b1', severity: 'warning' as const, category: 'clarity' as const, reason: 'Identify your component.' },
+      { bullet_id: 'b1', severity: 'warning' as const, category: 'quantification' as const, reason: 'Explain the measurement.' },
+    ];
+    renderModal({ findings, versionId: 'v1' });
+    expect(screen.getByText('Identify your component.')).toBeInTheDocument();
+    expect(screen.getByText('Explain the measurement.')).toBeInTheDocument();
+    expect(mutate).toHaveBeenCalledWith(expect.objectContaining({ findings, versionId: 'v1' }), expect.anything());
+  });
+
+  it('shows all findings when the model request limit is reached', () => {
+    const findings = Array.from({ length: 21 }, (_, index) => ({
+      bullet_id: 'b1', severity: 'warning' as const, category: 'clarity' as const,
+      reason: `Finding ${index + 1}`,
+    }));
+    renderModal({ findings });
+    expect(screen.getByText('Finding 21')).toBeInTheDocument();
+    expect(mutate.mock.calls[0][0].findings).toHaveLength(20);
+  });
+
+  it('ignores a response after cancellation and reopening for another bullet', () => {
+    const completions: Array<{ onSuccess: (result: RewriteResult) => void }> = [];
+    mutate.mockImplementation((_args, callbacks) => completions.push(callbacks));
+    const view = renderModal();
+    view.rerender(<QueryClientProvider client={makeClient()}><RewriteModal
+      open={false} onOpenChange={vi.fn()} resumeId="resume-001" bullet={null}
+      targetRole="Software Engineer" country="US" onAccept={vi.fn()}
+    /></QueryClientProvider>);
+    act(() => completions[0].onSuccess(suggestion));
+    view.rerender(<QueryClientProvider client={makeClient()}><RewriteModal
+      open onOpenChange={vi.fn()} resumeId="resume-001" bullet={{ ...mockBullet, id: 'b2' }}
+      targetRole="Software Engineer" country="US" onAccept={vi.fn()}
+    /></QueryClientProvider>);
+    expect(screen.queryByText(suggestion.rewritten)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Accept' })).toBeDisabled();
   });
 
   it('sends the selected evidence context and accepts only the user-filled text', () => {
@@ -107,7 +145,7 @@ describe('RewriteModal', () => {
     renderModal({ onAccept, onOpenChange, jdContext: 'API performance' });
     expect(mutate).toHaveBeenCalledWith({
       resumeId: 'resume-001', bulletId: 'b1', targetRole: 'Software Engineer',
-      country: 'US', jdContext: 'API performance',
+      country: 'US', jdContext: 'API performance', versionId: undefined, findings: [],
     }, expect.objectContaining({ onSuccess: expect.any(Function), onError: expect.any(Function) }));
     expect(onAccept).not.toHaveBeenCalled();
     fireEvent.change(screen.getByTestId('placeholder-[X%]'), { target: { value: '25%' } });
@@ -162,5 +200,49 @@ describe('RewriteModal', () => {
     expect(screen.queryByText('Fill in')).not.toBeInTheDocument();
     expect(screen.queryByRole('list')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Accept' })).toBeEnabled();
+  });
+
+  it.each(['', '   \n'])('rejects a blank suggestion %j', (rewritten) => {
+    mutate.mockImplementation((_args, { onSuccess }) => onSuccess({
+      rewritten, placeholders: [], applied_changes: [],
+    }));
+    const onAccept = vi.fn();
+    renderModal({ onAccept });
+    const accept = screen.getByRole('button', { name: 'Accept' });
+    expect(accept).toBeDisabled();
+    fireEvent.click(accept);
+    expect(onAccept).not.toHaveBeenCalled();
+  });
+
+  it('blocks a placeholder omitted from the returned field metadata', () => {
+    mutate.mockImplementation((_args, { onSuccess }) => onSuccess({
+      rewritten: 'Built services for [N users]', placeholders: [], applied_changes: [],
+    }));
+    renderModal();
+    expect(screen.getByRole('button', { name: 'Accept' })).toBeDisabled();
+  });
+
+  it('blocks a new placeholder entered as another field value', () => {
+    renderModal();
+    fireEvent.change(screen.getByTestId('placeholder-[X%]'), { target: { value: '[P%]' } });
+    fireEvent.change(screen.getByTestId('placeholder-[N]'), { target: { value: '3' } });
+    expect(screen.getByRole('button', { name: 'Accept' })).toBeDisabled();
+  });
+
+  it('allows existing bracketed source text without treating it as a new field', () => {
+    mutate.mockImplementation((_args, { onSuccess }) => onSuccess({
+      rewritten: 'Built reporting APIs [Python]', placeholders: [], applied_changes: [],
+    }));
+    renderModal({ bullet: { ...mockBullet, text: 'Built APIs [Python]' } });
+    expect(screen.getByRole('button', { name: 'Accept' })).toBeEnabled();
+  });
+
+  it('blocks canonical placeholders already present in an imported source', () => {
+    const text = 'Built services for [N users]';
+    mutate.mockImplementation((_args, { onSuccess }) => onSuccess({
+      rewritten: text, placeholders: [], applied_changes: [],
+    }));
+    renderModal({ bullet: { ...mockBullet, text } });
+    expect(screen.getByRole('button', { name: 'Accept' })).toBeDisabled();
   });
 });

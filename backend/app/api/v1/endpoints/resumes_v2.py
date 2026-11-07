@@ -19,7 +19,7 @@ from app.schemas.resume_responses import (
     ResumeUploadResponse,
     ResumeVersionResponse,
 )
-from app.schemas.resume_v2 import ChangeItem, RewriteResult
+from app.schemas.resume_v2 import BulletFlag, ChangeItem, RewriteResult
 from app.services.resume.file_security import ResumeFileError
 
 
@@ -39,12 +39,15 @@ router = APIRouter(tags=["resumes-v2"], route_class=ResumeResponseRoute)
 
 class EvalRequest(BaseModel):
     target_role: str = Field(..., min_length=2, max_length=200)
+    version_id: Optional[str] = Field(default=None, min_length=1, max_length=100)
 
 
 class RewriteRequest(BaseModel):
     target_role: str
     country: str = "US"
     jd_context: Optional[str] = None
+    version_id: Optional[str] = Field(default=None, min_length=1, max_length=100)
+    findings: list[BulletFlag] = Field(default_factory=list, max_length=20)
 
 
 class VersionRequest(BaseModel):
@@ -106,7 +109,8 @@ async def evaluate(
     current_user_id: str = Depends(get_current_user_id),
 ):
     try:
-        return await service.evaluate(resume_document_id, body.target_role, current_user_id)
+        return await service.evaluate(resume_document_id, body.target_role, current_user_id,
+                                      version_id=body.version_id)
     except ApplicationError as exc:
         raise to_http_exception(exc) from exc
 
@@ -127,6 +131,8 @@ async def rewrite(
             country=body.country,
             jd_context=body.jd_context,
             user_id=current_user_id,
+            version_id=body.version_id,
+            findings=body.findings,
         )
     except ApplicationError as exc:
         raise to_http_exception(exc) from exc

@@ -4,20 +4,23 @@ import type { components } from '@/generated/api/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
-export async function getAuthHeaders(): Promise<Record<string, string>> {
+export async function getAuthHeaders(expectedUserId?: string): Promise<Record<string, string>> {
     const headers: Record<string, string> = {};
 
     try {
         const supabase = createClient();
         const { data: { session } } = await supabase.auth.getSession();
 
-        if (session?.access_token) {
+        if (session?.access_token && (expectedUserId === undefined || session.user.id === expectedUserId)) {
             headers['Authorization'] = `Bearer ${session.access_token}`;
         }
     } catch (error) {
         console.warn('Failed to get Supabase session:', error);
     }
 
+    if (expectedUserId !== undefined && !headers.Authorization) {
+        throw new APIError('Your sign-in changed. Choose the file again to upload.', 401);
+    }
     return headers;
 }
 
@@ -25,12 +28,12 @@ function isFormDataBody(body: BodyInit | null | undefined): body is FormData {
     return typeof FormData !== 'undefined' && body instanceof FormData;
 }
 
-async function buildRequestHeaders(options: RequestInit): Promise<Headers> {
+async function buildRequestHeaders(options: RequestInit, expectedUserId?: string): Promise<Headers> {
     const headers = new Headers(options.headers);
 
     // Authorization is owned by the current Supabase session, not individual callers.
     headers.delete('Authorization');
-    const authHeaders = await getAuthHeaders();
+    const authHeaders = await getAuthHeaders(expectedUserId);
     if (authHeaders.Authorization) {
         headers.set('Authorization', authHeaders.Authorization);
     }
@@ -137,11 +140,11 @@ async function parseJsonResponse<T>(response: Response): Promise<T> {
 
 export async function makeAPIRequest<T>(
     url: string,
-    options: RequestInit = {},
+    { expectedUserId, ...options }: RequestInit & { expectedUserId?: string } = {},
     parseResponse: ResponseParser<T> = parseJsonResponse,
 ): Promise<T> {
     try {
-        const headers = await buildRequestHeaders(options);
+        const headers = await buildRequestHeaders(options, expectedUserId);
         const response = await fetch(`${API_BASE_URL}${url}`, {
             ...options,
             headers,

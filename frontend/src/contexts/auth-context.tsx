@@ -1,14 +1,16 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState, ReactNode } from 'react'
 import { User, Session } from '@supabase/supabase-js'
 import { createClient, signInWithGoogle, signOut, getCurrentUser, getSession, clearAllAuthData } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import { clearResumeCache } from '@/lib/resume-cache'
 
 interface AuthContextType {
   user: User | null
   session: Session | null
   loading: boolean
+  isCurrentUser: (userId: string) => boolean
   signIn: () => Promise<void>
   signOutUser: () => Promise<void>
   refreshUser: () => Promise<void>
@@ -22,8 +24,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
+  const activeUserId = useRef<string | null>(null)
+  const updateUser = useCallback((nextUser: User | null) => {
+    // Async work can finish after an auth event and before React commits the new view.
+    activeUserId.current = nextUser?.id ?? null
+    setUser(nextUser)
+  }, [])
 
   useEffect(() => {
+    clearResumeCache(true)
     let mounted = true
     let retryCount = 0
     const maxRetries = 3 // Reduced retries to prevent infinite loops
@@ -47,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (session) {
           setSession(session)
-          setUser(session.user)
+          updateUser(session.user)
           setLoading(false)
           return
         }
@@ -66,7 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // No session found after retries
         setSession(null)
-        setUser(null)
+        updateUser(null)
         setLoading(false)
       } catch (error: any) {
         if (!mounted) return
@@ -78,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (isRefreshTokenError) {
           setSession(null)
-          setUser(null)
+          updateUser(null)
           setLoading(false)
           return
         }
@@ -93,7 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // Clear any invalid session state after all retries
         setSession(null)
-        setUser(null)
+        updateUser(null)
         setLoading(false)
       }
     }
@@ -112,7 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.warn('🚨 AuthContext: Too many auth events, possible infinite loop detected. Clearing session.')
           await clearAllAuthData()
           setSession(null)
-          setUser(null)
+          updateUser(null)
           setLoading(false)
           return
         }
@@ -121,24 +130,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (event === 'SIGNED_IN' && session) {
           setSession(session)
-          setUser(session.user)
+          updateUser(session.user)
           setLoading(false)
         } else if (event === 'SIGNED_OUT') {
+          clearResumeCache()
           setSession(null)
-          setUser(null)
+          updateUser(null)
           setLoading(false)
         } else if (event === 'TOKEN_REFRESHED' && session) {
           setSession(session)
-          setUser(session.user)
+          updateUser(session.user)
           setLoading(false)
         } else if (event === 'INITIAL_SESSION') {
           // Handle initial session event
           if (session) {
             setSession(session)
-            setUser(session.user)
+            updateUser(session.user)
           } else {
             setSession(null)
-            setUser(null)
+            updateUser(null)
           }
           setLoading(false)
         }
@@ -156,7 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       mounted = false
       subscription.unsubscribe()
     }
-  }, [])
+  }, [updateUser])
 
   const signIn = async () => {
     try {
@@ -174,7 +184,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true)
       // Clear user state immediately to prevent showing protected content
-      setUser(null)
+      updateUser(null)
       setSession(null)
       // Clear any stored session data
       await clearSession()
@@ -196,10 +206,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true)
       const user = await getCurrentUser()
-      setUser(user)
+      updateUser(user)
     } catch (error) {
       console.error('Error refreshing user:', error)
-      setUser(null)
+      updateUser(null)
       setSession(null)
     } finally {
       setLoading(false)
@@ -207,6 +217,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const clearSession = async () => {
+    clearResumeCache()
     await clearAllAuthData()
   }
 
@@ -214,6 +225,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user,
     session,
     loading,
+    isCurrentUser: (userId: string) => activeUserId.current === userId,
     signIn,
     signOutUser,
     refreshUser,

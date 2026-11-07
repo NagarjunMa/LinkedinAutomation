@@ -1,6 +1,7 @@
 // frontend/tests/e2e/jd-tailor.spec.ts
 import { test, expect } from '@playwright/test';
 import path from 'path';
+import { seedResumeSession } from './resume-session';
 
 const UPLOAD_RESPONSE = {
   resume_document_id: 'doc-2',
@@ -51,18 +52,22 @@ const ANALYZE_RESPONSE = {
   },
 };
 
-const VERSION_RESPONSE = { version_id: 'ver-2' };
+const APPLY_RESPONSE = {
+  version_id: 'ver-2',
+  company_name: null,
+  preview_html: '<html><body><p>Built Python services.</p></body></html>',
+  suggested_template: 'us-swe',
+  filename_hint: 'tailored-resume.pdf',
+};
 
 test('JD tailor flow', async ({ page, context }) => {
-  await context.addCookies([{
-    name: 'test-bypass-auth', value: '1', url: 'http://localhost:3000',
-  }]);
+  await seedResumeSession(context);
   await page.route('**/api/v1/resumes/upload', (r) =>
     r.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify(UPLOAD_RESPONSE) }));
   await page.route('**/api/v1/jd/analyze', (r) =>
     r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(ANALYZE_RESPONSE) }));
-  await page.route('**/api/v1/resumes/doc-2/versions', (r) =>
-    r.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify(VERSION_RESPONSE) }));
+  await page.route('**/api/v1/jd/jd-1/apply', (r) =>
+    r.fulfill({ json: APPLY_RESPONSE }));
   await page.route('**/api/v1/credits/balance', (r) =>
     r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ balance: 10 }) }));
 
@@ -76,12 +81,9 @@ test('JD tailor flow', async ({ page, context }) => {
   await page.locator('#jd').fill(jdText);
   await page.getByRole('button', { name: /Analyze \(2 credits\)/ }).click();
 
-  await expect(page.getByTestId('match-score')).toHaveText('75');
   await expect(page.getByTestId('change-bullet-b1')).toBeVisible();
+  await page.getByLabel('Generated pointer text').fill('Built Python services.');
 
-  const versionResponse = page.waitForResponse((r) =>
-    r.url().includes('/api/v1/resumes/doc-2/versions') && r.status() === 201
-  );
-  await page.getByTestId('apply-changes').click();
-  await versionResponse;
+  await page.getByTestId('tailor-apply').click();
+  await expect(page.getByRole('button', { name: 'Download PDF' })).toBeVisible();
 });

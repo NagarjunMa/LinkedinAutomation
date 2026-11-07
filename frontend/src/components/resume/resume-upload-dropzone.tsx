@@ -1,11 +1,12 @@
 // frontend/src/components/resume/resume-upload-dropzone.tsx
 "use client";
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { Upload, FileText, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useUploadResume } from '@/hooks/use-resume';
 import type { UploadResponse } from '@/app/lib/api';
 import { useToast } from '@/components/ui/use-toast';
+import { useAuth } from '@/contexts/auth-context';
 
 const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
 const ALLOWED = ['.pdf', '.docx'];
@@ -16,10 +17,17 @@ export interface ResumeUploadDropzoneProps {
 
 export function ResumeUploadDropzone({ onUploaded }: ResumeUploadDropzoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const mounted = useRef(false);
   const [dragging, setDragging] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const upload = useUploadResume();
   const { toast } = useToast();
+  const { user, isCurrentUser } = useAuth();
+
+  useLayoutEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
 
   const validate = (f: File): string | null => {
     const ext = '.' + f.name.split('.').pop()?.toLowerCase();
@@ -38,15 +46,17 @@ export function ResumeUploadDropzone({ onUploaded }: ResumeUploadDropzoneProps) 
   }, [toast]);
 
   const onSubmit = async () => {
-    if (!file) return;
+    if (!file || !user?.id || !isCurrentUser(user.id)) return;
     try {
-      const res = await upload.mutateAsync(file);
+      const res = await upload.mutateAsync({ file, userId: user.id });
+      if (!mounted.current || !isCurrentUser(user.id)) return;
       toast({
         title: 'Uploaded',
-        description: `${file.name} parsed. Redirecting to editor…`,
+        description: 'Résumé parsed successfully.',
       });
       onUploaded(res);
     } catch (e: any) {
+      if (!mounted.current || !isCurrentUser(user.id)) return;
       toast({
         title: 'Upload failed',
         description: e?.message ?? 'Try again',
@@ -92,7 +102,7 @@ export function ResumeUploadDropzone({ onUploaded }: ResumeUploadDropzoneProps) 
           <button onClick={() => setFile(null)} aria-label="Remove file">
             <X className="w-4 h-4 opacity-60" />
           </button>
-          <Button onClick={onSubmit} disabled={upload.isPending}>
+          <Button onClick={onSubmit} disabled={!user?.id || upload.isPending}>
             {upload.isPending ? 'Uploading…' : 'Upload'}
           </Button>
         </div>
