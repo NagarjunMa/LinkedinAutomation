@@ -1060,6 +1060,8 @@ export interface components {
         EvalRequest: {
             /** Target Role */
             target_role: string;
+            /** Version Id */
+            version_id?: string | null;
         };
         /** ExperienceEntry */
         ExperienceEntry: {
@@ -1715,10 +1717,14 @@ export interface components {
              * @default US
              */
             country?: string;
+            /** Findings */
+            findings?: components["schemas"]["BulletFlag"][];
             /** Jd Context */
             jd_context?: string | null;
             /** Target Role */
             target_role: string;
+            /** Version Id */
+            version_id?: string | null;
         };
         /** RewriteResult */
         RewriteResult: {

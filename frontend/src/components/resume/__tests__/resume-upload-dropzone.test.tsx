@@ -9,14 +9,15 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 
-const { mutateAsync, toast, mutation } = vi.hoisted(() => ({
+const { mutateAsync, toast, mutation, auth } = vi.hoisted(() => ({
   mutateAsync: vi.fn(),
   toast: vi.fn(),
   mutation: { isPending: false },
+  auth: { activeId: 'owner-a' },
 }));
 
 // The component boundary is mocked; hook/API tests exercise the actual request.
@@ -31,6 +32,10 @@ vi.mock('@/hooks/use-resume', () => ({
 vi.mock('@/components/ui/use-toast', () => ({
   useToast: () => ({ toast }),
 }));
+vi.mock('@/contexts/auth-context', () => ({ useAuth: () => ({
+  user: { id: 'owner-a' },
+  isCurrentUser: (id: string) => auth.activeId === id,
+}) }));
 
 import { ResumeUploadDropzone } from '@/components/resume/resume-upload-dropzone';
 
@@ -60,6 +65,7 @@ describe('ResumeUploadDropzone', () => {
     vi.clearAllMocks();
     mutateAsync.mockReset().mockResolvedValue({ resume_document_id: 'doc-001' });
     mutation.isPending = false;
+    auth.activeId = 'owner-a';
   });
 
   it('renders upload affordance with PDF / DOCX copy', () => {
@@ -87,8 +93,38 @@ describe('ResumeUploadDropzone', () => {
 
     // mutateAsync resolves, then onUploaded should have been called
     await waitFor(() => expect(handler).toHaveBeenCalledWith({ resume_document_id: 'doc-001' }));
-    expect(mutateAsync).toHaveBeenCalledExactlyOnceWith(file);
+    expect(mutateAsync).toHaveBeenCalledExactlyOnceWith({ file, userId: 'owner-a' });
     expect(toast).toHaveBeenCalledWith(expect.objectContaining({ title: 'Uploaded' }));
+  });
+
+  it('ignores an upload response after the account view has unmounted', async () => {
+    let finishUpload!: (response: { resume_document_id: string }) => void;
+    mutateAsync.mockReturnValue(new Promise(resolve => { finishUpload = resolve; }));
+    const onUploaded = vi.fn();
+    const view = renderDropzone({ onUploaded });
+    const file = new File(['synthetic'], 'private-resume.pdf', { type: 'application/pdf' });
+    fireEvent.change(view.container.querySelector('input[type="file"]')!, { target: { files: [file] } });
+    fireEvent.click(screen.getByRole('button', { name: 'Upload' }));
+    view.unmount();
+
+    await act(async () => finishUpload({ resume_document_id: 'doc-001' }));
+    expect(onUploaded).not.toHaveBeenCalled();
+    expect(toast).not.toHaveBeenCalled();
+  });
+
+  it('ignores a response when auth changes before the old view unmounts', async () => {
+    let finishUpload!: (response: { resume_document_id: string }) => void;
+    mutateAsync.mockReturnValue(new Promise(resolve => { finishUpload = resolve; }));
+    const onUploaded = vi.fn();
+    const view = renderDropzone({ onUploaded });
+    const file = new File(['synthetic'], 'private-resume.pdf', { type: 'application/pdf' });
+    fireEvent.change(view.container.querySelector('input[type="file"]')!, { target: { files: [file] } });
+    fireEvent.click(screen.getByRole('button', { name: 'Upload' }));
+    auth.activeId = 'owner-b';
+
+    await act(async () => finishUpload({ resume_document_id: 'doc-001' }));
+    expect(onUploaded).not.toHaveBeenCalled();
+    expect(toast).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -164,6 +200,6 @@ describe('ResumeUploadDropzone', () => {
     expect(screen.getByText('resume.pdf')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Upload' }));
     await waitFor(() => expect(onUploaded).toHaveBeenCalledWith({ resume_document_id: 'doc-001' }));
-    expect(mutateAsync).toHaveBeenNthCalledWith(2, file);
+    expect(mutateAsync).toHaveBeenNthCalledWith(2, { file, userId: 'owner-a' });
   });
 });

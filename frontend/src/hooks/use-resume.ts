@@ -7,20 +7,22 @@ import type {
   RewriteResult,
   VersionRequest,
   VersionResponse,
+  BulletFlag,
 } from '@/app/lib/api';
 
 export function useUploadResume() {
   const qc = useQueryClient();
-  return useMutation<UploadResponse, Error, File>({
-    mutationFn: (file) => resumeV2Api.upload(file),
+  return useMutation<UploadResponse, Error, { file: File; userId: string }>({
+    // A paused mutation must retain its initiating user when it resumes.
+    mutationFn: ({ file, userId }) => resumeV2Api.upload(file, userId),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['resumes'] }),
   });
 }
 
 export function useEvaluateResume() {
   const qc = useQueryClient();
-  return useMutation<EvaluationResponse, Error, { resumeId: string; targetRole: string }>({
-    mutationFn: ({ resumeId, targetRole }) => resumeV2Api.evaluate(resumeId, targetRole),
+  return useMutation<EvaluationResponse, Error, { resumeId: string; targetRole: string; versionId?: string }>({
+    mutationFn: ({ resumeId, targetRole, versionId }) => resumeV2Api.evaluate(resumeId, targetRole, versionId),
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ['evaluation', vars.resumeId] });
       qc.invalidateQueries({ queryKey: ['credits-balance'] });
@@ -32,13 +34,15 @@ export function useRewriteBullet() {
   return useMutation<
     RewriteResult,
     Error,
-    { resumeId: string; bulletId: string; targetRole: string; country: string; jdContext?: string }
+    { resumeId: string; bulletId: string; targetRole: string; country: string; jdContext?: string; versionId?: string; findings?: BulletFlag[] }
   >({
-    mutationFn: ({ resumeId, bulletId, targetRole, country, jdContext }) =>
+    mutationFn: ({ resumeId, bulletId, targetRole, country, jdContext, versionId, findings }) =>
       resumeV2Api.rewriteBullet(resumeId, bulletId, {
         target_role: targetRole,
         country,
         jd_context: jdContext,
+        version_id: versionId,
+        findings,
       }),
   });
 }

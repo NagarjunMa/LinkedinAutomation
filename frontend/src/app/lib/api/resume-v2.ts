@@ -15,19 +15,20 @@ import type {
 } from './resume-contracts';
 
 export const resumeV2Api = {
-  upload: async (file: File): Promise<UploadResponse> => {
+  upload: async (file: File, userId: string): Promise<UploadResponse> => {
     const form = new FormData();
     form.append('file', file);
     return makeAPIRequest<UploadResponse>('/api/v1/resumes/upload', {
       method: 'POST',
       body: form,
+      expectedUserId: userId,
     }, resumeResponseParser.upload);
   },
 
-  evaluate: (resumeId: string, targetRole: string): Promise<EvaluationResponse> =>
+  evaluate: (resumeId: string, targetRole: string, versionId?: string): Promise<EvaluationResponse> =>
     makeAPIRequest(`/api/v1/resumes/${resumeId}/evaluate`, {
       method: 'POST',
-      body: JSON.stringify({ target_role: targetRole } satisfies EvaluationRequest),
+      body: JSON.stringify({ target_role: targetRole, version_id: versionId } satisfies EvaluationRequest),
     }, resumeResponseParser.evaluate),
 
   rewriteBullet: (

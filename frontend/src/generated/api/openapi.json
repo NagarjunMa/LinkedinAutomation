@@ -1013,6 +1013,19 @@
             "minLength": 2,
             "title": "Target Role",
             "type": "string"
+          },
+          "version_id": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version Id"
           }
         },
         "required": [
@@ -3112,6 +3125,14 @@
             "title": "Country",
             "type": "string"
           },
+          "findings": {
+            "items": {
+              "$ref": "#/components/schemas/BulletFlag"
+            },
+            "maxItems": 20,
+            "title": "Findings",
+            "type": "array"
+          },
           "jd_context": {
             "anyOf": [
               {
@@ -3126,6 +3147,19 @@
           "target_role": {
             "title": "Target Role",
             "type": "string"
+          },
+          "version_id": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version Id"
           }
         },
         "required": [

@@ -6,6 +6,7 @@ import respx
 import httpx
 import json
 from app.services.resume.rewriter import rewrite_bullet
+from app.schemas.resume_v2 import BulletFlag
 
 OPENAI_URL = "https://api.openai.com/v1/chat/completions"
 
@@ -24,15 +25,20 @@ async def test_rewriter_returns_result_with_placeholders():
             })}}],
         "usage": {"prompt_tokens": 100, "completion_tokens": 50, "total_tokens": 150},
     }
-    respx.route(url=OPENAI_URL).mock(
+    provider = respx.route(url=OPENAI_URL).mock(
         return_value=httpx.Response(200, json=mock_payload))
     result = await rewrite_bullet(
         original="Built a data pipeline",
         target_role="Senior SWE",
         jd_context=None,
+        findings=[BulletFlag(bullet_id="b1", severity="warning", category="clarity",
+                            reason="Explain which component you implemented.")],
     )
     assert "[N events/day]" in result.rewritten
     assert len(result.placeholders) == 2
+    sent = json.loads(provider.calls.last.request.content)
+    assert "Explain which component you implemented." in sent["messages"][1]["content"]
+    assert "untrusted" in sent["messages"][0]["content"]
 
 
 @pytest.mark.asyncio

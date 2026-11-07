@@ -64,7 +64,7 @@ def case(name):
     if name == "rewriter":
         return (rewriter.rewrite_bullet, {"original": original, "target_role": "SWE"},
                 rewriter.REWRITER_SYSTEM, rewriter.REWRITER_USER,
-                rewriter.REWRITER_USER.format(original=original, target_role="SWE", country="US", jd_context=""),
+                rewriter.REWRITER_USER.format(original=original, target_role="SWE", country="US", jd_context="", findings="[]"),
                 {"type": "json_object"}, response(content={"rewritten": original, "placeholders": [], "applied_changes": []}))
     if name == "extractor":
         template = "Job description:\n\n{jd_text}\n\nExtract requirements."
@@ -89,7 +89,7 @@ async def test_call_configuration_and_prompt_compatibility(name, custom, caplog)
     client, call = fake_provider(result)
     manifest = DEFAULT_MANIFESTS[name]
     assert manifest.prompt_name == name
-    assert manifest.prompt_version == "1"
+    assert manifest.prompt_version == ("2" if name == "rewriter" else "1")
     assert manifest.provider == "openai"
     assert manifest.schema_version == {
         "evaluator": "EvaluationReport.v1", "rewriter": "RewriteResult.v1",

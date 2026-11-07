@@ -1,9 +1,15 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 import { server, http, HttpResponse } from '@/test-utils/msw-server';
 import { useUploadResume, useEvaluateResume } from '@/hooks/use-resume';
+
+vi.mock('@/lib/supabase', () => ({
+  createClient: () => ({ auth: { getSession: async () => ({
+    data: { session: { user: { id: 'owner-a' }, access_token: 'synthetic-token' } },
+  }) } }),
+}));
 
 function wrapper({ children }: { children: React.ReactNode }) {
   const qc = new QueryClient({
@@ -29,7 +35,7 @@ describe('useUploadResume', () => {
     const file = new File(['resume content'], 'resume.pdf', { type: 'application/pdf' });
 
     await act(async () => {
-      await result.current.mutateAsync(file);
+      await result.current.mutateAsync({ file, userId: 'owner-a' });
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -49,7 +55,7 @@ describe('useUploadResume', () => {
 
     await act(async () => {
       try {
-        await result.current.mutateAsync(file);
+        await result.current.mutateAsync({ file, userId: 'owner-a' });
       } catch {
         /* expected */
       }

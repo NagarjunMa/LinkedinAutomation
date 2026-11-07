@@ -1,6 +1,6 @@
 // frontend/src/app/dashboard/resume/[id]/edit/page.tsx
 "use client";
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -12,12 +12,19 @@ import { RewriteModal } from '@/components/resume/rewrite-modal';
 import { AtsTab } from '@/components/resume/ats-tab';
 import { useEvaluateResume, useCreateVersion } from '@/hooks/use-resume';
 import { useToast } from '@/components/ui/use-toast';
+import { useAuth } from '@/contexts/auth-context';
+import { resumeDocKey, resumeEditorKey } from '@/lib/resume-cache';
 import type {
   ResumeDocumentJSON, EvaluationResponse, Bullet, ChangeItem,
 } from '@/app/lib/api';
 
 export default function ResumeEditPage() {
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
+  return user?.id ? <ResumeEditor key={resumeDocKey(user.id, id)} id={id} userId={user.id} /> : null;
+}
+
+function ResumeEditor({ id, userId }: { id: string; userId: string }) {
   const router = useRouter();
   const { toast } = useToast();
   const [doc, setDoc] = useState<ResumeDocumentJSON | null>(null);
@@ -26,24 +33,72 @@ export default function ResumeEditPage() {
   const [country, setCountry] = useState('US');
   const [activeBullet, setActiveBullet] = useState<Bullet | null>(null);
   const [pendingChanges, setPendingChanges] = useState<ChangeItem[]>([]);
+  const [versionId, setVersionId] = useState<string>();
+  const [working, setWorking] = useState(false);
+  const operationInFlight = useRef(false);
+  const mounted = useRef(false);
+  const activeFindings = useMemo(() => evaluation?.bullet_flags.filter(
+    (flag) => flag.bullet_id === activeBullet?.id,
+  ) ?? [], [evaluation, activeBullet?.id]);
 
   const evaluate = useEvaluateResume();
   const createVersion = useCreateVersion();
+  const docKey = resumeDocKey(userId, id);
+  const editorKey = resumeEditorKey(userId, id);
+
+  useLayoutEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
 
   // On mount, fetch the doc from the upload response cached in sessionStorage,
   // or refuse to render (the user must go through /dashboard/resume to upload).
   useEffect(() => {
-    const raw = sessionStorage.getItem(`resumeDoc:${id}`);
+    const cached = sessionStorage.getItem(editorKey);
+    if (cached) {
+      try {
+        const editor = JSON.parse(cached);
+        setVersionId(editor.versionId);
+        setPendingChanges(editor.pendingChanges);
+      } catch {
+        sessionStorage.removeItem(editorKey);
+      }
+    }
+    const raw = sessionStorage.getItem(docKey);
     if (raw) setDoc(JSON.parse(raw));
-  }, [id]);
+  }, [docKey, editorKey]);
+
+  useEffect(() => {
+    if (doc) {
+      sessionStorage.setItem(docKey, JSON.stringify(doc));
+      sessionStorage.setItem(editorKey, JSON.stringify({ versionId, pendingChanges }));
+    }
+  }, [docKey, editorKey, doc, versionId, pendingChanges]);
+
+  const savePendingChanges = async () => {
+    if (pendingChanges.length === 0) return versionId;
+    const result = await createVersion.mutateAsync({
+      resumeId: id,
+      body: { ...(versionId ? { parent_version_id: versionId } : {}), change_set: pendingChanges },
+    });
+    setVersionId(result.version_id);
+    setPendingChanges([]);
+    return result.version_id;
+  };
 
   const runEvaluate = async () => {
+    if (operationInFlight.current || activeBullet) return;
     if (!targetRole || targetRole.length < 2) {
       toast({ title: 'Set a target role first', variant: 'destructive' });
       return;
     }
+    operationInFlight.current = true;
+    setWorking(true);
     try {
-      const res = await evaluate.mutateAsync({ resumeId: id, targetRole });
+      const currentVersion = await savePendingChanges();
+      if (!mounted.current) return;
+      const res = await evaluate.mutateAsync({ resumeId: id, targetRole,
+        ...(currentVersion ? { versionId: currentVersion } : {}) });
       setEvaluation(res);
     } catch (e: any) {
       if (e?.status === 402) {
@@ -55,6 +110,9 @@ export default function ResumeEditPage() {
       } else {
         toast({ title: 'Evaluation failed', description: e?.message, variant: 'destructive' });
       }
+    } finally {
+      operationInFlight.current = false;
+      setWorking(false);
     }
   };
 
@@ -65,9 +123,20 @@ export default function ResumeEditPage() {
     return null;
   };
 
-  const onBulletClick = (bulletId: string) => {
-    const b = findBullet(bulletId);
-    if (b) setActiveBullet(b);
+  const onBulletClick = async (bulletId: string) => {
+    if (operationInFlight.current || activeBullet) return;
+    operationInFlight.current = true;
+    setWorking(true);
+    try {
+      await savePendingChanges();
+      const b = findBullet(bulletId);
+      if (b) setActiveBullet(b);
+    } catch (error: any) {
+      toast({ title: 'Save failed', description: error?.message, variant: 'destructive' });
+    } finally {
+      operationInFlight.current = false;
+      setWorking(false);
+    }
   };
 
   const onAcceptRewrite = (bulletId: string, newText: string) => {
@@ -88,16 +157,17 @@ export default function ResumeEditPage() {
   };
 
   const onSaveVersion = async () => {
-    if (pendingChanges.length === 0) return;
+    if (operationInFlight.current || activeBullet || pendingChanges.length === 0) return;
+    operationInFlight.current = true;
+    setWorking(true);
     try {
-      const res = await createVersion.mutateAsync({
-        resumeId: id,
-        body: { change_set: pendingChanges },
-      });
-      toast({ title: 'Version saved', description: `Version ${res.version_id.slice(0, 8)}` });
-      setPendingChanges([]);
+      await savePendingChanges();
+      toast({ title: 'Version saved' });
     } catch (e: any) {
       toast({ title: 'Save failed', description: e?.message, variant: 'destructive' });
+    } finally {
+      operationInFlight.current = false;
+      setWorking(false);
     }
   };
 
@@ -116,7 +186,7 @@ export default function ResumeEditPage() {
         <CardContent className="pt-6 flex flex-wrap items-end gap-4">
           <div className="flex-1 min-w-40">
             <Label htmlFor="role">Target role</Label>
-            <Input id="role" value={targetRole} onChange={(e) => setTargetRole(e.target.value)} />
+            <Input id="role" value={targetRole} disabled={working || !!activeBullet} onChange={(e) => setTargetRole(e.target.value)} />
           </div>
           <div>
             <Label htmlFor="country">Country</Label>
@@ -124,19 +194,20 @@ export default function ResumeEditPage() {
               id="country"
               className="border rounded px-2 py-1 block"
               value={country}
+              disabled={working || !!activeBullet}
               onChange={(e) => setCountry(e.target.value)}
             >
               <option value="US">US</option>
               <option value="IN">IN</option>
             </select>
           </div>
-          <Button onClick={runEvaluate} disabled={evaluate.isPending}>
+          <Button onClick={runEvaluate} disabled={working || !!activeBullet}>
             {evaluate.isPending ? 'Evaluating…' : evaluation ? 'Re-evaluate' : 'Evaluate (1 credit)'}
           </Button>
           <Button
             variant="outline"
             onClick={onSaveVersion}
-            disabled={pendingChanges.length === 0 || createVersion.isPending}
+            disabled={pendingChanges.length === 0 || working || !!activeBullet}
           >
             Save version ({pendingChanges.length})
           </Button>
@@ -153,6 +224,7 @@ export default function ResumeEditPage() {
             <section aria-label="Content findings" className="text-sm mb-6 space-y-3">
               <h2 className="font-semibold">Content findings</h2>
               <p>Model-assisted feedback, not a hiring assessment. Verify suggestions against your actual experience; document checks are separate.</p>
+              <p>Findings describe the last evaluation. Re-evaluate after editing. Document checks describe the uploaded file.</p>
               {evaluation.summary_critique && (
                 <p>{evaluation.summary_critique}</p>
               )}
@@ -198,6 +270,8 @@ export default function ResumeEditPage() {
         bullet={activeBullet}
         targetRole={targetRole}
         country={country}
+        versionId={versionId}
+        findings={activeFindings}
         onAccept={onAcceptRewrite}
       />
     </div>

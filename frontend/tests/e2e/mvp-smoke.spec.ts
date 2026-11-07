@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import path from 'path';
+import { seedResumeSession } from './resume-session';
 import type { components } from '../../src/generated/api/types';
 
 const API = 'http://localhost:8000';
@@ -240,7 +241,7 @@ test('shared layout reserves sidebar space only on desktop, including collapse a
 });
 
 test('tailor MVP flow uploads, edits pointer, applies, and exposes download contract', async ({ page, context }) => {
-  await context.addCookies([{ name: 'test-bypass-auth', value: '1', url: APP }]);
+  await seedResumeSession(context);
 
   await page.route(`${API}/api/v1/credits/balance`, (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ balance: 90 }) }));
@@ -294,26 +295,37 @@ test('tailor MVP flow uploads, edits pointer, applies, and exposes download cont
 for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }]) {
   test(`resume findings and document checks preserve evaluate/rewrite/save at ${viewport.width}px`, async ({ page, context }) => {
     await page.setViewportSize(viewport);
-    await context.addCookies([{ name: 'test-bypass-auth', value: '1', url: APP }]);
+    await seedResumeSession(context);
     await page.route(`${API}/api/v1/credits/balance`, route => route.fulfill({ json: { balance: 90 } }));
     await page.route(`${API}/api/v1/resumes/upload`, route => route.fulfill({ status: 201, json: UPLOAD_RESPONSE }));
-    await page.route(`${API}/api/v1/resumes/doc-2/evaluate`, route => route.fulfill({ json: {
+    const evaluated: Array<{ version_id?: string }> = [];
+    await page.route(`${API}/api/v1/resumes/doc-2/evaluate`, route => {
+      evaluated.push(route.request().postDataJSON());
+      return route.fulfill({ json: {
       evaluation_id: 'eval-1', overall_score: 62, readiness_label: 'needs_work',
       score_breakdown: { content_quality: 60, role_fit: 65, evidence_strength: 60, recruiter_readability: 70 },
       score_explanation: [{ category: 'evidence_strength', score: 60, reason: 'Clarify your personal contribution.',
         evidence: [], before_applying_action: 'Describe the component you built.' }],
       top_actions_before_applying: ['Review ownership claims.'], parser_confidence: 'high',
-      bullet_flags: [{ bullet_id: 'b1', severity: 'warning', reason: 'Clarify ownership', category: 'clarity' }],
+      bullet_flags: [
+        { bullet_id: 'b1', severity: 'warning', reason: 'Clarify ownership', category: 'clarity' },
+        { bullet_id: 'b1', severity: 'warning', reason: 'Describe scope', category: 'structure' },
+      ],
       format_issues: [], summary_critique: 'Check suggestions against your actual work.',
       ats_parseability: 88, ats_raw_text: '<script>synthetic-source</script>',
-    } satisfies components['schemas']['ResumeEvaluationResponse'] }));
-    await page.route(`${API}/api/v1/resumes/doc-2/rewrite/b1`, route => route.fulfill({ json: {
-      rewritten: 'Built backend services.', placeholders: [], applied_changes: ['Clarified contribution'],
-    } }));
-    let saved: unknown;
+    } satisfies components['schemas']['ResumeEvaluationResponse'] }); });
+    const rewritten: Array<{ version_id?: string; findings: unknown[] }> = [];
+    await page.route(`${API}/api/v1/resumes/doc-2/rewrite/b1`, route => {
+      rewritten.push(route.request().postDataJSON());
+      return route.fulfill({ json: {
+        rewritten: 'Built backend services for [N users].',
+        placeholders: [{ token: '[N users]', what: 'user count' }], applied_changes: ['Clarified contribution'],
+      } });
+    });
+    const saved: Array<{ parent_version_id?: string; change_set: unknown[] }> = [];
     await page.route(`${API}/api/v1/resumes/doc-2/versions`, async route => {
-      saved = route.request().postDataJSON();
-      await route.fulfill({ status: 201, json: { version_id: 'version-1' } });
+      saved.push(route.request().postDataJSON());
+      await route.fulfill({ status: 201, json: { version_id: `version-${saved.length}` } });
     });
     await page.goto('/dashboard/resume');
     await page.locator('input[type=file]').setInputFiles(path.resolve('tests/fixtures/sample-resume.pdf'));
@@ -335,12 +347,30 @@ for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await test.info().attach(`document-checks-${viewport.width}`, { body: await page.screenshot({ fullPage: true }), contentType: 'image/png' });
     await page.getByRole('tab', { name: 'Resume', exact: true }).click();
-    await page.getByTestId('bullet-b1').click();
-    await expect(page.getByText('Built backend services.', { exact: true })).toBeVisible();
+    await page.getByTestId('bullet-b1').getByRole('button').focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('heading', { name: 'Why this bullet was flagged' })).toBeVisible();
+    await expect(page.getByRole('dialog').getByText('Clarify ownership', { exact: true })).toBeVisible();
+    await expect(page.getByRole('dialog').getByText('Describe scope', { exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Accept', exact: true })).toBeDisabled();
+    await page.getByRole('textbox', { name: 'user count' }).fill('3 users');
     await page.getByRole('button', { name: 'Accept', exact: true }).click();
     await page.getByRole('button', { name: 'Save version (1)' }).click();
     await expect(page.getByRole('button', { name: 'Save version (0)' })).toBeVisible();
-    expect(saved).toEqual({ change_set: [{ type: 'bullet_update', bullet_id: 'b1', new_text: 'Built backend services.' }] });
+    expect(saved[0]).toEqual({ change_set: [{ type: 'bullet_update', bullet_id: 'b1', new_text: 'Built backend services for 3 users.' }] });
+    expect(rewritten[0].findings).toHaveLength(2);
+    await page.getByTestId('bullet-b1').getByRole('button').click();
+    await expect(page.getByRole('dialog').getByText('Built backend services for 3 users.', { exact: true })).toBeVisible();
+    await page.getByRole('textbox', { name: 'user count' }).fill('4 users');
+    await page.getByRole('button', { name: 'Accept', exact: true }).click();
+    await page.getByRole('button', { name: 'Re-evaluate' }).click();
+    await expect(page.getByText('Clarify your personal contribution.')).toBeVisible();
+    await expect.poll(() => evaluated.length).toBe(2);
+    expect(saved[1].parent_version_id).toBe('version-1');
+    expect(rewritten[1].version_id).toBe('version-1');
+    expect(evaluated[1].version_id).toBe('version-2');
+    await page.reload();
+    await expect(page.getByTestId('bullet-b1')).toContainText('Built backend services for 4 users.');
   });
 }
 
@@ -356,7 +386,7 @@ test('docs explain document limits and evidence-backed terminology on mobile', a
 });
 
 test('failed re-analysis clears old suggestions and preview until a manual retry succeeds', async ({ page, context }) => {
-  await context.addCookies([{ name: 'test-bypass-auth', value: '1', url: APP }]);
+  await seedResumeSession(context);
   await page.route(`${API}/api/v1/credits/balance`, route =>
     route.fulfill({ json: { balance: 90 } }));
   await page.route(`${API}/api/v1/resumes/upload`, route =>

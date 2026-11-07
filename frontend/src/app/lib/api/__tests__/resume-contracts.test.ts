@@ -4,6 +4,12 @@ import { resumeV2Api } from '../resume-v2';
 import type { ChangeItem, VersionRequest, ApplyTailorRequest } from '../types-v2';
 import { server, http, HttpResponse } from '@/test-utils/msw-server';
 
+vi.mock('@/lib/supabase', () => ({
+  createClient: () => ({ auth: { getSession: async () => ({
+    data: { session: { user: { id: 'owner-a' }, access_token: 'synthetic-token' } },
+  }) } }),
+}));
+
 const API = 'http://localhost:8000/api/v1/resumes';
 const upload = {
   resume_document_id: 'doc-1', contact: { name: 'Synthetic candidate' }, raw_text: 'Synthetic',
@@ -25,7 +31,7 @@ const rewrite = { rewritten: 'Built services', placeholders: [], applied_changes
 const version = { version_id: 'version-1' };
 const file = () => new File(['synthetic'], 'r.pdf', { type: 'application/pdf' });
 const cases = [
-  { name: 'upload', method: http.post, path: '/upload', status: 201, payload: upload, call: () => resumeV2Api.upload(file()) },
+  { name: 'upload', method: http.post, path: '/upload', status: 201, payload: upload, call: () => resumeV2Api.upload(file(), 'owner-a') },
   { name: 'list', method: http.get, path: '/list', status: 200, payload: listing, call: () => resumeV2Api.list() },
   { name: 'detail', method: http.get, path: '/doc-1', status: 200, payload: detail, call: () => resumeV2Api.get('doc-1') },
   { name: 'evaluate', method: http.post, path: '/doc-1/evaluate', status: 200, payload: evaluation, call: () => resumeV2Api.evaluate('doc-1', 'Engineer') },
@@ -69,7 +75,7 @@ describe.each(cases)('$name response boundary', ({ method, path, status, payload
 
 it('normalizes only declared optional document fields for existing renderers', async () => {
   server.use(http.post(API + '/upload', () => HttpResponse.json(upload, { status: 201 })));
-  expect(await resumeV2Api.upload(file())).toEqual({
+  expect(await resumeV2Api.upload(file(), 'owner-a')).toEqual({
     ...upload, contact: { name: 'Synthetic candidate', email: null, phone: null, links: [] },
     summary: null, experience: [], education: [], skills: { hard: [], soft: [] }, projects: [], certifications: [],
   });
@@ -82,7 +88,7 @@ it.each([
   { ...upload, skills: null },
 ])('rejects malformed upload nested fields', async (payload) => {
   server.use(http.post(API + '/upload', () => HttpResponse.json(payload, { status: 201 })));
-  await expect(resumeV2Api.upload(file())).rejects.toMatchObject(safeError);
+  await expect(resumeV2Api.upload(file(), 'owner-a')).rejects.toMatchObject(safeError);
 });
 
 it.each([
@@ -169,7 +175,7 @@ it('normalizes nested optional collections without changing facts or explicit nu
     education: [{ school: 'School' }], projects: [{ name: 'Project' }], skills: { hard: ['Python'] },
   };
   server.use(http.post(API + '/upload', () => HttpResponse.json(payload, { status: 201 })));
-  const result = await resumeV2Api.upload(file());
+  const result = await resumeV2Api.upload(file(), 'owner-a');
   expect(result.experience).toEqual([{ company: 'Acme', role: 'Engineer', dates: null, location: null, bullets: [] }]);
   expect(result.education).toEqual([{ school: 'School', degree: null, dates: null, gpa: null, location: null }]);
   expect(result.projects).toEqual([{ name: 'Project', bullets: [] }]);
