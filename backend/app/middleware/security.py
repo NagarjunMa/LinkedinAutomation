@@ -115,6 +115,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         rate_limit_by_user: bool = True,
         route_limits: Optional[Dict[str, Dict[str, int]]] = None,
         peer_only_paths: Optional[set[str]] = None,
+        railway_edge_paths: Optional[set[str]] = None,
+        public_cors_origins: Optional[List[str]] = None,
     ):
         super().__init__(app)
         self.requests_per_minute = requests_per_minute
@@ -125,21 +127,40 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.rate_limit_by_user = rate_limit_by_user
         self.route_limits = route_limits or {}
         self.peer_only_paths = frozenset(peer_only_paths or ())
+        self.railway_edge_paths = frozenset(railway_edge_paths or ())
+        self.public_cors_origins = frozenset(public_cors_origins or ())
 
         # Rate limiting storage
         self.request_counts: Dict[str, deque] = defaultdict(deque)
         self.burst_counts: Dict[str, int] = defaultdict(int)
-        self.blocked_ips: Dict[str, datetime] = {}
+        self.blocked_clients: Dict[str, datetime] = {}
 
         # Cleanup interval
         self.last_cleanup = time.time()
         self.cleanup_interval = 300  # 5 minutes
 
-    def _get_client_identifier(self, request: Request) -> str:
-        """Get unique identifier for rate limiting"""
+    def _client_ip(self, request: Request, path: str) -> str:
         peer = request.client.host if request.client else "unknown"
-        if not self.rate_limit_by_user or request.url.path.rstrip("/") in self.peer_only_paths:
+        if path not in self.railway_edge_paths:
             return peer
+
+        # Enable only when untrusted traffic reaches this listener through Railway HTTP ingress.
+        addresses = request.headers.getlist("x-real-ip")
+        # Invalid edge headers share a budget instead of falling back to rotating peers.
+        if len(addresses) != 1 or "%" in addresses[0]:
+            return "unknown"
+        try:
+            address = ipaddress.ip_address(addresses[0].strip())
+        except ValueError:
+            return "unknown"
+        if isinstance(address, ipaddress.IPv6Address) and address.ipv4_mapped:
+            address = address.ipv4_mapped
+        return str(address) if address.is_global and not address.is_multicast else "unknown"
+
+    def _get_client_identifier(self, request: Request, client_ip: str, path: str) -> str:
+        """Get unique identifier for rate limiting"""
+        if not self.rate_limit_by_user or path in self.peer_only_paths:
+            return client_ip
 
         # Try to get user ID from request state (set by auth middleware)
         if hasattr(request.state, 'user_id'):
@@ -153,7 +174,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         # Fall back to the direct peer. Do not trust client-supplied
         # X-Forwarded-For here; proxy-aware identity needs a trusted proxy list.
-        return peer
+        return client_ip
 
     def _is_whitelisted(self, client_ip: str) -> bool:
         """Check if IP is whitelisted"""
@@ -194,14 +215,15 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             # Remove empty deques
             if not self.request_counts[client_id]:
                 del self.request_counts[client_id]
+                self.burst_counts.pop(client_id, None)
 
-        # Clean blocked IPs
+        # Clean temporary blocks
         expired_blocks = [
-            ip for ip, block_time in self.blocked_ips.items()
+            key for key, block_time in self.blocked_clients.items()
             if datetime.now() - block_time > timedelta(hours=1)
         ]
-        for ip in expired_blocks:
-            del self.blocked_ips[ip]
+        for key in expired_blocks:
+            del self.blocked_clients[key]
 
         self.last_cleanup = current_time
 
@@ -242,17 +264,17 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         # Check burst limit
         if requests_last_minute >= burst_size:
-            logger.warning(f"Burst limit exceeded for {client_id}: {requests_last_minute} requests/minute")
+            logger.warning("Burst limit exceeded: %s requests/minute", requests_last_minute)
             return False
 
         # Check minute limit
         if requests_last_minute >= requests_per_minute:
-            logger.warning(f"Rate limit exceeded for {client_id}: {requests_last_minute} requests/minute")
+            logger.warning("Rate limit exceeded: %s requests/minute", requests_last_minute)
             return False
 
         # Check hour limit
         if requests_last_hour >= requests_per_hour:
-            logger.warning(f"Hour limit exceeded for {client_id}: {requests_last_hour} requests/hour")
+            logger.warning("Hour limit exceeded: %s requests/hour", requests_last_hour)
             return False
 
         return True
@@ -265,17 +287,34 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         # Cleanup old records periodically
         self._cleanup_old_requests()
 
-        client_ip = request.client.host if request.client else "unknown"
-        base_client_id = self._get_client_identifier(request)
+        path = request.url.path.rstrip("/")
+        cors_headers = {}
+        origin = request.headers.get("origin")
+        if path in self.peer_only_paths and origin in self.public_cors_origins:
+            cors_headers = {"Access-Control-Allow-Origin": origin, "Vary": "Origin"}
+
+        # Railway can derive X-Real-IP from a header set by Cloudflare Workers.
+        if path in self.railway_edge_paths and (
+            "cf-connecting-ip" in request.headers or "cf-worker" in request.headers
+        ):
+            return JSONResponse(
+                status_code=status.HTTP_403_FORBIDDEN,
+                content={"error": "Access denied", "request_id": request.state.request_id},
+                headers=cors_headers,
+            )
+
+        client_ip = self._client_ip(request, path)
+        base_client_id = self._get_client_identifier(request, client_ip, path)
         requests_per_minute, requests_per_hour, burst_size, route_prefix = self._get_limits_for_path(request.url.path)
         client_id = f"{base_client_id}:route:{route_prefix}" if route_prefix else base_client_id
-        if request.method == "OPTIONS" and request.url.path.rstrip("/") in self.peer_only_paths:
+        if request.method == "OPTIONS" and path in self.peer_only_paths:
             # Keep preflights capped without consuming the submission budget.
             client_id += ":options"
+        block_key = client_id if path in self.peer_only_paths else client_ip
 
         # Check blacklist
         if self._is_blacklisted(client_ip):
-            logger.warning(f"Blocked blacklisted IP: {client_ip}")
+            logger.warning("Blocked blacklisted caller")
             return JSONResponse(
                 status_code=status.HTTP_403_FORBIDDEN,
                 content={"error": "Access denied", "request_id": request.state.request_id}
@@ -284,8 +323,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         # Skip rate limiting for whitelisted IPs
         if not self._is_whitelisted(client_ip):
             # Check if IP is temporarily blocked
-            if client_ip in self.blocked_ips:
-                block_time = self.blocked_ips[client_ip]
+            if block_key in self.blocked_clients:
+                block_time = self.blocked_clients[block_key]
                 if datetime.now() - block_time < timedelta(hours=1):
                     return JSONResponse(
                         status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -293,10 +332,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                             "error": "IP temporarily blocked due to excessive requests",
                             "retry_after": 3600,
                             "request_id": request.state.request_id
-                        }
+                        },
+                        headers=cors_headers,
                     )
                 else:
-                    del self.blocked_ips[client_ip]
+                    del self.blocked_clients[block_key]
 
             # Check rate limits
             if not self._check_rate_limit(
@@ -305,11 +345,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 requests_per_hour=requests_per_hour,
                 burst_size=burst_size,
             ):
-                # Block IP if too many violations
+                # Keep penalties on the same public budget as the denied request.
                 self.burst_counts[client_id] += 1
                 if self.burst_counts[client_id] > 5:  # 5 violations = temporary block
-                    self.blocked_ips[client_ip] = datetime.now()
-                    logger.warning(f"Temporarily blocking IP {client_ip} due to repeated violations")
+                    self.blocked_clients[block_key] = datetime.now()
+                    logger.warning("Temporarily blocking caller due to repeated rate-limit violations")
 
                 return JSONResponse(
                     status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -319,6 +359,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                         "request_id": request.state.request_id
                     },
                     headers={
+                        **cors_headers,
                         "Retry-After": "60",
                         "X-RateLimit-Limit": str(requests_per_minute),
                         "X-RateLimit-Remaining": "0",

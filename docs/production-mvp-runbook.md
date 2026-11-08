@@ -61,15 +61,26 @@ defaults to true, but code permits an explicit false value: keeping it true on t
 public deployment is also an operator release requirement. Verify actual hosted
 replica/process settings, not just environment declarations.
 
-The waitlist, preview analytics, and health routes key their limits on the
-client address supplied by the ASGI server. Authorization headers do not
-change those budgets. Public `OPTIONS` requests have a separate capped budget.
-Before rollout, verify the Railway ingress chain in
-development. Configure Uvicorn to trust only verified proxy peers, never
-`FORWARDED_ALLOW_IPS=*`. Confirm that two independent clients have separate
-budgets and that changing Bearer or forwarding headers from one client cannot
-reset its budget. Use synthetic inputs and keep one replica and one worker.
-The private-route token partition is unchanged by PRI-72's public-route fix.
+Railway public HTTP ingress replaces caller-supplied `X-Real-IP`. Waitlist and
+preview analytics can use that address when the backend is the only service
+in its Railway environment and all untrusted requests enter through the HTTP
+edge. Verify those conditions and the absence of a TCP proxy or private
+Railway Sandbox before setting
+`RAILWAY_EDGE_RATE_LIMIT_ENVIRONMENT_ID` to that service's
+`RAILWAY_ENVIRONMENT_ID`. Remove the setting before adding a private caller
+or any route around the HTTP edge. Railway private networking and TCP proxies
+skip the header replacement. Keep one replica and one worker. Use a direct
+Railway HTTP domain or DNS-only CNAME. Intake rejects `CF-Connecting-IP`
+and `CF-Worker` because Railway can derive `X-Real-IP` from Cloudflare headers.
+
+Rehearse on the isolated development backend. The opt-in also applies production
+intake limits there. Submit synthetic honeypot requests from one client while
+rotating Bearer, `X-Real-IP` and other forwarding headers. Expect three 202
+responses and a fourth 429. Verify that a second network retains its own
+budget and that the approved browser origin can read the 429. Public
+`OPTIONS` requests use a separate budget. Other routes continue to use
+their existing identity rules. Keep Uvicorn proxy trust restricted to
+verified peers. [Railway HTTP ingress and private-network behavior](https://station.railway.com/questions/need-authoritative-client-ip-proxy-tru-090eac86)
 
 ## Public-preview release verification (PRI-5)
 

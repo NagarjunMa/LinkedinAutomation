@@ -10,6 +10,7 @@ For production deployment, ensure all required environment variables are set.
 """
 
 import json
+import os
 from typing import List, Optional, Union
 from urllib.parse import urlsplit
 
@@ -82,6 +83,9 @@ class Settings(BaseSettings):
 
     WEB_CONCURRENCY: int = 1
     """Uvicorn worker count; must remain one while rate limiting is process-local."""
+
+    RAILWAY_EDGE_RATE_LIMIT_ENVIRONMENT_ID: str = ""
+    """Opt in for a verified, isolated Railway HTTP ingress environment."""
 
     WAITLIST_RETENTION_DAYS: int = 180
     """Days after which a waitlist entry is eligible for deletion."""
@@ -301,6 +305,14 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_production_settings(self) -> "Settings":
+        if self.RAILWAY_EDGE_RATE_LIMIT_ENVIRONMENT_ID:
+            if self.RAILWAY_EDGE_RATE_LIMIT_ENVIRONMENT_ID != os.getenv("RAILWAY_ENVIRONMENT_ID"):
+                raise ValueError("Railway edge rate limiting must match RAILWAY_ENVIRONMENT_ID")
+            if self.BACKEND_REPLICA_COUNT != 1 or self.WEB_CONCURRENCY != 1:
+                raise ValueError("Railway edge rate limiting requires one backend replica and one worker")
+            if os.getenv("RAILWAY_TCP_PROXY_DOMAIN"):
+                raise ValueError("Railway edge rate limiting cannot be used with a TCP proxy")
+
         if self.ENVIRONMENT.lower() != "production":
             return self
 
