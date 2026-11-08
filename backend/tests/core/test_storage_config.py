@@ -35,6 +35,21 @@ def test_production_public_preview_model_validation_fails_closed():
         _production_settings(WEB_CONCURRENCY=2)
 
 
+def test_railway_edge_limits_require_the_opted_in_environment(monkeypatch):
+    monkeypatch.setenv("RAILWAY_ENVIRONMENT_ID", "verified-environment")
+    key = "RAILWAY_EDGE_RATE_LIMIT_ENVIRONMENT_ID"
+
+    with pytest.raises(ValidationError, match="must match RAILWAY_ENVIRONMENT_ID"):
+        Settings(**{key: "another-environment"})
+    with pytest.raises(ValidationError, match="requires one backend replica and one worker"):
+        Settings(**{key: "verified-environment", "WEB_CONCURRENCY": 2})
+
+    assert Settings(**{key: "verified-environment"}).RAILWAY_EDGE_RATE_LIMIT_ENVIRONMENT_ID == "verified-environment"
+    monkeypatch.setenv("RAILWAY_TCP_PROXY_DOMAIN", "tcp.example.com")
+    with pytest.raises(ValidationError, match="cannot be used with a TCP proxy"):
+        Settings(**{key: "verified-environment"})
+
+
 def test_storage_bucket_defaults_to_launch_bucket():
     assert settings.SUPABASE_STORAGE_BUCKET == "resume"
 

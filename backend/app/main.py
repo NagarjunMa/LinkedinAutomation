@@ -103,27 +103,31 @@ cors_options = dict(
 app.add_middleware(CORSMiddleware, **cors_options)
 
 # Setup comprehensive security middleware stack
-PUBLIC_PREVIEW_PATHS = {
-    "/health",
+PUBLIC_INTAKE_PATHS = {
     "/api/v1/waitlist",
     "/api/v1/public-preview/events",
 }
+PUBLIC_PREVIEW_PATHS = {"/health", *PUBLIC_INTAKE_PATHS}
+use_railway_edge_limits = bool(settings.RAILWAY_EDGE_RATE_LIMIT_ENVIRONMENT_ID)
+strict_intake_limits = is_production or use_railway_edge_limits
 security_config = {
     'rate_limit': {
         'requests_per_minute': 100 if is_production else 1000,
         'requests_per_hour': 2000 if is_production else 10000,
         'burst_size': 20 if is_production else 1000,
         'peer_only_paths': PUBLIC_PREVIEW_PATHS,
+        'railway_edge_paths': PUBLIC_INTAKE_PATHS if use_railway_edge_limits else None,
+        'public_cors_origins': allowed_origins,
         'route_limits': {
             '/api/v1/waitlist': {
-                'requests_per_minute': 5 if is_production else 1000,
-                'requests_per_hour': 25 if is_production else 10000,
-                'burst_size': 3 if is_production else 1000,
+                'requests_per_minute': 5 if strict_intake_limits else 1000,
+                'requests_per_hour': 25 if strict_intake_limits else 10000,
+                'burst_size': 3 if strict_intake_limits else 1000,
             },
             '/api/v1/public-preview/events': {
-                'requests_per_minute': 30 if is_production else 1000,
-                'requests_per_hour': 200 if is_production else 10000,
-                'burst_size': 10 if is_production else 1000,
+                'requests_per_minute': 30 if strict_intake_limits else 1000,
+                'requests_per_hour': 200 if strict_intake_limits else 10000,
+                'burst_size': 10 if strict_intake_limits else 1000,
             },
             '/api/v1/resumes/upload': {
                 'requests_per_minute': 6 if is_production else 1000,
