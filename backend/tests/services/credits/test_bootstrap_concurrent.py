@@ -4,7 +4,9 @@ import importlib.util
 import os
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from queue import Queue
 from threading import Barrier
+from time import monotonic, sleep
 from uuid import uuid4
 
 import pytest
@@ -15,6 +17,7 @@ from app.application.bootstrap import bootstrap_account
 from app.application.errors import ResourceConflictError
 from app.models.credit_ledger import CreditLedger
 from app.models.user import User
+from app.services.credits.ledger import debit
 
 
 @pytest.fixture
@@ -33,12 +36,12 @@ def postgres_bootstrap():
         User.__table__.to_metadata(meta)
         CreditLedger.__table__.to_metadata(meta)
         meta.create_all(engine)
-        path = Path(__file__).parents[3] / "migrations/versions/2026_05_29_pg_cron_grant.py"
+        path = Path(__file__).parents[3] / "migrations/versions/2026_11_09_reconcile_monthly_credits.py"
         spec = importlib.util.spec_from_file_location("monthly_migration", path)
         migration = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(migration)
         with engine.begin() as conn:
-            conn.execute(text(migration.GRANT_FN_SQL))
+            conn.execute(text(migration.GRANT_FN_SQL.replace("public.", f'"{schema}".')))
         yield engine
     finally:
         engine.dispose()
@@ -86,6 +89,56 @@ def test_concurrent_monthly_jobs_and_existing_account_bootstrap(postgres_bootstr
         list(pool.map(run, range(3)))
     with Session(postgres_bootstrap) as db:
         assert db.query(CreditLedger).filter_by(user_id="existing").one().delta == 90
+
+
+def test_monthly_grant_reads_balance_after_concurrent_debit(postgres_bootstrap):
+    with Session(postgres_bootstrap) as db:
+        db.add(User(user_id="existing"))
+        db.flush()
+        db.add(CreditLedger(id="opening", user_id="existing", delta=100, balance_after=100, reason="grant"))
+        db.commit()
+
+    job_pid = Queue()
+
+    def run_job():
+        with postgres_bootstrap.begin() as conn:
+            conn.execute(text("SET LOCAL statement_timeout = '10s'"))
+            job_pid.put(conn.scalar(text("SELECT pg_backend_pid()")))
+            return conn.scalar(text("SELECT grant_monthly_credits()"))
+
+    with ThreadPoolExecutor(max_workers=1) as pool, Session(postgres_bootstrap) as db:
+        assert debit(db, "existing", 10, "test_debit").balance_after == 90
+        job = pool.submit(run_job)
+        pid = job_pid.get(timeout=5)
+        deadline = monotonic() + 5
+        while not db.scalar(text("SELECT pg_backend_pid() = ANY(pg_blocking_pids(:pid))"), {"pid": pid}):
+            assert monotonic() < deadline, "Monthly grant did not wait on the debit"
+            sleep(0.01)
+        db.commit()
+        assert job.result(timeout=5) == 1
+
+    with Session(postgres_bootstrap) as db:
+        monthly = db.query(CreditLedger).filter(CreditLedger.external_ref.is_not(None)).one()
+        assert (monthly.delta, monthly.balance_after) == (90, 180)
+        assert db.scalar(text("SELECT grant_monthly_credits()")) == 0
+
+
+def test_monthly_job_preserves_a_previous_grant_for_the_same_period(postgres_bootstrap):
+    with Session(postgres_bootstrap) as db:
+        db.add_all([User(user_id="already-credited"), User(user_id="due")])
+        db.commit()
+        db.execute(text("""
+            INSERT INTO credit_ledger (id, user_id, delta, reason, balance_after, external_ref)
+            VALUES ('legacy', 'already-credited', 20, 'grant', 20,
+                'monthly:' || to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM') || ':' || 'already-credited')
+        """))
+        assert db.scalar(text("SELECT grant_monthly_credits()")) == 1
+        assert db.scalar(text("SELECT grant_monthly_credits(90)")) == 0
+        entries = db.query(CreditLedger).order_by(CreditLedger.user_id).all()
+        assert [(entry.user_id, entry.delta, entry.balance_after) for entry in entries] == [
+            ("already-credited", 20, 20),
+            ("due", 90, 90),
+        ]
 
 
 def test_concurrent_different_identities_cannot_share_email(postgres_bootstrap):

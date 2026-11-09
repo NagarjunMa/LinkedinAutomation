@@ -10,7 +10,8 @@ historical smoke evidence authorizes a full product launch.
 
 - Billing is disabled: `ENABLE_BILLING=false`.
 - Stripe environment variables are optional until billing is enabled.
-- Freemium allowance is `FREEMIUM_MONTHLY_CREDITS=90`.
+- Freemium allowance is `FREEMIUM_MONTHLY_CREDITS=90`. Verify the
+  [monthly credit job](supabase-pg-cron-setup.md) uses the same amount.
 - Supabase Storage uses one private bucket: `resume`.
 - Railway backend is assumed to run as a single instance for MVP.
 - No Redis or Celery service is required in the current topology. An approved
