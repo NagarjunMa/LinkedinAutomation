@@ -299,6 +299,26 @@ Release is blocked if:
 - The `resume` bucket is public.
 - Storage object policies do not enforce user-scoped paths.
 
+For the private `resume` bucket, the backend service role performs uploads and
+deletes. The `2026_11_09_resume_storage` migration adds restrictive policies that
+deny browser-role inserts, updates, and deletes in this bucket even when a
+permissive policy or table grant exists. The read policies allow authenticated
+owners and keep other browser identities out of the bucket. Preserve other
+buckets' access when reviewing Storage grants.
+
+Set the `resume` bucket to private with a 10 MiB limit and a PDF/DOCX MIME allowlist
+using the Supabase Storage API or dashboard. Verify with two synthetic accounts
+that only the owner can read a fixture, both accounts are denied direct writes,
+and app upload and delete still succeed. Delete all fixtures and verify cleanup.
+Check that a browser cannot issue a new signed upload URL. Previously issued
+[Supabase signed upload URLs](https://supabase.com/docs/reference/javascript/storage-from-createsigneduploadurl)
+can remain valid for two hours. Allow that window to expire after the policy
+change before closing the production gate.
+
+When rolling back the app image, run the reviewed Alembic downgrade from the
+candidate image before restoring the previous image. The downgrade retains the
+Storage protections and moves the revision marker. Keep the bucket private.
+
 ### Historical 2026-06-30 audit (not current release evidence)
 
 Result:
