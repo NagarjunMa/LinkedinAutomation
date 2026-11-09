@@ -79,13 +79,11 @@ def profile_response(
         "full_name": _pick(
             profile.full_name if profile else None,
             derived.get("full_name"),
-            "",
-        ),
+        ) or "",
         "email": _pick(
             profile.email if profile else None,
             derived.get("email"),
-            "",
-        ),
+        ) or "",
         "phone": _pick(profile.phone if profile else None, derived.get("phone")),
         "location": _pick(
             profile.location if profile else None,

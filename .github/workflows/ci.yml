@@ -129,6 +129,12 @@ jobs:
         run: |
           python -m pytest tests/services/credits/ -v -k "concurrent"
 
+      - name: Profile migration regression (Postgres)
+        env:
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/prism_test"
+          SUPABASE_SERVICE_ROLE_KEY: test
+        run: python -m pytest -o addopts= tests/integration/test_user_profile_migration.py -v
+
       - name: Dependency audit
         run: |
           pip install pip-audit==2.9.0
