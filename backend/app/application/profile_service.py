@@ -219,7 +219,10 @@ class ProfileApplicationService:
                 continue
             setattr(profile, field, value)
             self._record_change(user_id, field, old_value, value)
-        profile.updated_at = datetime.now(timezone.utc)
+        now = datetime.now(timezone.utc)
+        if profile.created_at is None:
+            profile.created_at = profile.updated_at or now
+        profile.updated_at = now
 
     def _record_change(
         self,

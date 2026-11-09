@@ -3980,7 +3980,6 @@
             "title": "Desired Roles"
           },
           "email": {
-            "format": "email",
             "title": "Email",
             "type": "string"
           },

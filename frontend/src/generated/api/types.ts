@@ -1942,10 +1942,7 @@ export interface components {
             degrees?: string[] | null;
             /** Desired Roles */
             desired_roles?: string[] | null;
-            /**
-             * Email
-             * Format: email
-             */
+            /** Email */
             email: string;
             /** Frameworks Libraries */
             frameworks_libraries?: string[] | null;

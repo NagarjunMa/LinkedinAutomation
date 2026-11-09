@@ -90,6 +90,8 @@ class UserProfileUpdate(BaseModel):
 
 class UserProfileResponse(UserProfileBase):
     user_id: str
+    # Read responses can include unverified contact text extracted from a résumé.
+    email: str
     created_at: datetime
     updated_at: datetime
 
