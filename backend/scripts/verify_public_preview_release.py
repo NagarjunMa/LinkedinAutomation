@@ -20,7 +20,7 @@ from sqlalchemy import Engine, create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
 
 
-EXPECTED_ALEMBIC_REVISION = "2026_09_07_waitlist_retention"
+EXPECTED_ALEMBIC_REVISION = "2026_11_09_monthly_credits"
 RETENTION_JOB_NAME = "prismpro-waitlist-retention-daily"
 RETENTION_JOB_SCHEDULE = "17 3 * * *"
 MANAGEMENT_API = "https://api.supabase.com/v1/projects/{project_ref}/config/auth"
