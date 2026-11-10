@@ -61,6 +61,15 @@ class RailwayOptimizedFormatter(logging.Formatter):
         if hasattr(record, 'tokens_used'):
             log_entry['tokens_used'] = record.tokens_used
 
+        if (
+            record.name == "app.api.v1.endpoints.public_preview"
+            and log_entry["message"] == "Public preview analytics event"
+        ):
+            for field in ("event_name", "form_location", "validation_category", "scroll_depth"):
+                value = getattr(record, field, None)
+                if value is not None:
+                    log_entry[field] = value
+
         # Add exception info if present
         if record.exc_info:
             log_entry['exception'] = {

@@ -4,7 +4,7 @@ import logging
 
 from fastapi import APIRouter, Request, Response, status
 
-from app.schemas.public_preview import PublicPreviewEventCreate
+from app.schemas.public_preview import PublicPreviewEventCreate, PublicPreviewEventName
 
 
 logger = logging.getLogger(__name__)
@@ -22,20 +22,23 @@ def capture_public_preview_event(
 ) -> Response:
     """Emit enum-only funnel telemetry without visitor content or identifiers."""
 
+    event_name = payload.event_name
     logger.info(
         "Public preview analytics event",
         extra={
             "request_id": getattr(request.state, "request_id", None),
-            "event_name": payload.event_name.value,
+            "event_name": event_name.value,
             "form_location": (
-                payload.form_location.value if payload.form_location else None
+                payload.form_location.value
+                if event_name is not PublicPreviewEventName.SCROLL_DEPTH and payload.form_location
+                else None
             ),
             "validation_category": (
                 payload.validation_category.value
-                if payload.validation_category
+                if event_name is PublicPreviewEventName.FORM_VALIDATION_FAILURE and payload.validation_category
                 else None
             ),
-            "scroll_depth": payload.scroll_depth,
+            "scroll_depth": payload.scroll_depth if event_name is PublicPreviewEventName.SCROLL_DEPTH else None,
         },
     )
     return Response(status_code=status.HTTP_204_NO_CONTENT)
