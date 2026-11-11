@@ -154,3 +154,67 @@ def test_incompatible_existing_column_aborts_without_coercion(migrated_database)
     with engine.connect() as conn:
         assert conn.exec_driver_sql("SELECT full_name FROM public.user_profiles").scalar_one() == 42
         assert conn.exec_driver_sql("SELECT version_num FROM alembic_version").scalar_one() == PREVIOUS_HEAD
+
+
+TRUNCATE_PREVIOUS_HEAD = "2026_11_09_resume_storage"
+
+
+def _seed_profile_truncate_grants(conn):
+    conn.exec_driver_sql("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='anon') THEN CREATE ROLE anon; END IF;
+            IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='service_role') THEN
+                CREATE ROLE service_role BYPASSRLS;
+            END IF;
+        END
+        $$;
+        GRANT SELECT, INSERT, UPDATE, DELETE, TRUNCATE ON public.user_profiles TO anon, authenticated, service_role;
+        ALTER DEFAULT PRIVILEGES IN SCHEMA public
+            GRANT SELECT, INSERT, UPDATE, DELETE, TRUNCATE ON TABLES TO anon, authenticated, service_role;
+        INSERT INTO public.user_profiles (user_id, full_name) VALUES ('synthetic-owner', 'Saved profile');
+        CREATE TABLE public.existing_unrelated (id integer);
+    """)
+
+
+def test_profile_truncate_grants_removed_and_not_recreated(migrated_database):
+    engine, config = migrated_database
+    command.upgrade(config, TRUNCATE_PREVIOUS_HEAD)
+    with engine.begin() as conn:
+        _seed_profile_truncate_grants(conn)
+
+    command.upgrade(config, "head")
+    command.downgrade(config, TRUNCATE_PREVIOUS_HEAD)
+
+    with engine.begin() as conn:
+        conn.exec_driver_sql("CREATE TABLE public.future_profile_grant_probe (id integer)")
+        for role in ("anon", "authenticated", "service_role"):
+            for table in ("user_profiles", "future_profile_grant_probe", "existing_unrelated"):
+                actual = conn.exec_driver_sql("""
+                    SELECT has_table_privilege(%s, %s, 'SELECT'),
+                           has_table_privilege(%s, %s, 'INSERT'),
+                           has_table_privilege(%s, %s, 'UPDATE'),
+                           has_table_privilege(%s, %s, 'DELETE'),
+                           has_table_privilege(%s, %s, 'TRUNCATE')
+                """, (role, f"public.{table}") * 5).one()
+                assert actual == (True, True, True, True, role == "service_role" or table == "existing_unrelated")
+        assert conn.exec_driver_sql("SELECT full_name FROM public.user_profiles").scalar_one() == "Saved profile"
+        assert conn.exec_driver_sql("""
+            SELECT relrowsecurity FROM pg_class WHERE oid='public.user_profiles'::regclass
+        """).scalar_one()
+    command.upgrade(config, "head")
+
+
+def test_profile_truncate_migration_refuses_global_browser_defaults(migrated_database):
+    engine, config = migrated_database
+    command.upgrade(config, TRUNCATE_PREVIOUS_HEAD)
+    with engine.begin() as conn:
+        _seed_profile_truncate_grants(conn)
+        conn.exec_driver_sql("ALTER DEFAULT PRIVILEGES GRANT TRUNCATE ON TABLES TO authenticated")
+    with pytest.raises(DBAPIError, match="effective default TRUNCATE"):
+        command.upgrade(config, "head")
+    with engine.connect() as conn:
+        assert conn.exec_driver_sql("SELECT version_num FROM alembic_version").scalar_one() == TRUNCATE_PREVIOUS_HEAD
+        assert conn.exec_driver_sql("""
+            SELECT has_table_privilege('authenticated', 'public.user_profiles', 'TRUNCATE')
+        """).scalar_one()
