@@ -68,8 +68,8 @@ urllib3>=2.8.0,<3
 cryptography>=50.0.0,<51
 h2>=4.4.1,<5
 pillow>=13.0.0,<14
-# GHSA-j934-xhv5-fg8f and GHSA-gjv8-xp57-g29c (BeautifulSoup selector parsing).
-soupsieve>=2.9.0,<3
+# Security fixes for Beautiful Soup selector parsing, including GHSA-mmhr-3c5m-f64f.
+soupsieve>=4.0,<5
 
 # Env loading
 python-dotenv>=1.0,<2
