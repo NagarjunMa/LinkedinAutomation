@@ -75,6 +75,7 @@ soupsieve>=4.0,<5
 python-dotenv>=1.0,<2
 
 # Test
+jsonschema>=4.26,<5
 pytest>=9.0.3,<10
 respx>=0.20,<1
 pytest-asyncio>=1.4,<2
