@@ -69,7 +69,10 @@ edge. Verify those conditions and the absence of a TCP proxy or private
 Railway Sandbox before setting
 `RAILWAY_EDGE_RATE_LIMIT_ENVIRONMENT_ID` to that service's
 `RAILWAY_ENVIRONMENT_ID`. Remove the setting before adding a private caller
-or any route around the HTTP edge. Railway private networking and TCP proxies
+or any route around the HTTP edge. For the split release workflow, place the
+migration service in a separate Railway environment if the web service uses
+this opt-in. Both services must still target the same Supabase database.
+Railway private networking and TCP proxies
 skip the header replacement. Keep one replica and one worker. Use a direct
 Railway HTTP domain or DNS-only CNAME. Intake rejects `CF-Connecting-IP`
 and `CF-Worker` because Railway can derive `X-Real-IP` from Cloudflare headers.
@@ -414,13 +417,10 @@ digest if an update breaks CI, then investigate before attempting another update
 4. Test the migration chain on clean and representative existing-schema staging
    databases; verify a backup and migration-specific rollback plan.
 5. Obtain explicit operator approval and verify the target, backup and
-   migration-specific recovery plan. Set the verified Railway backend service's
-   pre-deploy command to `sh scripts/migrate.sh` as described in
-   [DEPLOYMENT.md](../DEPLOYMENT.md), and inspect its result before traffic
-   shifts. Stop on errors; never bypass the chain or rely on web startup to
-   apply it.
+   migration-specific recovery plan. Use the backend release instructions in
+   [DEPLOYMENT.md](../DEPLOYMENT.md) for the target's configured release mode.
 6. Verify Supabase auth redirects, RLS policies, and storage bucket.
-7. Deploy backend.
+7. Complete the backend release and verify the recorded migration and web results.
 8. Deploy frontend.
 9. Run the mode-specific smoke and record owner approval before publishing links.
    Do not disable public preview as an incidental deployment step.
@@ -428,7 +428,11 @@ digest if an update breaks CI, then investigate before attempting another update
 ## Rollback
 
 1. Roll back frontend to the previous healthy deployment.
-2. Roll back backend to the previous healthy deployment.
+2. Redeploy a known healthy, schema-compatible backend revision with the
+   approved restricted database URL and current web service settings.
+   Railway's native rollback restores custom variables from the target
+   deployment. For a split service, use it only after verifying the target
+   already has the restricted configuration. [Railway rollback](https://docs.railway.com/deployments/deployment-actions#rollback)
 3. Do not roll back migrations unless a migration-specific rollback has been
    reviewed and tested.
 4. If credit grants are duplicated, do not delete ledger rows manually. Obtain

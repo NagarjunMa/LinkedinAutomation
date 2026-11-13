@@ -47,8 +47,8 @@ the schedule and safety checks require separate operator verification.
 
 ## Local setup
 
-Use Python 3.11 and Node 22. Create a virtual environment, then install the locked
-dependencies from the repository root:
+Use an up-to-date Python 3.11 (at least 3.11.5) and Node 22. Create a virtual
+environment, then install the locked dependencies from the repository root:
 
 ```bash
 python3.11 -m venv .venv

@@ -21,7 +21,7 @@ Linear owns current task status; old TECH_DEBT/progress notes are historical.
 | --- | --- | --- |
 | Backend lint/test/coverage | CI gated | GitHub backend job passes |
 | Clean and existing-schema Postgres migration smoke | CI gated | Explicit `scripts/migrate.sh` passes against both disposable CI databases; existing data remains intact |
-| Release-time migration gate | Pending production configuration | Verified backend Railway service runs `sh scripts/migrate.sh` as Pre-Deploy Command and blocks a failed deployment before traffic shift; web startup only checks current heads |
+| Release-time migration gate | Pending production configuration | Verified Railway migration service runs `sh scripts/migrate.sh` before the release command queues web. A failed migration leaves the prior deployment serving. Web startup checks current heads. |
 | Postgres concurrent credit tests | CI gated | `tests/services/credits/ -k concurrent` passes |
 | Backend dependency audit | CI gated | `pip-audit -r backend/requirements.lock` passes |
 | Frontend lint/type/build/test/e2e | CI gated | GitHub frontend job passes |

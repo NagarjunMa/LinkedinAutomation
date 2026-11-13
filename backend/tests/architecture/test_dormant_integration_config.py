@@ -67,9 +67,11 @@ def test_soupsieve_security_floor_excludes_vulnerable_releases(filename):
     ]
     requirement = next((item for item in requirements if item.name == "soupsieve"), None)
     assert requirement is not None
-    assert "2.8.4" not in requirement.specifier
-    assert "2.9.0" in requirement.specifier
-    assert "3.0.0" not in requirement.specifier
+    assert "2.9" not in requirement.specifier
+    assert "2.10" not in requirement.specifier
+    assert "3.0.4" not in requirement.specifier
+    assert "4.1" in requirement.specifier
+    assert "5.0" not in requirement.specifier
 
 
 @pytest.mark.parametrize("filename, prefix", [("Dockerfile", "backend/"),

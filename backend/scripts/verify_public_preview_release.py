@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import os
+from pathlib import Path
 import re
 import sys
 import uuid
@@ -16,11 +17,11 @@ from typing import Any
 from urllib.parse import urljoin, urlsplit
 
 import requests
+from alembic.script import ScriptDirectory
 from sqlalchemy import Engine, create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
 
 
-EXPECTED_ALEMBIC_REVISION = "2026_11_09_monthly_credits"
 RETENTION_JOB_NAME = "prismpro-waitlist-retention-daily"
 RETENTION_JOB_SCHEDULE = "17 3 * * *"
 MANAGEMENT_API = "https://api.supabase.com/v1/projects/{project_ref}/config/auth"
@@ -84,9 +85,12 @@ def verify_supabase_auth(
 
 
 def verify_database(engine: Engine) -> None:
+    migration_dir = Path(__file__).resolve().parents[1] / "migrations"
+    expected = set(ScriptDirectory(str(migration_dir)).get_heads())
     with engine.connect() as connection:
-        revision = connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
-        _require(revision == EXPECTED_ALEMBIC_REVISION, f"Database revision is {revision}, expected {EXPECTED_ALEMBIC_REVISION}")
+        revisions = set(connection.execute(text("SELECT version_num FROM public.alembic_version")).scalars())
+        _require(bool(expected) and revisions == expected,
+                 f"Database revisions are {sorted(revisions)}, expected {sorted(expected)}")
 
         row_security = connection.execute(
             text(
