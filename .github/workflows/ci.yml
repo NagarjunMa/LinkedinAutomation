@@ -56,6 +56,9 @@ jobs:
           pip install ruff==0.5.0
           ruff check app/ --select=E,F --ignore=E501,E402
 
+      - name: Replay synthetic Career Evidence evaluations
+        run: python -m app.evaluation.career tests/fixtures/career_eval/suite.json tests/fixtures/career_eval/observations.json
+
       - name: Migration smoke (Postgres clean DB)
         env:
           OPENAI_API_KEY: test
