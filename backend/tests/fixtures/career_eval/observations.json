@@ -1,0 +1,373 @@
+{
+  "schema_version": 1,
+  "release": {
+    "adapter": "recorded-baseline",
+    "model": "synthetic",
+    "prompt_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "schema_sha256": "92a9f66351d7d9ededf7a17b4584ef44d70a1127c434788e85dfa8905fbaca00"
+  },
+  "cases": {
+    "api-two-sessions": {
+      "turns": [
+        {
+          "schema_version": 1,
+          "target_evidence_slot": "ownership",
+          "question_intent": "resolve_contradiction",
+          "recommended_action": "clarify",
+          "question": "Which part did you build?",
+          "evidence_proposals": [],
+          "contradiction_candidates": [
+            {
+              "supports": {
+                "source_id": "ownership-correction",
+                "source_version": 1,
+                "locator": "line:1",
+                "excerpt": "I built the FastAPI endpoint; my teammate built the UI.",
+                "relationship": "supports",
+                "extraction": "candidate"
+              },
+              "contradicts": {
+                "source_id": "old-resume",
+                "source_version": 1,
+                "locator": "line:1",
+                "excerpt": "I built the whole underwriting tool.",
+                "relationship": "contradicts",
+                "extraction": "candidate"
+              }
+            }
+          ]
+        },
+        {
+          "schema_version": 1,
+          "target_evidence_slot": "validation",
+          "question_intent": "probe",
+          "recommended_action": "continue",
+          "question": "How did you test the endpoint?",
+          "evidence_proposals": [
+            {
+              "claim": "I wrote regression tests for ambiguous underwriting shorthand.",
+              "category": "validation",
+              "sources": [
+                {
+                  "source_id": "test-answer",
+                  "source_version": 1,
+                  "locator": "line:1",
+                  "excerpt": "I wrote regression tests for ambiguous underwriting shorthand.",
+                  "relationship": "supports",
+                  "extraction": "candidate"
+                }
+              ]
+            }
+          ],
+          "contradiction_candidates": []
+        },
+        {
+          "schema_version": 1,
+          "target_evidence_slot": "measurement",
+          "question_intent": "clarify",
+          "recommended_action": "coverage_review",
+          "question": "How did you measure that estimate?",
+          "evidence_proposals": [],
+          "contradiction_candidates": []
+        }
+      ],
+      "plan": {
+        "schema_version": 1,
+        "plan_id": "api-two-sessions",
+        "evidence_revisions": [
+          {
+            "evidence_id": "api",
+            "revision": 2
+          },
+          {
+            "evidence_id": "tests",
+            "revision": 1
+          }
+        ],
+        "target_requirement_ids": [
+          "api-testing"
+        ],
+        "action": "Built the FastAPI endpoint and regression tests",
+        "method": "Regression tests for ambiguous underwriting shorthand",
+        "skills": [
+          "FastAPI",
+          "API testing"
+        ],
+        "ownership": "individual",
+        "ownership_verbs": [
+          "built",
+          "tested"
+        ],
+        "structure": "technical_contribution",
+        "max_length": 200,
+        "policy_version": "v1",
+        "renderer_version": "safe-v1"
+      },
+      "render": {
+        "schema_version": 1,
+        "accepted": false,
+        "rule_version": "v1",
+        "plan_hash": "9b2d6f94c9021fc0fd146fb519fcbbbcfe254a33efb533264e86f52948df61d1",
+        "proposal_hash": null,
+        "used_fallback": true,
+        "reason_codes": [
+          "model_unavailable"
+        ]
+      },
+      "bullet": {
+        "text": "Built a FastAPI endpoint and wrote regression tests for ambiguous underwriting shorthand.",
+        "claims": [
+          "api",
+          "tests"
+        ],
+        "used_fallback": true,
+        "lineage": {
+          "schema_version": 1,
+          "claim_id": "bullet-1",
+          "artifact_id": "draft-1",
+          "artifact_version": 1,
+          "evidence_revisions": [
+            {
+              "evidence_id": "api",
+              "revision": 2
+            },
+            {
+              "evidence_id": "tests",
+              "revision": 1
+            }
+          ]
+        }
+      },
+      "covered_requirements": [
+        "api-testing"
+      ],
+      "session_ids": [
+        "project-intake",
+        "later-application"
+      ],
+      "policy": {
+        "schema_version": 1,
+        "profile_id": "resume-policy",
+        "policy_version": "v1",
+        "universal_rules_version": "v1",
+        "market_overlay": "us_canada_engineering",
+        "page_limit": 2
+      },
+      "unmet_requirements": [
+        "kubernetes"
+      ],
+      "artifact_session_id": "later-application",
+      "confirmations": {
+        "project-intake": [
+          {
+            "evidence_id": "api",
+            "revision": 2
+          },
+          {
+            "evidence_id": "tests",
+            "revision": 1
+          }
+        ],
+        "later-application": []
+      }
+    },
+    "student": {
+      "turns": [
+        {
+          "schema_version": 1,
+          "target_evidence_slot": "validation",
+          "question_intent": "probe",
+          "recommended_action": "coverage_review",
+          "question": "How did you test duplicate bookings?",
+          "evidence_proposals": [],
+          "contradiction_candidates": []
+        }
+      ],
+      "plan": {
+        "schema_version": 1,
+        "plan_id": "student",
+        "evidence_revisions": [
+          {
+            "evidence_id": "booking-checks",
+            "revision": 1
+          }
+        ],
+        "target_requirement_ids": [
+          "python-testing"
+        ],
+        "action": "Wrote Python checks",
+        "method": "Detect duplicate lab bookings",
+        "skills": [
+          "Python"
+        ],
+        "ownership": "individual",
+        "ownership_verbs": [
+          "built",
+          "tested"
+        ],
+        "structure": "technical_contribution",
+        "max_length": 200,
+        "policy_version": "v1",
+        "renderer_version": "safe-v1"
+      },
+      "render": {
+        "schema_version": 1,
+        "accepted": false,
+        "rule_version": "v1",
+        "plan_hash": "5b32b1e7cef36d2aeef90541af87d1b06e0f8863aa10f0d8c053eaeaff68ed83",
+        "proposal_hash": "9d529a90a35de239f4f25cf384b0904b88cf5ac6779a25c87dbaf5c4819b4b74",
+        "used_fallback": true,
+        "reason_codes": [
+          "number_not_approved"
+        ]
+      },
+      "bullet": {
+        "text": "Wrote Python checks for duplicate lab bookings.",
+        "claims": [
+          "booking-checks"
+        ],
+        "used_fallback": true,
+        "lineage": {
+          "schema_version": 1,
+          "claim_id": "bullet-1",
+          "artifact_id": "draft-1",
+          "artifact_version": 1,
+          "evidence_revisions": [
+            {
+              "evidence_id": "booking-checks",
+              "revision": 1
+            }
+          ]
+        }
+      },
+      "covered_requirements": [
+        "python-testing"
+      ],
+      "session_ids": [
+        "student-project"
+      ],
+      "proposal": {
+        "schema_version": 1,
+        "plan_id": "student",
+        "text": "Wrote Python checks that saved 50 hours."
+      },
+      "policy": {
+        "schema_version": 1,
+        "profile_id": "resume-policy",
+        "policy_version": "v1",
+        "universal_rules_version": "v1",
+        "market_overlay": "india",
+        "page_limit": 1
+      },
+      "unmet_requirements": [],
+      "artifact_session_id": "student-project",
+      "confirmations": {
+        "student-project": [
+          {
+            "evidence_id": "booking-checks",
+            "revision": 1
+          }
+        ]
+      }
+    },
+    "student-counterfactual": {
+      "turns": [
+        {
+          "schema_version": 1,
+          "target_evidence_slot": "validation",
+          "question_intent": "probe",
+          "recommended_action": "coverage_review",
+          "question": "How did you test duplicate bookings?",
+          "evidence_proposals": [],
+          "contradiction_candidates": []
+        }
+      ],
+      "plan": {
+        "schema_version": 1,
+        "plan_id": "student",
+        "evidence_revisions": [
+          {
+            "evidence_id": "booking-checks",
+            "revision": 1
+          }
+        ],
+        "target_requirement_ids": [
+          "python-testing"
+        ],
+        "action": "Wrote Python checks",
+        "method": "Detect duplicate lab bookings",
+        "skills": [
+          "Python"
+        ],
+        "ownership": "individual",
+        "ownership_verbs": [
+          "built",
+          "tested"
+        ],
+        "structure": "technical_contribution",
+        "max_length": 200,
+        "policy_version": "v1",
+        "renderer_version": "safe-v1"
+      },
+      "render": {
+        "schema_version": 1,
+        "accepted": false,
+        "rule_version": "v1",
+        "plan_hash": "5b32b1e7cef36d2aeef90541af87d1b06e0f8863aa10f0d8c053eaeaff68ed83",
+        "proposal_hash": "9d529a90a35de239f4f25cf384b0904b88cf5ac6779a25c87dbaf5c4819b4b74",
+        "used_fallback": true,
+        "reason_codes": [
+          "number_not_approved"
+        ]
+      },
+      "bullet": {
+        "text": "Wrote Python checks for duplicate lab bookings.",
+        "claims": [
+          "booking-checks"
+        ],
+        "used_fallback": true,
+        "lineage": {
+          "schema_version": 1,
+          "claim_id": "bullet-1",
+          "artifact_id": "draft-1",
+          "artifact_version": 1,
+          "evidence_revisions": [
+            {
+              "evidence_id": "booking-checks",
+              "revision": 1
+            }
+          ]
+        }
+      },
+      "covered_requirements": [
+        "python-testing"
+      ],
+      "session_ids": [
+        "student-project"
+      ],
+      "proposal": {
+        "schema_version": 1,
+        "plan_id": "student",
+        "text": "Wrote Python checks that saved 50 hours."
+      },
+      "policy": {
+        "schema_version": 1,
+        "profile_id": "resume-policy",
+        "policy_version": "v1",
+        "universal_rules_version": "v1",
+        "market_overlay": "india",
+        "page_limit": 1
+      },
+      "unmet_requirements": [],
+      "artifact_session_id": "student-project",
+      "confirmations": {
+        "student-project": [
+          {
+            "evidence_id": "booking-checks",
+            "revision": 1
+          }
+        ]
+      }
+    }
+  }
+}

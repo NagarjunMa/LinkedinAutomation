@@ -17,6 +17,7 @@ are historical or specialized evidence, not an alternative launch procedure.
 | Compose and dependency boundaries | [Local infrastructure](local-infrastructure.md) |
 | Generated API boundary and client conventions | [API contracts](api-contracts.md) |
 | Current model/prompt ownership and retry policy | [Model manifests](model-manifests.md) |
+| Offline Career Evidence replay and holdout handling | [Career Evidence evaluation](career-evidence-evaluation.md) |
 
 ## Historical material
 
