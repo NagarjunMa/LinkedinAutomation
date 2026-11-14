@@ -1,4 +1,5 @@
 from .career import CareerSourceRow, CareerTargetRow
+from .interview import InterviewMessageRow, InterviewSessionRow
 from .job import JobListing, UserProfile as JobUserProfile, JobApplication
 from .user import User
 from .resume import Resume, ResumeEvaluation
@@ -13,6 +14,8 @@ from app.models.waitlist_entry import WaitlistEntry
 __all__ = [
     "CareerSourceRow",
     "CareerTargetRow",
+    "InterviewMessageRow",
+    "InterviewSessionRow",
     "JobListing",
     "JobUserProfile",
     "JobApplication",

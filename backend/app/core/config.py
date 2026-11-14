@@ -14,7 +14,7 @@ import os
 from typing import List, Optional, Union
 from urllib.parse import urlsplit
 
-from pydantic import ConfigDict, field_validator, model_validator
+from pydantic import ConfigDict, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings
 
 
@@ -102,6 +102,9 @@ class Settings(BaseSettings):
     Secret key for JWT token signing and other cryptographic operations.
     MUST be a strong, unique value in production (32+ characters).
     """
+
+    CAREER_TRANSCRIPT_KEY: SecretStr | None = None
+    """Dedicated Fernet key required when saving or opening interview messages."""
 
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
     """JWT token expiration time in minutes"""

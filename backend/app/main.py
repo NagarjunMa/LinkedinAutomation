@@ -175,11 +175,13 @@ security_config = {
         # uploads before Starlette parses the request body.
         'route_size_limits': {
             '/api/v1/waitlist': 8 * 1024,
+            '/api/v1/career/sessions': 8 * 1024,
             '/api/v1/public-preview/events': 1024,
             '/api/v1/resumes/upload': settings.MAX_UPLOAD_SIZE + 1024 * 1024,
         },
         'streamed_body_paths': [
             '/api/v1/waitlist',
+            '/api/v1/career/sessions',
             '/api/v1/public-preview/events',
         ],
         'blocked_user_agents': ['sqlmap', 'nikto', 'nmap'] if is_production else [],
@@ -233,7 +235,7 @@ app.add_middleware(
     allowed_paths=PUBLIC_PREVIEW_PATHS,
 )
 
-# Normalize only resume/JD responses, including the middleware's early denials.
+# Normalize private workflow responses, including the middleware's early denials.
 app.add_middleware(WorkflowErrorMiddleware, cors_options=cors_options)
 # Keep response protections outside the early-error normalizer and request
 # guards so denials receive the same headers as ordinary API responses.
