@@ -146,3 +146,24 @@ Rollback application images to a known healthy compatible revision. Database
 downgrades, credit corrections and data restoration need their own reviewed plan;
 never delete ledger history as a rollback shortcut. PRI-18 changes documentation
 only and requires no migration or service restart.
+
+### PRI-32 Career schema rollback
+
+Web startup checks that the database revision matches the image's Alembic head.
+After `2026_11_13_career_sources` is applied, the previous backend image expects
+`2026_11_11_profile_truncate` and fails its startup check against the newer head.
+
+- **If the Career tables are empty:** Pause schema releases and quiesce Career
+  writers. Use the PRI-32 migration image or checkout with the migration-owner
+  connection in READ COMMITTED. From `backend/`, run
+  `python -m alembic downgrade 2026_11_11_profile_truncate`. The downgrade locks
+  both tables and stops if either table contains records. Verify the revision
+  with `python -m alembic current`, then use the previous checkout or image to
+  run `python -m alembic current --check-heads` before restoring that web build.
+  Verify `/health` and the existing environment smoke checks before returning
+  traffic to the restored build.
+- **If either table contains records:** Retain the schema and records. Prepare
+  and validate a corrective backend build that includes the active Alembic head
+  and restores the required application behavior. Verify its startup check and
+  smoke tests on a representative database before promotion. Keep the active
+  schema revision on the database throughout recovery.

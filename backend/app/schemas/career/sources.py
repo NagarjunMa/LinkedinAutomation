@@ -12,6 +12,9 @@ EVIDENCE_FINDINGS = ("missing_confirmed_evidence", "communication_gap", "weak_pr
 TARGET_GAPS = ("experience_gap", "knowledge_gap")
 
 
+CareerSourceKind = Literal["resume", "linkedin_profile_pdf", "candidate_introduction", "interview_message", "public_proof_link", "job_description"]
+
+
 class CareerSource(CareerContract):
     model_config = ConfigDict(json_schema_extra={
         "if": {"properties": {"kind": {"const": "resume"}}},
@@ -21,7 +24,7 @@ class CareerSource(CareerContract):
 
     source: SourceRef
     owner_id: Identifier
-    kind: Literal["resume", "linkedin_profile_pdf", "candidate_introduction", "interview_message", "public_proof_link", "job_description"]
+    kind: CareerSourceKind
     content_sha256: Sha256
     created_at: Timestamp
     retention_expires_at: Timestamp | None = None

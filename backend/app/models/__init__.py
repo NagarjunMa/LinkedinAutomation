@@ -1,3 +1,4 @@
+from .career import CareerSourceRow, CareerTargetRow
 from .job import JobListing, UserProfile as JobUserProfile, JobApplication
 from .user import User
 from .resume import Resume, ResumeEvaluation
@@ -10,6 +11,8 @@ from app.models.resume_export import ResumeExport  # noqa: F401
 from app.models.waitlist_entry import WaitlistEntry
 
 __all__ = [
+    "CareerSourceRow",
+    "CareerTargetRow",
     "JobListing",
     "JobUserProfile",
     "JobApplication",
