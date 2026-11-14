@@ -134,13 +134,17 @@ jobs:
 
       - name: Profile, Storage, and Career migration regressions (Postgres)
         env:
+          PRI33_TEST_POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
           DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/prism_test"
           SUPABASE_SERVICE_ROLE_KEY: test
         run: |
+          : "${PRI33_TEST_POSTGRES_CONTAINER:?PostgreSQL service container ID is required}"
           python -m pytest -o addopts= -v \
             tests/integration/test_user_profile_migration.py \
             tests/integration/test_resume_storage_migration.py \
-            tests/integration/test_career_persistence.py
+            tests/integration/test_career_persistence.py \
+            tests/integration/test_career_interview_persistence.py \
+            tests/integration/test_interview_transcript_logging.py
 
       - name: Dependency audit
         run: |

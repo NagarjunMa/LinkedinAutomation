@@ -11,7 +11,7 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 from app.api.error_mapping import safe_error_envelope
 
 logger = logging.getLogger(__name__)
-PREFIXES = ("/api/v1/resumes", "/api/v1/jd")
+PREFIXES = ("/api/v1/resumes", "/api/v1/jd", "/api/v1/career/sessions")
 
 
 class WorkflowErrorMiddleware:

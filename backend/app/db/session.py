@@ -8,7 +8,8 @@ _is_sqlite = _database_uri.startswith("sqlite")
 # Database engine configuration optimized for Railway + Supabase
 engine_options = {
     "pool_pre_ping": True,
-    "echo": settings.DEBUG,  # Log SQL in debug mode
+    "echo": settings.DEBUG,
+    "hide_parameters": True,  # Queries can carry private career content.
 }
 
 if not _is_sqlite:

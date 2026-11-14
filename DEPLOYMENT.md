@@ -167,3 +167,34 @@ After `2026_11_13_career_sources` is applied, the previous backend image expects
   and restores the required application behavior. Verify its startup check and
   smoke tests on a representative database before promotion. Keep the active
   schema revision on the database throughout recovery.
+
+### PRI-33 Interview schema rollback
+
+The previous backend expects `2026_11_13_career_sources`. After applying
+`2026_11_14_career_interviews`, follow the same recovery sequence as PRI-32
+with the following revision and data checks:
+
+- With empty interview tables, pause schema releases and interview traffic.
+  Use the PRI-33 migration image or checkout and a migration-owner connection
+  in READ COMMITTED. From `backend/`, run
+  `python -m alembic downgrade 2026_11_13_career_sources`. Verify startup with
+  the previous checkout's `python -m alembic current --check-heads` and check
+  `/health` before restoring traffic.
+- With saved interviews or messages, retain the schema and use a corrective
+  build that recognizes the current migration head. The downgrade fails
+  before dropping either table if interview data is present.
+
+Keep the production preview's database role and route restrictions in place.
+Before enabling authenticated interview traffic in a hosted environment,
+verify that its runtime role can access the required tables and take the
+owner-row lock. Confirm account closure and the retention policy before
+collecting real transcripts.
+
+Before writing or reading interview messages, configure a persistent
+`CAREER_TRANSCRIPT_KEY` in the authenticated backend's secret store. Generate a
+separate key per environment with
+`python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'`.
+Share that environment's key across its authorized backend replicas and preserve
+it through restart and rollback. The database stores encrypted transcript text.
+If rotation is needed, preserve the old key and plan re-encryption before
+changing it. The public preview and migration process do not need the key.
