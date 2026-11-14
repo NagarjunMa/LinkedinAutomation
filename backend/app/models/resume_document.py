@@ -7,6 +7,7 @@ from app.db.base_class import Base
 class ResumeDocument(Base):
     __tablename__ = "resume_documents"
     __table_args__ = (
+        Index("uq_resume_documents_owner_id", "user_id", "id", unique=True),
         CheckConstraint(
             "storage_status IN ('pending', 'ready', 'deleting')",
             name="ck_resume_documents_storage_status",

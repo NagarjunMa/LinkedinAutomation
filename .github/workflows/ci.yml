@@ -132,14 +132,15 @@ jobs:
         run: |
           python -m pytest tests/services/credits/ -v -k "concurrent"
 
-      - name: Profile and Storage migration regressions (Postgres)
+      - name: Profile, Storage, and Career migration regressions (Postgres)
         env:
           DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/prism_test"
           SUPABASE_SERVICE_ROLE_KEY: test
         run: |
           python -m pytest -o addopts= -v \
             tests/integration/test_user_profile_migration.py \
-            tests/integration/test_resume_storage_migration.py
+            tests/integration/test_resume_storage_migration.py \
+            tests/integration/test_career_persistence.py
 
       - name: Dependency audit
         run: |
