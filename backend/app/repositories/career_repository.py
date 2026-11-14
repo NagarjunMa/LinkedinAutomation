@@ -22,7 +22,7 @@ class CareerRepository:
     def _sources(self):
         return select(CareerSourceRow).where(CareerSourceRow.user_id == self.user_id)
 
-    def _visible_sources(self):
+    def visible_sources(self):
         ready_resume = select(ResumeDocument.id).where(
             ResumeDocument.user_id == self.user_id,
             ResumeDocument.id == CareerSourceRow.resume_document_id,
@@ -35,7 +35,7 @@ class CareerRepository:
         )
 
     def get_source(self, source: SourceRef, *, lock=False, include_content=False):
-        query = self._visible_sources().where(
+        query = self.visible_sources().where(
             CareerSourceRow.id == source.source_id, CareerSourceRow.version == source.source_version,
         )
         if include_content:
@@ -43,7 +43,7 @@ class CareerRepository:
         return self.session.scalar(query.with_for_update(read=True) if lock else query)
 
     def list_sources(self, offset: int, limit: int):
-        return self.session.scalars(self._visible_sources().order_by(
+        return self.session.scalars(self.visible_sources().order_by(
             CareerSourceRow.id, CareerSourceRow.version.desc(),
         ).offset(offset).limit(limit))
 

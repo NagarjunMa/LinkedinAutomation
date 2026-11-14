@@ -198,3 +198,22 @@ Share that environment's key across its authorized backend replicas and preserve
 it through restart and rollback. The database stores encrypted transcript text.
 If rotation is needed, preserve the old key and plan re-encryption before
 changing it. The public preview and migration process do not need the key.
+
+### PRI-34 Career Evidence ledger
+
+Apply `2026_11_14_career_evidence` before starting the corresponding web image.
+Authenticated evidence requests reuse `CAREER_TRANSCRIPT_KEY` for encrypted
+claims, source details and decision reasons. Confirm the authenticated runtime
+can read and append ledger records, lock owner and source rows, and delete
+linked evidence when deleting a source or résumé. The deletion trigger uses
+the caller's privileges, including the privilege needed to lock an evidence
+row. Keep direct Data API privileges revoked and rehearse owner isolation,
+résumé deletion and account closure with synthetic identities before collecting
+real evidence.
+
+If the ledger is empty, pause evidence writes and source, résumé, and account deletions. Run
+`python -m alembic downgrade 2026_11_14_career_interviews` from the PRI-34 build
+using the migration-owner connection in READ COMMITTED. Verify the prior
+image's head and `/health` before promoting it. If the ledger contains data,
+preserve the schema and key and use a corrective build that supports the current
+head. The downgrade refuses to drop a populated ledger.

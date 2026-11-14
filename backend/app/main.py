@@ -176,12 +176,14 @@ security_config = {
         'route_size_limits': {
             '/api/v1/waitlist': 8 * 1024,
             '/api/v1/career/sessions': 8 * 1024,
+            '/api/v1/career/evidence': 48 * 1024,
             '/api/v1/public-preview/events': 1024,
             '/api/v1/resumes/upload': settings.MAX_UPLOAD_SIZE + 1024 * 1024,
         },
         'streamed_body_paths': [
             '/api/v1/waitlist',
             '/api/v1/career/sessions',
+            '/api/v1/career/evidence',
             '/api/v1/public-preview/events',
         ],
         'blocked_user_agents': ['sqlmap', 'nikto', 'nmap'] if is_production else [],
