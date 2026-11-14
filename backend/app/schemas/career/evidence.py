@@ -10,6 +10,7 @@ from .common import CareerContract, Identifier, Label, Ownership, Revision, Sha2
 EvidenceCategory = Literal["problem", "requirement", "action", "decision", "validation", "outcome", "skill", "scope"]
 EvidenceLifecycle = Literal["proposed", "confirmed", "rejected", "contradicted", "private", "unavailable"]
 EvidenceSupport = Literal["candidate_statement", "document_backed", "artifact_linked", "independently_verified"]
+EvidenceAction = Literal["confirm", "edit", "reject", "mark_private", "mark_unavailable", "resolve_contradiction"]
 
 
 class EvidenceRevisionRef(BaseModel):
@@ -102,7 +103,7 @@ class CareerEvidenceItem(CareerContract, EvidenceRevisionRef):
 class CareerEvidenceDecision(CareerContract):
     evidence: EvidenceRevisionRef
     actor_id: Identifier
-    action: Literal["confirm", "edit", "reject", "mark_private", "mark_unavailable", "resolve_contradiction"]
+    action: EvidenceAction
     decided_at: Timestamp
     reason: Text | None = None
     resulting_revision: Revision
@@ -112,3 +113,37 @@ class CareerEvidenceDecision(CareerContract):
         if self.resulting_revision <= self.evidence.revision:
             raise ValueError("evidence decisions require a newer revision")
         return self
+
+
+class EvidenceProposal(BaseModel):
+    """Internal proposal input. The caller cannot supply owner, support or lifecycle."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    claim: Text
+    category: EvidenceCategory
+    ownership: Ownership
+    scope: Label | None = None
+    qualifiers: list[Label] = Field(default_factory=list, max_length=20)
+    confidence: Literal["low", "medium", "high"] | None = None
+    sources: list[EvidenceSourceLink] = Field(min_length=1, max_length=20)
+
+
+class EvidenceDecisionInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    revision: Revision
+    action: EvidenceAction
+    reason: Text | None = None
+    claim: Text | None = None
+
+    @model_validator(mode="after")
+    def validate_edit(self) -> Self:
+        if (self.claim is not None) != (self.action == "edit"):
+            raise ValueError("only edits require a new claim")
+        return self
+
+
+class EvidenceHistory(BaseModel):
+    revisions: list[CareerEvidenceItem]
+    decisions: list[CareerEvidenceDecision]

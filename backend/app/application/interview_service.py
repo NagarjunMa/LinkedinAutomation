@@ -2,11 +2,10 @@
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from cryptography.fernet import Fernet, InvalidToken
 from sqlalchemy.orm import Session
 
+from app.application.career_encryption import career_cipher, open_private_text
 from app.application.errors import ExternalServiceError, InvalidOperationError, ResourceConflictError, ResourceNotFoundError
-from app.core.config import settings
 from app.models.interview import InterviewMessageRow as Message, InterviewSessionRow as Interview
 from app.repositories.career_repository import CareerRepository
 from app.repositories.interview_repository import InterviewRepository
@@ -69,18 +68,18 @@ class InterviewService:
         messages = rows.all()
         if not messages:
             return []
-        cipher = _transcript_cipher()
-        return [_message_view(row, _read_transcript(cipher, row)) for row in messages]
+        cipher = career_cipher()
+        return [_message_view(row, open_private_text(cipher, row.content_ciphertext)) for row in messages]
 
     def append(self, session_id: str, data: MessageInput, *, role: MessageRole = "user") -> MessageView:
         # Follow the same owner-before-dependents lock order as account deletion.
         if not CareerRepository(self.db, self.owner).lock_owner_for_insert():
             raise ResourceNotFoundError("Interview not found")
         row = self._owned(session_id, lock=True)
-        cipher = _transcript_cipher()
+        cipher = career_cipher()
         previous = self.repo.get_retry(session_id, role, data.key)
         if previous:
-            content = _read_transcript(cipher, previous)
+            content = open_private_text(cipher, previous.content_ciphertext)
             if content != data.content:
                 raise ResourceConflictError("Message key was reused with different content")
             result = _message_view(previous, content)
@@ -93,7 +92,7 @@ class InterviewService:
             last = self.repo.get_message_at(session_id, row.message_count)
             if last is None:
                 raise ExternalServiceError("Interview transcript could not be opened")
-            _read_transcript(cipher, last)
+            open_private_text(cipher, last.content_ciphertext)
         row.message_count += 1
         self._advance(row)
         message = Message(
@@ -116,23 +115,6 @@ class InterviewService:
     def _advance(row: Interview) -> None:
         row.state_version += 1
         row.updated_at = datetime.now(timezone.utc)
-
-
-def _transcript_cipher() -> Fernet:
-    key = settings.CAREER_TRANSCRIPT_KEY
-    if key:
-        try:
-            return Fernet(key.get_secret_value())
-        except ValueError:
-            pass
-    raise ExternalServiceError("Interview transcript storage is unavailable")
-
-
-def _read_transcript(cipher: Fernet, row: Message) -> str:
-    try:
-        return cipher.decrypt(row.content_ciphertext).decode("utf-8")
-    except (InvalidToken, UnicodeError):
-        raise ExternalServiceError("Interview transcript could not be opened") from None
 
 
 def _message_view(row: Message, content: str) -> MessageView:

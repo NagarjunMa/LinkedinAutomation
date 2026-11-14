@@ -144,6 +144,7 @@ jobs:
             tests/integration/test_resume_storage_migration.py \
             tests/integration/test_career_persistence.py \
             tests/integration/test_career_interview_persistence.py \
+            tests/integration/test_career_evidence_ledger.py \
             tests/integration/test_interview_transcript_logging.py
 
       - name: Dependency audit
