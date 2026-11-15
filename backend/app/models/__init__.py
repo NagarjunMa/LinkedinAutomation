@@ -1,5 +1,6 @@
 from .career import CareerSourceRow, CareerTargetRow
 from .career_evidence import EvidenceDecisionRow, EvidenceRow, EvidenceSourceRow
+from .career_lineage import ArtifactClaimRow, ArtifactRunRow, CareerRunRow, GeneratedArtifactRow, ProofArtifactRow
 from .interview import InterviewMessageRow, InterviewSessionRow
 from .job import JobListing, UserProfile as JobUserProfile, JobApplication
 from .user import User
@@ -18,6 +19,11 @@ __all__ = [
     "EvidenceDecisionRow",
     "EvidenceRow",
     "EvidenceSourceRow",
+    "ArtifactClaimRow",
+    "ArtifactRunRow",
+    "CareerRunRow",
+    "GeneratedArtifactRow",
+    "ProofArtifactRow",
     "InterviewMessageRow",
     "InterviewSessionRow",
     "JobListing",

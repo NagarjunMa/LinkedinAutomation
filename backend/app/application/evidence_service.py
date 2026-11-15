@@ -1,6 +1,7 @@
 """Owner-scoped ledger and the eligibility boundary for downstream claims."""
 from __future__ import annotations
 
+from collections.abc import Sequence
 from datetime import datetime, timezone
 from hashlib import sha256
 from uuid import uuid4
@@ -13,7 +14,9 @@ from app.application.career_encryption import career_cipher, open_private_text
 from app.application.errors import InvalidOperationError, ResourceConflictError, ResourceNotFoundError
 from app.models.career import CareerSourceRow
 from app.models.career_evidence import EvidenceDecisionRow as Decision, EvidenceRow as Item, EvidenceSourceRow as Link
+from app.models.resume_document import ResumeDocument
 from app.repositories.career_repository import CareerRepository
+from app.schemas.career.common import SourceRef
 from app.schemas.career.evidence import (
     CareerEvidenceDecision, CareerEvidenceItem, EvidenceDecisionInput, EvidenceHistory, EvidenceLifecycle,
     EvidenceProposal, EvidenceRevisionRef, EvidenceSourceLink,
@@ -88,11 +91,33 @@ class EvidenceService:
         )
 
     def eligible(self, reference: EvidenceRevisionRef) -> CareerEvidenceItem | None:
-        row = self.db.scalar(self._current().where(
+        row = self.db.scalar(self._eligible_rows().where(
             Item.evidence_id == reference.evidence_id, Item.revision == reference.revision,
-            Item.lifecycle == "confirmed", Item.is_private.is_(False), self._has_sources(),
         ))
         return self._view(row, career_cipher(scope="Career evidence")) if row else None
+
+    def eligible_keys(self, evidence_ids):
+        return self._eligible_rows().where(Item.evidence_id.in_(evidence_ids)).with_only_columns(
+            Item.evidence_id, Item.revision,
+        )
+
+    def lock_eligible_revisions(self, keys: set[tuple[str, int]], *, extra_sources: Sequence[SourceRef] = ()) -> None:
+        # The caller locks the owner first. Preserve the ledger's source-before-anchor order.
+        source_rows = self.db.execute(select(Link.source_id, Link.source_version).where(
+            Link.user_id == self.owner, tuple_(Link.evidence_id, Link.revision).in_(keys),
+        ).distinct())
+        try:
+            self._lock_sources([SourceRef(source_id=id_, source_version=version) for id_, version in source_rows]
+                               + list(extra_sources))
+        except ResourceNotFoundError:
+            raise InvalidOperationError("Artifact evidence or source is unavailable") from None
+        ids = {id_ for id_, _ in keys}
+        self.db.execute(select(Item.evidence_id).where(
+            Item.user_id == self.owner, Item.revision == 1, Item.evidence_id.in_(ids),
+        ).order_by(Item.evidence_id).with_for_update(read=True)).all()
+        eligible = set(self.db.execute(self.eligible_keys(ids)).tuples())
+        if not keys.issubset(eligible):
+            raise InvalidOperationError("Artifact evidence is not eligible")
 
     def decide(self, evidence_id: str, data: EvidenceDecisionInput) -> CareerEvidenceItem:
         self._lock_owner()
@@ -128,9 +153,17 @@ class EvidenceService:
         if not self.career.lock_owner_for_insert():
             raise ResourceNotFoundError("Evidence not found")
 
-    def _lock_sources(self, links: list[EvidenceSourceLink]) -> None:
+    def _lock_sources(self, links: Sequence[SourceRef]) -> None:
         refs = {(link.source_id, link.source_version) for link in links}
         cols = CareerSourceRow.id, CareerSourceRow.version
+        resumes = select(CareerSourceRow.resume_document_id).where(
+            CareerSourceRow.user_id == self.owner, tuple_(*cols).in_(refs),
+            CareerSourceRow.resume_document_id.is_not(None),
+        )
+        # Résumé deletion marks the document unavailable before it removes source rows.
+        self.db.execute(select(ResumeDocument.id).where(
+            ResumeDocument.user_id == self.owner, ResumeDocument.id.in_(resumes),
+        ).order_by(ResumeDocument.id).with_for_update(read=True)).all()
         sources = self._candidate_sources().where(tuple_(*cols).in_(refs))
         locked = self.db.execute(sources.order_by(*cols).with_for_update(read=True)).all()
         # A source can expire while the transaction waits for its row lock.
@@ -140,6 +173,9 @@ class EvidenceService:
     def _current(self):
         latest = select(Item.evidence_id, func.max(Item.revision)).where(Item.user_id == self.owner).group_by(Item.evidence_id)
         return select(Item).where(Item.user_id == self.owner, tuple_(Item.evidence_id, Item.revision).in_(latest))
+
+    def _eligible_rows(self):
+        return self._current().where(Item.lifecycle == "confirmed", Item.is_private.is_(False), self._has_sources())
 
     def _has_sources(self):
         return Item.source_count == select(func.count()).select_from(Link).where(
