@@ -217,3 +217,16 @@ using the migration-owner connection in READ COMMITTED. Verify the prior
 image's head and `/health` before promoting it. If the ledger contains data,
 preserve the schema and key and use a corrective build that supports the current
 head. The downgrade refuses to drop a populated ledger.
+
+### PRI-35 Career run and artifact lineage
+
+Apply `2026_11_14_career_lineage` before starting the matching backend. Keep
+the persistent `CAREER_TRANSCRIPT_KEY` for run metadata. In development, use
+synthetic records to verify runtime access, revoked Data API grants, owner
+isolation, invalidation after evidence changes, and deletion cascades.
+
+If the lineage tables are empty, pause metadata writes and related deletions.
+Use the migration-owner connection at READ COMMITTED to run
+`python -m alembic downgrade 2026_11_14_career_evidence`. Verify the previous
+image's Alembic head and `/health`. With saved metadata, preserve the schema
+and key and deploy a corrective image that supports the current head.
