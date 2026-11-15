@@ -48,9 +48,7 @@ def transition(state: CareerSessionState, event: InterviewEvent) -> CareerSessio
     if state.status in ("completed", "failed"):
         raise ResourceConflictError("Interview is terminal")
 
-    chapters = _chapters(state, state.candidate_stage)
-    if state.chapter not in chapters or (state.chapter != INTRODUCTION and state.candidate_stage is None):
-        raise InvalidOperationError("Interview chapter is invalid for this mode or stage")
+    chapters = interview_chapters(state)
 
     match (state.status, event.kind, state.chapter):
         case ("active", "confirm_stage", chapter) if chapter == INTRODUCTION:
@@ -69,6 +67,13 @@ def transition(state: CareerSessionState, event: InterviewEvent) -> CareerSessio
             raise InvalidOperationError("Interview event is not legal in the current state")
 
     return state.model_copy(update={**updates, "state_version": state.state_version + 1})
+
+
+def interview_chapters(state: CareerSessionState) -> tuple[str, ...]:
+    chapters = _chapters(state, state.candidate_stage)
+    if state.chapter not in chapters or (state.chapter != INTRODUCTION and state.candidate_stage is None):
+        raise InvalidOperationError("Interview chapter is invalid for this mode or stage")
+    return chapters
 
 
 def _chapters(state: CareerSessionState, stage: CandidateStage | None) -> tuple[str, ...]:
