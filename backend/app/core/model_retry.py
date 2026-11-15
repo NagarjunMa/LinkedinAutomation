@@ -18,8 +18,11 @@ def is_transient_model_error(error: BaseException) -> bool:
         # HTTP 429 also represents depleted credits/spend limits. Unknown codes
         # fail closed; neither schema/grounding failures nor billing errors repair
         # themselves through another model call.
+        if error.type is not None and not isinstance(error.type, str):
+            return False
         return (
             error.type != "insufficient_quota"
+            and isinstance(error.code, str)
             and error.code in {"rate_limit_exceeded", "slow_down"}
             and error.response.headers.get("x-should-retry") != "false"
         )

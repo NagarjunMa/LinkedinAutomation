@@ -3,16 +3,39 @@
 from decimal import Decimal
 from typing import Annotated, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, TypeAdapter, field_validator, model_validator
 
 from app.core.openai_client import ModelManifest
 
-from .common import CareerContract, Count, Identifier, Ownership, Revision, SourceRef, Timestamp
+from .common import CareerContract, Count, Identifier, Ownership, Revision, Sha256, SourceRef, Timestamp
 from .evidence import EvidenceRevisionRef
 from .resume import ClaimEvidence, GeneratedClaimLineage, ResumeReasonCode
 
 ArtifactKind = Literal["resume", "linkedin_recommendations", "interview_story_bank", "hiring_manager_brief", "learning_plan"]
 RunFailure = Literal["model_unavailable", "model_timeout", "schema_invalid", "proposal_rejected", "provider_error"]
+ApplicationCommit = Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{40}$")]
+
+
+class CareerRunManifest(CareerContract):
+    """Exact release inputs for the Career proposal boundary, without user content."""
+
+    model_config = ConfigDict(frozen=True)
+    provider: Identifier
+    transport: Identifier
+    model_snapshot: Identifier
+    prompt_name: Identifier
+    prompt_version: Identifier
+    prompt_hash: Sha256
+    response_schema_version: Identifier
+    schema_hash: Sha256
+    policy_version: Identifier
+    max_output_tokens: Annotated[int, Field(strict=True, ge=16, le=4096)]
+    timeout_ms: Annotated[int, Field(strict=True, ge=1, le=30000)]
+    max_attempts: Literal[1] = 1
+    store_response: Literal[False] | None = None
+
+
+RunManifest = CareerRunManifest | ModelManifest
 
 
 class RunMetadata(CareerContract):
@@ -32,17 +55,25 @@ class RunMetadata(CareerContract):
 
 
 class StoredRun(CareerContract):
-    manifest: ModelManifest
+    manifest: RunManifest
     metadata: RunMetadata
 
     @field_validator("manifest")
     @classmethod
-    def validate_manifest(cls, manifest: ModelManifest) -> ModelManifest:
+    def validate_manifest(cls, manifest: RunManifest) -> RunManifest:
+        if isinstance(manifest, CareerRunManifest):
+            return manifest
         identifiers = [manifest.model_snapshot, manifest.prompt_name, manifest.prompt_version, manifest.schema_version]
         if manifest.pricing:
             identifiers.append(manifest.pricing.version)
         TypeAdapter(list[Identifier]).validate_python(identifiers)
         return manifest
+
+    @model_validator(mode="after")
+    def validate_career_commit(self) -> Self:
+        if isinstance(self.manifest, CareerRunManifest):
+            TypeAdapter(ApplicationCommit).validate_python(self.metadata.application_commit)
+        return self
 
 
 class GeneratorManifest(CareerContract):

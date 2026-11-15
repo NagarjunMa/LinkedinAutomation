@@ -25,7 +25,7 @@ from app.db.session import engine_options
 from app.models.resume_document import ResumeDocument
 from app.models.user import User
 from app.schemas.career.evidence import EvidenceDecisionInput, EvidenceProposal
-from app.schemas.career.lineage import ArtifactInput, ProofMetadata, RunMetadata
+from app.schemas.career.lineage import ArtifactInput, CareerRunManifest, ProofMetadata, RunMetadata
 from app.schemas.career.persistence import CareerSourceCreate
 
 pytestmark = pytest.mark.postgres
@@ -158,6 +158,26 @@ def test_run_accepts_structured_metadata_and_rejects_private_content(lineage):
         assert LineageService(db, owner).record_artifact(artifact(confirmed, run_id=run_id)).run_id == run_id
         with pytest.raises(ResourceNotFoundError):
             LineageService(db, foreign).record_artifact(artifact(other, run_id=run_id))
+
+
+def test_career_release_manifest_round_trips_through_owner_scoped_encrypted_storage(lineage):
+    engine, _, (owner, foreign), _ = lineage
+    manifest = CareerRunManifest(
+        schema_version=1, provider="synthetic", transport="memory", model_snapshot="synthetic-v1",
+        prompt_name="career-turn", prompt_version="1", prompt_hash="a" * 64,
+        response_schema_version="CareerTurnProposal.v1", schema_hash="b" * 64,
+        policy_version="career-interview.v1", max_output_tokens=500, timeout_ms=5000,
+    )
+    metadata = RunMetadata(schema_version=1, application_commit="c" * 40, latency_ms=3)
+    with Session(engine) as db:
+        service = LineageService(db, owner)
+        run_id = service.record_run(manifest, metadata)
+        stored = service.get_run(run_id)
+        assert stored.manifest == manifest and stored.metadata == metadata
+        ciphertext = db.scalar(text("SELECT ciphertext FROM career_interview_runs WHERE id = :id"), {"id": run_id})
+        assert manifest.prompt_hash not in ciphertext and manifest.policy_version not in ciphertext
+        with pytest.raises(ResourceNotFoundError):
+            LineageService(db, foreign).get_run(run_id)
 
 
 def test_database_ownership_and_recovery(lineage):
