@@ -8,7 +8,6 @@ from sqlalchemy.orm import Session
 from app.application.career_encryption import career_cipher, open_private_text
 from app.application.errors import InvalidOperationError, ResourceConflictError, ResourceNotFoundError
 from app.application.evidence_service import EvidenceService
-from app.core.openai_client import ModelManifest
 from app.models.career import CareerSourceRow, CareerTargetRow
 from app.models.career_lineage import ArtifactClaimRow as Claim
 from app.models.career_lineage import CareerRunRow as Run
@@ -19,7 +18,7 @@ from app.repositories.career_repository import CareerRepository
 from app.repositories.interview_repository import InterviewRepository
 from app.schemas.career.common import SourceRef
 from app.schemas.career.evidence import EvidenceRevisionRef
-from app.schemas.career.lineage import ArtifactInput, ArtifactRef, ArtifactView, ProofMetadata, RunMetadata, StoredRun
+from app.schemas.career.lineage import ArtifactInput, ArtifactRef, ArtifactView, ProofMetadata, RunManifest, RunMetadata, StoredRun
 from app.schemas.career.resume import GeneratedClaimLineage
 
 
@@ -33,7 +32,7 @@ class LineageService:
         self.evidence = EvidenceService(db, owner)
         self.interviews = InterviewRepository(db, owner)
 
-    def record_run(self, manifest: ModelManifest, metadata: RunMetadata) -> str:
+    def record_run(self, manifest: RunManifest, metadata: RunMetadata) -> str:
         self._lock_owner()
         if metadata.session_id and self.interviews.get(metadata.session_id, lock=True) is None:
             raise ResourceNotFoundError("Interview not found")
