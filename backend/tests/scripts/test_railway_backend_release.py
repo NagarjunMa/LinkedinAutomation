@@ -54,8 +54,12 @@ def test_success_without_alembic_marker_never_uploads_web():
     railway.upload.assert_called_once_with(Path("/archive"), "migrator")
 
 
-def test_snapshot_reads_git_tree_and_excludes_worktree_edits(tmp_path):
+def test_snapshot_reads_git_tree_and_excludes_worktree_edits(tmp_path, monkeypatch):
     import subprocess
+
+    # A pre-push hook can point Git at the active worktree even with a new cwd.
+    for name in subprocess.check_output(["git", "rev-parse", "--local-env-vars"], text=True).splitlines():
+        monkeypatch.delenv(name, raising=False)
 
     repo = tmp_path / "repo"
     repo.mkdir()
