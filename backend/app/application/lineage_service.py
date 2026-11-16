@@ -36,11 +36,15 @@ class LineageService:
         self._lock_owner()
         if metadata.session_id and self.interviews.get(metadata.session_id, lock=True) is None:
             raise ResourceNotFoundError("Interview not found")
-        run = StoredRun(schema_version=1, manifest=manifest, metadata=metadata)
+        run_id = self.stage_run(StoredRun(schema_version=1, manifest=manifest, metadata=metadata))
+        self.db.commit()
+        return run_id
+
+    def stage_run(self, run: StoredRun) -> str:
+        """Stage an encrypted run inside a transaction whose caller owns the session lock."""
         ciphertext = career_cipher(scope="Career run").encrypt(run.model_dump_json().encode()).decode("ascii")
         run_id = str(uuid4())
-        self.db.add(Run(user_id=self.owner, id=run_id, session_id=metadata.session_id, ciphertext=ciphertext))
-        self.db.commit()
+        self.db.add(Run(user_id=self.owner, id=run_id, session_id=run.metadata.session_id, ciphertext=ciphertext))
         return run_id
 
     def get_run(self, run_id: str) -> StoredRun:

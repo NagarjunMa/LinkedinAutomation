@@ -54,4 +54,6 @@ class InterviewMessageRow(Base):
     role = mapped_column(String(16), nullable=False)
     content_ciphertext = mapped_column(Text, nullable=False)
     processing_status = mapped_column(String(16), nullable=False)
+    turn_lease_expires_at = mapped_column(DateTime(timezone=True), nullable=True)
+    turn_slot = mapped_column(String(128), nullable=True)
     created_at = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())

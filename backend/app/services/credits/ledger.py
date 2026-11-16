@@ -13,6 +13,7 @@ import uuid
 from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 from app.core.config import settings
+from app.db.transactions import is_transactional_read_committed
 from app.models.credit_ledger import CreditLedger
 from app.models.user import User
 
@@ -32,11 +33,7 @@ def validate_credit_transaction(db: Session) -> str:
     """
     dialect = db.get_bind().dialect.name
     if dialect == "postgresql":
-        connection = db.connection()
-        # get_isolation_level() alone does not report DBAPI autocommit. The
-        # supported synchronous PostgreSQL driver (psycopg2) exposes it here.
-        if (connection.connection.dbapi_connection.autocommit
-                or connection.get_isolation_level() != "READ COMMITTED"):
+        if not is_transactional_read_committed(db.connection()):
             raise CreditLockUnavailable("Credit writes require transactional READ COMMITTED")
     elif dialect == "sqlite":
         if settings.ENVIRONMENT.lower() not in {"development", "test"}:

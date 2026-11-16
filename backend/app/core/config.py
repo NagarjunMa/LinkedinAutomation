@@ -104,6 +104,9 @@ class Settings(BaseSettings):
     """
 
     CAREER_TRANSCRIPT_KEY: SecretStr | None = None
+    CAREER_TURNS_ENABLED: bool = False
+    CAREER_MODEL_SAFETY_KEY: SecretStr | None = None
+    CAREER_MODEL_APPLICATION_COMMIT: str | None = None
     """Dedicated Fernet key required when saving or opening interview messages."""
 
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days

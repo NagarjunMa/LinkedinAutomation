@@ -230,3 +230,36 @@ Use the migration-owner connection at READ COMMITTED to run
 `python -m alembic downgrade 2026_11_14_career_evidence`. Verify the previous
 image's Alembic head and `/health`. With saved metadata, preserve the schema
 and key and deploy a corrective image that supports the current head.
+
+### PRI-40 Authenticated Career turn streaming
+
+Apply `2026_11_16_career_turns` before starting the corresponding backend.
+Keep `CAREER_TURNS_ENABLED=false` for the first deployment and for the public
+preview. In development, verify the disabled endpoint returns 503 for an
+authenticated request, then enable it on the authenticated backend for a
+two-account smoke test. Use the existing persistent `CAREER_TRANSCRIPT_KEY`.
+The runtime connection must use transactional PostgreSQL READ COMMITTED and
+allow the application to lock the owner and write the interview and run tables.
+Preserve the restricted public-preview database role and revoked Data API grants.
+
+Test browser POST streaming with synthetic messages. Verify that status events
+arrive during processing, the final reply is available through the existing
+session and messages endpoints, and the second account gets 404 on the first
+account's session. Start with deterministic fallback. Optional model testing
+requires the existing AI configuration and a separate persistent
+`CAREER_MODEL_SAFETY_KEY`. The Railway release packages the reviewed commit
+with the backend so the model run can record it. Confirm the retention and
+account-deletion workflow before handling real transcripts.
+
+- **Disable the feature:** Set `CAREER_TURNS_ENABLED=false` and restart the
+  current backend or a corrective build that recognizes the current head.
+  Confirm `/health`, the disabled endpoint, and access to existing transcripts.
+- **Restore a pre-PRI-40 image:** Its startup check requires
+  `2026_11_14_career_lineage`. Disable admissions and quiesce turn processing
+  first. Before any PRI-40 turn records exist, the PRI-40 migration checkout
+  can run `python -m alembic downgrade 2026_11_14_career_lineage` with the
+  migration-owner connection in READ COMMITTED. Verify the prior checkout
+  with `python -m alembic current --check-heads` and `/health` before restoring
+  traffic. Once a turn record exists, retain the migration and the transcript
+  key and use the flag-off or corrective build. The downgrade refuses to
+  discard saved admission metadata.
