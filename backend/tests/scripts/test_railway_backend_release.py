@@ -63,6 +63,7 @@ def test_snapshot_reads_git_tree_and_excludes_worktree_edits(tmp_path):
     backend = repo / "backend"
     backend.mkdir()
     (backend / "Dockerfile").write_text("reviewed")
+    (backend / "release_revision.txt").write_text("untrustworthy-tracked-revision")
     subprocess.run(["git", "add", "backend"], cwd=repo, check=True)
     tree = subprocess.check_output(["git", "write-tree"], cwd=repo, text=True).strip()
     revision = subprocess.check_output(
@@ -74,7 +75,8 @@ def test_snapshot_reads_git_tree_and_excludes_worktree_edits(tmp_path):
     archive = tmp_path / "archive"
     release.snapshot(repo, archive, revision)
     assert (archive / "Dockerfile").read_text() == "reviewed"
-    assert sorted(p.name for p in archive.iterdir()) == ["Dockerfile"]
+    assert (archive / "release_revision.txt").read_text().strip() == revision
+    assert sorted(p.name for p in archive.iterdir()) == ["Dockerfile", "release_revision.txt"]
 
 
 def test_separate_migration_environment_routes_only_migration_service():

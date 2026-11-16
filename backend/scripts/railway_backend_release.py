@@ -36,6 +36,7 @@ def snapshot(repository, destination, revision):
                 raise ReleaseError("Backend archive contains an unsupported path or file type")
         archive.extractall(destination)
     tar_path.unlink()
+    (destination / "release_revision.txt").write_text(revision + "\n", encoding="ascii")
 
 
 class Railway:

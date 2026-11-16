@@ -98,7 +98,7 @@ class TurnViolation:
 
 
 def _encode(body: dict) -> str:
-    return json.dumps(body, ensure_ascii=True, separators=(",", ":"))
+    return json.dumps(body, ensure_ascii=False, separators=(",", ":"))
 
 
 @dataclass(frozen=True)
@@ -275,7 +275,7 @@ def _contains_withdrawn_text(fragments: set[str], *fields: str) -> bool:
 
 def _append_bounded(body: dict, field_name: str, value: dict) -> bool:
     body[field_name].append(value)
-    if len(_encode(body)) <= MAX_CAREER_CONTEXT_CHARS - 512:
+    if len(_encode(body).encode("utf-8")) <= MAX_CAREER_CONTEXT_CHARS - 512:
         return True
     body[field_name].pop()
     return False

@@ -147,7 +147,7 @@ class OpenAICareerModel:
         pricing = self.manifest.pricing
         if pricing is None:
             return None
-        wire = json.dumps(self._body(request), ensure_ascii=True, separators=(",", ":")).encode()
+        wire = json.dumps(self._body(request), ensure_ascii=False, separators=(",", ":")).encode("utf-8")
         # Reserve one token per wire byte with headroom for provider message framing.
         input_tokens = len(wire) + 512
         output_tokens = self.manifest.max_output_tokens

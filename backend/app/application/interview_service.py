@@ -76,10 +76,9 @@ class InterviewService:
         if not CareerRepository(self.db, self.owner).lock_owner_for_insert():
             raise ResourceNotFoundError("Interview not found")
         row = self._owned(session_id, lock=True)
-        cipher = career_cipher()
         previous = self.repo.get_retry(session_id, role, data.key)
         if previous:
-            content = open_private_text(cipher, previous.content_ciphertext)
+            content = open_private_text(career_cipher(), previous.content_ciphertext)
             if content != data.content:
                 raise ResourceConflictError("Message key was reused with different content")
             result = _message_view(previous, content)
@@ -87,23 +86,29 @@ class InterviewService:
             return result
         if row.status != "active":
             raise ResourceConflictError("Interview is not active")
+        message = self._new_message(row, data, role=role, now=datetime.now(timezone.utc))
+        result = _message_view(message, data.content)
+        self.db.commit()
+        return result
+
+    def _new_message(self, row: Interview, data: MessageInput, *, role: MessageRole, now: datetime) -> Message:
+        cipher = career_cipher()
         if row.message_count:
             # Under the session lock, reject a misconfigured backend before adding mixed-key rows.
-            last = self.repo.get_message_at(session_id, row.message_count)
+            last = self.repo.get_message_at(row.id, row.message_count)
             if last is None:
                 raise ExternalServiceError("Interview transcript could not be opened")
             open_private_text(cipher, last.content_ciphertext)
         row.message_count += 1
-        self._advance(row)
+        row.state_version += 1
+        row.updated_at = now
         message = Message(
-            user_id=self.owner, session_id=session_id, position=row.message_count, key=data.key,
+            user_id=self.owner, session_id=row.id, position=row.message_count, key=data.key,
             content_ciphertext=cipher.encrypt(data.content.encode("utf-8")).decode("ascii"),
-            role=role, processing_status="pending" if role == "user" else "complete", created_at=row.updated_at,
+            role=role, processing_status="pending" if role == "user" else "complete", created_at=now,
         )
-        result = _message_view(message, data.content)
         self.db.add(message)
-        self.db.commit()
-        return result
+        return message
 
     def _owned(self, session_id: str, *, lock: bool = False) -> Interview:
         row = self.repo.get(session_id, lock=lock)
