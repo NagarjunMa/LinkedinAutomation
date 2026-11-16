@@ -5,7 +5,7 @@ from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, TypeAdapter, field_validator, model_validator
 
-from app.core.openai_client import ModelManifest
+from app.core.openai_client import ModelManifest, ModelPricing
 
 from .common import CareerContract, Count, Identifier, Ownership, Revision, Sha256, SourceRef, Timestamp
 from .evidence import EvidenceRevisionRef
@@ -13,6 +13,11 @@ from .resume import ClaimEvidence, GeneratedClaimLineage, ResumeReasonCode
 
 ArtifactKind = Literal["resume", "linkedin_recommendations", "interview_story_bank", "hiring_manager_brief", "learning_plan"]
 RunFailure = Literal["model_unavailable", "model_timeout", "schema_invalid", "proposal_rejected", "provider_error"]
+TurnReason = Literal[
+    "schema_invalid", "slot_mismatch", "action_not_allowed", "question_out_of_scope",
+    "citation_not_approved", "claim_not_approved", "qualifier_not_approved", "contradiction_not_approved",
+    "attempt_exceeded_reservation",
+]
 ApplicationCommit = Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{40}$")]
 
 
@@ -33,6 +38,13 @@ class CareerRunManifest(CareerContract):
     timeout_ms: Annotated[int, Field(strict=True, ge=1, le=30000)]
     max_attempts: Literal[1] = 1
     store_response: Literal[False] | None = None
+    pricing: ModelPricing | None = None
+
+    @model_validator(mode="after")
+    def pricing_matches_snapshot(self) -> Self:
+        if self.pricing is not None and self.pricing.model_snapshot != self.model_snapshot:
+            raise ValueError("Career run pricing must match the exact model snapshot")
+        return self
 
 
 RunManifest = CareerRunManifest | ModelManifest
@@ -50,7 +62,7 @@ class RunMetadata(CareerContract):
     latency_ms: Count
     retry_count: Count = 0
     repair_count: Count = 0
-    reason_codes: list[ResumeReasonCode] = Field(default_factory=list, max_length=32)
+    reason_codes: list[ResumeReasonCode | TurnReason] = Field(default_factory=list, max_length=32)
     failure: RunFailure | None = None
 
 

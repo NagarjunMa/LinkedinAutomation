@@ -2,10 +2,12 @@
 
 import asyncio
 from contextvars import ContextVar
+from decimal import Decimal
 from hashlib import sha256
 import hmac
 import json
 import logging
+import math
 from pathlib import Path
 import re
 from time import monotonic
@@ -15,9 +17,9 @@ from openai import APIError, APIStatusError, APITimeoutError, OpenAIError
 from openai.types.responses import Response
 from pydantic import TypeAdapter
 
-from app.application.career_model import CareerModelRequest, CareerModelResult
-from app.core.model_retry import is_transient_model_error
-from app.core.openai_client import ModelRuntime, OpenAIConfigurationError
+from app.application.career_model import CareerModelQuote, CareerModelRequest, CareerModelResult
+from app.core.model_retry import is_transient_model_error, model_retry_after
+from app.core.openai_client import ModelPricing, ModelRuntime, OpenAIConfigurationError
 from app.schemas.career.interview import CareerTurnProposal
 from app.schemas.career.lineage import ApplicationCommit, CareerRunManifest, RunFailure, RunMetadata, StoredRun
 
@@ -40,7 +42,7 @@ def _strict_schema(node: dict) -> dict:
     return schema
 
 
-_PROMPT = (Path(__file__).resolve().parents[1] / "prompts" / "career" / "turn_v1.txt").read_bytes()
+_PROMPT = (Path(__file__).resolve().parents[1] / "prompts" / "career" / "turn_v2.txt").read_bytes()
 _RESPONSE_SCHEMA = _strict_schema(CareerTurnProposal.model_json_schema())
 _RESPONSE_VALIDATOR = Draft202012Validator(_RESPONSE_SCHEMA)
 _SCHEMA_HASH = sha256(json.dumps(_RESPONSE_SCHEMA, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
@@ -105,7 +107,7 @@ def _token_count(value: object) -> int | None:
 class OpenAICareerModel:
     def __init__(
         self, runtime: ModelRuntime, *, model_snapshot: str, application_commit: str, safety_key: bytes,
-        max_output_tokens: int = 1200, timeout_ms: int = 8000,
+        max_output_tokens: int = 1200, timeout_ms: int = 8000, pricing: ModelPricing | None = None,
     ):
         if not re.fullmatch(r"[a-zA-Z0-9_.-]+-\d{4}-\d{2}-\d{2}", model_snapshot):
             raise ValueError("Career model must use a dated OpenAI snapshot")
@@ -116,27 +118,53 @@ class OpenAICareerModel:
         self._application_commit = TypeAdapter(ApplicationCommit).validate_python(application_commit)
         self._manifest = CareerRunManifest(
             schema_version=1, provider="openai", transport="responses", model_snapshot=model_snapshot,
-            prompt_name="career-turn", prompt_version="1", prompt_hash=sha256(_PROMPT).hexdigest(),
+            prompt_name="career-turn", prompt_version="2", prompt_hash=sha256(_PROMPT).hexdigest(),
             response_schema_version="CareerTurnProposal.v1", schema_hash=_SCHEMA_HASH,
-            policy_version="career-interview.v1", max_output_tokens=max_output_tokens, timeout_ms=timeout_ms,
-            store_response=False,
+            policy_version="career-interview.v2", max_output_tokens=max_output_tokens, timeout_ms=timeout_ms,
+            store_response=False, pricing=pricing,
         )
 
     @property
     def manifest(self) -> CareerRunManifest:
         return self._manifest
 
+    def _body(self, request: CareerModelRequest) -> dict:
+        safety_id = hmac.digest(
+            self._safety_key, f"prismpro:career-safety:v1:{request.owner_id}".encode(), "sha256",
+        ).hex()
+        return {
+            "model": self.manifest.model_snapshot,
+            "instructions": _PROMPT.decode("utf-8"),
+            "input": [{"role": "user", "content": request.context}],
+            "text": {"format": {"type": "json_schema", "name": "career_turn_proposal",
+                                "schema": _RESPONSE_SCHEMA, "strict": True}},
+            "max_output_tokens": self.manifest.max_output_tokens,
+            "safety_identifier": safety_id,
+            "store": False,
+        }
+
+    def quote(self, request: CareerModelRequest) -> CareerModelQuote | None:
+        pricing = self.manifest.pricing
+        if pricing is None:
+            return None
+        wire = json.dumps(self._body(request), ensure_ascii=True, separators=(",", ":")).encode()
+        # Reserve one token per wire byte with headroom for provider message framing.
+        input_tokens = len(wire) + 512
+        output_tokens = self.manifest.max_output_tokens
+        return CareerModelQuote(input_tokens + output_tokens, math.ceil(
+            input_tokens * max(pricing.input_usd_per_million, pricing.cached_input_usd_per_million)
+            + output_tokens * pricing.output_usd_per_million
+        ))
+
     async def propose(self, request: CareerModelRequest) -> CareerModelResult:
         started = monotonic()
         manifest = self.manifest
         timeout = manifest.timeout_ms / 1000
-        safety_id = hmac.digest(
-            self._safety_key, f"prismpro:career-safety:v1:{request.owner_id}".encode(), "sha256",
-        ).hex()
         response = None
         proposal = None
         request_id = None
         retryable = False
+        retry_after = None
         log_context = _IN_CAREER_REQUEST.set(True)
         try:
             async with asyncio.timeout(timeout):
@@ -144,17 +172,7 @@ class OpenAICareerModel:
                 if str(client.base_url) != "https://api.openai.com/v1/":
                     raise ValueError("Career proposals require the configured OpenAI API origin")
                 response = await client.post(
-                    "/responses", cast_to=Response,
-                    body={
-                        "model": manifest.model_snapshot,
-                        "instructions": _PROMPT.decode("utf-8"),
-                        "input": [{"role": "user", "content": request.context}],
-                        "text": {"format": {"type": "json_schema", "name": "career_turn_proposal",
-                                            "schema": _RESPONSE_SCHEMA, "strict": True}},
-                        "max_output_tokens": manifest.max_output_tokens,
-                        "safety_identifier": safety_id,
-                        "store": False,
-                    },
+                    "/responses", cast_to=Response, body=self._body(request),
                     options={"timeout": timeout, "follow_redirects": False},
                 )
             request_id = getattr(response, "_request_id", None)
@@ -167,6 +185,10 @@ class OpenAICareerModel:
             unavailable = retryable or isinstance(error, APIStatusError) and error.status_code in (401, 403, 429)
             failure = "model_unavailable" if unavailable else "provider_error"
             request_id = getattr(error, "request_id", None)
+            if retryable:
+                retry_after = model_retry_after(error)
+                if retry_after is not None and not math.isfinite(retry_after):
+                    retryable, retry_after = False, None
         except (OpenAIConfigurationError, OpenAIError):
             failure = "model_unavailable"
         except (ValueError, RecursionError):
@@ -175,15 +197,30 @@ class OpenAICareerModel:
             _IN_CAREER_REQUEST.reset(log_context)
 
         usage = getattr(response, "usage", None)
+        input_tokens = _token_count(getattr(usage, "input_tokens", None))
+        output_tokens = _token_count(getattr(usage, "output_tokens", None))
+        cost = None
+        pricing = manifest.pricing
+        if (pricing is not None and input_tokens is not None and output_tokens is not None
+                and getattr(response, "model", None) == manifest.model_snapshot):
+            cached = getattr(getattr(usage, "input_tokens_details", None), "cached_tokens", None)
+            if type(cached) is int and 0 <= cached <= input_tokens:
+                input_cost = ((input_tokens - cached) * pricing.input_usd_per_million
+                              + cached * pricing.cached_input_usd_per_million)
+            else:
+                input_cost = input_tokens * max(pricing.input_usd_per_million, pricing.cached_input_usd_per_million)
+            micros = math.ceil(input_cost + output_tokens * pricing.output_usd_per_million)
+            # Keep upstream token counts for the caller's reservation guard even if cost cannot be stored.
+            if micros < 10 ** 12:
+                cost = Decimal(micros).scaleb(-6)
         metadata = RunMetadata(
             schema_version=1, application_commit=self._application_commit,
             provider_request_id=request_id if isinstance(request_id, str)
             and re.fullmatch(r"req_[A-Za-z0-9_-]{1,100}", request_id) else None,
-            input_tokens=_token_count(getattr(usage, "input_tokens", None)),
-            output_tokens=_token_count(getattr(usage, "output_tokens", None)),
+            input_tokens=input_tokens, output_tokens=output_tokens, cost_usd=cost,
             latency_ms=int((monotonic() - started) * 1000), failure=failure,
         )
         return CareerModelResult(
             run=StoredRun(schema_version=1, manifest=manifest, metadata=metadata),
-            proposal=proposal, retryable=retryable,
+            proposal=proposal, retryable=retryable, retry_after_seconds=retry_after,
         )
