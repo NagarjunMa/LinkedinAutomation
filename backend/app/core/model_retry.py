@@ -29,7 +29,7 @@ def is_transient_model_error(error: BaseException) -> bool:
     return False
 
 
-def _retry_after(error: BaseException | None) -> float | None:
+def model_retry_after(error: BaseException | None) -> float | None:
     if not isinstance(error, RateLimitError):
         return None
     headers = error.response.headers
@@ -59,13 +59,13 @@ def retry_model_call(*, attempts: int = 3, max_wait: int = 10):
     def should_retry(error: BaseException) -> bool:
         if not is_transient_model_error(error):
             return False
-        delay = _retry_after(error)
+        delay = model_retry_after(error)
         # A longer server cooldown cannot fit this synchronous operation's wait
         # budget. Fail rather than ignore the cooldown or hold the request open.
         return delay is None or delay <= max_wait
 
     def wait(retry_state):
-        delay = _retry_after(retry_state.outcome.exception())
+        delay = model_retry_after(retry_state.outcome.exception())
         return max(backoff(retry_state), delay or 0)
 
     return retry(

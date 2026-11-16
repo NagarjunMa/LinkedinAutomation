@@ -1,4 +1,5 @@
 import asyncio
+from decimal import Decimal
 import hashlib
 import json
 import logging
@@ -10,7 +11,7 @@ from openai import AsyncOpenAI, DefaultAsyncHttpxClient
 from pydantic import ValidationError
 
 from app.application.career_model import CareerModel, CareerModelRequest
-from app.core.openai_client import DEFAULT_MANIFESTS, ModelRuntime
+from app.core.openai_client import DEFAULT_MANIFESTS, ModelPricing, ModelRuntime
 from app.schemas.career.lineage import RunMetadata, StoredRun
 from app.services.career_model_openai import OpenAICareerModel
 
@@ -54,7 +55,7 @@ def source_link():
     }
 
 
-async def invoke(handler, *, timeout_ms=8000, owner=OWNER, safety_key=KEY, snapshot=SNAPSHOT,
+async def invoke(handler, *, timeout_ms=8000, owner=OWNER, safety_key=KEY, snapshot=SNAPSHOT, pricing=None,
                  base_url="https://api.openai.com/v1/"):
     async with AsyncOpenAI(
         api_key="synthetic-fixture",
@@ -65,7 +66,7 @@ async def invoke(handler, *, timeout_ms=8000, owner=OWNER, safety_key=KEY, snaps
         adapter: CareerModel = OpenAICareerModel(
             ModelRuntime(client_factory=lambda: client),
             model_snapshot=snapshot, application_commit=COMMIT,
-            safety_key=safety_key, max_output_tokens=750, timeout_ms=timeout_ms,
+            safety_key=safety_key, max_output_tokens=750, timeout_ms=timeout_ms, pricing=pricing,
         )
         return await adapter.propose(CareerModelRequest(owner_id=owner, context=CONTEXT))
 
@@ -97,11 +98,11 @@ async def test_responses_request_is_private_bounded_and_tied_to_exact_manifest()
     assert OWNER not in json.dumps(wire)
     assert wire["safety_identifier"] != hashlib.sha256(OWNER.encode()).hexdigest()
     assert len(wire["safety_identifier"]) == 64
-    prompt_file = Path(__file__).parents[2] / "app/prompts/career/turn_v1.txt"
+    prompt_file = Path(__file__).parents[2] / "app/prompts/career/turn_v2.txt"
     assert wire["instructions"] == prompt_file.read_text(encoding="utf-8")
     assert run.manifest.prompt_hash == hashlib.sha256(wire["instructions"].encode()).hexdigest()
-    assert run.manifest.prompt_version == "1"
-    assert run.manifest.policy_version == "career-interview.v1"
+    assert run.manifest.prompt_version == "2"
+    assert run.manifest.policy_version == "career-interview.v2"
     schema = wire["text"]["format"]["schema"]
     assert wire["text"]["format"]["strict"] is True
     assert run.manifest.schema_hash == hashlib.sha256(
@@ -128,6 +129,47 @@ async def test_replacement_snapshot_accepts_canonical_nested_evidence_and_record
     assert result.proposal.model_dump() == proposal
     assert result.run.manifest.model_snapshot == snapshot
     assert CONTEXT not in repr(result)
+
+
+@pytest.mark.asyncio
+async def test_quote_covers_full_request_and_cost_and_run_records_reported_usage():
+    sent = []
+
+    def handle(request):
+        sent.append(request.content)
+        return httpx.Response(200, json=provider_payload())
+
+    request = CareerModelRequest(owner_id=OWNER, context=CONTEXT)
+    async with AsyncOpenAI(api_key="synthetic-fixture", base_url="https://api.openai.com/v1/",
+                           http_client=DefaultAsyncHttpxClient(transport=httpx.MockTransport(handle))) as client:
+        runtime = ModelRuntime(client_factory=lambda: client)
+        settings = dict(model_snapshot=SNAPSHOT, application_commit=COMMIT, safety_key=KEY, max_output_tokens=750)
+        assert OpenAICareerModel(runtime, **settings).quote(request) is None
+        pricing = ModelPricing(
+            model_snapshot=SNAPSHOT, version="synthetic-price-v1", input_usd_per_million=2,
+            cached_input_usd_per_million=1, output_usd_per_million=8,
+        )
+        model = OpenAICareerModel(runtime, pricing=pricing, **settings)
+        quote = model.quote(request)
+        assert not sent
+        result = await model.propose(request)
+    assert quote.tokens >= len(sent[0]) + 750
+    assert quote.cost_microusd >= len(sent[0]) * 2 + 750 * 8
+    assert result.run.metadata.cost_usd == Decimal("0.000238")
+    assert result.run.manifest.pricing == pricing
+
+
+@pytest.mark.asyncio
+async def test_unrepresentable_provider_cost_preserves_usage_for_budget_rejection():
+    payload = provider_payload()
+    payload["usage"]["input_tokens"] = 999_999_999_999
+    pricing = ModelPricing(
+        model_snapshot=SNAPSHOT, version="synthetic-price-v1", input_usd_per_million="2.50",
+        cached_input_usd_per_million=1, output_usd_per_million=8,
+    )
+    result = await invoke(lambda _: httpx.Response(200, json=payload), pricing=pricing)
+    assert result.run.metadata.input_tokens == 999_999_999_999
+    assert result.run.metadata.cost_usd is None
 
 
 @pytest.mark.asyncio
@@ -237,6 +279,21 @@ async def test_sdk_default_redirects_cannot_resend_candidate_context():
     result = await invoke(handle)
     assert calls == ["api.openai.com"]
     assert result.run.metadata.failure == "provider_error" and not result.retryable
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(("header", "retryable", "delay"), [("2", True, 2.0), ("bad", False, None)])
+async def test_retry_after_is_exposed_without_retrying_inside_the_adapter(header, retryable, delay):
+    calls = []
+
+    def handle(request):
+        calls.append(request)
+        return httpx.Response(429, headers={"retry-after": header},
+                              json={"error": {"message": CONTEXT, "code": "rate_limit_exceeded"}})
+
+    result = await invoke(handle)
+    assert len(calls) == 1
+    assert result.retryable is retryable and result.retry_after_seconds == delay
 
 
 @pytest.mark.asyncio
