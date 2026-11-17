@@ -434,3 +434,38 @@ async def test_approved_contradiction_uses_both_exact_visible_sides():
     assert outcome.decision.contradiction == decision.contradiction
     assert len(outcome.contradictions) == 1 and not outcome.evidence
     assert outcome.contradictions[0].contradicts.excerpt == opposing
+
+
+@pytest.mark.asyncio
+async def test_dispatch_is_fenced_before_initial_call_transport_retry_and_repair():
+    current = state()
+    model = FakeModel(
+        result(failure="model_unavailable", retryable=True),
+        proposal(current, recommended_action="complete"),
+        proposal(current),
+    )
+    seen = []
+
+    async def record_attempt():
+        seen.append(len(model.requests))
+
+    outcome = await execute_career_turn(
+        model, current, planning(current), context(), now=NOW, sleep=no_sleep, before_attempt=record_attempt,
+    )
+    assert seen == [0, 1, 2]
+    assert len(outcome.runs) == 3 and outcome.fallback_reason is None
+
+
+@pytest.mark.asyncio
+async def test_failed_initial_dispatch_fence_never_calls_provider():
+    current = state()
+    model = FakeModel(proposal(current))
+
+    async def disconnected():
+        raise ResourceConflictError("Synthetic turn expired")
+
+    with pytest.raises(ResourceConflictError, match="Synthetic turn expired"):
+        await execute_career_turn(
+            model, current, planning(current), context(), now=NOW, before_attempt=disconnected,
+        )
+    assert model.requests == []

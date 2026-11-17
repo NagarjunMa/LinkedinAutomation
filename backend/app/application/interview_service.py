@@ -2,6 +2,7 @@
 from datetime import datetime, timezone
 from uuid import uuid4
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.application.career_encryption import career_cipher, open_private_text
@@ -64,12 +65,13 @@ class InterviewService:
     def messages(self, session_id: str, *, offset: int = 0, limit: int = 50) -> list[MessageView]:
         _page(offset, limit)
         self._owned(session_id)
-        rows = self.db.scalars(self.repo.messages(session_id).order_by(Message.position).offset(offset).limit(limit))
-        messages = rows.all()
+        query = self.repo.messages(session_id).add_columns(func.statement_timestamp())
+        messages = self.db.execute(query.order_by(Message.position).offset(offset).limit(limit)).all()
         if not messages:
             return []
         cipher = career_cipher()
-        return [_message_view(row, open_private_text(cipher, row.content_ciphertext)) for row in messages]
+        return [_message_view(row, open_private_text(cipher, row.content_ciphertext), now=now)
+                for row, now in messages]
 
     def append(self, session_id: str, data: MessageInput, *, role: MessageRole = "user") -> MessageView:
         # Follow the same owner-before-dependents lock order as account deletion.
@@ -122,10 +124,13 @@ class InterviewService:
         row.updated_at = datetime.now(timezone.utc)
 
 
-def _message_view(row: Message, content: str) -> MessageView:
+def _message_view(row: Message, content: str, *, now: datetime | None = None) -> MessageView:
+    status = row.processing_status
+    if status == "pending" and now is not None and row.turn_lease_expires_at and row.turn_lease_expires_at <= now:
+        status = "interrupted"
     return MessageView(
         key=row.key, content=content, position=row.position, role=row.role,
-        processing_status=row.processing_status, created_at=row.created_at,
+        processing_status=status, created_at=row.created_at,
     )
 
 

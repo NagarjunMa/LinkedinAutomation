@@ -56,4 +56,8 @@ class InterviewMessageRow(Base):
     processing_status = mapped_column(String(16), nullable=False)
     turn_lease_expires_at = mapped_column(DateTime(timezone=True), nullable=True)
     turn_slot = mapped_column(String(128), nullable=True)
+    turn_admitted_version = mapped_column(Integer, nullable=True)
+    turn_candidate_stage = mapped_column(String(32), nullable=True)
+    turn_tokens_reserved = mapped_column(Integer, nullable=False, server_default="0")
+    turn_tokens_dispatched = mapped_column(Integer, nullable=False, server_default="0")
     created_at = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())

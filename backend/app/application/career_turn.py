@@ -32,7 +32,7 @@ class CareerTurnOutcome:
 async def execute_career_turn(
     model: CareerModel, state: CareerSessionState, planning: TurnPlanningInput, context: CareerTurnContext,
     *, now: datetime | None = None, sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
-    before_retry: Callable[[], Awaitable[None]] | None = None,
+    before_attempt: Callable[[], Awaitable[None]] | None = None,
 ) -> CareerTurnOutcome:
     """Call the injected model within server-owned limits and return only approved output."""
     context.check_session(state)
@@ -79,8 +79,8 @@ async def execute_career_turn(
             break
         if delay:
             await sleep(delay)
-        if calls and before_retry is not None:
-            await before_retry()
+        if before_attempt is not None:
+            await before_attempt()
         if attempt_time > deadline - loop.time():
             reason = reason or "attempt_not_funded"
             break

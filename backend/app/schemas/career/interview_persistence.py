@@ -1,7 +1,7 @@
 """Inputs and views for durable interview sessions."""
 from typing import Annotated, Literal
 
-from pydantic import AfterValidator, BaseModel, ConfigDict
+from pydantic import AfterValidator, BaseModel, ConfigDict, StrictBool
 
 from .common import CandidateStage, Count, Identifier, Revision, Text, Timestamp
 from .interview import CareerSessionState
@@ -43,6 +43,7 @@ class MessageView(MessageInput):
 class TurnInput(MessageInput):
     expected_state_version: Revision
     candidate_stage: CandidateStage | None = None
+    retry: StrictBool = False
 
 
 class TurnStarted(BaseModel):
@@ -81,3 +82,23 @@ class TurnCompleted(BaseModel):
 class TurnFailed(BaseModel):
     type: Literal["turn.failed"] = "turn.failed"
     code: Literal["state_changed", "turn_unavailable"]
+
+
+class TurnPending(BaseModel):
+    type: Literal["turn.pending"] = "turn.pending"
+    key: Identifier
+    lease_expires_at: Timestamp
+
+
+class TurnInterrupted(BaseModel):
+    type: Literal["turn.interrupted"] = "turn.interrupted"
+    key: Identifier
+    state_version: Revision
+    can_retry: bool
+
+
+class TurnReplayed(BaseModel):
+    type: Literal["turn.replayed"] = "turn.replayed"
+    message: MessageView
+    state: SessionView
+    recovered: bool

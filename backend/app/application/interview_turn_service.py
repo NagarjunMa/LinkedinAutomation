@@ -8,6 +8,7 @@ from uuid import NAMESPACE_URL, uuid5
 
 from sqlalchemy import func, select
 
+from app.application.career_encryption import career_cipher, open_private_text
 from app.application.career_model import CareerModel
 from app.application.career_turn import CareerTurnOutcome, execute_career_turn
 from app.application.career_turn_context import CareerTurnContext, TurnMessage
@@ -23,7 +24,9 @@ from app.models.interview import InterviewMessageRow as Message, InterviewSessio
 from app.models.user import User
 from app.schemas.career.common import SourceRef
 from app.schemas.career.interview import CareerCoverage
-from app.schemas.career.interview_persistence import MessageInput, MessageView, SessionView, TurnInput
+from app.schemas.career.interview_persistence import (
+    MessageInput, MessageView, SessionView, TurnInput, TurnInterrupted, TurnPending, TurnReplayed,
+)
 from app.schemas.career.sources import CareerSource
 
 ATTEMPT_TOKENS = 20_000
@@ -52,23 +55,36 @@ class AdmittedTurn:
     planning_state: SessionView = field(repr=False)
     asked_slots: frozenset[str]
     reserved_tokens: int
+    model: CareerModel | None = field(default=None, repr=False)
 
 
 class InterviewTurnService(InterviewService):
-    def begin(self, session_id: str, data: TurnInput, *, model_enabled: bool) -> AdmittedTurn:
+    def begin(
+        self, session_id: str, data: TurnInput, *, create_model: Callable[[], CareerModel | None] | None = None,
+    ) -> AdmittedTurn | TurnPending | TurnInterrupted | TurnReplayed:
         self._lock_owner()
         row = self._owned(session_id, lock=True)
+        now = self._now()
+        if row.retention_expires_at is not None and row.retention_expires_at <= now:
+            raise ResourceNotFoundError("Interview not found")
+        previous = self.repo.get_retry(session_id, "user", data.key)
+        if previous is not None:
+            return self._existing_turn(row, previous, data, now)
+        if data.retry or self.repo.get_retry(session_id, "assistant", data.key):
+            raise ResourceConflictError("Interview turn cannot be retried")
         if row.status != "active" or row.state_version != data.expected_state_version:
             raise ResourceConflictError("Interview state is no longer current")
-        if self.repo.get_retry(session_id, "user", data.key) or self.repo.get_retry(session_id, "assistant", data.key):
-            raise ResourceConflictError("Interview turn key has already been used")
         if data.candidate_stage is not None and row.chapter != INTRODUCTION:
             raise InvalidOperationError("Career stage is confirmed during the introduction")
 
-        now = self._now()
         self._check_admission(now)
-        if row.retention_expires_at is not None and row.retention_expires_at <= now:
-            raise ResourceNotFoundError("Interview not found")
+        model = create_model() if create_model is not None else None
+        expired = self.repo.messages(row.id).where(
+            Message.turn_admitted_version.is_not(None), Message.processing_status == "pending",
+            Message.turn_lease_expires_at <= now,
+        )
+        for orphan in self.db.scalars(expired):
+            self._settle_interruption(row, orphan)
         if row.prompt_version == "unassigned":
             row.prompt_version = "2"
             row.turns_remaining = SESSION_TURNS
@@ -78,19 +94,61 @@ class InterviewTurnService(InterviewService):
 
         message = self._new_message(row, data, role="user", now=now)
         message.turn_lease_expires_at = now + TURN_LEASE
+        message.turn_admitted_version = row.state_version
+        message.turn_candidate_stage = data.candidate_stage
+        attempts = min(ATTEMPTS, row.tokens_remaining // ATTEMPT_TOKENS) if model is not None else 0
+        message.turn_tokens_reserved = attempts * ATTEMPT_TOKENS
         row.turns_remaining -= 1
-        planning_state = self._confirm_stage(_state(row), data)
-        funded_attempts = min(ATTEMPTS, row.tokens_remaining // ATTEMPT_TOKENS) if model_enabled else 0
-        reserved = funded_attempts * ATTEMPT_TOKENS
-        row.tokens_remaining -= reserved
-        asked_slots = self.repo.messages(session_id).with_only_columns(Message.turn_slot).where(
+        row.tokens_remaining -= message.turn_tokens_reserved
+        admitted = self._admitted(row, message, data, reserved=message.turn_tokens_reserved, model=model)
+        self.db.commit()
+        return admitted
+
+    def _existing_turn(
+        self, row: Interview, previous: Message, data: TurnInput, now: datetime,
+    ) -> TurnPending | TurnInterrupted | TurnReplayed:
+        cipher = career_cipher()
+        if (previous.turn_lease_expires_at is None or previous.turn_candidate_stage != data.candidate_stage
+                or open_private_text(cipher, previous.content_ciphertext) != data.content):
+            raise ResourceConflictError("Interview turn key was reused with a different request")
+
+        if previous.processing_status == "complete":
+            reply = self.repo.get_retry(row.id, "assistant", data.key)
+            if reply is None or reply.processing_status != "complete":
+                raise ResourceConflictError("Interview turn has no saved reply")
+            result = TurnReplayed(message=_message_view(reply, open_private_text(cipher, reply.content_ciphertext)),
+                                  state=_state(row), recovered=False)
+        elif previous.processing_status == "pending" and previous.turn_lease_expires_at > now:
+            result = TurnPending(key=previous.key, lease_expires_at=previous.turn_lease_expires_at)
+        else:
+            self._settle_interruption(row, previous)
+            can_retry = (row.status == "active" and row.state_version == previous.turn_admitted_version
+                         and row.message_count == previous.position)
+            if not data.retry:
+                result = TurnInterrupted(key=previous.key, state_version=row.state_version, can_retry=can_retry)
+            else:
+                if not can_retry or data.expected_state_version != row.state_version:
+                    self.db.commit()
+                    raise ResourceConflictError("Interview turn state is no longer current")
+                admitted = self._admitted(row, previous, data, reserved=0)
+                state, planning = _plan_admitted(admitted)
+                outcome = CareerTurnOutcome(plan_next_turn(state, planning))
+                reply, state = self._finish(row, previous, admitted, outcome, now, refund=0)
+                result = TurnReplayed(message=reply, state=state, recovered=True)
+        self.db.commit()
+        return result
+
+    def _admitted(
+        self, row: Interview, message: Message, data: TurnInput, *, reserved: int, model: CareerModel | None = None,
+    ) -> AdmittedTurn:
+        state = _state(row)
+        planning_state = self._confirm_stage(state, data)
+        asked_slots = self.repo.messages(row.id).with_only_columns(Message.turn_slot).where(
             Message.turn_slot.is_not(None),
         ).distinct()
         asked = frozenset(self.db.scalars(asked_slots))
-        admitted = AdmittedTurn(_state(row), _message_view(message, data.content), message.turn_lease_expires_at,
-                                planning_state, asked, reserved)
-        self.db.commit()
-        return admitted
+        return AdmittedTurn(state, _message_view(message, data.content), message.turn_lease_expires_at,
+                            planning_state, asked, reserved, model)
 
     def validate_admission(self, turn: AdmittedTurn) -> datetime:
         self._lock_owner()
@@ -98,18 +156,36 @@ class InterviewTurnService(InterviewService):
         self.db.commit()
         return now
 
+    def record_dispatch(self, turn: AdmittedTurn) -> None:
+        self._lock_owner()
+        _, pending, _ = self._pending(turn)
+        if pending.turn_tokens_dispatched + ATTEMPT_TOKENS > pending.turn_tokens_reserved:
+            raise ResourceConflictError("Interview token reservation was exceeded")
+        # A crash after this commit cannot establish whether the provider received the call.
+        pending.turn_tokens_dispatched += ATTEMPT_TOKENS
+        self.db.commit()
+
     def complete(self, turn: AdmittedTurn, outcome: CareerTurnOutcome) -> tuple[MessageView, SessionView]:
         self._lock_owner()
         row, pending, now = self._pending(turn)
-        if not 0 <= outcome.tokens_reserved <= turn.reserved_tokens:
+        if not 0 <= outcome.tokens_reserved <= pending.turn_tokens_dispatched <= pending.turn_tokens_reserved:
             raise ResourceConflictError("Interview token reservation was exceeded")
+        refund = pending.turn_tokens_reserved - outcome.tokens_reserved
+        result = self._finish(row, pending, turn, outcome, now, refund=refund)
+        self.db.commit()
+        return result
+
+    def _finish(
+        self, row: Interview, pending: Message, turn: AdmittedTurn, outcome: CareerTurnOutcome,
+        now: datetime, *, refund: int,
+    ) -> tuple[MessageView, SessionView]:
         decision = outcome.decision
         content = decision.question or _STATUS_MESSAGES.get(decision.action)
         if content is None:
             raise ResourceConflictError("Interview cannot produce a current result")
         row.candidate_stage = turn.planning_state.candidate_stage
         row.chapter = decision.next_chapter or turn.planning_state.chapter
-        row.tokens_remaining += turn.reserved_tokens - outcome.tokens_reserved
+        row.tokens_remaining += refund
         if decision.action == "pause":
             row.status = "paused"
         pending.processing_status = "complete"
@@ -124,22 +200,26 @@ class InterviewTurnService(InterviewService):
                 raise ResourceConflictError("Interview run is no longer current")
             metadata = run.metadata.model_copy(update={"start_state": start, "end_state": end})
             lineage.stage_run(run.model_copy(update={"metadata": metadata}))
-        result = _message_view(message, content), _state(row)
-        self.db.commit()
-        return result
+        return _message_view(message, content), _state(row)
 
     def interrupt(self, turn: AdmittedTurn) -> None:
-        # Keep the admitted cost and token reservation when provider usage is unknown.
         self.db.rollback()
         self._lock_owner()
-        if self.repo.get(turn.state.session_id, lock=True) is None:
+        row = self.repo.get(turn.state.session_id, lock=True)
+        if row is None:
             self.db.rollback()
             return
         pending = self.repo.get_message_at(turn.state.session_id, turn.message.position)
-        if (pending is not None and pending.processing_status == "pending" and pending.key == turn.message.key
+        if (pending is not None and pending.key == turn.message.key
                 and pending.turn_lease_expires_at == turn.lease_expires_at):
-            pending.processing_status = "interrupted"
+            self._settle_interruption(row, pending)
         self.db.commit()
+
+    @staticmethod
+    def _settle_interruption(row: Interview, message: Message) -> None:
+        if message.processing_status == "pending":
+            row.tokens_remaining += message.turn_tokens_reserved - message.turn_tokens_dispatched
+            message.processing_status = "interrupted"
 
     def _pending(self, turn: AdmittedTurn) -> tuple[Interview, Message, datetime]:
         state = turn.state
@@ -186,20 +266,28 @@ class InterviewTurnService(InterviewService):
         return confirmed.model_copy(update={"state_version": state.state_version})
 
 
-async def run_admitted_turn(
-    turn: AdmittedTurn, model: CareerModel | None, *, now: datetime, before_retry: Callable[[], Awaitable[None]],
-) -> CareerTurnOutcome:
-    state = turn.planning_state
+def _plan_admitted(turn: AdmittedTurn, time_budget: int = 1) -> tuple[SessionView, TurnPlanningInput]:
     # Admission has already decremented the turn count. The planner sees capacity for this admitted turn.
-    state = state.model_copy(update={"turns_remaining": state.turns_remaining + 1})
-    deadline = min(turn.lease_expires_at, state.retention_expires_at or turn.lease_expires_at)
-    time_budget = min(TURN_TIME_MS, max(0, int((deadline - now).total_seconds() * 1000) - 1_000))
+    state = turn.planning_state.model_copy(update={
+        "turns_remaining": turn.planning_state.turns_remaining + 1,
+        "tokens_remaining": turn.planning_state.tokens_remaining + turn.reserved_tokens,
+    })
     planning = TurnPlanningInput(
         expected_state_version=state.state_version, coverage=CareerCoverage(schema_version=1,
         session_id=state.session_id, slots=[]), progress={slot: SlotProgress(asked=True) for slot in turn.asked_slots},
         budget=TurnBudget(time_remaining_ms=max(1, time_budget),
                           cost_remaining_microusd=max(1, turn.reserved_tokens // ATTEMPT_TOKENS * ATTEMPT_COST_MICROUSD)),
     )
+    return state, planning
+
+
+async def run_admitted_turn(
+    turn: AdmittedTurn, *, now: datetime, before_attempt: Callable[[], Awaitable[None]],
+) -> CareerTurnOutcome:
+    deadline = min(turn.lease_expires_at, turn.planning_state.retention_expires_at or turn.lease_expires_at)
+    time_budget = min(TURN_TIME_MS, max(0, int((deadline - now).total_seconds() * 1000) - 1_000))
+    state, planning = _plan_admitted(turn, time_budget)
+    model = turn.model
     if model is None or turn.reserved_tokens == 0 or time_budget < model.manifest.timeout_ms:
         return CareerTurnOutcome(plan_next_turn(state, planning))
     planning = planning.model_copy(update={"budget": planning.budget.model_copy(update={
@@ -221,4 +309,4 @@ async def run_admitted_turn(
         messages=(TurnMessage(owner_id=state.owner_id, session_id=state.session_id, source=source,
                    current_source_version=1, view=message),),
     )
-    return await execute_career_turn(model, model_state, planning, context, now=now, before_retry=before_retry)
+    return await execute_career_turn(model, model_state, planning, context, now=now, before_attempt=before_attempt)
