@@ -92,7 +92,7 @@ const errorEnvelope = z.object({
 }) satisfies z.ZodType<ErrorEnvelope>;
 
 function isWorkflowPath(url: string): boolean {
-    return /^\/api\/v1\/(resumes|jd)(?:\/|\?|$)/.test(url);
+    return /^\/api\/v1\/(resumes|jd|career\/(?:sessions|evidence))(?:\/|\?|$)/.test(url);
 }
 
 async function workflowError(response: Response): Promise<APIError> {

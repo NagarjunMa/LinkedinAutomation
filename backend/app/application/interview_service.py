@@ -11,7 +11,9 @@ from app.models.interview import InterviewMessageRow as Message, InterviewSessio
 from app.repositories.career_repository import CareerRepository
 from app.repositories.interview_repository import InterviewRepository
 from app.schemas.career.common import Timestamp
-from app.schemas.career.interview_persistence import MessageInput, MessageRole, MessageView, SessionInput, SessionView
+from app.schemas.career.interview_persistence import (
+    MessageInput, MessageRole, MessageView, SessionInput, SessionView, TurnRecoveryView,
+)
 
 
 class InterviewService:
@@ -128,9 +130,12 @@ def _message_view(row: Message, content: str, *, now: datetime | None = None) ->
     status = row.processing_status
     if status == "pending" and now is not None and row.turn_lease_expires_at and row.turn_lease_expires_at <= now:
         status = "interrupted"
+    recovery = None
+    if row.role == "user" and status != "complete" and row.turn_admitted_version is not None:
+        recovery = TurnRecoveryView(candidate_stage=row.turn_candidate_stage)
     return MessageView(
         key=row.key, content=content, position=row.position, role=row.role,
-        processing_status=status, created_at=row.created_at,
+        processing_status=status, created_at=row.created_at, turn_recovery=recovery,
     )
 
 

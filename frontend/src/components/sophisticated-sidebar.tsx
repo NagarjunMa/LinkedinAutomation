@@ -13,6 +13,7 @@ import {
     FileText,
     LibraryBig,
     Wand2,
+    MessageSquare,
     Coins
 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -41,7 +42,8 @@ const NavItem: React.FC<{
     label: string;
     icon: React.ReactNode;
     isCollapsed: boolean;
-}> = ({ to, label, icon, isCollapsed }) => {
+    onClick?: () => void;
+}> = ({ to, label, icon, isCollapsed, onClick }) => {
     const pathname = usePathname();
     const isActive =
         to === '/dashboard'
@@ -53,6 +55,8 @@ const NavItem: React.FC<{
     return (
         <Link
             href={to}
+            onClick={onClick}
+            aria-label={label}
             className={`
           flex items-center gap-4 py-3 px-4 transition-all duration-500 group relative rounded-md mx-2
           ${isActive ? 'text-app-text bg-app-text/5 font-extrabold shadow-sm' : 'text-app-text opacity-60 hover:opacity-100 hover:bg-app-text/5 font-bold'}
@@ -134,6 +138,7 @@ export function SophisticatedSidebar({ onClose }: { onClose?: () => void }) {
                         <NavItem to="/dashboard/resume" label="Resume" icon={<FileText className="w-5 h-5" />} isCollapsed={isCollapsed} />
                         <NavItem to="/dashboard/resume/tailor" label="Tailor" icon={<Wand2 className="w-5 h-5" />} isCollapsed={isCollapsed} />
                         <NavItem to="/dashboard/library" label="Library" icon={<LibraryBig className="w-5 h-5" />} isCollapsed={isCollapsed} />
+                        <NavItem to="/dashboard/career" label="Career Coach" icon={<MessageSquare className="w-5 h-5" />} isCollapsed={isCollapsed} onClick={onClose} />
                         <NavItem to="/dashboard/applications" label="Applications" icon={<Briefcase className="w-5 h-5" />} isCollapsed={isCollapsed} />
                     </div>
                 </div>

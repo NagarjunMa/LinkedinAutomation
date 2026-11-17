@@ -44,6 +44,160 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/career/evidence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Evidence */
+        get: operations["list_evidence_api_v1_career_evidence_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/career/evidence/{evidence_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Evidence */
+        get: operations["get_evidence_api_v1_career_evidence__evidence_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/career/evidence/{evidence_id}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Decide */
+        patch: operations["decide_api_v1_career_evidence__evidence_id__decision_patch"];
+        trace?: never;
+    };
+    "/api/v1/career/evidence/{evidence_id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get History */
+        get: operations["get_history_api_v1_career_evidence__evidence_id__history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/career/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Sessions */
+        get: operations["list_sessions_api_v1_career_sessions_get"];
+        put?: never;
+        /** Create Session */
+        post: operations["create_session_api_v1_career_sessions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/career/sessions/{session_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Session */
+        get: operations["get_session_api_v1_career_sessions__session_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/career/sessions/{session_id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Messages */
+        get: operations["list_messages_api_v1_career_sessions__session_id__messages_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/career/sessions/{session_id}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resume Session */
+        post: operations["resume_session_api_v1_career_sessions__session_id__resume_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/career/sessions/{session_id}/turns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Turn */
+        post: operations["create_turn_api_v1_career_sessions__session_id__turns_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/credits/balance": {
         parameters: {
             query?: never;
@@ -943,6 +1097,84 @@ export interface components {
             /** Verified Skills */
             verified_skills?: string[];
         };
+        /** CareerEvidenceDecision */
+        CareerEvidenceDecision: {
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "confirm" | "edit" | "reject" | "mark_private" | "mark_unavailable" | "resolve_contradiction";
+            /** Actor Id */
+            actor_id: string;
+            /**
+             * Decided At
+             * Format: date-time
+             */
+            decided_at: string;
+            evidence: components["schemas"]["EvidenceRevisionRef"];
+            /** Reason */
+            reason?: string | null;
+            /** Resulting Revision */
+            resulting_revision: number;
+            /**
+             * Schema Version
+             * @constant
+             */
+            schema_version: 1;
+        };
+        /** CareerEvidenceItem */
+        CareerEvidenceItem: {
+            /**
+             * Category
+             * @enum {string}
+             */
+            category: "problem" | "requirement" | "action" | "decision" | "validation" | "outcome" | "skill" | "scope";
+            /** Claim */
+            claim: string;
+            /** Confidence */
+            confidence?: ("low" | "medium" | "high") | null;
+            /** Evidence Id */
+            evidence_id: string;
+            /**
+             * Is Private
+             * @default false
+             */
+            is_private?: boolean;
+            /**
+             * Lifecycle
+             * @enum {string}
+             */
+            lifecycle: "proposed" | "confirmed" | "rejected" | "contradicted" | "private" | "unavailable";
+            /** Owner Id */
+            owner_id: string;
+            /**
+             * Ownership
+             * @enum {string}
+             */
+            ownership: "individual" | "shared" | "team" | "unknown";
+            /** Qualifiers */
+            qualifiers?: string[];
+            /** Revision */
+            revision: number;
+            /**
+             * Schema Version
+             * @constant
+             */
+            schema_version: 1;
+            /** Scope */
+            scope?: string | null;
+            /** Sources */
+            sources: components["schemas"]["EvidenceSourceLink"][];
+            /** Supersedes Revision */
+            supersedes_revision?: number | null;
+            /**
+             * Support
+             * @enum {string}
+             */
+            support: "candidate_statement" | "document_backed" | "artifact_linked" | "independently_verified";
+            /** Verification Ref */
+            verification_ref?: string | null;
+        } & (unknown & unknown & unknown & unknown);
         /**
          * CareerStage
          * @enum {string}
@@ -1063,6 +1295,61 @@ export interface components {
             /** Version Id */
             version_id?: string | null;
         };
+        /** EvidenceDecisionInput */
+        EvidenceDecisionInput: {
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "confirm" | "edit" | "reject" | "mark_private" | "mark_unavailable" | "resolve_contradiction";
+            /** Claim */
+            claim?: string | null;
+            /** Reason */
+            reason?: string | null;
+            /** Revision */
+            revision: number;
+        };
+        /** EvidenceHistory */
+        EvidenceHistory: {
+            /** Decisions */
+            decisions: components["schemas"]["CareerEvidenceDecision"][];
+            /** Revisions */
+            revisions: components["schemas"]["CareerEvidenceItem"][];
+        };
+        /** EvidenceRevisionRef */
+        EvidenceRevisionRef: {
+            /** Evidence Id */
+            evidence_id: string;
+            /** Revision */
+            revision: number;
+        };
+        /** EvidenceSourceLink */
+        EvidenceSourceLink: {
+            /** Excerpt */
+            excerpt?: string | null;
+            /** Excerpt Sha256 */
+            excerpt_sha256?: string | null;
+            /**
+             * Extraction
+             * @enum {string}
+             */
+            extraction: "candidate" | "parser" | "model" | "reviewer";
+            /** Locator */
+            locator: string;
+            /**
+             * Relationship
+             * @enum {string}
+             */
+            relationship: "supports" | "contradicts";
+            /** Source Id */
+            source_id: string;
+            /** Source Version */
+            source_version: number;
+        } & ({
+            excerpt: string;
+        } | {
+            excerpt_sha256: string;
+        });
         /** ExperienceEntry */
         ExperienceEntry: {
             /** Bullets */
@@ -1452,6 +1739,31 @@ export interface components {
             /** Success */
             success: boolean;
         };
+        /** MessageView */
+        MessageView: {
+            /** Content */
+            content: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Key */
+            key: string;
+            /** Position */
+            position: number;
+            /**
+             * Processing Status
+             * @enum {string}
+             */
+            processing_status: "pending" | "complete" | "interrupted";
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "user" | "assistant";
+            turn_recovery?: components["schemas"]["TurnRecoveryView"] | null;
+        };
         /** NotificationSettingsUpdate */
         NotificationSettingsUpdate: {
             /** Application Updates */
@@ -1767,6 +2079,66 @@ export interface components {
             /** Score */
             score: number;
         };
+        /** SessionInput */
+        SessionInput: {
+            /** Candidate Stage */
+            candidate_stage?: ("student" | "new_graduate" | "early_career" | "experienced_ic" | "manager_or_leader" | "senior_staff_or_founder" | "career_switcher" | "returning_professional") | null;
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "foundation" | "target_calibration" | "application_gap" | "career_refresh";
+            /** Target Id */
+            target_id?: string | null;
+        };
+        /** SessionView */
+        SessionView: {
+            /** Candidate Stage */
+            candidate_stage?: ("student" | "new_graduate" | "early_career" | "experienced_ic" | "manager_or_leader" | "senior_staff_or_founder" | "career_switcher" | "returning_professional") | null;
+            /** Chapter */
+            chapter: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "foundation" | "target_calibration" | "application_gap" | "career_refresh";
+            /** Owner Id */
+            owner_id: string;
+            /** Prompt Version */
+            prompt_version: string;
+            /** Retention Expires At */
+            retention_expires_at?: string | null;
+            /**
+             * Schema Version
+             * @constant
+             */
+            schema_version: 1;
+            /** Session Id */
+            session_id: string;
+            /** State Version */
+            state_version: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "active" | "paused" | "completed" | "failed";
+            /** Target Id */
+            target_id?: string | null;
+            /** Tokens Remaining */
+            tokens_remaining: number;
+            /** Turns Remaining */
+            turns_remaining: number;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
         /** Skills */
         Skills: {
             /** Hard */
@@ -1887,6 +2259,27 @@ export interface components {
          * @enum {string}
          */
         TimeRange: "last_7_days" | "last_30_days" | "last_3_months";
+        /** TurnInput */
+        TurnInput: {
+            /** Candidate Stage */
+            candidate_stage?: ("student" | "new_graduate" | "early_career" | "experienced_ic" | "manager_or_leader" | "senior_staff_or_founder" | "career_switcher" | "returning_professional") | null;
+            /** Content */
+            content: string;
+            /** Expected State Version */
+            expected_state_version: number;
+            /** Key */
+            key: string;
+            /**
+             * Retry
+             * @default false
+             */
+            retry?: boolean;
+        };
+        /** TurnRecoveryView */
+        TurnRecoveryView: {
+            /** Candidate Stage */
+            candidate_stage: ("student" | "new_graduate" | "early_career" | "experienced_ic" | "manager_or_leader" | "senior_staff_or_founder" | "career_switcher" | "returning_professional") | null;
+        };
         /** UserProfileCreate */
         UserProfileCreate: {
             /** Career Level */
@@ -2218,6 +2611,544 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    list_evidence_api_v1_career_evidence_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CareerEvidenceItem"][];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+        };
+    };
+    get_evidence_api_v1_career_evidence__evidence_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                evidence_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CareerEvidenceItem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+        };
+    };
+    decide_api_v1_career_evidence__evidence_id__decision_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                evidence_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EvidenceDecisionInput"];
+            };
+        };
+        responses: {
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CareerEvidenceItem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+        };
+    };
+    get_history_api_v1_career_evidence__evidence_id__history_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                evidence_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvidenceHistory"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+        };
+    };
+    list_sessions_api_v1_career_sessions_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionView"][];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+        };
+    };
+    create_session_api_v1_career_sessions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SessionInput"];
+            };
+        };
+        responses: {
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionView"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+        };
+    };
+    get_session_api_v1_career_sessions__session_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionView"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+        };
+    };
+    list_messages_api_v1_career_sessions__session_id__messages_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageView"][];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+        };
+    };
+    resume_session_api_v1_career_sessions__session_id__resume_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionView"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+        };
+    };
+    create_turn_api_v1_career_sessions__session_id__turns_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TurnInput"];
+            };
+        };
+        responses: {
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Typed Career turn events as server-sent events */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": string;
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
             };
         };
     };

@@ -26,6 +26,7 @@ EXPORT_ENV = {
 CLIENT_PREFIXES = tuple(f"/api/v1/{name}" for name in (
     "resumes", "jd", "credits", "exports", "tailored-resumes", "jobs",
     "user-profiles", "logs", "analytics", "waitlist", "public-preview", "auth",
+    "career/sessions", "career/evidence",
 ))
 
 

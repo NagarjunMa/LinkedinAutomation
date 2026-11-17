@@ -29,6 +29,12 @@ def test_exports_client_routes_and_declared_transport_semantics(document):
     assert "204" in bootstrap["responses"]
     assert "content" not in bootstrap["responses"]["204"]
     assert "requestBody" not in bootstrap
+    turn = document["paths"]["/api/v1/career/sessions/{session_id}/turns"]["post"]
+    decision = document["paths"]["/api/v1/career/evidence/{evidence_id}/decision"]["patch"]
+    assert turn["security"] and decision["security"]
+    assert "text/event-stream" in turn["responses"]["200"]["content"]
+    assert "expected_state_version" in schemas["TurnInput"]["required"]
+    assert "revision" in schemas["EvidenceDecisionInput"]["required"]
 
 
 def test_excludes_operational_admin_and_disabled_routes(document):
