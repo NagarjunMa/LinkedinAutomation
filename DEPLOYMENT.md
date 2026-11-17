@@ -263,3 +263,29 @@ account-deletion workflow before handling real transcripts.
   traffic. Once a turn record exists, retain the migration and the transcript
   key and use the flag-off or corrective build. The downgrade refuses to
   discard saved admission metadata.
+
+### PRI-41 Career turn interruption recovery
+
+Apply `2026_11_16_career_recovery` before starting the corresponding backend.
+Keep `CAREER_TURNS_ENABLED=false` for the public preview. In the authenticated
+development environment, use a synthetic account and the same message key and
+payload to verify an in-flight duplicate, completed replay, disconnect, expiry,
+reconnect, and explicit retry. Confirm that another account cannot read or
+retry the turn. Keep the existing transactional PostgreSQL READ COMMITTED
+configuration and persistent transcript key.
+
+The turn POST reports `turn.pending`, `turn.interrupted`, or `turn.replayed`
+for previously used keys. Use the reported state version and `retry: true` to
+recover an interrupted turn when `can_retry` is true. Recovery keeps the original
+message and uses deterministic fallback. The server refunds unused token
+capacity once and keeps the reservation for work that may have reached the
+provider. Existing PRI-40 completed turns remain readable and can be replayed
+with their saved content and an omitted stage. Legacy interrupted turns have
+no recorded state or dispatch fence and remain visible in the transcript.
+
+For rollback, disable turns and wait for current work to finish or its lease
+to expire. Before any PRI-41 turn is admitted, the migration owner can
+downgrade to `2026_11_16_career_turns` in READ COMMITTED. Verify the prior
+image's Alembic check and `/health`. Once an admission exists, keep the active
+revision and transcript key and use a compatible backend with turns disabled.
+The downgrade guard preserves the recovery records.

@@ -1,22 +1,25 @@
 """Authenticated endpoints for saving and resuming interviews."""
+from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import suppress
 import logging
 import os
 from pathlib import Path
 from typing import Annotated
 
-from anyio import CancelScope
+from anyio import CancelScope, create_task_group
+from anyio.lowlevel import checkpoint
 
 from fastapi import APIRouter, Depends, Query, Response
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
+from starlette.types import Receive, Scope, Send
 
 from app.api.error_mapping import to_http_exception
 from app.application.career_model import CareerModel
 from app.application.errors import ApplicationError, ExternalServiceError, ResourceConflictError, ResourceNotFoundError
 from app.application.interview_service import InterviewService
-from app.application.interview_turn_service import InterviewTurnService, run_admitted_turn
+from app.application.interview_turn_service import AdmittedTurn, InterviewTurnService, run_admitted_turn
 from app.core.auth import get_current_user_id
 from app.core.config import settings
 from app.core.openai_client import DEFAULT_MANIFESTS, get_model_runtime
@@ -24,7 +27,7 @@ from app.db.session import get_db
 from app.schemas.career.common import Identifier
 from app.schemas.career.interview_persistence import (
     MessageView, SessionInput, SessionView, TurnAssistant, TurnChapterCompleted, TurnClarification,
-    TurnCompleted, TurnFailed, TurnInput, TurnProgress, TurnStarted,
+    TurnCompleted, TurnFailed, TurnInput, TurnInterrupted, TurnPending, TurnProgress, TurnReplayed, TurnStarted,
 )
 from app.services.career_model_openai import OpenAICareerModel
 
@@ -103,11 +106,40 @@ def _turn_model() -> CareerModel | None:
         raise ExternalServiceError("Career model configuration is unavailable") from None
 
 
-_TurnEvent = TurnStarted | TurnProgress | TurnClarification | TurnAssistant | TurnChapterCompleted | TurnCompleted | TurnFailed
+_TurnEvent = (
+    TurnStarted | TurnProgress | TurnClarification | TurnAssistant | TurnChapterCompleted | TurnCompleted
+    | TurnFailed | TurnPending | TurnInterrupted | TurnReplayed
+)
 
 
 def _frame(event: _TurnEvent) -> str:
     return f"event: {event.type}\ndata: {event.model_dump_json()}\n\n"
+
+
+class _TurnStream(StreamingResponse):
+    def __init__(self, frames: AsyncIterator[str], *, on_close: Callable[[], Awaitable[None]] | None = None):
+        super().__init__(frames, media_type="text/event-stream",
+                         headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"})
+        self.on_close = on_close
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        try:
+            async with create_task_group() as tasks:
+                async def on_disconnect() -> None:
+                    await self.listen_for_disconnect(receive)
+                    tasks.cancel_scope.cancel()
+
+                # Also listen on ASGI 2.4, where a broken send alone would not interrupt model I/O.
+                tasks.start_soon(on_disconnect)
+                try:
+                    with suppress(OSError):
+                        await self.stream_response(send)
+                finally:
+                    tasks.cancel_scope.cancel()
+        finally:
+            if self.on_close is not None:
+                with CancelScope(shield=True):
+                    await self.on_close()
 
 
 @router.post(
@@ -120,24 +152,40 @@ def create_turn(session_id: Identifier, data: TurnInput, service: Service) -> St
     try:
         if not settings.CAREER_TURNS_ENABLED:
             raise ExternalServiceError("Career turns are unavailable")
-        model = _turn_model()
-        admitted = turns.begin(session_id, data, model_enabled=model is not None)
+        admitted = turns.begin(session_id, data, create_model=_turn_model)
     except ApplicationError as exc:
         raise to_http_exception(exc) from None
 
-    async def validate_retry() -> None:
-        await run_in_threadpool(turns.validate_admission, admitted)
+    if not isinstance(admitted, AdmittedTurn):
+        async def existing():
+            yield _frame(admitted)
+
+        return _TurnStream(existing())
+
+    finished = False
+
+    async def settle_interruption() -> None:
+        nonlocal finished
+        if not finished:
+            try:
+                await run_in_threadpool(turns.interrupt, admitted)
+                finished = True
+            except Exception:
+                logger.warning("Career turn interruption reconciliation deferred")
+
+    async def record_dispatch() -> None:
+        await run_in_threadpool(turns.record_dispatch, admitted)
+        await checkpoint()
 
     async def stream():
-        committed = False
-        failure = None
+        nonlocal finished
         try:
             yield _frame(TurnStarted(key=admitted.message.key, position=admitted.message.position))
             yield _frame(TurnProgress())
             now = await run_in_threadpool(turns.validate_admission, admitted)
-            outcome = await run_admitted_turn(admitted, model, now=now, before_retry=validate_retry)
+            outcome = await run_admitted_turn(admitted, now=now, before_attempt=record_dispatch)
             message, state = await run_in_threadpool(turns.complete, admitted, outcome)
-            committed = True
+            finished = True
             if outcome.decision.action == "confirm_stage":
                 yield _frame(TurnClarification())
             if outcome.decision.action == "advance_chapter":
@@ -145,17 +193,14 @@ def create_turn(session_id: Identifier, data: TurnInput, service: Service) -> St
             yield _frame(TurnAssistant(message=message))
             yield _frame(TurnCompleted(state=state, proposal_validated=bool(outcome.runs) and outcome.fallback_reason is None,
                                        tokens_reserved=outcome.tokens_reserved))
+            return
         except (ResourceConflictError, ResourceNotFoundError):
-            failure = "state_changed"
+            failure = TurnFailed(code="state_changed")
         except Exception:
             logger.warning("Career turn could not complete")
-            failure = "turn_unavailable"
-        finally:
-            if not committed:
-                with CancelScope(shield=True), suppress(Exception):
-                    await run_in_threadpool(turns.interrupt, admitted)
-        if failure is not None:
-            yield _frame(TurnFailed(code=failure))
+            failure = TurnFailed(code="turn_unavailable")
+        with CancelScope(shield=True):
+            await settle_interruption()
+        yield _frame(failure)
 
-    return StreamingResponse(stream(), media_type="text/event-stream",
-                             headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"})
+    return _TurnStream(stream(), on_close=settle_interruption)

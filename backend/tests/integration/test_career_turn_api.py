@@ -1,8 +1,10 @@
 """Exercise browser-facing turns across the real PostgreSQL transaction boundary."""
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
+from datetime import timedelta
 import json
 from threading import Event
+from time import sleep
 from uuid import uuid4
 
 import httpx
@@ -28,9 +30,10 @@ from app.core.openai_client import ModelRuntime
 from app.db.session import get_db
 from app.main import app
 from app.models.career_lineage import CareerRunRow
+from app.models.interview import InterviewMessageRow
 from app.models.user import User
 from app.schemas.career.interview import CareerTurnProposal
-from app.schemas.career.interview_persistence import MessageInput
+from app.schemas.career.interview_persistence import MessageInput, TurnInput
 from app.schemas.career.lineage import CareerRunManifest, RunMetadata, StoredRun
 
 
@@ -193,7 +196,8 @@ def test_rate_limit_and_duplicate_keys_apply_across_sessions(api, monkeypatch):
     first, second = create_session(client), create_session(client)
     other = create_session(client, B)
     saved = events(client.post(f"{first}/turns", headers=A, json=turn()))[-1][1]["state"]
-    assert client.post(f"{first}/turns", headers=A, json=turn(expected_state_version=saved["state_version"])).status_code == 409
+    duplicate = events(client.post(f"{first}/turns", headers=A, json=turn(expected_state_version=saved["state_version"])))
+    assert duplicate[0][0] == "turn.replayed"
     assert client.post(f"{second}/turns", headers=A, json=turn()).status_code == 429
     assert client.get(f"{second}/messages", headers=A).json() == []
     monkeypatch.setattr(interview_turn_service, "SHORT_LIMIT", 10)
@@ -245,7 +249,7 @@ def test_failed_final_write_does_not_publish_or_partially_commit(api, monkeypatc
     assert [message["processing_status"] for message in client.get(f"{path}/messages", headers=A).json()] == ["interrupted"]
     state = client.get(path, headers=A).json()
     assert state["chapter"] == "introduction" and state["state_version"] == 2
-    assert state["tokens_remaining"] == interview_turn_service.SESSION_TOKENS - 4 * interview_turn_service.ATTEMPT_TOKENS
+    assert state["tokens_remaining"] == interview_turn_service.SESSION_TOKENS - interview_turn_service.ATTEMPT_TOKENS
     with Session(engine) as db:
         assert db.scalars(select(CareerRunRow)).all() == []
 
@@ -358,6 +362,23 @@ def test_provider_configuration_uses_the_real_adapter_with_mock_http(api, monkey
         assert run.manifest.store_response is False
 
 
+def start_turn_asgi(path, payload, spec_version="2.4"):
+    incoming = asyncio.Queue()
+    outgoing = asyncio.Queue()
+    body = json.dumps(payload).encode()
+    incoming.put_nowait({"type": "http.request", "body": body, "more_body": False})
+    scope = {
+        "type": "http", "asgi": {"version": "3.0", "spec_version": spec_version},
+        "http_version": "1.1", "method": "POST", "scheme": "http",
+        "path": path, "raw_path": path.encode(), "root_path": "", "query_string": b"",
+        "headers": [(b"content-type", b"application/json"), (b"authorization", b"Bearer owner"),
+                    (b"accept", b"text/event-stream"), (b"accept-encoding", b"gzip"), (b"host", b"testserver")],
+        "client": ("127.0.0.1", 11111), "server": ("testserver", 80),
+    }
+    task = asyncio.create_task(app(scope, incoming.get, outgoing.put))
+    return incoming, outgoing, task
+
+
 @pytest.mark.asyncio
 async def test_asgi_sends_status_frames_before_provider_completes(api, monkeypatch):
     client, _, _ = api
@@ -368,19 +389,7 @@ async def test_asgi_sends_status_frames_before_provider_completes(api, monkeypat
         assert release.wait(8)
 
     monkeypatch.setattr(career_interviews, "_turn_model", lambda: SyntheticModel(provider, malformed=False))
-    incoming = asyncio.Queue()
-    outgoing = asyncio.Queue()
-    body = json.dumps(turn()).encode()
-    incoming.put_nowait({"type": "http.request", "body": body, "more_body": False})
-    scope = {
-        "type": "http", "asgi": {"version": "3.0", "spec_version": "2.4"},
-        "http_version": "1.1", "method": "POST", "scheme": "http",
-        "path": path, "raw_path": path.encode(), "root_path": "", "query_string": b"",
-        "headers": [(b"content-type", b"application/json"), (b"authorization", b"Bearer owner"),
-                    (b"accept", b"text/event-stream"), (b"accept-encoding", b"gzip"), (b"host", b"testserver")],
-        "client": ("127.0.0.1", 11111), "server": ("testserver", 80),
-    }
-    task = asyncio.create_task(app(scope, incoming.get, outgoing.put))
+    incoming, outgoing, task = start_turn_asgi(path, turn())
     try:
         async with asyncio.timeout(8):
             start = await outgoing.get()
@@ -432,3 +441,258 @@ def test_turn_requires_transactional_read_committed(api, monkeypatch, isolation_
     assert model.requests == []
     assert client.get(f"{path}/messages", headers=A).json() == []
     assert client.get(path, headers=A).json()["state_version"] == 1
+
+
+def test_matching_turn_key_replays_saved_reply_without_a_second_model_call(api, monkeypatch):
+    client, engine, _ = api
+    model = SyntheticModel(malformed=False)
+    monkeypatch.setattr(career_interviews, "_turn_model", lambda: model)
+    path = create_session(client)
+    payload = turn()
+    result = events(client.post(f"{path}/turns", headers=A, json=payload))
+    reply = result[-2][1]["message"]
+
+    replay = events(client.post(f"{path}/turns", headers=A, json=payload))
+    assert replay == [("turn.replayed", {"type": "turn.replayed", "message": reply,
+                                         "state": result[-1][1]["state"], "recovered": False})]
+    assert client.post(f"{path}/turns", headers=A,
+                       json={**payload, "content": "A different answer"}).status_code == 409
+    assert client.post(f"{path}/turns", headers=B, json=payload).status_code == 404
+    assert len(model.requests) == 1
+    assert len(client.get(f"{path}/messages", headers=A).json()) == 2
+    with Session(engine) as db:
+        assert len(db.scalars(select(CareerRunRow)).all()) == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("spec_version", ["2.3", "2.4"])
+async def test_disconnect_cancels_provider_and_recovery_reuses_saved_message(api, monkeypatch, spec_version):
+    client, engine, _ = api
+    path = create_session(client)
+    payload = turn()
+    started, cancelled, release = asyncio.Event(), asyncio.Event(), asyncio.Event()
+
+    class WaitingModel(SyntheticModel):
+        async def propose(self, request):
+            self.requests.append(json.loads(request.context))
+            started.set()
+            try:
+                await release.wait()
+            finally:
+                cancelled.set()
+
+    model = WaitingModel()
+    monkeypatch.setattr(career_interviews, "_turn_model", lambda: model)
+    incoming, _, task = start_turn_asgi(f"{path}/turns", payload, spec_version)
+    try:
+        await asyncio.wait_for(started.wait(), timeout=5)
+        duplicate = await asyncio.to_thread(client.post, f"{path}/turns", headers=A, json={**payload, "retry": True})
+        assert events(duplicate)[0][0] == "turn.pending"
+        incoming.put_nowait({"type": "http.disconnect"})
+        await asyncio.wait_for(asyncio.shield(task), timeout=5)
+        assert cancelled.is_set() and len(model.requests) == 1
+    finally:
+        release.set()
+        await asyncio.wait_for(task, timeout=5)
+
+    with TestClient(app) as reconnected:
+        history = reconnected.get(f"{path}/messages", headers=A).json()
+        assert [row["processing_status"] for row in history] == ["interrupted"]
+        interrupted = events(reconnected.post(f"{path}/turns", headers=A, json=payload))
+        assert interrupted[0][0] == "turn.interrupted" and interrupted[0][1]["can_retry"]
+        state_version = interrupted[0][1]["state_version"]
+        retry = {**payload, "retry": True, "expected_state_version": state_version}
+        recovered = events(reconnected.post(f"{path}/turns", headers=A, json=retry))
+        assert recovered[0][0] == "turn.replayed" and recovered[0][1]["recovered"]
+        tokens = interview_turn_service.SESSION_TOKENS - interview_turn_service.ATTEMPT_TOKENS
+        assert recovered[0][1]["state"]["tokens_remaining"] == tokens
+        assert recovered[0][1]["state"]["turns_remaining"] == interview_turn_service.SESSION_TURNS - 1
+        assert events(reconnected.post(f"{path}/turns", headers=A, json=retry))[0][1]["state"]["tokens_remaining"] == tokens
+        final = reconnected.get(f"{path}/messages", headers=A).json()
+        assert [row["processing_status"] for row in final] == ["complete", "complete"]
+        assert final[0]["position"] == history[0]["position"]
+    assert len(model.requests) == 1
+    with Session(engine) as db:
+        assert db.scalars(select(CareerRunRow)).all() == []
+
+
+@pytest.mark.parametrize("dispatched", [False, True])
+def test_expired_turn_is_reconciled_once_and_concurrent_retries_share_one_reply(api, monkeypatch, dispatched):
+    client, engine, identities = api
+    path = create_session(client)
+    session_id = path.rsplit("/", 1)[1]
+    payload = turn()
+    monkeypatch.setattr(interview_turn_service, "TURN_LEASE", timedelta(seconds=1))
+    with Session(engine) as db:
+        service = interview_turn_service.InterviewTurnService(db, identities["owner"])
+        orphan = service.begin(session_id, TurnInput(**payload), create_model=SyntheticModel)
+        if dispatched:
+            service.record_dispatch(orphan)
+    sleep(1.05)
+    assert client.get(f"{path}/messages", headers=A).json()[0]["processing_status"] == "interrupted"
+    with Session(engine) as db:
+        assert db.scalar(select(InterviewMessageRow)).processing_status == "pending"
+
+    def unexpected_model():
+        pytest.fail("Recovery should not resolve or call a provider")
+
+    monkeypatch.setattr(career_interviews, "_turn_model", unexpected_model)
+    change = client.post(f"{path}/turns", headers=A, json={**payload, "candidate_stage": "new_graduate"})
+    assert change.status_code == 409
+    retry = {**payload, "retry": True, "expected_state_version": orphan.state.state_version}
+    assert client.post(f"{path}/turns", headers=B, json=retry).status_code == 404
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        responses = [pool.submit(client.post, f"{path}/turns", headers=A, json=retry) for _ in range(2)]
+        receipts = [events(response.result(timeout=5))[0][1] for response in responses]
+    assert sum(receipt["recovered"] for receipt in receipts) == 1
+    assert receipts[0]["message"] == receipts[1]["message"]
+    assert receipts[0]["state"] == receipts[1]["state"]
+    balance = interview_turn_service.SESSION_TOKENS - dispatched * interview_turn_service.ATTEMPT_TOKENS
+    assert receipts[0]["state"]["tokens_remaining"] == balance
+    assert len(client.get(f"{path}/messages", headers=A).json()) == 2
+
+
+def test_stale_and_unknown_retries_do_not_replay_state(api, monkeypatch):
+    client, engine, identities = api
+    path = create_session(client)
+    session_id = path.rsplit("/", 1)[1]
+    payload = turn()
+    assert client.post(f"{path}/turns", headers=A, json={**payload, "retry": True}).status_code == 409
+    with Session(engine) as db:
+        service = interview_turn_service.InterviewTurnService(db, identities["owner"])
+        orphan = service.begin(session_id, TurnInput(**payload), create_model=SyntheticModel)
+        service.interrupt(orphan)
+    with engine.begin() as conn:
+        conn.execute(text("UPDATE career_interview_sessions SET state_version = state_version + 1"))
+    report = events(client.post(f"{path}/turns", headers=A, json=payload))[0][1]
+    assert not report["can_retry"]
+    assert client.post(f"{path}/turns", headers=A, json={
+        **payload, "retry": True, "expected_state_version": report["state_version"],
+    }).status_code == 409
+    assert len(client.get(f"{path}/messages", headers=A).json()) == 1
+    assert client.get(path, headers=A).json()["tokens_remaining"] == interview_turn_service.SESSION_TOKENS
+
+
+def test_timeout_fallback_is_saved_and_replayed_without_another_dispatch(api, monkeypatch):
+    client, engine, _ = api
+    path = create_session(client)
+
+    class TimeoutModel(SyntheticModel):
+        async def propose(self, request):
+            self.requests.append(request)
+            raise TimeoutError
+
+    model = TimeoutModel()
+    monkeypatch.setattr(career_interviews, "_turn_model", lambda: model)
+    result = events(client.post(f"{path}/turns", headers=A, json=turn()))
+    assert result[-1][0] == "turn.completed" and not result[-1][1]["proposal_validated"]
+    assert result[-1][1]["tokens_reserved"] == interview_turn_service.ATTEMPT_TOKENS
+    replay = events(client.post(f"{path}/turns", headers=A, json={**turn(), "retry": True}))
+    assert replay[0][0] == "turn.replayed" and replay[0][1]["message"] == result[-2][1]["message"]
+    assert len(model.requests) == 1
+    with Session(engine) as db:
+        assert db.scalar(select(InterviewMessageRow).where(InterviewMessageRow.role == "user")).turn_tokens_dispatched == interview_turn_service.ATTEMPT_TOKENS
+
+
+def test_new_turn_reconciles_expired_reservation_and_fences_old_retry(api, monkeypatch):
+    client, engine, identities = api
+    path = create_session(client)
+    session_id = path.rsplit("/", 1)[1]
+    monkeypatch.setattr(interview_turn_service, "TURN_LEASE", timedelta(seconds=1))
+    with Session(engine) as db:
+        service = interview_turn_service.InterviewTurnService(db, identities["owner"])
+        old = service.begin(session_id, TurnInput(**turn()), create_model=SyntheticModel)
+    sleep(1.05)
+
+    monkeypatch.setattr(interview_turn_service, "TURN_LEASE", timedelta(seconds=60))
+    reply = events(client.post(f"{path}/turns", headers=A, json=turn(
+        key="new-turn", expected_state_version=old.state.state_version,
+    )))
+    current = reply[-1][1]["state"]
+    assert current["tokens_remaining"] == interview_turn_service.SESSION_TOKENS
+    assert client.post(f"{path}/turns", headers=A, json={
+        **turn(expected_state_version=current["state_version"]), "retry": True,
+    }).status_code == 409
+    with Session(engine) as db:
+        messages = db.scalars(select(InterviewMessageRow).order_by(InterviewMessageRow.position)).all()
+        assert [row.processing_status for row in messages] == ["interrupted", "complete", "complete"]
+
+
+def test_recovery_migration_preserves_legacy_turns_and_guarded_downgrade(api, migrated_database):
+    client, engine, identities = api
+    _, config = migrated_database
+    previous = "2026_11_16_career_turns"
+    path = create_session(client)
+    session_id = path.rsplit("/", 1)[1]
+    command.downgrade(config, previous)
+    from app.application.career_encryption import career_cipher
+
+    cipher = career_cipher()
+    with engine.begin() as conn:
+        for position, role, key, content in (
+            (1, "user", "legacy-completed", "Synthetic legacy answer"),
+            (2, "assistant", "legacy-completed", "Synthetic legacy reply"),
+            (3, "user", "legacy-interrupted", "Synthetic lost answer"),
+        ):
+            conn.execute(text("""
+                INSERT INTO career_interview_messages (user_id, session_id, position, key, role,
+                    content_ciphertext, processing_status, turn_lease_expires_at, created_at)
+                VALUES (:owner, :session, :position, :key, :role, :encrypted, :status,
+                    CASE WHEN :role = 'user' THEN statement_timestamp() - interval '1 minute' END,
+                    statement_timestamp() - interval '2 minutes')
+            """), {"owner": identities["owner"], "session": session_id, "position": position, "key": key,
+                   "role": role, "encrypted": cipher.encrypt(content.encode()).decode(),
+                   "status": "pending" if position == 3 else "complete"})
+        conn.execute(text("UPDATE career_interview_sessions SET message_count = 3, state_version = 4 WHERE id = :id"),
+                     {"id": session_id})
+
+    command.upgrade(config, "head")
+    saved = events(client.post(f"{path}/turns", headers=A, json=turn(
+        key="legacy-completed", content="Synthetic legacy answer",
+    )))
+    assert saved[0][1]["message"]["content"] == "Synthetic legacy reply"
+    interrupted = events(client.post(f"{path}/turns", headers=A, json=turn(
+        key="legacy-interrupted", content="Synthetic lost answer",
+    )))
+    assert interrupted[0][0] == "turn.interrupted" and not interrupted[0][1]["can_retry"]
+    command.downgrade(config, previous)
+    command.upgrade(config, "head")
+    assert len(client.get(f"{path}/messages", headers=A).json()) == 3
+    events(client.post(f"{path}/turns", headers=A, json=turn(key="new", expected_state_version=4)))
+    with pytest.raises(DBAPIError, match="Career turn admission records must be preserved for recovery"):
+        command.downgrade(config, previous)
+
+
+def test_deterministic_turn_keeps_active_session_with_one_attempt_of_capacity(api):
+    client, engine, _ = api
+    path = create_session(client)
+    first = events(client.post(f"{path}/turns", headers=A, json=turn()))
+    version = first[-1][1]["state"]["state_version"]
+    remaining = interview_turn_service.ATTEMPT_TOKENS
+    with engine.begin() as conn:
+        conn.execute(text("UPDATE career_interview_sessions SET tokens_remaining = :remaining"),
+                     {"remaining": remaining})
+    second = events(client.post(f"{path}/turns", headers=A, json=turn(key="next", expected_state_version=version)))
+    assert second[-1][1]["state"]["status"] == "active"
+    assert second[-1][1]["state"]["tokens_remaining"] == remaining
+
+
+def test_invalid_model_configuration_prevents_new_admission_but_preserves_replay(api, monkeypatch):
+    from app.application.errors import ExternalServiceError
+
+    client, _, _ = api
+    path = create_session(client)
+    completed = events(client.post(f"{path}/turns", headers=A, json=turn()))
+    current = completed[-1][1]["state"]
+
+    def broken_configuration():
+        raise ExternalServiceError("Synthetic configuration error")
+
+    monkeypatch.setattr(career_interviews, "_turn_model", broken_configuration)
+    assert events(client.post(f"{path}/turns", headers=A, json=turn()))[0][0] == "turn.replayed"
+    response = client.post(f"{path}/turns", headers=A, json=turn(
+        key="next", expected_state_version=current["state_version"],
+    ))
+    assert response.status_code == 503
+    assert client.get(path, headers=A).json() == current
+    assert len(client.get(f"{path}/messages", headers=A).json()) == 2
