@@ -33,11 +33,16 @@ class MessageInput(BaseModel):
     content: Annotated[Text, AfterValidator(_without_null)]
 
 
+class TurnRecoveryView(BaseModel):
+    candidate_stage: CandidateStage | None
+
+
 class MessageView(MessageInput):
     position: Revision
     role: MessageRole
     processing_status: MessageStatus
     created_at: Timestamp
+    turn_recovery: TurnRecoveryView | None = None
 
 
 class TurnInput(MessageInput):

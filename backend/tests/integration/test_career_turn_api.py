@@ -468,8 +468,10 @@ def test_matching_turn_key_replays_saved_reply_without_a_second_model_call(api, 
 @pytest.mark.parametrize("spec_version", ["2.3", "2.4"])
 async def test_disconnect_cancels_provider_and_recovery_reuses_saved_message(api, monkeypatch, spec_version):
     client, engine, _ = api
-    path = create_session(client)
-    payload = turn()
+    opened = client.post(SESSIONS, headers=A, json={"mode": "foundation"})
+    assert opened.status_code == 201
+    path = f"{SESSIONS}/{opened.json()['session_id']}"
+    payload = {**turn(), "candidate_stage": "experienced_ic"}
     started, cancelled, release = asyncio.Event(), asyncio.Event(), asyncio.Event()
 
     class WaitingModel(SyntheticModel):
@@ -498,6 +500,7 @@ async def test_disconnect_cancels_provider_and_recovery_reuses_saved_message(api
     with TestClient(app) as reconnected:
         history = reconnected.get(f"{path}/messages", headers=A).json()
         assert [row["processing_status"] for row in history] == ["interrupted"]
+        assert history[0]["turn_recovery"] == {"candidate_stage": "experienced_ic"}
         interrupted = events(reconnected.post(f"{path}/turns", headers=A, json=payload))
         assert interrupted[0][0] == "turn.interrupted" and interrupted[0][1]["can_retry"]
         state_version = interrupted[0][1]["state_version"]

@@ -9,6 +9,7 @@ from fastapi import HTTPException
 from app.api.dependencies import get_jd_application_service, get_resume_application_service
 from app.application.errors import ResourceNotFoundError
 from app.core.auth import get_current_user_id
+from app.middleware.error_contracts import PREFIXES
 
 
 def assert_envelope(response, status, code, retryable=False):
@@ -101,7 +102,7 @@ def test_openapi_error_contracts_are_scoped():
     for path, operations in document["paths"].items():
         for operation in operations.values():
             responses = operation["responses"]
-            scoped = path.startswith(("/api/v1/resumes/", "/api/v1/jd/"))
+            scoped = any(path == prefix or path.startswith(prefix + "/") for prefix in PREFIXES)
             if scoped:
                 for status in ("4XX", "422", "5XX"):
                     assert responses[status]["content"]["application/json"]["schema"] == {
