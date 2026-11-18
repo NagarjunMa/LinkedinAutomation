@@ -67,23 +67,25 @@ export function SophisticatedHeader({
     }, [])
 
     return (
-        <header className="flex items-center justify-between h-24 bg-app-bg/80 border-b border-app-text/5 px-6 backdrop-blur-md sticky top-0 z-40 transition-colors duration-300">
+        <header className="flex items-center justify-between h-24 bg-app-bg/80 border-b border-app-text/5 px-3 sm:px-6 backdrop-blur-md sticky top-0 z-40 transition-colors duration-300">
             <div className="flex items-center gap-8">
                 {/* Mobile Menu Toggle */}
                 {onMenuClick && (
                     <button
+                        type="button"
+                        aria-label="Open navigation"
                         onClick={onMenuClick}
-                        className="lg:hidden p-2 -ml-2 text-app-text opacity-50 hover:opacity-100 transition-opacity"
+                        className="lg:hidden p-2 sm:-ml-2 text-app-text opacity-50 hover:opacity-100 transition-opacity"
                     >
                         <Menu className="w-5 h-5" />
                     </button>
                 )}
 
-                <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 border border-app-text/10 flex items-center justify-center bg-app-card hidden sm:flex shadow-sm rounded-sm">
+                <div className="hidden items-center gap-4 sm:flex">
+                    <div className="w-10 h-10 border border-app-text/10 flex items-center justify-center bg-app-card shadow-sm rounded-sm">
                         <LayoutGrid className="w-5 h-5 text-app-text" />
                     </div>
-                    <Link href="/dashboard" className="hidden sm:block">
+                    <Link href="/dashboard">
                         <h1 className="text-xl font-light tracking-tight text-app-text">Prism <span className="font-serif-italic font-medium text-app-accent">Pro</span></h1>
                     </Link>
                 </div>
@@ -104,11 +106,13 @@ export function SophisticatedHeader({
                 </div>
             </div>
 
-            <div className="flex items-center gap-4 sm:gap-8">
-                <div className="flex gap-4 sm:gap-6 items-center">
+            <div className="flex items-center gap-2 sm:gap-8">
+                <div className="flex gap-1.5 sm:gap-6 items-center">
                     <CreditsBalanceBadge />
                     {/* Search Icon Mobile */}
                     <button
+                        type="button"
+                        aria-label="Search jobs and companies"
                         onClick={() => setIsSearchModalOpen(true)}
                         className="md:hidden text-app-text opacity-40 hover:opacity-100 transition-opacity"
                     >
@@ -146,18 +150,18 @@ export function SophisticatedHeader({
                 {/* User Dropdown */}
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <div className="flex items-center gap-4 cursor-pointer group select-none">
-                            <div className="text-right hidden sm:block">
-                                <p className="text-xs font-extrabold uppercase tracking-tighter text-app-text">
+                        <button type="button" aria-label="Account menu" className="flex items-center gap-4 cursor-pointer group select-none focus-visible:outline-2 focus-visible:outline-offset-2">
+                            <span className="text-right hidden sm:block">
+                                <span className="block text-xs font-extrabold uppercase tracking-tighter text-app-text">
                                     {loading ? 'Loading...' : userName}
-                                </p>
-                                <p className="text-[10px] text-app-text opacity-50 italic font-medium">Professional Account</p>
-                            </div>
-                            <div className="w-10 h-10 bg-app-card border border-app-text/10 flex items-center justify-center text-xs font-bold group-hover:bg-app-text group-hover:text-app-bg transition-all duration-700 text-app-text shadow-sm rounded-sm">
+                                </span>
+                                <span className="block text-[10px] text-app-text opacity-50 italic font-medium">Professional Account</span>
+                            </span>
+                            <span className="w-10 h-10 bg-app-card border border-app-text/10 flex items-center justify-center text-xs font-bold group-hover:bg-app-text group-hover:text-app-bg transition-all duration-700 text-app-text shadow-sm rounded-sm">
                                 {user?.email?.[0].toUpperCase() || 'U'}
-                            </div>
-                            <ChevronDown className="w-3 h-3 text-app-text opacity-30" />
-                        </div>
+                            </span>
+                            <ChevronDown className="hidden w-3 h-3 text-app-text opacity-30 sm:block" />
+                        </button>
                     </DropdownMenuTrigger>
 
                     <DropdownMenuContent align="end" className="w-56 bg-card text-card-foreground backdrop-blur-xl border border-border shadow-xl rounded-sm p-0">
