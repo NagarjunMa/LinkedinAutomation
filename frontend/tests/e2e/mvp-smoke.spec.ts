@@ -240,6 +240,36 @@ test('shared layout reserves sidebar space only on desktop, including collapse a
   await expect(main).toHaveCSS('margin-left', '280px');
 });
 
+test('shared dashboard header keeps its controls in view on mobile', async ({ page, context }) => {
+  await seedResumeSession(context);
+  await page.route(`${API}/api/v1/credits/balance`, route => route.fulfill({ json: { balance: 123456789 } }));
+  await page.route(`${API}/api/v1/career/**`, route => route.fulfill({ json: [] }));
+  const header = page.getByRole('main').locator('> header');
+  const account = header.getByRole('button', { name: 'Account menu' });
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  for (const route of ['/dashboard/career', '/dashboard/profile']) {
+    await page.goto(route);
+    await expect(header.getByTestId('credits-badge')).toHaveText('123456789');
+    await expect(account).toBeInViewport({ ratio: 1 });
+    await expect(header.getByRole('button', { name: 'Open navigation' })).toBeInViewport({ ratio: 1 });
+    await expect(header.getByRole('button', { name: 'Search jobs and companies' })).toBeInViewport({ ratio: 1 });
+    await expect(header.getByRole('button', { name: 'Toggle theme' })).toBeInViewport({ ratio: 1 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+  }
+  await page.setViewportSize({ width: 320, height: 844 });
+  await expect(account).toBeInViewport({ ratio: 1 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(320);
+  await account.press('Enter');
+  await expect(page.getByRole('menuitem', { name: /^log out$/i })).toBeInViewport({ ratio: 1 });
+
+  await page.keyboard.press('Escape');
+  await expect(account).toBeFocused();
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await expect(header.getByPlaceholder(/Search jobs, companies/)).toBeVisible();
+  await expect(account).toBeInViewport({ ratio: 1 });
+});
+
 test('tailor MVP flow uploads, edits pointer, applies, and exposes download contract', async ({ page, context }) => {
   await seedResumeSession(context);
 
