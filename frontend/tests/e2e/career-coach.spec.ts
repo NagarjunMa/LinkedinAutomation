@@ -1,6 +1,109 @@
 import { expect, test } from '@playwright/test';
 import { seedResumeSession } from './resume-session';
 
+test('stops waiting from the keyboard and recovers the same turn', async ({ page, context }) => {
+  await seedResumeSession(context);
+  const timestamp = '2026-11-17T16:00:00Z';
+  const session = {
+    schema_version: 1, owner_id: 'resume-test-user', session_id: 'stop-waiting', mode: 'foundation',
+    status: 'active', chapter: 'introduction', candidate_stage: 'early_career', state_version: 1,
+    prompt_version: '2', turns_remaining: 9, tokens_remaining: 12000, created_at: timestamp, updated_at: timestamp,
+  };
+  const sent: Record<string, unknown>[] = [];
+  let releaseFirst!: () => void;
+  const firstResponse = new Promise<void>(resolve => { releaseFirst = resolve; });
+  let releaseEvidence!: () => void;
+  const evidenceResponse = new Promise<void>(resolve => { releaseEvidence = resolve; });
+  const reply = 'I designed a test scheduler.';
+  const question = 'How did you verify the scheduling behavior?';
+  let recovered = false;
+  let omitSavedReply = true;
+  await page.route('**/api/v1/career/**', async route => {
+    const request = route.request();
+    const path = new URL(request.url()).pathname;
+    if (path.endsWith('/evidence')) {
+      if (recovered) await evidenceResponse;
+      return route.fulfill({ json: [] });
+    }
+    if (path.endsWith('/sessions')) {
+      return request.method() === 'POST' ? route.fulfill({ status: 201, json: session }) : route.fulfill({ json: [] });
+    }
+    const saved = { ...session, state_version: 3 };
+    if (path.endsWith('/stop-waiting')) return route.fulfill({ json: saved });
+    if (path.endsWith('/messages')) {
+      if (recovered && omitSavedReply) {
+        omitSavedReply = false;
+        return route.fulfill({ json: [] });
+      }
+      const first = { key: sent[0]?.key, processing_status: 'complete', created_at: timestamp };
+      return route.fulfill({ json: recovered ? [
+        { ...first, role: 'user', content: reply, position: 1 },
+        { ...first, role: 'assistant', content: question, position: 2 },
+      ] : [] });
+    }
+    const payload = request.postDataJSON();
+    sent.push(payload);
+    if (sent.length === 1) {
+      await firstResponse;
+      return route.abort();
+    }
+    recovered = sent.length >= 3;
+    const event = recovered ? { type: 'turn.replayed', state: saved, recovered: true }
+      : { type: 'turn.interrupted', key: payload.key, state_version: 2, can_retry: true };
+    return route.fulfill({ contentType: 'text/event-stream', body: `data: ${JSON.stringify(event)}\n\n` });
+  });
+
+  await page.goto('/dashboard/career');
+  await page.getByLabel('Career stage', { exact: true }).selectOption('early_career');
+  await page.getByRole('button', { name: 'Start session' }).press('Enter');
+  await expect(page.getByRole('heading', { name: 'Foundation interview' })).toBeFocused();
+  const announcement = page.getByRole('status', { name: 'Coach reply' });
+  await expect(announcement).toBeEmpty();
+  await page.getByLabel('Your reply').fill(reply);
+  const stop = page.getByRole('button', { name: 'Stop waiting' });
+  const checkOrSend = page.getByRole('button', { name: 'Check or send reply' });
+  try {
+    const send = page.getByRole('button', { name: 'Send', exact: true });
+    await send.focus();
+    await send.evaluate((button: HTMLButtonElement) => {
+      button.form?.requestSubmit();
+      button.form?.requestSubmit();
+    });
+    await expect.poll(() => sent.length).toBe(1);
+    await expect(stop).toBeFocused();
+    await Promise.all([
+      page.waitForEvent('requestfailed', request => new URL(request.url()).pathname.endsWith('/stop-waiting/turns')),
+      stop.press('Enter'),
+    ]);
+    await expect(page.getByRole('status').filter({ hasText: 'Stopped waiting' })).toBeVisible();
+    await expect(checkOrSend).toBeFocused();
+    await expect(page.getByText('This sends your original reply if the server has yet to receive it.')).toBeVisible();
+    expect(sent).toHaveLength(1);
+  } finally {
+    releaseFirst();
+  }
+  await checkOrSend.press('Enter');
+  await page.getByRole('button', { name: 'Retry reply' }).press('Enter');
+  await expect(page.getByRole('alert').filter({ hasText: 'The request did not finish' })).toBeVisible();
+  await expect(announcement).toBeEmpty();
+  try {
+    await page.getByRole('button', { name: 'Check turn status' }).press('Enter');
+    await expect(page.getByText(question, { exact: true })).toBeVisible();
+    await expect(announcement).toHaveText(`Coach: ${question}`);
+    await expect(page.getByRole('list', { name: 'Conversation transcript' })).toBeFocused();
+  } finally {
+    releaseEvidence();
+  }
+  await expect(page.getByLabel('Your reply')).toBeFocused();
+  expect(sent).toHaveLength(4);
+  expect(sent[1]).toMatchObject({ key: sent[0].key, content: reply, retry: false });
+  expect(sent[2]).toMatchObject({ key: sent[0].key, content: reply, retry: true, expected_state_version: 2 });
+  expect(sent[3]).toMatchObject({ key: sent[0].key, content: reply, retry: false });
+  await page.getByRole('button', { name: 'Refresh conversation' }).press('Enter');
+  await expect(page.getByRole('heading', { name: 'Foundation interview' })).toBeFocused();
+  await expect(announcement).toBeEmpty();
+});
+
 test('starts and resumes a Career Coach session, recovers a turn, and reviews evidence', async ({ page, context }) => {
   await seedResumeSession(context);
   await page.clock.install();
@@ -22,6 +125,9 @@ test('starts and resumes a Career Coach session, recovers a turn, and reviews ev
   const decisionGate = new Promise<void>(resolve => { releaseDecision = resolve; });
   let releaseFirstTurn!: () => void;
   const firstTurnGate = new Promise<void>(resolve => { releaseFirstTurn = resolve; });
+  let oversizedSends = 0;
+  let releaseOversized!: () => void;
+  const oversizedGate = new Promise<void>(resolve => { releaseOversized = resolve; });
   const proposal = {
     schema_version: 1, owner_id: owner, evidence_id: 'evidence-1', revision: 1,
     claim: 'I wrote the scheduling service.', category: 'action', ownership: 'individual',
@@ -58,6 +164,10 @@ test('starts and resumes a Career Coach session, recovers a turn, and reviews ev
     if (path.endsWith('/turns')) {
       const payload = request.postDataJSON();
       if (new TextEncoder().encode(request.postData() ?? '').byteLength > 8192) {
+        if (++oversizedSends === 1) {
+          await oversizedGate;
+          return route.abort();
+        }
         return route.fulfill({ status: 413, json: { detail: 'Reply too large' } });
       }
       if (payload.content === 'Career turns are temporarily disabled.') {
@@ -109,8 +219,16 @@ test('starts and resumes a Career Coach session, recovers a turn, and reviews ev
   await page.getByRole('button', { name: 'Start session' }).click();
   const oversized = '漢'.repeat(3000);
   await page.getByLabel('Your reply').fill(oversized);
-  await page.getByRole('button', { name: 'Send' }).click();
+  try {
+    await page.getByRole('button', { name: 'Send', exact: true }).click();
+    await expect.poll(() => oversizedSends).toBe(1);
+    await page.getByRole('button', { name: 'Stop waiting' }).click();
+  } finally {
+    releaseOversized();
+  }
+  await page.getByRole('button', { name: 'Check or send reply' }).click();
   await expect(page.getByRole('alert').filter({ hasText: 'is too large' })).toBeVisible();
+  await expect(page.getByLabel('Your reply')).toBeVisible();
   await expect(page.getByLabel('Your reply')).toHaveValue(oversized);
   await page.getByLabel('Your reply').fill('Career turns are temporarily disabled.');
   await page.getByRole('button', { name: 'Send' }).click();
@@ -122,10 +240,10 @@ test('starts and resumes a Career Coach session, recovers a turn, and reviews ev
   await page.clock.fastForward(66_000);
   await expect(page.getByRole('alert').filter({ hasText: 'The request took too long' })).toBeVisible();
   releaseFirstTurn();
-  await page.getByRole('button', { name: 'Check turn status' }).click();
+  await page.getByRole('button', { name: 'Check or send reply' }).click();
   await expect(page.getByRole('alert').filter({ hasText: 'This record has changed' })).toBeVisible();
   expect(sends[1].key).toBe(sends[0].key);
-  await page.getByRole('button', { name: /Foundation interview/ }).click();
+  await page.getByRole('button', { name: 'Refresh conversation' }).click();
   await expect(page.getByLabel('Your reply')).toHaveValue('I built a scheduler for our test team.');
   await page.getByRole('button', { name: 'Send' }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Reply interrupted' })).toBeVisible();
@@ -138,13 +256,14 @@ test('starts and resumes a Career Coach session, recovers a turn, and reviews ev
   await page.reload();
   await page.getByRole('button', { name: /Foundation interview/ }).click();
   await expect(page.getByText(literalQuestion, { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Resume conversation' }).click();
+  await page.getByRole('button', { name: 'Resume conversation' }).press('Enter');
+  await expect(page.getByRole('heading', { name: 'Foundation interview' })).toBeFocused();
   await expect(page.getByLabel('Your reply')).toBeEnabled();
   await page.getByLabel('Your reply').fill('The stream closed after saving this reply.');
   await page.getByRole('button', { name: 'Send' }).click();
   await expect(page.getByRole('alert').filter({ hasText: 'The request did not finish' })).toBeVisible();
   await page.getByRole('button', { name: /Foundation interview/ }).click();
-  await expect(page.getByText('That reply was saved.')).toBeVisible();
+  await expect(page.getByText('That reply was saved.', { exact: true })).toBeVisible();
   await expect(page.getByLabel('Your reply')).toHaveValue('');
 
   const evidence = page.getByRole('region', { name: 'Evidence review' });
@@ -215,12 +334,97 @@ test('recovers the saved introduction stage and skips legacy messages without a 
   await page.clock.fastForward(66_000);
   await expect(page.getByRole('alert').filter({ hasText: 'saved records took too long' })).toBeVisible();
   releaseEvidence();
+  const evidence = page.getByRole('region', { name: 'Evidence review' });
+  await expect(evidence.getByText('Saved proposals are unavailable.')).toBeVisible();
+  await expect(evidence.getByText('Your saved proposals will appear here.')).toHaveCount(0);
+  await evidence.getByRole('button', { name: 'Refresh evidence' }).click();
+  await expect(evidence.getByText('Your saved proposals will appear here.')).toBeVisible();
   await page.getByRole('button', { name: /Career refresh/ }).click();
   await expect(page.getByRole('status').filter({ hasText: 'earlier reply can’t be retried' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Check turn status' })).toHaveCount(0);
   await page.getByRole('button', { name: /Foundation interview/ }).click();
   await page.getByRole('button', { name: 'Check turn status' }).click();
   await page.getByRole('button', { name: 'Retry reply' }).click();
-  await expect(page.getByText('How did you verify it?')).toBeVisible();
+  await expect(page.getByText('How did you verify it?', { exact: true })).toBeVisible();
   await expect(page.getByLabel('Your reply')).toBeFocused();
+});
+
+test('recovers failed session loading and refreshes before continuing a superseded turn', async ({ page, context }) => {
+  await seedResumeSession(context);
+  const timestamp = '2026-11-17T16:00:00Z';
+  const session = {
+    schema_version: 1, owner_id: 'resume-test-user', session_id: 'superseded', mode: 'foundation',
+    status: 'active', chapter: 'introduction', candidate_stage: 'early_career', state_version: 3,
+    prompt_version: '2', turns_remaining: 9, tokens_remaining: 12000, created_at: timestamp, updated_at: timestamp,
+  };
+  let sessionReads = 0;
+  let status = 'active';
+  let version = 3;
+  let raceReads = 0;
+  let rejectResume = true;
+  const turns: Record<string, unknown>[] = [];
+  await page.route('**/api/v1/career/**', async route => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.endsWith('/evidence')) return route.fulfill({ json: [] });
+    if (path.endsWith('/sessions')) {
+      return ++sessionReads === 1 ? route.fulfill({ status: 503, json: {} }) : route.fulfill({ json: [session] });
+    }
+    if (path.endsWith('/superseded')) return route.fulfill({ json: { ...session, status, state_version: version } });
+    if (path.endsWith('/resume')) {
+      if (rejectResume) {
+        rejectResume = false;
+        return route.fulfill({ status: 409, json: {} });
+      }
+      status = 'active';
+      return route.fulfill({ json: { ...session, status, state_version: ++version } });
+    }
+    if (path.endsWith('/messages')) {
+      if (raceReads > 0) {
+        raceReads--;
+        version++;
+      }
+      if (turns.length && version === 3) {
+        status = 'paused';
+        version++;
+      }
+      return route.fulfill({ json: [{
+        key: 'old-turn', role: 'user', content: 'I built a test scheduler.', position: 1,
+        processing_status: 'interrupted', created_at: timestamp, turn_recovery: { candidate_stage: null },
+      }] });
+    }
+    turns.push(route.request().postDataJSON());
+    const event = { type: 'turn.interrupted', key: 'old-turn', state_version: 3, can_retry: false };
+    return route.fulfill({ contentType: 'text/event-stream', body: `data: ${JSON.stringify(event)}\n\n` });
+  });
+
+  await page.goto('/dashboard/career');
+  const sessions = page.getByRole('region', { name: 'Sessions' });
+  await expect(sessions.getByText('Saved sessions are unavailable.')).toBeVisible();
+  await expect(sessions.getByText('No saved sessions yet.')).toHaveCount(0);
+  await sessions.getByRole('button', { name: 'Retry loading sessions' }).press('Enter');
+  await expect(sessions.getByRole('heading', { name: 'Sessions' })).toBeFocused();
+  await sessions.getByRole('button', { name: /Foundation interview/ }).press('Enter');
+  await expect(page.getByRole('heading', { name: 'Foundation interview' })).toBeFocused();
+  await page.getByRole('button', { name: 'Check turn status' }).press('Enter');
+  await expect(page.getByLabel('Your reply')).toBeHidden();
+  const refresh = page.getByRole('button', { name: 'Refresh conversation' });
+  await expect(refresh).toBeFocused();
+  await refresh.press('Enter');
+  await expect(page.getByLabel('Your reply')).toBeHidden();
+  const resume = page.getByRole('button', { name: 'Resume conversation' });
+  await resume.press('Enter');
+  await expect(page.getByRole('alert').filter({ hasText: 'This record has changed' })).toBeVisible();
+  await expect(refresh).toBeFocused();
+  await refresh.press('Enter');
+  await resume.press('Enter');
+  await expect(page.getByLabel('Your reply')).toBeEnabled();
+  await expect(page.getByRole('status').filter({ hasText: 'earlier reply can’t be retried' })).toBeVisible();
+  expect(turns).toHaveLength(1);
+
+  raceReads = 2;
+  await refresh.press('Enter');
+  await expect(page.getByRole('alert').filter({ hasText: 'This record has changed' })).toBeVisible();
+  await expect(page.getByLabel('Your reply')).toBeHidden();
+  await refresh.press('Enter');
+  await expect(page.getByLabel('Your reply')).toBeEnabled();
 });

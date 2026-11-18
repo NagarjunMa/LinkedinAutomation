@@ -28,28 +28,74 @@ export function CareerCoach() {
 
 function CoachWorkspace({ owner, isCurrentUser }: { owner: string; isCurrentUser: (id: string) => boolean }) {
   const coach = useCareerCoach(owner, isCurrentUser);
-  const { session, activity, loading, recovery } = coach;
+  const { session, activity, loading, recovery, needsConversationRefresh, stopWaiting } = coach;
   const busy = loading || Boolean(activity);
   const [stage, setStage] = useState<SelectedStage>('');
   const [existingStage, setExistingStage] = useState<SelectedStage>('');
   const transcript = useRef<HTMLOListElement>(null);
+  const conversationHeading = useRef<HTMLHeadingElement>(null);
+  const conversationTrigger = useRef<{ element: HTMLElement | null; previous: Session | undefined } | null>(null);
+  const sessionsHeading = useRef<HTMLHeadingElement>(null);
+  const sessionsRetryTrigger = useRef<HTMLButtonElement>(null);
   const replyInput = useRef<HTMLTextAreaElement>(null);
   const retryButton = useRef<HTMLButtonElement>(null);
-  const restoreTurnFocus = useRef(false);
+  const refreshButton = useRef<HTMLButtonElement>(null);
+  const stopButton = useRef<HTMLButtonElement>(null);
+  const restoreTurnFocus = useRef<'turn' | 'transcript' | null>(null);
   const title = session ? modes[session.mode] : 'Conversation';
   const status = loading ? 'Loading your sessions…' : activity || coach.notice;
+  const mayResend = recovery && !recovery.saved && !recovery.request.retry;
 
   useEffect(() => {
     if (transcript.current) transcript.current.scrollTop = transcript.current.scrollHeight;
   }, [coach.messages]);
 
   useEffect(() => {
-    if (busy || !restoreTurnFocus.current) return;
-    restoreTurnFocus.current = false;
-    if (document.activeElement === document.body || document.activeElement?.closest('[hidden]')) {
-      (recovery ? retryButton.current : replyInput.current ?? transcript.current)?.focus({ preventScroll: true });
+    const trigger = conversationTrigger.current;
+    if (busy || !trigger) return;
+    conversationTrigger.current = null;
+    const active = document.activeElement;
+    if (active !== document.body && active !== trigger.element) return;
+    if (session && session !== trigger.previous) conversationHeading.current?.focus();
+    else if (active === document.body) {
+      const target = trigger.element?.isConnected ? trigger.element : refreshButton.current;
+      target?.focus();
     }
-  }, [busy, recovery]);
+  }, [busy, session, coach.error]);
+
+  useEffect(() => {
+    const trigger = sessionsRetryTrigger.current;
+    if (busy || !trigger) return;
+    sessionsRetryTrigger.current = null;
+    if (document.activeElement === document.body || document.activeElement === trigger) {
+      (coach.sessionsUnavailable ? trigger : sessionsHeading.current)?.focus();
+    }
+  }, [busy, coach.sessionsUnavailable]);
+
+  useEffect(() => {
+    if (!restoreTurnFocus.current) return;
+    const active = document.activeElement;
+    const lostFocus = active === document.body || active?.closest('[hidden]') || active?.matches(':disabled');
+    if (busy) {
+      if (lostFocus && stopButton.current) stopButton.current.focus();
+      else if (lostFocus && transcript.current) {
+        restoreTurnFocus.current = 'transcript';
+        transcript.current.focus();
+      }
+      return;
+    }
+    const onTemporaryTarget = restoreTurnFocus.current === 'transcript' && active === transcript.current;
+    restoreTurnFocus.current = null;
+    if (lostFocus || onTemporaryTarget) {
+      const next = needsConversationRefresh ? refreshButton.current : recovery ? retryButton.current : replyInput.current;
+      (next?.matches(':enabled') ? next : transcript.current)?.focus();
+    }
+  }, [busy, recovery, needsConversationRefresh, stopWaiting]);
+
+  function enterConversation(element: HTMLElement | null, action: () => void) {
+    conversationTrigger.current = { element, previous: session };
+    action();
+  }
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
@@ -62,14 +108,17 @@ function CoachWorkspace({ owner, isCurrentUser }: { owner: string; isCurrentUser
       <div role="status" className={status ? 'text-sm text-muted-foreground' : 'sr-only'}>
         {status}
       </div>
-      {coach.error && <p role="alert" className="rounded-lg border border-border p-3 text-sm">{coach.error}</p>}
+      <div role="status" aria-label="Coach reply" className="sr-only">{coach.announcement}</div>
+      <p role="alert" className={coach.error ? 'rounded-lg border border-border p-3 text-sm' : 'sr-only'}>{coach.error}</p>
       <div className="grid items-start gap-6 md:grid-cols-[minmax(10rem,13rem)_minmax(0,1fr)] min-[1550px]:grid-cols-[13rem_minmax(0,1fr)_17rem]">
         <section aria-labelledby="coach-sessions" className="min-w-0 space-y-4">
           <form className="space-y-3" onSubmit={event => {
             event.preventDefault();
-            if (!busy && stage) void coach.start({ mode: 'foundation', candidate_stage: stage });
+            if (!busy && stage) enterConversation((event.nativeEvent as SubmitEvent).submitter,
+              () => void coach.start({ mode: 'foundation', candidate_stage: stage }));
           }}>
-            <h2 id="coach-sessions" className="text-base font-semibold">Sessions</h2>
+            <h2 ref={sessionsHeading} id="coach-sessions" tabIndex={-1}
+              className="text-base font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">Sessions</h2>
             <StageSelect value={stage} onChange={setStage} disabled={busy} label="Career stage" />
             <Button type="submit" className="w-full" disabled={busy || !stage}><Plus aria-hidden="true" />Start session</Button>
           </form>
@@ -78,7 +127,10 @@ function CoachWorkspace({ owner, isCurrentUser }: { owner: string; isCurrentUser
               <li key={row.session_id}>
                 <button type="button" aria-pressed={row.session_id === session?.session_id} disabled={busy}
                   className="w-full rounded-md p-3 text-left text-sm hover:bg-muted aria-pressed:bg-muted focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-60"
-                  onClick={() => { setExistingStage(''); void coach.open(row.session_id); }}>
+                  onClick={event => {
+                    setExistingStage('');
+                    enterConversation(event.currentTarget, () => void coach.open(row.session_id));
+                  }}>
                   <span className="block font-medium">{modes[row.mode]}</span>
                   <span className="block text-xs capitalize text-muted-foreground">
                     <time dateTime={row.updated_at}>{new Date(row.updated_at).toLocaleDateString()}</time> · {row.status}
@@ -89,12 +141,31 @@ function CoachWorkspace({ owner, isCurrentUser }: { owner: string; isCurrentUser
           </ul>
           <Pager count={coach.sessions.length} offset={coach.sessionOffset} size={coach.pageSize} busy={busy}
             label="sessions" go={offset => void coach.page('sessions', offset)} />
-          {!loading && !coach.sessions.length && !coach.sessionOffset && <p className="text-sm text-muted-foreground">No saved sessions yet.</p>}
+          {coach.sessionsUnavailable ? (
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">Saved sessions are unavailable.</p>
+              <Button size="sm" variant="outline" disabled={busy} onClick={event => {
+                sessionsRetryTrigger.current = event.currentTarget;
+                void coach.page('sessions', 0);
+              }}>
+                Retry loading sessions
+              </Button>
+            </div>
+          ) : !loading && !coach.sessions.length && !coach.sessionOffset && (
+            <p className="text-sm text-muted-foreground">No saved sessions yet.</p>
+          )}
         </section>
         <section aria-labelledby="coach-conversation" className="min-w-0 overflow-hidden rounded-xl border border-border bg-card">
-          <header className="border-b border-border px-4 py-3 sm:px-5">
-            <h2 id="coach-conversation" className="font-semibold">{title}</h2>
-            {session && <p className="mt-1 text-sm capitalize text-muted-foreground">{session.chapter.replaceAll('_', ' ')} · {session.status}</p>}
+          <header className="flex flex-wrap items-start justify-between gap-2 border-b border-border px-4 py-3 sm:px-5">
+            <div>
+              <h2 ref={conversationHeading} id="coach-conversation" tabIndex={-1}
+                className="font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">{title}</h2>
+              {session && <p className="mt-1 text-sm capitalize text-muted-foreground">{session.chapter.replaceAll('_', ' ')} · {session.status}</p>}
+            </div>
+            {session && <Button ref={refreshButton} size="sm" variant="outline" disabled={busy}
+              onClick={event => enterConversation(event.currentTarget, () => void coach.open(session.session_id))}>
+              Refresh conversation
+            </Button>}
           </header>
           {!session ? (
             <div className="space-y-2 p-5 text-sm text-muted-foreground">
@@ -103,7 +174,7 @@ function CoachWorkspace({ owner, isCurrentUser }: { owner: string; isCurrentUser
             </div>
           ) : (
             <>
-              <ol ref={transcript} aria-label="Conversation transcript" aria-live="polite" tabIndex={0}
+              <ol ref={transcript} aria-label="Conversation transcript" tabIndex={0}
                 className="max-h-[28rem] space-y-4 overflow-y-auto p-4 focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-ring sm:p-5">
                 {!coach.messages.length && (
                   <li className="text-sm text-muted-foreground">Tell the coach about a project or a piece of work you’d like to explore.</li>
@@ -117,27 +188,38 @@ function CoachWorkspace({ owner, isCurrentUser }: { owner: string; isCurrentUser
               </ol>
               <div className="space-y-3 border-t border-border p-4 sm:p-5">
                 {session.status === 'active' && session.chapter === 'introduction' && !session.candidate_stage
-                  && recovery?.candidate_stage === undefined && (
+                  && recovery?.request.candidate_stage === undefined && (
                     <StageSelect value={existingStage} onChange={setExistingStage} disabled={busy}
                       label={recovery ? 'Career stage used for this reply (if any)' : 'Confirm your career stage'} />
                   )}
-                {recovery ? (
-                  <Button ref={retryButton} variant="outline" disabled={busy} onClick={() => {
-                    restoreTurnFocus.current = true;
-                    void coach.retry(existingStage || undefined);
-                  }}>
-                    {recovery.retry ? 'Retry reply' : 'Check turn status'}
+                {stopWaiting ? (
+                  <Button ref={stopButton} type="button" variant="outline" onClick={stopWaiting}>Stop waiting</Button>
+                ) : recovery && !needsConversationRefresh ? (
+                  <>
+                    <Button ref={retryButton} variant="outline" disabled={busy}
+                      aria-describedby={mayResend ? 'coach-recovery-explanation' : undefined} onClick={() => {
+                        restoreTurnFocus.current = 'turn';
+                        void coach.retry(existingStage || undefined);
+                      }}>
+                      {recovery.request.retry ? 'Retry reply' : mayResend ? 'Check or send reply' : 'Check turn status'}
+                    </Button>
+                    {mayResend && <p id="coach-recovery-explanation" className="text-sm text-muted-foreground">
+                      This sends your original reply if the server has yet to receive it.
+                    </p>}
+                  </>
+                ) : session.status === 'paused' && !needsConversationRefresh ? (
+                  <Button disabled={busy}
+                    onClick={event => enterConversation(event.currentTarget, () => void coach.open(session.session_id, true))}>
+                    Resume conversation
                   </Button>
-                ) : session.status === 'paused' ? (
-                  <Button disabled={busy} onClick={() => void coach.open(session.session_id, true)}>Resume conversation</Button>
                 ) : null}
                 {session.status === 'active' && (
-                  <div hidden={Boolean(recovery)}>
+                  <div hidden={Boolean(recovery) || needsConversationRefresh}>
                     <Composer key={`${session.session_id}:${coach.acceptedKey}`}
                       inputRef={replyInput}
                       busy={busy || (session.chapter === 'introduction' && !session.candidate_stage && !existingStage)}
                       send={text => {
-                        restoreTurnFocus.current = true;
+                        restoreTurnFocus.current = 'turn';
                         void coach.send(text, session.chapter === 'introduction' && !session.candidate_stage
                           ? existingStage || undefined : undefined);
                       }} />
@@ -148,7 +230,7 @@ function CoachWorkspace({ owner, isCurrentUser }: { owner: string; isCurrentUser
           )}
         </section>
         <div className="space-y-3 md:col-start-2 min-[1550px]:col-start-3">
-          <EvidenceReview items={coach.evidence} busy={busy} decide={coach.decide}
+          <EvidenceReview items={coach.evidence} busy={busy} loading={loading} unavailable={coach.evidenceUnavailable} decide={coach.decide}
             refresh={() => void coach.page('evidence', coach.evidenceOffset)} />
           <Pager count={coach.evidence.length} offset={coach.evidenceOffset} size={coach.pageSize} busy={busy}
             label="evidence" go={offset => void coach.page('evidence', offset)} />
