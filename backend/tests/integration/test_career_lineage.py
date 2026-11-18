@@ -259,15 +259,21 @@ def test_concurrent_versions_get_one_winner(lineage):
     assert [result.version for result in winners] == [2]
 
 
-def test_reconfirmation_keeps_old_claims_invalidated(lineage):
+@pytest.mark.parametrize("changes", [
+    {"claim": "Built a synthetic integration and its tests"},
+    {"ownership": "shared", "scope": "Owned the integration tests"},
+])
+def test_reconfirmation_keeps_old_claims_invalidated(lineage, changes):
     engine, _, (owner, _), ((_, confirmed), _) = lineage
     with Session(engine) as db:
         service = LineageService(db, owner)
         original = service.record_artifact(artifact(confirmed))
         ledger = EvidenceService(db, owner)
         edited = ledger.decide(confirmed.evidence_id, EvidenceDecisionInput(
-            revision=confirmed.revision, action="edit", claim="Built a synthetic integration and its tests",
+            revision=confirmed.revision, action="edit", **changes,
         ))
+        assert ledger.eligible(edited) is None
+        assert service.get_artifact(original).status == "invalidated"
         current = ledger.decide(edited.evidence_id, EvidenceDecisionInput(revision=edited.revision, action="confirm"))
         regenerated = service.record_artifact(artifact(current), previous=original)
         assert service.get_artifact(original).status == "invalidated"

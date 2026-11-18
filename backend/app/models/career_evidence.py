@@ -15,6 +15,7 @@ class EvidenceRow(Base):
     is_private = mapped_column(Boolean, nullable=False)
     source_count = mapped_column(Integer, nullable=False)
     ciphertext = mapped_column(Text, nullable=False)
+    measurement_ciphertext = mapped_column(Text)
 
 
 class EvidenceSourceRow(Base):
