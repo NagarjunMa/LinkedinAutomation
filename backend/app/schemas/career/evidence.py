@@ -47,6 +47,16 @@ class ContradictingSourceLink(EvidenceSourceLink):
     relationship: Literal["contradicts"]
 
 
+class EvidenceMeasurement(BaseModel):
+    """Owner-provided basis for a number already stated in the claim."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    method: Label
+    scope: Label
+    estimated: StrictBool
+
+
 class CareerEvidenceItem(CareerContract, EvidenceRevisionRef):
     model_config = ConfigDict(json_schema_extra={"allOf": [
         {
@@ -73,6 +83,7 @@ class CareerEvidenceItem(CareerContract, EvidenceRevisionRef):
     category: EvidenceCategory
     ownership: Ownership
     scope: Label | None = None
+    measurement: EvidenceMeasurement | None = None
     qualifiers: list[Label] = Field(default_factory=list)
     confidence: Literal["low", "medium", "high"] | None = None
     lifecycle: EvidenceLifecycle
@@ -136,11 +147,21 @@ class EvidenceDecisionInput(BaseModel):
     action: EvidenceAction
     reason: Text | None = None
     claim: Text | None = None
+    ownership: Ownership | None = None
+    scope: Label | None = None
+    measurement: EvidenceMeasurement | None = None
+
+    def edit_values(self) -> dict:
+        return self.model_dump(include={"claim", "ownership", "scope", "measurement"}, exclude_unset=True)
 
     @model_validator(mode="after")
     def validate_edit(self) -> Self:
-        if (self.claim is not None) != (self.action == "edit"):
-            raise ValueError("only edits require a new claim")
+        changes = self.edit_values()
+        if self.action == "edit":
+            if not changes or any(key in changes and changes[key] is None for key in ("claim", "ownership")):
+                raise ValueError("provide an edit with a non-null claim or ownership when supplied")
+        elif self.claim is not None or changes.keys() - {"claim"}:
+            raise ValueError("only edits may change evidence fields")
         return self
 
 

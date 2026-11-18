@@ -7,18 +7,19 @@ from hashlib import sha256
 from uuid import uuid4
 
 from cryptography.fernet import Fernet
+from pydantic import ValidationError
 from sqlalchemy import func, select, tuple_
 from sqlalchemy.orm import Session
 
 from app.application.career_encryption import career_cipher, open_private_text
-from app.application.errors import InvalidOperationError, ResourceConflictError, ResourceNotFoundError
+from app.application.errors import ExternalServiceError, InvalidOperationError, ResourceConflictError, ResourceNotFoundError
 from app.models.career import CareerSourceRow
 from app.models.career_evidence import EvidenceDecisionRow as Decision, EvidenceRow as Item, EvidenceSourceRow as Link
 from app.models.resume_document import ResumeDocument
 from app.repositories.career_repository import CareerRepository
 from app.schemas.career.common import SourceRef
 from app.schemas.career.evidence import (
-    CareerEvidenceDecision, CareerEvidenceItem, EvidenceDecisionInput, EvidenceHistory, EvidenceLifecycle,
+    CareerEvidenceDecision, CareerEvidenceItem, EvidenceDecisionInput, EvidenceHistory, EvidenceLifecycle, EvidenceMeasurement,
     EvidenceProposal, EvidenceRevisionRef, EvidenceSourceLink,
 )
 
@@ -135,9 +136,12 @@ class EvidenceService:
         if row.revision != data.revision:
             raise ResourceConflictError("Evidence revision is no longer current")
         lifecycle, sources = _decision_state(old, data)
+        changes = data.edit_values() if data.action == "edit" else {}
+        if "claim" in changes and changes["claim"] != old.claim:
+            changes.setdefault("measurement", None)
         item = CareerEvidenceItem.model_validate({
-            **old.model_dump(), "revision": old.revision + 1, "supersedes_revision": old.revision,
-            "lifecycle": lifecycle, "claim": data.claim or old.claim, "sources": sources,
+            **old.model_dump(), **changes, "revision": old.revision + 1, "supersedes_revision": old.revision,
+            "lifecycle": lifecycle, "sources": sources,
             "is_private": old.is_private or lifecycle == "private",
         })
         self._insert(item, cipher)
@@ -195,13 +199,23 @@ class EvidenceService:
         return row
 
     def _view(self, row: Item, cipher: Fernet) -> CareerEvidenceItem:
-        return CareerEvidenceItem.model_validate_json(open_private_text(cipher, row.ciphertext))
+        try:
+            item = CareerEvidenceItem.model_validate_json(open_private_text(cipher, row.ciphertext))
+            if row.measurement_ciphertext is None:
+                return item
+            measurement = EvidenceMeasurement.model_validate_json(open_private_text(cipher, row.measurement_ciphertext))
+            return item.model_copy(update={"measurement": measurement})
+        except ValidationError:
+            raise ExternalServiceError("Career evidence could not be opened") from None
 
     def _insert(self, item: CareerEvidenceItem, cipher: Fernet) -> None:
+        measurement = item.measurement
         self.db.add(Item(
             user_id=self.owner, evidence_id=item.evidence_id, revision=item.revision,
             lifecycle=item.lifecycle, is_private=item.is_private, source_count=len(item.sources),
-            ciphertext=cipher.encrypt(item.model_dump_json().encode()).decode("ascii"),
+            # Keep the measurement separate from the existing encrypted payload format.
+            ciphertext=cipher.encrypt(item.model_dump_json(exclude={"measurement"}).encode()).decode("ascii"),
+            measurement_ciphertext=cipher.encrypt(measurement.model_dump_json().encode()).decode("ascii") if measurement else None,
         ))
         self.db.flush()
         self.db.add_all(Link(

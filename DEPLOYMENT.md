@@ -289,3 +289,21 @@ downgrade to `2026_11_16_career_turns` in READ COMMITTED. Verify the prior
 image's Alembic check and `/health`. Once an admission exists, keep the active
 revision and transcript key and use a compatible backend with turns disabled.
 The downgrade guard preserves the recovery records.
+
+### PRI-44 Career Evidence decisions
+
+Apply `2026_11_18_evidence_measurement` with the migration-owner connection
+before starting the matching backend. Preserve the environment's
+`CAREER_TRANSCRIPT_KEY`. In development, verify legacy evidence reads,
+synthetic owner decisions and cross-account denial, stale-revision rejection,
+and the invalidation of artifacts tied to the edited revision.
+
+For rollback, pause evidence decision writes. If no revision contains
+measurement metadata, use the PRI-44 migration checkout and a READ COMMITTED
+migration-owner connection to run
+`python -m alembic downgrade 2026_11_16_career_recovery`. Verify the prior
+image's `alembic current --check-heads` and `/health` before restoring traffic.
+Once any revision contains a measurement, retain the active head and key.
+Use a corrective backend that recognizes the head and preserves measurement
+metadata on subsequent decisions. The downgrade guard also protects measurements
+on historical revisions.

@@ -1145,6 +1145,7 @@ export interface components {
              * @enum {string}
              */
             lifecycle: "proposed" | "confirmed" | "rejected" | "contradicted" | "private" | "unavailable";
+            measurement?: components["schemas"]["EvidenceMeasurement"] | null;
             /** Owner Id */
             owner_id: string;
             /**
@@ -1304,10 +1305,15 @@ export interface components {
             action: "confirm" | "edit" | "reject" | "mark_private" | "mark_unavailable" | "resolve_contradiction";
             /** Claim */
             claim?: string | null;
+            measurement?: components["schemas"]["EvidenceMeasurement"] | null;
+            /** Ownership */
+            ownership?: ("individual" | "shared" | "team" | "unknown") | null;
             /** Reason */
             reason?: string | null;
             /** Revision */
             revision: number;
+            /** Scope */
+            scope?: string | null;
         };
         /** EvidenceHistory */
         EvidenceHistory: {
@@ -1315,6 +1321,18 @@ export interface components {
             decisions: components["schemas"]["CareerEvidenceDecision"][];
             /** Revisions */
             revisions: components["schemas"]["CareerEvidenceItem"][];
+        };
+        /**
+         * EvidenceMeasurement
+         * @description Owner-provided basis for a number already stated in the claim.
+         */
+        EvidenceMeasurement: {
+            /** Estimated */
+            estimated: boolean;
+            /** Method */
+            method: string;
+            /** Scope */
+            scope: string;
         };
         /** EvidenceRevisionRef */
         EvidenceRevisionRef: {

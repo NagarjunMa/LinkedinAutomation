@@ -820,6 +820,16 @@
             "title": "Lifecycle",
             "type": "string"
           },
+          "measurement": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EvidenceMeasurement"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "owner_id": {
             "maxLength": 128,
             "minLength": 1,
@@ -1395,6 +1405,33 @@
             ],
             "title": "Claim"
           },
+          "measurement": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EvidenceMeasurement"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ownership": {
+            "anyOf": [
+              {
+                "enum": [
+                  "individual",
+                  "shared",
+                  "team",
+                  "unknown"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ownership"
+          },
           "reason": {
             "anyOf": [
               {
@@ -1413,6 +1450,20 @@
             "minimum": 1,
             "title": "Revision",
             "type": "integer"
+          },
+          "scope": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "pattern": "\\S",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope"
           }
         },
         "required": [
@@ -1444,6 +1495,37 @@
           "decisions"
         ],
         "title": "EvidenceHistory",
+        "type": "object"
+      },
+      "EvidenceMeasurement": {
+        "additionalProperties": false,
+        "description": "Owner-provided basis for a number already stated in the claim.",
+        "properties": {
+          "estimated": {
+            "title": "Estimated",
+            "type": "boolean"
+          },
+          "method": {
+            "maxLength": 200,
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Method",
+            "type": "string"
+          },
+          "scope": {
+            "maxLength": 200,
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Scope",
+            "type": "string"
+          }
+        },
+        "required": [
+          "method",
+          "scope",
+          "estimated"
+        ],
+        "title": "EvidenceMeasurement",
         "type": "object"
       },
       "EvidenceRevisionRef": {

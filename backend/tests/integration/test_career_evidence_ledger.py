@@ -1,4 +1,5 @@
 """Check evidence decisions, provenance and isolation on migrated PostgreSQL."""
+import json
 import os
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
@@ -10,7 +11,7 @@ import pytest
 from alembic import command
 from cryptography.fernet import Fernet
 from fastapi.testclient import TestClient
-from pydantic import SecretStr
+from pydantic import SecretStr, ValidationError
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session
@@ -102,6 +103,51 @@ def test_authenticated_decisions_are_owned_versioned_and_cache_private(ledger, m
         assert [d["actor_id"] for d in history["decisions"]] == [owner, owner]
         assert [d["action"] for d in history["decisions"]] == ["confirm", "edit"]
 
+        measurement = {
+            "method": "Compared median synthetic test runs",
+            "scope": "Local benchmark fixture",
+            "estimated": True,
+        }
+        metadata = {
+            "ownership": "shared", "scope": "Owned the regression tests", "measurement": measurement,
+        }
+        decision = {"revision": 3, "action": "edit", **metadata}
+        corrected = client.patch(path + "/decision", headers=a, json=decision)
+        assert corrected.status_code == 200
+        current = corrected.json()
+        assert {field: current[field] for field in metadata} == metadata
+        assert current["revision"] == 4 and current["lifecycle"] == "proposed"
+        assert current["claim"] == edited.json()["claim"]
+        assert current["support"] == "candidate_statement"
+        assert client.patch(path + "/decision", headers=b, json=decision).status_code == 404
+        assert client.patch(path + "/decision", headers=a, json=decision | {"revision": 2}).status_code == 409
+        assert client.patch(path + "/decision", headers=a, json=decision | {"action": "confirm"}).status_code == 422
+        assert client.patch(path + "/decision", headers=a, json=decision | {
+            "measurement": measurement | {"estimated": "yes"},
+        }).status_code == 422
+        approved = client.patch(path + "/decision", headers=a, json={"revision": 4, "action": "confirm"})
+        assert approved.status_code == 200 and approved.json()["measurement"] == measurement
+        replacement = measurement | {"method": "Compared recorded synthetic runs", "estimated": False}
+        revised = client.patch(path + "/decision", headers=a, json={
+            "revision": 5, "action": "edit", "claim": "Maintained the API tests", "scope": None,
+            "measurement": replacement,
+        })
+        assert revised.status_code == 200
+        assert client.get(path, headers=a).json()["measurement"] == replacement
+        changed = client.patch(path + "/decision", headers=a, json={
+            "revision": 6, "action": "edit", "claim": "Maintained and ran the API tests",
+        })
+        assert changed.status_code == 200
+        assert changed.json()["ownership"] == "shared" and changed.json()["scope"] is None
+        assert changed.json()["measurement"] is None
+        history = client.get(path + "/history", headers=a).json()
+        assert [entry["revision"] for entry in history["revisions"]] == list(range(1, 8))
+        assert history["revisions"][3]["measurement"] == measurement
+        assert history["revisions"][4]["measurement"] == measurement
+        assert history["revisions"][5]["measurement"] == replacement
+        assert history["revisions"][2]["ownership"] == "individual"
+        assert [entry["action"] for entry in history["decisions"]][-4:] == ["edit", "confirm", "edit", "edit"]
+
 
 def test_foreign_sources_contradictions_and_deleted_sources_fail_closed(ledger):
     engine, _, (owner, _), (source, foreign) = ledger
@@ -169,6 +215,48 @@ def test_foreign_sources_contradictions_and_deleted_sources_fail_closed(ledger):
         assert service.list() == []
         assert db.scalar(text("SELECT count(*) FROM career_evidence_items WHERE user_id=:owner"), {"owner": owner}) == 0
         assert db.scalar(text("SELECT count(*) FROM career_evidence_decisions WHERE user_id=:owner"), {"owner": owner}) == 0
+
+
+def test_measurement_upgrade_preserves_legacy_payload_and_guards_recorded_data(ledger):
+    engine, config, (owner, _), (source, _) = ledger
+    with Session(engine) as db:
+        prior = EvidenceService(db, owner).propose(proposal(source))
+    command.downgrade(config, "2026_11_16_career_recovery")
+    with engine.connect() as conn:
+        legacy_ciphertext = conn.scalar(text("SELECT ciphertext FROM career_evidence_items"))
+        assert "measurement_ciphertext" not in conn.execute(text("SELECT * FROM career_evidence_items LIMIT 0")).keys()
+    command.upgrade(config, "head")
+
+    measurement = {"method": "Compared synthetic test runs", "scope": "Local suite", "estimated": False}
+    with Session(engine) as db:
+        ledger_service = EvidenceService(db, owner)
+        assert ledger_service.get(prior.evidence_id) == prior
+        with pytest.raises(ValidationError):
+            EvidenceProposal.model_validate(proposal(source).model_dump() | {"measurement": measurement})
+        edited = ledger_service.decide(prior.evidence_id, EvidenceDecisionInput(
+            revision=1, action="edit", measurement=measurement,
+        ))
+        assert ledger_service.get(prior.evidence_id) == edited
+        cleared = ledger_service.decide(prior.evidence_id, EvidenceDecisionInput(
+            revision=2, action="edit", measurement=None,
+        ))
+        assert cleared.measurement is None
+
+    cipher = Fernet(settings.CAREER_TRANSCRIPT_KEY.get_secret_value().encode())
+    with engine.connect() as conn:
+        rows = conn.execute(text(
+            "SELECT ciphertext, measurement_ciphertext FROM career_evidence_items ORDER BY revision"
+        )).all()
+        assert rows[0] == (legacy_ciphertext, None)
+        assert "measurement" not in json.loads(cipher.decrypt(rows[1].ciphertext.encode()))
+        token = rows[1].measurement_ciphertext
+        assert measurement["method"] not in token
+        assert json.loads(cipher.decrypt(token.encode())) == measurement
+        assert rows[2].measurement_ciphertext is None
+    with pytest.raises(DBAPIError, match="preserved"):
+        command.downgrade(config, "2026_11_16_career_recovery")
+    with Session(engine) as db:
+        assert EvidenceService(db, owner).history(prior.evidence_id).revisions[1] == edited
 
 
 def test_resume_cascade_purges_only_linked_history(ledger):
@@ -295,7 +383,10 @@ def test_evidence_plaintext_stays_out_of_success_and_failure_logs(ledger, caplog
             service = EvidenceService(db, owner)
             item = service.propose(data)
             db.execute(text("SET LOCAL log_statement = 'all'"))
-            service.decide(item.evidence_id, EvidenceDecisionInput(revision=1, action="confirm", reason=private))
+            service.decide(item.evidence_id, EvidenceDecisionInput(
+                revision=1, action="edit", reason=private,
+                measurement={"method": private, "scope": "Synthetic scope", "estimated": True},
+            ))
             db.execute(text("""
                 ALTER TABLE career_evidence_decisions ADD CHECK (action <> 'reject')
             """))
