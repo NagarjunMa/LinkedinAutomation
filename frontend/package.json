@@ -96,6 +96,7 @@
   "overrides": {
     "@next/eslint-plugin-next": {
       "fast-glob": "$fast-glob"
-    }
+    },
+    "picomatch": "npm:@ryotsu/picomatch@4.0.7"
   }
 }
