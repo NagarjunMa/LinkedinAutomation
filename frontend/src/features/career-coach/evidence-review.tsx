@@ -5,9 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import type { Decision, Evidence } from './api';
 
-export function EvidenceReview({ items, busy, decide, refresh }: {
+export function EvidenceReview({ items, busy, loading, unavailable, decide, refresh }: {
   items: Evidence[];
   busy: boolean;
+  loading?: boolean;
+  unavailable?: boolean;
   decide: (item: Evidence, action: Decision['action'], claim?: string) => void;
   refresh?: () => void;
 }) {
@@ -27,9 +29,10 @@ export function EvidenceReview({ items, busy, decide, refresh }: {
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h2 ref={heading} id="coach-evidence" tabIndex={-1} className="text-base font-semibold">Evidence review</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {items.length ? `${proposed} awaiting review on this page` : 'Your saved proposals will appear here.'}
-          </p>
+          {!loading && <p className="mt-1 text-sm text-muted-foreground">
+            {unavailable ? 'Saved proposals are unavailable.' : items.length
+              ? `${proposed} awaiting review on this page` : 'Your saved proposals will appear here.'}
+          </p>}
         </div>
         {refresh && <Button variant="ghost" size="sm" disabled={busy} onClick={refresh}>Refresh evidence</Button>}
       </div>
