@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from pydantic import BaseModel
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.application.errors import (
@@ -22,6 +23,8 @@ from app.models.job import UserProfile
 from app.repositories.profile_repository import ProfileRepository
 from app.schemas.profile import (
     EmailTrackingSettingsUpdate,
+    JobPreferencesResponse,
+    JobPreferencesUpdate,
     NotificationSettingsUpdate,
     PrivacySettingsUpdate,
     UserProfileCreate,
@@ -68,7 +71,7 @@ class ProfileApplicationService:
         user_id: str,
         request: UserProfileCreate,
     ) -> dict[str, Any]:
-        profile = self.profiles.get_profile(user_id)
+        profile = self.profiles.get_profile(user_id, lock=True)
         if profile:
             self._apply_updates(profile, request, user_id=user_id)
         else:
@@ -90,7 +93,7 @@ class ProfileApplicationService:
         user_id: str,
         request: UserProfileUpdate,
     ) -> dict[str, Any]:
-        profile = self.profiles.get_profile(user_id)
+        profile = self.profiles.get_profile(user_id, lock=True)
         if not profile:
             raise ResourceNotFoundError("Profile not found")
         self._apply_updates(profile, request, user_id=user_id)
@@ -103,6 +106,31 @@ class ProfileApplicationService:
             latest_resume,
             self.profiles.profile_stats(user_id),
         )
+
+    def save_preferences(
+        self,
+        user_id: str,
+        request: JobPreferencesUpdate,
+    ) -> JobPreferencesResponse:
+        profile = self.profiles.get_profile(user_id, lock=True)
+        if profile is None:
+            values = self._normalized_values(request, exclude_unset=True)
+            profile = UserProfile(user_id=user_id, **values)
+            self.profiles.add(profile)
+            try:
+                self._commit_new_owner_row("save job preferences")
+            except IntegrityError as exc:
+                profile = self.profiles.get_profile(user_id, lock=True)
+                if profile is None:
+                    raise self._write_failure("save job preferences", exc) from exc
+            else:
+                self.session.refresh(profile)
+                return JobPreferencesResponse.model_validate(profile)
+
+        self._apply_updates(profile, request, user_id=user_id)
+        self._commit("save job preferences")
+        self.session.refresh(profile)
+        return JobPreferencesResponse.model_validate(profile)
 
     def get_settings(self, user_id: str) -> UserSettings:
         settings = self.profiles.get_settings(user_id)
@@ -122,7 +150,12 @@ class ProfileApplicationService:
             **request.model_dump(exclude_none=True),
         )
         self.profiles.add(settings)
-        self._commit("create settings")
+        try:
+            self._commit_new_owner_row("create settings")
+        except IntegrityError as exc:
+            if self.profiles.get_settings(user_id) is not None:
+                raise ResourceConflictError("Settings already exist") from exc
+            raise self._write_failure("create settings", exc) from exc
         self.session.refresh(settings)
         return settings
 
@@ -240,17 +273,27 @@ class ProfileApplicationService:
             )
         )
 
-    def _commit(self, operation: str) -> None:
+    def _commit_new_owner_row(self, operation: str) -> None:
+        # Callers identify a concurrent insert by re-reading the same owner after rollback.
+        self._commit(operation, check_owner_conflict=True)
+
+    def _commit(self, operation: str, *, check_owner_conflict: bool = False) -> None:
         try:
             self.session.commit()
         except Exception as exc:
             self.session.rollback()
-            logger.error(
-                "Profile operation failed: %s",
-                type(exc).__name__,
-                extra={"operation": operation},
-            )
-            raise ApplicationError("Unable to update profile data") from exc
+            if check_owner_conflict and isinstance(exc, IntegrityError):
+                raise
+            raise self._write_failure(operation, exc) from exc
+
+    @staticmethod
+    def _write_failure(operation: str, exc: Exception) -> ApplicationError:
+        logger.error(
+            "Profile operation failed: %s",
+            type(exc).__name__,
+            extra={"operation": operation},
+        )
+        return ApplicationError("Unable to update profile data")
 
     @staticmethod
     def _normalized_values(

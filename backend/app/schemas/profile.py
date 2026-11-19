@@ -1,6 +1,6 @@
 from datetime import datetime, date
-from typing import List, Optional, Dict
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from typing import Annotated, List, Optional, Dict
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
 
 class WorkExperience(BaseModel):
@@ -86,6 +86,38 @@ class UserProfileUpdate(BaseModel):
     degrees: Optional[List[str]] = None
     institutions: Optional[List[str]] = None
     graduation_years: Optional[List[str]] = None
+
+
+class JobPreferencesResponse(BaseModel):
+    desired_roles: Optional[List[str]] = None
+    preferred_locations: Optional[List[str]] = None
+    salary_range_min: Optional[int] = None
+    salary_range_max: Optional[int] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+SalaryAmount = Annotated[int, Field(strict=True, ge=0, le=2_147_483_647)]
+
+
+class JobPreferencesUpdate(JobPreferencesResponse):
+    """Edit supplied preferences. Send both salary amounts together or set both to null to clear the range."""
+
+    salary_range_min: SalaryAmount | None = None
+    salary_range_max: SalaryAmount | None = None
+
+    model_config = ConfigDict(extra="forbid")
+
+    @model_validator(mode="after")
+    def validate_salary_range(self) -> "JobPreferencesUpdate":
+        has_minimum = "salary_range_min" in self.model_fields_set
+        has_maximum = "salary_range_max" in self.model_fields_set
+        if has_minimum != has_maximum or (self.salary_range_min is None) != (self.salary_range_max is None):
+            raise ValueError("Provide both salary amounts or clear both together")
+        if self.salary_range_min is not None and self.salary_range_max is not None:
+            if self.salary_range_min > self.salary_range_max:
+                raise ValueError("Salary minimum cannot exceed the maximum")
+        return self
 
 
 class UserProfileResponse(UserProfileBase):

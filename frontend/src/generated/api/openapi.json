@@ -2845,6 +2845,124 @@
         "title": "JobListingUpdate",
         "type": "object"
       },
+      "JobPreferencesResponse": {
+        "properties": {
+          "desired_roles": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Desired Roles"
+          },
+          "preferred_locations": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preferred Locations"
+          },
+          "salary_range_max": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Salary Range Max"
+          },
+          "salary_range_min": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Salary Range Min"
+          }
+        },
+        "title": "JobPreferencesResponse",
+        "type": "object"
+      },
+      "JobPreferencesUpdate": {
+        "additionalProperties": false,
+        "description": "Edit supplied preferences. Send both salary amounts together or set both to null to clear the range.",
+        "properties": {
+          "desired_roles": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Desired Roles"
+          },
+          "preferred_locations": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preferred Locations"
+          },
+          "salary_range_max": {
+            "anyOf": [
+              {
+                "maximum": 2147483647,
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Salary Range Max"
+          },
+          "salary_range_min": {
+            "anyOf": [
+              {
+                "maximum": 2147483647,
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Salary Range Min"
+          }
+        },
+        "title": "JobPreferencesUpdate",
+        "type": "object"
+      },
       "JobStats": {
         "properties": {
           "daily_stats": {
@@ -9442,6 +9560,65 @@
           }
         ],
         "summary": "Get Profile Change History",
+        "tags": [
+          "user-profiles"
+        ]
+      }
+    },
+    "/api/v1/user-profiles/{user_id}/preferences": {
+      "put": {
+        "operationId": "save_preferences_api_v1_user_profiles__user_id__preferences_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "maxLength": 100,
+              "minLength": 1,
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobPreferencesUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobPreferencesResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Save Preferences",
         "tags": [
           "user-profiles"
         ]
