@@ -63,7 +63,7 @@ class CareerApplicationService:
         return _source_view(self._source(source))
 
     def read_source_content(self, source: SourceRef) -> str:
-        return self._source(source, include_content=True).content
+        return self.repo.source_content(self._source(source, include_content=True))
 
     def list_sources(self, *, offset: int = 0, limit: int = 50) -> list[CareerSource]:
         _validate_page(offset, limit)

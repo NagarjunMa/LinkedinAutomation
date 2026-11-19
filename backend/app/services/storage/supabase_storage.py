@@ -66,10 +66,11 @@ class StorageClient:
         except Exception as e:
             raise StorageDownloadError(str(e)) from e
 
-    def delete(self, path: str) -> None:
-        """Delete a stored object."""
+    def delete(self, path: str) -> bool:
+        """Delete an object and indicate whether Storage reported removing it."""
         try:
-            self._bucket().remove([path])
+            removed = self._bucket().remove([path])
+            return any(item.get("name") == path for item in removed)
         except Exception as exc:
             raise StorageDeleteError("Storage object could not be deleted") from exc
 

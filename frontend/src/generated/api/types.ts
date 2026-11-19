@@ -112,6 +112,76 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/career/linkedin-profiles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Linkedin Pdfs */
+        get: operations["list_linkedin_pdfs_api_v1_career_linkedin_profiles_get"];
+        put?: never;
+        /** Upload Linkedin Pdf */
+        post: operations["upload_linkedin_pdf_api_v1_career_linkedin_profiles_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/career/linkedin-profiles/{source_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Linkedin Pdf */
+        delete: operations["delete_linkedin_pdf_api_v1_career_linkedin_profiles__source_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/career/linkedin-profiles/{source_id}/versions/{version}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Linkedin Pdf */
+        get: operations["get_linkedin_pdf_api_v1_career_linkedin_profiles__source_id__versions__version__get"];
+        put?: never;
+        /** Append Linkedin Pdf */
+        post: operations["append_linkedin_pdf_api_v1_career_linkedin_profiles__source_id__versions__version__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/career/linkedin-profiles/{source_id}/versions/{version}/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download Linkedin Pdf */
+        get: operations["download_linkedin_pdf_api_v1_career_linkedin_profiles__source_id__versions__version__pdf_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/career/sessions": {
         parameters: {
             query?: never;
@@ -945,6 +1015,11 @@ export interface components {
             /** Warning */
             warning?: string | null;
         };
+        /** Body_append_linkedin_pdf_api_v1_career_linkedin_profiles__source_id__versions__version__post */
+        Body_append_linkedin_pdf_api_v1_career_linkedin_profiles__source_id__versions__version__post: {
+            /** File */
+            file: string;
+        };
         /** Body_apply_to_job_api_v1_jobs_applications__job_id__apply_post */
         Body_apply_to_job_api_v1_jobs_applications__job_id__apply_post: {
             /**
@@ -973,6 +1048,11 @@ export interface components {
              */
             notes?: string;
             status: components["schemas"]["ApplicationStatus"];
+        };
+        /** Body_upload_linkedin_pdf_api_v1_career_linkedin_profiles_post */
+        Body_upload_linkedin_pdf_api_v1_career_linkedin_profiles_post: {
+            /** File */
+            file: string;
         };
         /** Body_upload_resume_api_v1_resumes_upload_post */
         Body_upload_resume_api_v1_resumes_upload_post: {
@@ -1785,6 +1865,110 @@ export interface components {
             /** Total Jobs */
             total_jobs: number;
         };
+        /** LinkedInDocument */
+        LinkedInDocument: {
+            /** Contact Links */
+            contact_links?: string[];
+            /**
+             * Coverage
+             * @constant
+             */
+            coverage: "uploaded_export_only";
+            /** Experience */
+            experience?: components["schemas"]["LinkedInExperience"][];
+            /** Location */
+            location?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Not Found In Export */
+            not_found_in_export?: string[];
+            /**
+             * Parse Status
+             * @default parsed
+             * @enum {string}
+             */
+            parse_status?: "parsed" | "partial" | "unreadable";
+            /** Profile Url */
+            profile_url?: string | null;
+            /** Raw Text */
+            raw_text: string;
+            /**
+             * Schema Version
+             * @constant
+             */
+            schema_version: 1;
+            /** Sections */
+            sections: components["schemas"]["LinkedInSection"][];
+            source: components["schemas"]["SourceRef"];
+        };
+        /** LinkedInExperience */
+        LinkedInExperience: {
+            /** Company */
+            company?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Employment Type */
+            employment_type?: string | null;
+            /** End Date */
+            end_date?: string | null;
+            /** Location */
+            location?: string | null;
+            /** Locator */
+            locator: string;
+            /** Page */
+            page: number;
+            /** Start Date */
+            start_date?: string | null;
+            /** Title */
+            title?: string | null;
+        };
+        /** LinkedInSection */
+        LinkedInSection: {
+            /** Locator */
+            locator: string;
+            /**
+             * Name
+             * @enum {string}
+             */
+            name: "identity" | "contact" | "headline" | "about" | "experience" | "education" | "projects" | "skills" | "certifications" | "licenses" | "publications" | "volunteering" | "honors" | "languages" | "featured" | "unclassified";
+            /** Page */
+            page: number;
+            /** Text */
+            text: string;
+        };
+        /** LinkedInUpload */
+        LinkedInUpload: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            document: components["schemas"]["LinkedInDocument"];
+            /** Pdf Sha256 */
+            pdf_sha256: string;
+            source: components["schemas"]["SourceRef"];
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "pending" | "ready" | "deleting" | "canceling";
+        };
+        /** LinkedInUploadSummary */
+        LinkedInUploadSummary: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Pdf Sha256 */
+            pdf_sha256: string;
+            source: components["schemas"]["SourceRef"];
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "pending" | "ready" | "deleting" | "canceling";
+        };
         /**
          * LogResponse
          * @description Response schema for log endpoints
@@ -2212,6 +2396,13 @@ export interface components {
             new_order: string[];
             /** Rationale */
             rationale: string;
+        };
+        /** SourceRef */
+        SourceRef: {
+            /** Source Id */
+            source_id: string;
+            /** Source Version */
+            source_version: number;
         };
         /** SuggestedAddition */
         SuggestedAddition: {
@@ -2876,6 +3067,326 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EvidenceHistory"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+        };
+    };
+    list_linkedin_pdfs_api_v1_career_linkedin_profiles_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkedInUploadSummary"][];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+        };
+    };
+    upload_linkedin_pdf_api_v1_career_linkedin_profiles_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_linkedin_pdf_api_v1_career_linkedin_profiles_post"];
+            };
+        };
+        responses: {
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkedInUpload"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+        };
+    };
+    delete_linkedin_pdf_api_v1_career_linkedin_profiles__source_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                source_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+        };
+    };
+    get_linkedin_pdf_api_v1_career_linkedin_profiles__source_id__versions__version__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                source_id: string;
+                version: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkedInUpload"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+        };
+    };
+    append_linkedin_pdf_api_v1_career_linkedin_profiles__source_id__versions__version__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                source_id: string;
+                version: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_append_linkedin_pdf_api_v1_career_linkedin_profiles__source_id__versions__version__post"];
+            };
+        };
+        responses: {
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkedInUpload"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+        };
+    };
+    download_linkedin_pdf_api_v1_career_linkedin_profiles__source_id__versions__version__pdf_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                source_id: string;
+                version: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
                 };
             };
             /** @description Unprocessable Entity */

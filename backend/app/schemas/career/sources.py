@@ -8,6 +8,7 @@ from .common import CareerContract, Identifier, Label, Revision, Sha256, SourceR
 from .evidence import EvidenceRevisionRef
 
 LOCATOR_FINDINGS = ("unsupported_claim", "ambiguous_claim", "evidence_gap", "consistency_question")
+LINKEDIN_PDF_EXTRACTION_VERSION = "linkedin-pdf-v1"
 EVIDENCE_FINDINGS = ("missing_confirmed_evidence", "communication_gap", "weak_prominence")
 TARGET_GAPS = ("experience_gap", "knowledge_gap")
 
@@ -88,6 +89,19 @@ class LinkedInDocument(CareerContract):
     sections: list[LinkedInSection]
     experience: list[LinkedInExperience] = Field(default_factory=list)
     coverage: Literal["uploaded_export_only"]
+    parse_status: Literal["parsed", "partial", "unreadable"] = "parsed"
+    not_found_in_export: list[str] = Field(default_factory=list)
+
+
+class LinkedInUploadSummary(BaseModel):
+    source: SourceRef
+    pdf_sha256: Sha256
+    created_at: Timestamp
+    state: Literal["pending", "ready", "deleting", "canceling"]
+
+
+class LinkedInUpload(LinkedInUploadSummary):
+    document: LinkedInDocument
 
 
 class LinkedInFinding(BaseModel):

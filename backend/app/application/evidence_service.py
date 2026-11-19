@@ -31,6 +31,11 @@ class EvidenceService:
         self.career = CareerRepository(db, owner)
 
     def propose(self, proposal: EvidenceProposal) -> CareerEvidenceItem:
+        item = self.stage_proposal(proposal)
+        self.db.commit()
+        return item
+
+    def stage_proposal(self, proposal: EvidenceProposal) -> CareerEvidenceItem:
         self._lock_owner()
         self._lock_sources(proposal.sources)
         sources = []
@@ -40,8 +45,9 @@ class EvidenceService:
             if excerpt is None:
                 raise InvalidOperationError("Evidence proposal requires a verifiable excerpt")
             source = self.career.get_source(link, include_content=True)
-            start = source.content.find(excerpt) if source is not None else -1
-            if start < 0 or source.content.find(excerpt, start + 1) >= 0:
+            content = self.career.source_content(source) if source is not None else ""
+            start = content.find(excerpt)
+            if start < 0 or content.find(excerpt, start + 1) >= 0:
                 raise InvalidOperationError("Excerpt must occur exactly once in the source")
             locator = f"chars:{start}-{start + len(excerpt)}"
             span = (link.source_id, link.source_version, locator)
@@ -59,7 +65,6 @@ class EvidenceService:
             lifecycle="contradicted" if any(link.relationship == "contradicts" for link in sources) else "proposed",
         )
         self._insert(item, career_cipher(scope="Career evidence"))
-        self.db.commit()
         return item
 
     def list(self, *, offset: int = 0, limit: int = 50) -> list[CareerEvidenceItem]:
