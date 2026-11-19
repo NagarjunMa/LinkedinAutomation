@@ -105,6 +105,7 @@ class Settings(BaseSettings):
 
     CAREER_TRANSCRIPT_KEY: SecretStr | None = None
     CAREER_TURNS_ENABLED: bool = False
+    LINKEDIN_PDF_UPLOADS_ENABLED: bool = False
     CAREER_MODEL_SAFETY_KEY: SecretStr | None = None
     CAREER_MODEL_APPLICATION_COMMIT: str | None = None
     """Dedicated Fernet key required when saving or opening interview messages."""

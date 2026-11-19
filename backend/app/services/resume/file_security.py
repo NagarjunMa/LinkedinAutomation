@@ -166,6 +166,16 @@ def _validate_docx_archive(content: bytes) -> None:
 async def parse_resume_with_timeout(content: bytes, filename: str):
     """Parse in a killable subprocess so the timeout is a hard boundary."""
 
+    payload = await run_parser_worker(content, "app.services.resume.parser_worker", filename)
+    from app.schemas.resume_v2 import ResumeDocumentJSON
+
+    try:
+        return ResumeDocumentJSON.model_validate(payload["document"])
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ResumeFileError("Resume could not be parsed") from exc
+
+
+async def run_parser_worker(content: bytes, module: str, *args: str, env: dict[str, str] | None = None) -> dict:
     try:
         await asyncio.wait_for(
             _PARSER_SEMAPHORE.acquire(),
@@ -179,8 +189,9 @@ async def parse_resume_with_timeout(content: bytes, filename: str):
         process = await asyncio.create_subprocess_exec(
             sys.executable,
             "-m",
-            "app.services.resume.parser_worker",
-            filename,
+            module,
+            *args,
+            env=env,
             stdin=asyncio.subprocess.PIPE,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.DEVNULL,
@@ -214,13 +225,7 @@ async def parse_resume_with_timeout(content: bytes, filename: str):
         }.get(error_type, ResumeFileError)
         raise error_class(message)
 
-    from app.schemas.resume_v2 import ResumeDocumentJSON
-
-    try:
-        return ResumeDocumentJSON.model_validate(payload["document"])
-    except (KeyError, TypeError, ValueError) as exc:
-        raise ResumeFileError("Resume could not be parsed") from exc
-
+    return payload
 
 async def _terminate_process(process: asyncio.subprocess.Process) -> None:
     if process.returncode is None:

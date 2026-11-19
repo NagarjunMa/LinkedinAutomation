@@ -307,3 +307,42 @@ Once any revision contains a measurement, retain the active head and key.
 Use a corrective backend that recognizes the head and preserves measurement
 metadata on subsequent decisions. The downgrade guard also protects measurements
 on historical revisions.
+
+### PRI-46 LinkedIn PDF release and recovery
+
+Retain the environment's existing `CAREER_TRANSCRIPT_KEY` for encrypted snapshots.
+Apply revision `2026_11_19_linkedin_pdf` before starting the new image. Verify
+the `resume` bucket is private, browser roles have no access to the upload
+table, and the configured runtime database role can read and write
+`public.linkedin_pdf_uploads` under RLS. If the authenticated backend uses a
+separate restricted PostgreSQL login, execute the following in `psql` as the
+table owner with `-v ON_ERROR_STOP=1 -v runtime_role=<verified-login>`. Keep
+production preview and browser roles excluded.
+
+```sql
+BEGIN;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.linkedin_pdf_uploads TO :"runtime_role";
+CREATE POLICY prismpro_linkedin_pdf_runtime ON public.linkedin_pdf_uploads
+    FOR ALL TO :"runtime_role" USING (true) WITH CHECK (true);
+COMMIT;
+```
+
+Confirm an existing Evidence Ledger read with the configured authenticated
+runtime while uploads are paused. Enable `LINKEDIN_PDF_UPLOADS_ENABLED` in
+development for the synthetic sign-in, upload, download, account isolation,
+proposed evidence, and deletion checks against real Storage. Keep uploads
+paused elsewhere until the development smoke passes and rollout is approved.
+
+If uploads fail after rollout, set `LINKEDIN_PDF_UPLOADS_ENABLED=false` and
+redeploy the compatible image. Owners can still inspect, download, and delete
+existing ready uploads. While any upload records exist, retain the schema and
+use a forward fix. The migration refuses a populated downgrade, and the
+previous image cannot start at this Alembic head. To restore the older image,
+first pause uploads and verify the table is empty and Storage cleanup has
+finished. Downgrade with the current image, then restore the previous image.
+
+An inconclusive Storage deletion for an interrupted upload leaves an
+inaccessible `canceling` record with its object key. Retry the owner's delete
+when Storage recovers. If Storage never created an object, an operator must
+reconcile the outstanding write with the provider before clearing the record.
+Removing the account or metadata before reconciliation can lose the cleanup path.

@@ -69,3 +69,25 @@ class CareerTargetRow(Base):
     jd_source_version = mapped_column(Integer, nullable=True)
     jd_source_kind = mapped_column(String(32), nullable=True)
     status = mapped_column(String(8), nullable=False, server_default="active")
+
+
+class LinkedInPdfUploadRow(Base):
+    """Durable Storage lifecycle for an immutable Career Source snapshot."""
+
+    __tablename__ = "linkedin_pdf_uploads"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["user_id", "source_id", "version"], ["career_sources.user_id", "career_sources.id", "career_sources.version"],
+            ondelete="RESTRICT",
+        ),
+        CheckConstraint("state IN ('pending', 'ready', 'deleting', 'canceling')"),
+        CheckConstraint("length(pdf_sha256) = 64"),
+    )
+
+    user_id = mapped_column(String(100), primary_key=True)
+    source_id = mapped_column(String(36), primary_key=True)
+    version = mapped_column(Integer, primary_key=True)
+    object_id = mapped_column(String(36), nullable=False, unique=True)
+    pdf_sha256 = mapped_column(String(64), nullable=False)
+    document_ciphertext = mapped_column(Text, nullable=False, deferred=True)
+    state = mapped_column(String(9), nullable=False)

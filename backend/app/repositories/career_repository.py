@@ -2,10 +2,13 @@
 from sqlalchemy import delete, func, or_, select
 from sqlalchemy.orm import Session, undefer
 
-from app.models.career import CareerSourceRow, CareerTargetRow
+from app.application.career_encryption import career_cipher, open_private_text
+from app.application.errors import ExternalServiceError
+from app.models.career import CareerSourceRow, CareerTargetRow, LinkedInPdfUploadRow
 from app.models.resume_document import ResumeDocument
 from app.models.user import User
 from app.schemas.career.common import SourceRef
+from app.schemas.career.sources import LINKEDIN_PDF_EXTRACTION_VERSION, LinkedInDocument
 from app.services.resume.upload_workflow import STORAGE_READY
 
 
@@ -28,7 +31,14 @@ class CareerRepository:
             ResumeDocument.id == CareerSourceRow.resume_document_id,
             ResumeDocument.storage_status == STORAGE_READY,
         ).exists()
+        ready_linkedin = select(LinkedInPdfUploadRow.source_id).where(
+            LinkedInPdfUploadRow.user_id == CareerSourceRow.user_id,
+            LinkedInPdfUploadRow.source_id == CareerSourceRow.id,
+            LinkedInPdfUploadRow.version == CareerSourceRow.version,
+            LinkedInPdfUploadRow.state == "ready",
+        ).exists()
         return self._sources().where(
+            or_(CareerSourceRow.extraction_version.is_distinct_from(LINKEDIN_PDF_EXTRACTION_VERSION), ready_linkedin),
             or_(CareerSourceRow.retention_expires_at.is_(None),
                 CareerSourceRow.retention_expires_at > func.statement_timestamp()),
             or_(CareerSourceRow.resume_document_id.is_(None), ready_resume),
@@ -41,6 +51,14 @@ class CareerRepository:
         if include_content:
             query = query.options(undefer(CareerSourceRow.content))
         return self.session.scalar(query.with_for_update(read=True) if lock else query)
+
+    def source_content(self, row: CareerSourceRow) -> str:
+        if row.extraction_version != LINKEDIN_PDF_EXTRACTION_VERSION:
+            return row.content
+        upload = self.session.get(LinkedInPdfUploadRow, (self.user_id, row.id, row.version))
+        if upload is None or upload.state != "ready":
+            raise ExternalServiceError("LinkedIn source text is unavailable")
+        return open_linkedin_document(upload).raw_text
 
     def list_sources(self, offset: int, limit: int):
         return self.session.scalars(self.visible_sources().order_by(
@@ -79,3 +97,8 @@ class CareerRepository:
     def list_targets(self, offset: int, limit: int):
         return self.session.scalars(self._targets().order_by(CareerTargetRow.id)
                                     .offset(offset).limit(limit).execution_options(populate_existing=True))
+
+
+def open_linkedin_document(upload: LinkedInPdfUploadRow) -> LinkedInDocument:
+    cipher = career_cipher(scope="LinkedIn PDF")
+    return LinkedInDocument.model_validate_json(open_private_text(cipher, upload.document_ciphertext))
