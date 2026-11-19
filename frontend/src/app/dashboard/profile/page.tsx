@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   User,
@@ -25,6 +25,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { profileApi } from '@/app/lib/api/profile';
 import { resumeApi } from '@/app/lib/api/resume';
 import { ResumeFile } from '@/app/lib/api/types';
+import type { components } from '@/generated/api/types';
 import { TailoredResumeLibrary } from '@/components/tailored-resumes/library';
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
@@ -40,11 +41,30 @@ import {
 // Typed for Framer Motion ease prop
 const LeicaBezier: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
+function profilePreferences(profile: components['schemas']['JobPreferencesResponse']): JobPreferences {
+  return {
+    roles: profile.desired_roles ?? [],
+    locations: profile.preferred_locations ?? [],
+    salaryRange: profile.salary_range_min != null && profile.salary_range_max != null
+      ? `$${profile.salary_range_min / 1000}k - $${profile.salary_range_max / 1000}k`
+      : 'Not set',
+  };
+}
+
 export default function ProfilePage() {
   const { user } = useAuth();
+  return user ? <AccountProfile key={user.id} userId={user.id} /> : null;
+}
+
+function AccountProfile({ userId }: { userId: string }) {
+  const { isCurrentUser } = useAuth();
   const { toast } = useToast();
   const [data, setData] = useState<ProfileData>(INITIAL_PROFILE_DATA);
   const [loading, setLoading] = useState(true);
+  const latestLoad = useRef(0);
+  const [profileLoaded, setProfileLoaded] = useState(false);
+  const [savingPrefs, setSavingPrefs] = useState(false);
+  const [preferenceMessage, setPreferenceMessage] = useState<{ text: string; error?: boolean } | null>(null);
   const [isEditingPrefs, setIsEditingPrefs] = useState(false);
   const [editedPrefs, setEditedPrefs] = useState<JobPreferences>(INITIAL_PROFILE_DATA.preferences);
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; resumeId: string | null; fileName: string }>({
@@ -53,26 +73,33 @@ export default function ProfilePage() {
     fileName: ''
   });
 
-  // Fetch Data
-  const fetchData = useCallback(async () => {
-    if (!user) return;
+  const fetchData = useCallback(async (loadPreferences = true) => {
+    const load = ++latestLoad.current;
+    if (loadPreferences) setLoading(true);
+    const resumes = resumeApi.listResumes().then(resumeData => {
+      if (load !== latestLoad.current) return;
+      setData(prev => ({
+        ...prev,
+        resumes: resumeData.resumes.map((r: ResumeFile) => ({
+          id: r.id,
+          fileName: r.filename,
+          uploadDate: new Date(r.uploaded_at).toLocaleDateString(),
+          score: r.evaluation_result?.overall_score || 0,
+          isActive: r.is_primary || false,
+        })),
+      }));
+    }).catch(error => {
+      if (load !== latestLoad.current) return;
+      console.error('Error fetching uploaded résumés:', error);
+      toast({ title: 'Error', description: 'Failed to load uploaded résumés', variant: 'destructive' });
+    });
+
     try {
-      setLoading(true);
-      if (!user?.id) {
-        setLoading(false);
-        return;
-      }
-
-      const userId = user.id;
-
-      // Parallel fetch
-      const [userProfile, resumeData] = await Promise.all([
-        profileApi.getProfile(userId),
-        resumeApi.listResumes(),
-      ]);
-
-      // Transform Data
-      const transformedData: ProfileData = {
+      const userProfile = await profileApi.getProfile(userId);
+      if (load !== latestLoad.current) return;
+      const preferences = loadPreferences ? profilePreferences(userProfile) : undefined;
+      setData(prev => ({
+        ...prev,
         user: {
           name: userProfile.full_name || 'User',
           email: userProfile.email || '',
@@ -83,26 +110,15 @@ export default function ProfilePage() {
           applications: userProfile.total_resume_evaluations || userProfile.total_applications || 0,
           experiences: userProfile.work_experiences?.length || userProfile.job_titles?.length || 0
         },
-        resumes: resumeData.resumes.map((r: ResumeFile) => ({
-          id: r.id,
-          fileName: r.filename,
-          uploadDate: new Date(r.uploaded_at).toLocaleDateString(),
-          score: r.evaluation_result?.overall_score || 0,
-          isActive: r.is_primary || false
-        })),
-        preferences: {
-          roles: userProfile.desired_roles || [],
-          locations: userProfile.preferred_locations || [],
-          salaryRange: userProfile.salary_range_min && userProfile.salary_range_max
-            ? `$${(userProfile.salary_range_min / 1000).toFixed(0)}k - $${(userProfile.salary_range_max / 1000).toFixed(0)}k`
-            : 'Not set'
-        },
-      };
-
-      setData({ ...transformedData, referralBlueprint: '' });
-      setEditedPrefs(transformedData.preferences);
+        preferences: preferences ?? prev.preferences,
+      }));
+      if (preferences) {
+        setEditedPrefs(preferences);
+        setProfileLoaded(true);
+      }
 
     } catch (error) {
+      if (load !== latestLoad.current) return;
       console.error('Error fetching profile data:', error);
       toast({
         title: "Error",
@@ -110,49 +126,63 @@ export default function ProfilePage() {
         variant: "destructive"
       });
     } finally {
-      setLoading(false);
+      if (loadPreferences && load === latestLoad.current) setLoading(false);
     }
-  }, [user, toast]);
+    await resumes;
+  }, [userId, toast]);
 
   useEffect(() => {
-    fetchData();
+    void fetchData();
+    return () => { latestLoad.current++; };
   }, [fetchData]);
 
   const handleSavePrefs = async () => {
-    try {
-      const userId = user?.id ? String(user.id) : 'current';
+    if (!profileLoaded || savingPrefs || !isCurrentUser(userId)) return;
 
-      // Parse salary range string back to numbers (Simple parsing logic)
-      // Expected format: "$80k - $120k" or just numbers
-      let minSalary = 0;
-      let maxSalary = 0;
-
-      const salaryMatch = editedPrefs.salaryRange.match(/(\d+)/g);
-      if (salaryMatch && salaryMatch.length >= 2) {
-        minSalary = parseInt(salaryMatch[0]) * 1000;
-        maxSalary = parseInt(salaryMatch[1]) * 1000;
+    const patch: components['schemas']['JobPreferencesUpdate'] = {};
+    if (JSON.stringify(editedPrefs.roles) !== JSON.stringify(data.preferences.roles)) {
+      patch.desired_roles = editedPrefs.roles.filter(Boolean);
+    }
+    if (JSON.stringify(editedPrefs.locations) !== JSON.stringify(data.preferences.locations)) {
+      patch.preferred_locations = editedPrefs.locations.filter(Boolean);
+    }
+    if (editedPrefs.salaryRange !== data.preferences.salaryRange) {
+      const range = editedPrefs.salaryRange.trim();
+      const match = range.match(/^\$?(\d+(?:\.\d{1,3})?)k?\s*-\s*\$?(\d+(?:\.\d{1,3})?)k?$/i);
+      if (range && !/^not set$/i.test(range) && !match) {
+        setPreferenceMessage({ text: 'Use a salary range like 100k - 120k, or leave it blank.', error: true });
+        return;
       }
-
-      await profileApi.updateProfile(userId, {
-        desired_roles: editedPrefs.roles.filter(Boolean),
-        preferred_locations: editedPrefs.locations.filter(Boolean),
-        salary_range_min: minSalary,
-        salary_range_max: maxSalary
-      });
-
-      setData(prev => ({ ...prev, preferences: editedPrefs }));
+      const min = match ? Math.round(Number(match[1]) * 1000) : null;
+      const max = match ? Math.round(Number(match[2]) * 1000) : null;
+      if (min !== null && max !== null && (min > max || max > 2147483647)) {
+        setPreferenceMessage({ text: 'Enter a valid salary minimum and maximum in thousands.', error: true });
+        return;
+      }
+      patch.salary_range_min = min;
+      patch.salary_range_max = max;
+    }
+    if (!Object.keys(patch).length) {
       setIsEditingPrefs(false);
-      toast({
-        title: "Success",
-        description: "Preferences updated successfully"
-      });
-    } catch (error) {
-      console.error("Error updating preferences:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update preferences",
-        variant: "destructive"
-      });
+      return;
+    }
+
+    setSavingPrefs(true);
+    setPreferenceMessage(null);
+    try {
+      const saved = await profileApi.savePreferences(userId, patch);
+      if (!isCurrentUser(userId)) return;
+      const preferences = profilePreferences(saved);
+      setData(prev => ({ ...prev, preferences }));
+      setEditedPrefs(preferences);
+      setIsEditingPrefs(false);
+      setPreferenceMessage({ text: 'Preferences updated successfully' });
+    } catch {
+      if (isCurrentUser(userId)) {
+        setPreferenceMessage({ text: 'Failed to update preferences. Try again.', error: true });
+      }
+    } finally {
+      setSavingPrefs(false);
     }
   };
 
@@ -162,7 +192,7 @@ export default function ProfilePage() {
 
     try {
       await resumeApi.uploadResume(file);
-      await fetchData(); // Refresh list
+      await fetchData(false);
       toast({
         title: "Success",
         description: "Resume uploaded successfully!",
@@ -190,7 +220,7 @@ export default function ProfilePage() {
 
     try {
       await resumeApi.deleteResume(deleteDialog.resumeId);
-      await fetchData();
+      await fetchData(false);
       toast({
         title: "Success",
         description: "Uploaded resume deleted successfully",
@@ -295,9 +325,14 @@ export default function ProfilePage() {
           >
             <div className="flex justify-between items-center border-b border-foreground/5 pb-4">
               <SectionLabel icon={<Settings size={14} />} label="Job Preferences" noBorder />
-              {!isEditingPrefs && (
+              {profileLoaded && !isEditingPrefs && (
                 <button
-                  onClick={() => setIsEditingPrefs(true)}
+                  aria-label="Edit job preferences"
+                  onClick={() => {
+                    setPreferenceMessage(null);
+                    setEditedPrefs(data.preferences);
+                    setIsEditingPrefs(true);
+                  }}
                   className="text-foreground/40 hover:text-foreground transition-colors"
                 >
                   <Edit3 size={14} />
@@ -340,24 +375,30 @@ export default function ProfilePage() {
                 >
                   <div className="space-y-6">
                     <div>
-                      <label className="text-[9px] uppercase tracking-widest font-bold text-foreground/40 mb-2 block">Roles (comma separated)</label>
+                      <label htmlFor="profile-roles" className="text-[9px] uppercase tracking-widest font-bold text-foreground/40 mb-2 block">Roles (comma separated)</label>
                       <input
+                        id="profile-roles"
+                        disabled={savingPrefs}
                         className="w-full bg-transparent border-b border-foreground/10 py-2 focus:border-foreground outline-hidden text-sm font-mono text-foreground"
                         value={editedPrefs.roles.join(', ')}
                         onChange={(e) => setEditedPrefs({ ...editedPrefs, roles: e.target.value.split(',').map(s => s.trim()) })}
                       />
                     </div>
                     <div>
-                      <label className="text-[9px] uppercase tracking-widest font-bold text-foreground/40 mb-2 block">Locations (comma separated)</label>
+                      <label htmlFor="profile-locations" className="text-[9px] uppercase tracking-widest font-bold text-foreground/40 mb-2 block">Locations (comma separated)</label>
                       <input
+                        id="profile-locations"
+                        disabled={savingPrefs}
                         className="w-full bg-transparent border-b border-foreground/10 py-2 focus:border-foreground outline-hidden text-sm font-mono text-foreground"
                         value={editedPrefs.locations.join(', ')}
                         onChange={(e) => setEditedPrefs({ ...editedPrefs, locations: e.target.value.split(',').map(s => s.trim()) })}
                       />
                     </div>
                     <div>
-                      <label className="text-[9px] uppercase tracking-widest font-bold text-foreground/40 mb-2 block">Salary Range (e.g. 100k - 120k)</label>
+                      <label htmlFor="profile-salary" className="text-[9px] uppercase tracking-widest font-bold text-foreground/40 mb-2 block">Salary Range (e.g. 100k - 120k)</label>
                       <input
+                        id="profile-salary"
+                        disabled={savingPrefs}
                         className="w-full bg-transparent border-b border-foreground/10 py-2 focus:border-foreground outline-hidden text-sm font-mono text-foreground"
                         value={editedPrefs.salaryRange}
                         onChange={(e) => setEditedPrefs({ ...editedPrefs, salaryRange: e.target.value })}
@@ -366,12 +407,17 @@ export default function ProfilePage() {
                     <div className="flex gap-4 pt-4">
                       <button
                         onClick={handleSavePrefs}
+                        disabled={savingPrefs}
                         className="bg-foreground text-background px-4 py-2 text-[10px] uppercase tracking-widest font-bold hover:bg-foreground/90 transition-colors"
                       >
                         Commit Changes
                       </button>
                       <button
-                        onClick={() => setIsEditingPrefs(false)}
+                        onClick={() => {
+                          setPreferenceMessage(null);
+                          setIsEditingPrefs(false);
+                        }}
+                        disabled={savingPrefs}
                         className="text-foreground/40 hover:text-foreground px-4 py-2 text-[10px] uppercase tracking-widest font-bold transition-colors"
                       >
                         Abort
@@ -381,6 +427,11 @@ export default function ProfilePage() {
                 </motion.div>
               )}
             </AnimatePresence>
+            {preferenceMessage && (
+              <p className="mt-4 text-sm" role={preferenceMessage.error ? 'alert' : 'status'}>
+                {preferenceMessage.text}
+              </p>
+            )}
           </motion.div>
         </div>
 

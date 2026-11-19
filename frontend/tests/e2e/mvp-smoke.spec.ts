@@ -593,3 +593,175 @@ test('failed re-analysis clears old suggestions and preview until a manual retry
   expect(analyses).toBe(3);
   expect(appliedEvaluations).toEqual(['/api/v1/jd/jd-1/apply', '/api/v1/jd/jd-3/apply']);
 });
+
+test('profile preferences save on the first edit and survive reload when resumes are unavailable', async ({ context, page }) => {
+  await seedResumeSession(context);
+  const profilePath = '/api/v1/user-profiles/resume-test-user';
+  let roles: string[] = [];
+  await context.route(API + '/api/v1/**', async (route) => {
+    const request = route.request();
+    switch (new URL(request.url()).pathname) {
+      case '/api/v1/resumes/list':
+        return route.fulfill({ status: 503, json: { detail: 'Temporarily unavailable' } });
+      case '/api/v1/credits/balance':
+        return route.fulfill({ json: { balance: 90 } });
+      case '/api/v1/jobs/stats':
+        return route.fulfill({ json: {} });
+      case '/api/v1/jobs/recent-applications':
+        return route.fulfill({ json: [] });
+      case profilePath:
+        if (request.method() === 'GET') return route.fulfill({ json: { exists: roles.length > 0, desired_roles: roles } });
+        return route.fulfill({ status: 404, json: { detail: 'Profile not found' } });
+      case profilePath + '/preferences':
+        expect(request.method()).toBe('PUT');
+        expect(request.headers().authorization).toBe('Bearer synthetic-resume-test-token');
+        expect(request.postDataJSON()).toEqual({ desired_roles: ['QA Engineer'] });
+        roles = request.postDataJSON().desired_roles;
+        return route.fulfill({ json: { desired_roles: roles } });
+      default:
+        return route.fulfill({ status: 404, json: { detail: 'Unmocked path' } });
+    }
+  });
+
+  await page.goto('/dashboard/profile');
+  await page.getByRole('button', { name: 'Edit job preferences' }).click();
+  await page.getByRole('textbox', { name: 'Roles (comma separated)' }).fill('QA Engineer');
+  await page.getByRole('button', { name: 'Commit Changes' }).click();
+  await expect(page.getByText('Preferences updated successfully')).toBeVisible();
+  await page.reload();
+  await expect(page.getByText('QA Engineer', { exact: true })).toBeVisible();
+});
+
+test('profile preferences leave unrelated legacy values untouched', async ({ context, page }) => {
+  await seedResumeSession(context);
+  const profilePath = '/api/v1/user-profiles/resume-test-user';
+  const preferredLocations = ['Remote', ''];
+  let submitted: unknown;
+  await context.route(`${API}/api/v1/**`, async route => {
+    const request = route.request();
+    switch (new URL(request.url()).pathname) {
+      case profilePath:
+        return route.fulfill({ json: { exists: true, preferred_locations: preferredLocations } });
+      case profilePath + '/preferences':
+        submitted = request.postDataJSON();
+        return route.fulfill({ json: { desired_roles: ['QA Engineer'], preferred_locations: preferredLocations } });
+      case '/api/v1/resumes/list':
+        return route.fulfill({ json: { resumes: [], total_count: 0 } });
+      case '/api/v1/jobs/recent-applications':
+      case '/api/v1/tailored-resumes':
+        return route.fulfill({ json: [] });
+      default:
+        return route.fulfill({ json: {} });
+    }
+  });
+
+  await page.goto('/dashboard/profile');
+  await page.getByRole('button', { name: 'Edit job preferences' }).click();
+  await page.getByRole('textbox', { name: 'Roles (comma separated)' }).fill('QA Engineer');
+  await page.getByRole('button', { name: 'Commit Changes' }).click();
+  await expect(page.getByText('Preferences updated successfully')).toBeVisible();
+  expect(submitted).toEqual({ desired_roles: ['QA Engineer'] });
+});
+
+test('profile keeps the preference draft and latest résumé list after an upload', async ({ context, page }) => {
+  await seedResumeSession(context);
+  let uploaded = false;
+  let staleReads = 0;
+  let finishStaleRead!: () => void;
+  const staleRead = new Promise<void>(resolve => { finishStaleRead = resolve; });
+  const profilePath = '/api/v1/user-profiles/resume-test-user';
+  await context.route(`${API}/api/v1/**`, async route => {
+    switch (new URL(route.request().url()).pathname) {
+      case profilePath:
+        return route.fulfill({ json: { exists: true, desired_roles: ['Original role'] } });
+      case '/api/v1/resumes/upload':
+        uploaded = true;
+        return route.fulfill({ json: { resume_document_id: 'qa-upload', original_filename: 'qa-upload.pdf' } });
+      case '/api/v1/resumes/list':
+        if (!uploaded) {
+          staleReads++;
+          await staleRead;
+          return route.fulfill({ json: { resumes: [], total_count: 0 }, headers: { 'x-qa-snapshot': 'before-upload' } });
+        }
+        return route.fulfill({ json: { resumes: [{ id: 'qa-upload', original_filename: 'qa-upload.pdf' }], total_count: 1 } });
+      case '/api/v1/jobs/recent-applications':
+      case '/api/v1/tailored-resumes':
+        return route.fulfill({ json: [] });
+      default:
+        return route.fulfill({ json: {} });
+    }
+  });
+
+  await page.goto('/dashboard/profile');
+  await expect.poll(() => staleReads).toBeGreaterThan(0);
+  await page.getByRole('button', { name: 'Edit job preferences' }).click();
+  const roles = page.getByRole('textbox', { name: 'Roles (comma separated)' });
+  await roles.fill('Draft role');
+  await page.locator('#resume-upload').setInputFiles(path.resolve('tests/fixtures/sample-resume.pdf'));
+  await expect(page.getByText('qa-upload.pdf', { exact: true })).toBeVisible();
+  await expect.soft(roles).toHaveValue('Draft role');
+  const olderResponse = page.waitForResponse(response => response.headers()['x-qa-snapshot'] === 'before-upload');
+  finishStaleRead();
+  await olderResponse;
+  await expect(page.getByText('qa-upload.pdf', { exact: true })).toBeVisible();
+});
+
+for (const initialAnalytics of ['disabled', 'missing', null] as const) {
+  const hasSettings = initialAnalytics !== 'missing';
+  test(`privacy analytics survives reload with ${initialAnalytics === null ? 'legacy' : hasSettings ? 'existing' : 'missing'} settings`, async ({ context, page }) => {
+    await seedResumeSession(context);
+    const settingsPath = '/api/v1/user-profiles/resume-test-user/settings';
+    let settings: { data_retention_days: number; analytics_enabled: string | null } | undefined = hasSettings
+      ? { data_retention_days: 180, analytics_enabled: initialAnalytics }
+      : undefined;
+    const nextAnalytics = initialAnalytics === 'disabled' ? 'enabled' : 'disabled';
+    let failOnce = initialAnalytics === 'disabled';
+    await context.route(API + '/api/v1/**', async (route) => {
+      const request = route.request();
+      const path = new URL(request.url()).pathname;
+      if (path === '/api/v1/credits/balance') return route.fulfill({ json: { balance: 90 } });
+      if (path === '/api/v1/jobs/stats' || path === settingsPath.replace('/settings', '')) return route.fulfill({ json: {} });
+      if (path === '/api/v1/jobs/recent-applications') return route.fulfill({ json: [] });
+      if (path !== settingsPath && path !== settingsPath + '/privacy') {
+        return route.fulfill({ status: 404, json: { detail: 'Unmocked path' } });
+      }
+      if (request.method() === 'GET' || (request.method() === 'PUT' && !settings)) {
+        return settings
+          ? route.fulfill({ json: { user_id: 'resume-test-user', ...settings } })
+          : route.fulfill({ status: 404, json: { detail: 'Settings not found' } });
+      }
+      expect(request.method()).toBe(hasSettings ? 'PUT' : 'POST');
+      expect(request.headers().authorization).toBe('Bearer synthetic-resume-test-token');
+      expect(request.postDataJSON()).toEqual({ analytics_enabled: nextAnalytics });
+      if (failOnce) {
+        failOnce = false;
+        return route.fulfill({ status: 503, json: { detail: 'Temporarily unavailable' } });
+      }
+      settings = { data_retention_days: hasSettings ? 180 : 365, analytics_enabled: nextAnalytics };
+      return route.fulfill({ json: { user_id: 'resume-test-user', ...settings } });
+    });
+
+    await page.goto('/dashboard/settings');
+    const toggle = page.getByRole('switch', { name: 'Analytics' });
+    const save = page.getByRole('button', { name: 'Save Privacy Settings' });
+    await expect(toggle).toBeEnabled();
+    if (hasSettings) await expect(toggle).not.toBeChecked();
+    else await expect(toggle).toBeChecked();
+    if (initialAnalytics === null) {
+      await expect(page.getByText('There is no recognized analytics preference.', { exact: false })).toBeVisible();
+    } else {
+      await toggle.click();
+    }
+    await save.click();
+    if (initialAnalytics === 'disabled') {
+      await expect(page.getByText('Could not save privacy settings. Try again.')).toBeVisible();
+      await expect(toggle).toBeChecked();
+      await save.click();
+    }
+    await expect(page.getByText('Privacy settings saved.')).toBeVisible();
+    await page.reload();
+    await expect(page.getByText(hasSettings ? '180 days' : '365 days')).toBeVisible();
+    if (nextAnalytics === 'enabled') await expect(toggle).toBeChecked();
+    else await expect(toggle).not.toBeChecked();
+  });
+}
