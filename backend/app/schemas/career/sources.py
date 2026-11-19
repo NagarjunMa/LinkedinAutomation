@@ -104,6 +104,16 @@ class LinkedInUpload(LinkedInUploadSummary):
     document: LinkedInDocument
 
 
+class LinkedInTargetRequirement(BaseModel):
+    """An explicit professional capability from the selected target view."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    requirement_id: Identifier
+    capability: Label
+    learning_only: bool = False
+
+
 class LinkedInFinding(BaseModel):
     model_config = ConfigDict(extra="forbid", json_schema_extra={"allOf": [
         {
@@ -115,6 +125,18 @@ class LinkedInFinding(BaseModel):
             (EVIDENCE_FINDINGS, "evidence_revisions", {"minItems": 1}),
             (TARGET_GAPS, "target_requirement_id", {"type": "string"}),
         )
+    ] + [
+        {"anyOf": [
+            {"required": ["document_locator"], "properties": {"document_locator": {"type": "string"}}},
+            {"required": ["target_requirement_id"], "properties": {"target_requirement_id": {"type": "string"}}},
+            {"required": ["evidence_revisions"], "properties": {"evidence_revisions": {"minItems": 1}}},
+        ]},
+        {"oneOf": [
+            {"properties": {"resume_source": {"type": "null"}, "resume_locator": {"type": "null"}}},
+            {"required": ["resume_source", "resume_locator"], "properties": {
+                "resume_source": {"type": "object"}, "resume_locator": {"type": "string"},
+            }},
+        ]},
     ]})
 
     kind: Literal[
@@ -125,16 +147,22 @@ class LinkedInFinding(BaseModel):
     explanation: Text
     document_locator: Label | None = None
     target_requirement_id: Identifier | None = None
+    resume_source: SourceRef | None = None
+    resume_locator: Label | None = None
     evidence_revisions: list[EvidenceRevisionRef] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def validate_locator(self) -> Self:
+        if (self.resume_source is None) != (self.resume_locator is None):
+            raise ValueError("résumé citation requires both the source revision and location")
         if self.kind in LOCATOR_FINDINGS and not self.document_locator:
             raise ValueError("a finding about a profile claim requires a document locator")
         if self.kind in EVIDENCE_FINDINGS and not self.evidence_revisions:
             raise ValueError("a finding about missing or buried evidence requires an evidence revision")
         if self.kind in TARGET_GAPS and not self.target_requirement_id:
             raise ValueError("a target gap requires a target requirement ID")
+        if not (self.document_locator or self.target_requirement_id or self.evidence_revisions):
+            raise ValueError("a finding requires a document, selected target requirement, or evidence citation")
         return self
 
 

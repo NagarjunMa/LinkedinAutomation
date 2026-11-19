@@ -79,11 +79,11 @@ class LinkedInPdfService:
             raise ResourceConflictError("LinkedIn PDF version is no longer current")
 
     def add(self, content: bytes, pages: list[str], previous: SourceRef | None = None,
-            *, role_first: bool = False) -> LinkedInUpload:
+            *, sidebar_lines: list[int | None] | None = None) -> LinkedInUpload:
         with _storage_mutation_slot():
-            return self._add(content, pages, previous, role_first=role_first)
+            return self._add(content, pages, previous, sidebar_lines=sidebar_lines)
 
-    def _add(self, content: bytes, pages: list[str], previous: SourceRef | None, *, role_first: bool) -> LinkedInUpload:
+    def _add(self, content: bytes, pages: list[str], previous: SourceRef | None, *, sidebar_lines: list[int | None] | None) -> LinkedInUpload:
         self._lock_owner()
         ref = SourceRef(source_id=str(uuid4()), source_version=1)
         if previous is not None:
@@ -91,7 +91,7 @@ class LinkedInPdfService:
             self._require_current_version(previous)
             ref = SourceRef(source_id=previous.source_id, source_version=previous.source_version + 1)
 
-        document = parse_profile_pages(pages, ref, role_first=role_first)
+        document = parse_profile_pages(pages, ref, sidebar_lines=sidebar_lines)
         cipher = career_cipher(scope="LinkedIn PDF")
         source = CareerSourceRow(
             user_id=self.owner, id=ref.source_id, version=ref.source_version, kind="linkedin_profile_pdf",

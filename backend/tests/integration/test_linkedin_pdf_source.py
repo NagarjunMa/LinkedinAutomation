@@ -20,7 +20,10 @@ from sqlalchemy.pool import StaticPool
 
 from app.api.v1.endpoints import linkedin_pdf
 from app.application import linkedin_pdf_service
+from app.application.career_service import CareerApplicationService
+from app.application.errors import ResourceNotFoundError
 from app.application.evidence_service import EvidenceService
+from app.application.linkedin_review import LinkedInReviewService
 from app.core import auth
 from app.core.config import settings
 from app.db.session import get_db
@@ -28,7 +31,9 @@ from app.main import app
 from app.models.career import CareerSourceRow, LinkedInPdfUploadRow
 from app.models.career_evidence import EvidenceRow, EvidenceSourceRow
 from app.models.user import User
-from app.schemas.career.evidence import EvidenceRevisionRef
+from app.schemas.career.common import SourceRef
+from app.schemas.career.evidence import EvidenceDecisionInput, EvidenceProposal, EvidenceRevisionRef
+from app.schemas.career.persistence import CareerTargetInput
 from app.services.storage.exceptions import StorageDeleteError, StorageUploadError
 from app.services.storage.supabase_storage import get_storage
 
@@ -371,14 +376,20 @@ def test_existing_storage_policy_and_empty_schema_rollback(migrated_database):
 
 
 
-@pytest.mark.parametrize("employment", [None, "Full-time"])
-def test_realistic_experience_and_invalid_optional_profile_link(setup, employment):
+@pytest.mark.parametrize(("employment", "header"), [
+    (None, ["Boston, Massachusetts"]),
+    ("Full-time", ["Boston, Massachusetts"]),
+    ("Full-time", ["São Paulo, Brazil"]),
+    ("Full-time", ["West Java"]),
+    ("Full-time", ["Boston, Massachusetts", "github.com/candidate"]),
+])
+def test_realistic_experience_and_invalid_optional_profile_link(setup, employment, header):
     client, _, _, _ = setup
     pdf = fitz.open()
     page = pdf.new_page()
     lines = [
         "Contact", "https://linkedin.com:99999/in/alex", "Top Skills", "Python",
-        "Alex Example", "Platform Engineer", "Boston, Massachusetts",
+        "Alex Example", "Platform Engineer", *header,
         "Experience", "Senior Engineer", f"Example Labs · {employment}" if employment else "Example Labs",
         "January 2022 - Present (2 years 3 months)", "Boston, Massachusetts",
         "Built a data validation tool.", "Documented the rollout with the team.",
@@ -392,7 +403,9 @@ def test_realistic_experience_and_invalid_optional_profile_link(setup, employmen
     assert response.status_code == 201
     document = response.json()["document"]
     assert document["profile_url"] is None
-    assert document["location"] == "Boston, Massachusetts"
+    assert document["name"] == "Alex Example"
+    assert [section["text"] for section in document["sections"] if section["name"] == "headline"] == ["Platform Engineer"]
+    assert [section["text"] for section in document["sections"] if section["name"] == "skills"] == ["Python"]
     [role] = document["experience"]
     assert role["title"] == "Senior Engineer" and role["company"] == "Example Labs"
     assert role["employment_type"] == employment
@@ -435,3 +448,40 @@ def test_delete_keeps_cleanup_path_when_upload_completes_late(setup, monkeypatch
     storage.objects.update(upload_late)
     assert client.delete(base, headers=identity(0)).status_code == 204
     assert not storage.objects
+
+
+
+@pytest.mark.postgres
+def test_review_reads_owned_sources_and_rechecks_the_live_evidence_revision(setup):
+    client, engine, _, (owner, other) = setup
+    uploaded = upload(client)
+    assert uploaded.status_code == 201
+    source = SourceRef.model_validate(uploaded.json()["source"])
+    with Session(engine) as db:
+        target_fields = CareerTargetInput(role_family="Platform Engineer", seniority="Senior")
+        target = CareerApplicationService(db, owner).create_target(target_fields)
+        other_target = CareerApplicationService(db, other).create_target(target_fields)
+        review = LinkedInReviewService(db, owner)
+        foreign = LinkedInReviewService(db, other)
+        with pytest.raises(ResourceNotFoundError):
+            foreign.review(source, target.target_id, evidence_snapshot_version=1)
+        with pytest.raises(ResourceNotFoundError):
+            foreign.review(source, other_target.target_id, evidence_snapshot_version=1)
+
+        ledger = EvidenceService(db, owner)
+        [extracted, *_] = ledger.list()
+        draft = ledger.propose(EvidenceProposal(
+            claim=extracted.claim, category="action", ownership="individual",
+            sources=[{**source.model_dump(), "relationship": "supports", "locator": "placeholder",
+                      "excerpt": extracted.claim, "extraction": "candidate"}],
+        ))
+        assert review.recommendation_blocker(draft, draft.claim) == "evidence_not_confirmed"
+        assert any(f.kind == "unsupported_claim" for f in review.review(
+            source, target.target_id, evidence_snapshot_version=1,
+        ).findings)
+        confirmed = ledger.decide(draft.evidence_id, EvidenceDecisionInput(revision=1, action="confirm"))
+        ref = EvidenceRevisionRef(evidence_id=confirmed.evidence_id, revision=confirmed.revision)
+        assert review.recommendation_blocker(ref, confirmed.claim) is None
+        assert foreign.recommendation_blocker(ref, confirmed.claim) == "evidence_not_confirmed"
+        ledger.decide(draft.evidence_id, EvidenceDecisionInput(revision=2, action="mark_private"))
+        assert review.recommendation_blocker(ref, confirmed.claim) == "evidence_not_confirmed"

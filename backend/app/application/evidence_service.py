@@ -102,6 +102,13 @@ class EvidenceService:
         ))
         return self._view(row, career_cipher(scope="Career evidence")) if row else None
 
+    def list_eligible(self) -> list[CareerEvidenceItem]:
+        rows = self.db.scalars(self._eligible_rows().order_by(Item.evidence_id)).all()
+        if not rows:
+            return []
+        cipher = career_cipher(scope="Career evidence")
+        return [self._view(row, cipher) for row in rows]
+
     def eligible_keys(self, evidence_ids):
         return self._eligible_rows().where(Item.evidence_id.in_(evidence_ids)).with_only_columns(
             Item.evidence_id, Item.revision,
