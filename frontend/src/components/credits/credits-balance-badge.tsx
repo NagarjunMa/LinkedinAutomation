@@ -11,11 +11,11 @@ export function CreditsBalanceBadge() {
     <Link
       href="/dashboard/credits"
       data-testid="credits-badge"
-      className={`flex items-center gap-1 text-xs px-2 py-1 rounded border ${
+      className={`flex min-h-11 min-w-11 items-center justify-center gap-1 whitespace-nowrap rounded border px-2 text-xs focus-visible:outline-2 focus-visible:outline-offset-2 ${
         low ? 'border-amber-500 text-amber-500' : 'border-app-text/20'
       }`}
     >
-      <Coins className="w-3 h-3" />
+      <Coins aria-hidden="true" className="size-3 shrink-0" />
       {isLoading ? '…' : balance}
     </Link>
   );
