@@ -255,11 +255,16 @@ test('shared dashboard header keeps its controls in view on mobile', async ({ pa
     await expect(header.getByRole('button', { name: 'Open navigation' })).toBeInViewport({ ratio: 1 });
     await expect(header.getByRole('button', { name: 'Search jobs and companies' })).toBeInViewport({ ratio: 1 });
     await expect(header.getByRole('button', { name: 'Toggle theme' })).toBeInViewport({ ratio: 1 });
-    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
   }
   await page.setViewportSize({ width: 320, height: 844 });
   await expect(account).toBeInViewport({ ratio: 1 });
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(320);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
+  for (const name of ['Open navigation', 'Search jobs and companies', 'Toggle theme', 'Account menu']) {
+    const button = header.getByRole('button', { name, exact: true });
+    await expect(button).toBeInViewport({ ratio: 1 });
+    expect(await button.boundingBox()).toMatchObject({ width: 44, height: 44 });
+  }
   await account.press('Enter');
   await expect(page.getByRole('menuitem', { name: /^log out$/i })).toBeInViewport({ ratio: 1 });
 
@@ -269,6 +274,89 @@ test('shared dashboard header keeps its controls in view on mobile', async ({ pa
   await expect(header.getByPlaceholder(/Search jobs, companies/)).toBeVisible();
   await expect(account).toBeInViewport({ ratio: 1 });
 });
+
+for (const viewport of [
+  { width: 639, height: 900 },
+  { width: 640, height: 900 },
+  { width: 744, height: 1133 },
+  { width: 767, height: 1024 },
+  { width: 768, height: 1024 },
+  { width: 820, height: 1180 },
+  { width: 1023, height: 768 },
+  { width: 1024, height: 768 },
+  { width: 1133, height: 744 },
+]) {
+  test(`account menu fits at ${viewport.width} × ${viewport.height}`, async ({ page, context }) => {
+    await seedResumeSession(context);
+    await page.route(`${API}/api/v1/credits/balance`, route => route.fulfill({ json: { balance: 123456789 } }));
+    await page.setViewportSize(viewport);
+    await page.goto('/dashboard/resume');
+    const account = page.getByRole('button', { name: 'Account menu' });
+    await expect(page.getByTestId('credits-badge')).toHaveText('123456789');
+    await expect(account).toBeInViewport({ ratio: 1 });
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
+    const settings = page.getByRole('main').locator('> header').getByRole('link', { name: 'Settings' });
+    await expect(settings).toBeInViewport({ ratio: 1 });
+    expect(await settings.boundingBox()).toMatchObject({ width: 44, height: 44 });
+    await settings.press('Enter');
+    await expect(page).toHaveURL(/\/dashboard\/settings$/);
+
+    await account.press('Enter');
+    for (const name of ['Profile', 'Settings', 'Log Out']) {
+      await expect(page.getByRole('menuitem', { name: new RegExp(`^${name}$`, 'i') })).toBeInViewport({ ratio: 1 });
+    }
+    await page.keyboard.press('Escape');
+    await expect(account).toBeFocused();
+    await account.click();
+    await page.getByRole('menuitem', { name: /^profile$/i }).click();
+    await expect(page).toHaveURL(/\/dashboard\/profile$/);
+  });
+}
+
+test('tablet navigation closes on Escape and after choosing Profile', async ({ page, context }) => {
+  await seedResumeSession(context);
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await page.goto('/dashboard/resume');
+  const trigger = page.getByRole('button', { name: 'Open navigation' });
+  const drawer = page.getByRole('dialog', { name: 'Workspace navigation' });
+
+  await trigger.press('Enter');
+  await expect(drawer.getByRole('button', { name: 'Close navigation' })).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(drawer).toBeHidden();
+  await expect(trigger).toBeFocused();
+
+  await trigger.click();
+  await drawer.getByRole('link', { name: 'Profile', exact: true }).click();
+  await expect(page).toHaveURL(/\/dashboard\/profile$/);
+  await expect(drawer).toBeHidden();
+  await expect(trigger).toBeFocused();
+
+  await trigger.click();
+  await page.setViewportSize({ width: 1133, height: 744 });
+  await expect(drawer).toBeHidden();
+  await expect(page.getByRole('navigation', { name: 'Workspace' }).getByRole('link', { name: 'PRISM pro', exact: true })).toBeFocused();
+  await expect(page.getByRole('button', { name: 'Account menu' })).toBeInViewport({ ratio: 1 });
+});
+
+for (const width of [768, 1024]) {
+  test(`sidebar sign out clears the session at ${width}px`, async ({ page, context }) => {
+    await seedResumeSession(context);
+    await page.route('https://test.supabase.co/auth/v1/logout**', route => route.fulfill({ status: 204 }));
+    await page.setViewportSize({ width, height: 1024 });
+    await page.goto('/dashboard/resume');
+    await expect(page.getByRole('button', { name: 'Account menu' })).toBeAttached();
+    if (width === 768) {
+      await page.getByRole('button', { name: 'Open navigation' }).click();
+    }
+    await context.clearCookies({ name: 'test-bypass-auth' });
+    await page.getByRole('navigation').getByRole('button', { name: 'Sign Out' }).click();
+    await expect(page).toHaveURL(`${APP}/`);
+    expect((await context.cookies(APP)).some(cookie => cookie.name.startsWith('sb-') && cookie.name.includes('-auth-token'))).toBe(false);
+    await page.goto('/dashboard/profile');
+    await expect(page).toHaveURL(`${APP}/`);
+  });
+}
 
 test('tailor MVP flow uploads, edits pointer, applies, and exposes download contract', async ({ page, context }) => {
   await seedResumeSession(context);

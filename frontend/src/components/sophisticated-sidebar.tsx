@@ -42,8 +42,8 @@ const NavItem: React.FC<{
     label: string;
     icon: React.ReactNode;
     isCollapsed: boolean;
-    onClick?: () => void;
-}> = ({ to, label, icon, isCollapsed, onClick }) => {
+    onNavigate?: () => void;
+}> = ({ to, label, icon, isCollapsed, onNavigate }) => {
     const pathname = usePathname();
     const isActive =
         to === '/dashboard'
@@ -55,7 +55,7 @@ const NavItem: React.FC<{
     return (
         <Link
             href={to}
-            onClick={onClick}
+            onNavigate={onNavigate}
             aria-label={label}
             className={`
           flex items-center gap-4 py-3 px-4 transition-all duration-500 group relative rounded-md mx-2
@@ -91,19 +91,21 @@ const NavItem: React.FC<{
 };
 
 export function SophisticatedSidebar({ onClose }: { onClose?: () => void }) {
-    const { isCollapsed, toggle } = useSidebar();
-    const { user } = useAuth();
+    const { isCollapsed: desktopCollapsed, toggle } = useSidebar();
+    const { user, signOutUser } = useAuth();
+    const isCollapsed = !onClose && desktopCollapsed;
     const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
 
     return (
         <motion.nav
-            animate={{ width: isCollapsed ? 80 : 280 }}
+            aria-label="Workspace"
+            animate={onClose ? undefined : { width: isCollapsed ? 80 : 280 }}
             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed left-0 top-0 h-full border-r border-app-text/5 flex flex-col bg-app-bg z-50 overflow-hidden shadow-2xl shadow-black/5"
+            className={`h-full border-r border-app-text/5 flex flex-col bg-app-bg overflow-hidden ${onClose ? 'w-full' : 'fixed left-0 top-0 z-50 shadow-2xl shadow-black/5'}`}
         >
             {/* Header */}
             <div className="p-6 flex items-center justify-between border-b border-app-text/5 h-24 shrink-0 bg-app-bg/50 backdrop-blur-sm">
-                <Link href="/dashboard" className="flex items-center gap-4 overflow-hidden">
+                <Link href="/dashboard" onNavigate={onClose} className="flex items-center gap-4 overflow-hidden">
                     <div className="shrink-0 w-10 h-10 border border-app-text/20 flex items-center justify-center bg-app-card shadow-sm rounded-sm">
                         <LayoutGrid className="w-5 h-5 text-app-text" />
                     </div>
@@ -117,9 +119,11 @@ export function SophisticatedSidebar({ onClose }: { onClose?: () => void }) {
                         </motion.h1>
                     )}
                 </Link>
-                {!isCollapsed && (
+                {!onClose && !isCollapsed && (
                     <button
-                        onClick={() => { toggle(); if (onClose) onClose(); }}
+                        type="button"
+                        aria-label="Collapse sidebar"
+                        onClick={toggle}
                         className="text-app-text opacity-40 hover:opacity-100 transition-colors p-2 hover:bg-app-text/5 rounded-full"
                     >
                         <PanelLeft className="w-5 h-5" />
@@ -128,18 +132,18 @@ export function SophisticatedSidebar({ onClose }: { onClose?: () => void }) {
             </div>
 
             {/* Main Content */}
-            <div className="flex-1 px-2 py-8 space-y-10 overflow-y-auto overflow-x-hidden custom-scrollbar">
+            <div className="flex-1 px-2 py-8 space-y-10 overflow-y-auto overflow-x-hidden overscroll-contain custom-scrollbar">
                 <div>
                     {!isCollapsed && (
                         <p className="px-6 mb-4 text-[10px] font-extrabold tracking-[0.2em] uppercase text-app-text opacity-40">Workspace</p>
                     )}
                     <div className="space-y-1">
-                        <NavItem to="/dashboard" label="Dashboard" icon={<LayoutGrid className="w-5 h-5" />} isCollapsed={isCollapsed} />
-                        <NavItem to="/dashboard/resume" label="Resume" icon={<FileText className="w-5 h-5" />} isCollapsed={isCollapsed} />
-                        <NavItem to="/dashboard/resume/tailor" label="Tailor" icon={<Wand2 className="w-5 h-5" />} isCollapsed={isCollapsed} />
-                        <NavItem to="/dashboard/library" label="Library" icon={<LibraryBig className="w-5 h-5" />} isCollapsed={isCollapsed} />
-                        <NavItem to="/dashboard/career" label="Career Coach" icon={<MessageSquare className="w-5 h-5" />} isCollapsed={isCollapsed} onClick={onClose} />
-                        <NavItem to="/dashboard/applications" label="Applications" icon={<Briefcase className="w-5 h-5" />} isCollapsed={isCollapsed} />
+                        <NavItem to="/dashboard" label="Dashboard" icon={<LayoutGrid className="w-5 h-5" />} isCollapsed={isCollapsed} onNavigate={onClose} />
+                        <NavItem to="/dashboard/resume" label="Resume" icon={<FileText className="w-5 h-5" />} isCollapsed={isCollapsed} onNavigate={onClose} />
+                        <NavItem to="/dashboard/resume/tailor" label="Tailor" icon={<Wand2 className="w-5 h-5" />} isCollapsed={isCollapsed} onNavigate={onClose} />
+                        <NavItem to="/dashboard/library" label="Library" icon={<LibraryBig className="w-5 h-5" />} isCollapsed={isCollapsed} onNavigate={onClose} />
+                        <NavItem to="/dashboard/career" label="Career Coach" icon={<MessageSquare className="w-5 h-5" />} isCollapsed={isCollapsed} onNavigate={onClose} />
+                        <NavItem to="/dashboard/applications" label="Applications" icon={<Briefcase className="w-5 h-5" />} isCollapsed={isCollapsed} onNavigate={onClose} />
                     </div>
                 </div>
 
@@ -148,10 +152,21 @@ export function SophisticatedSidebar({ onClose }: { onClose?: () => void }) {
                         <p className="px-6 mb-4 text-[10px] font-extrabold tracking-[0.2em] uppercase text-app-text opacity-40">Account</p>
                     )}
                     <div className="space-y-1">
-                        <NavItem to="/dashboard/credits" label="Credits" icon={<Coins className="w-5 h-5" />} isCollapsed={isCollapsed} />
-                        <NavItem to="/dashboard/settings" label="Settings" icon={<Settings className="w-5 h-5" />} isCollapsed={isCollapsed} />
-                        <NavItem to="/dashboard/profile" label="Profile" icon={<FileText className="w-5 h-5" />} isCollapsed={isCollapsed} />
-                        <NavItem to="/logout" label="Sign Out" icon={<LogOut className="w-5 h-5" />} isCollapsed={isCollapsed} />
+                        <NavItem to="/dashboard/credits" label="Credits" icon={<Coins className="w-5 h-5" />} isCollapsed={isCollapsed} onNavigate={onClose} />
+                        <NavItem to="/dashboard/settings" label="Settings" icon={<Settings className="w-5 h-5" />} isCollapsed={isCollapsed} onNavigate={onClose} />
+                        <NavItem to="/dashboard/profile" label="Profile" icon={<FileText className="w-5 h-5" />} isCollapsed={isCollapsed} onNavigate={onClose} />
+                        <button
+                            type="button"
+                            aria-label="Sign Out"
+                            onClick={() => {
+                                onClose?.();
+                                void signOutUser().catch(error => console.error('Error signing out:', error));
+                            }}
+                            className="mx-2 flex min-h-11 w-[calc(100%-1rem)] items-center gap-4 rounded-md px-4 py-3 text-app-text/70 hover:bg-app-text/5 hover:text-app-text focus-visible:outline-2 focus-visible:outline-offset-2"
+                        >
+                            <LogOut aria-hidden="true" className="size-5 shrink-0" />
+                            {!isCollapsed && <span className="truncate text-xs font-bold uppercase tracking-wider">Sign Out</span>}
+                        </button>
                     </div>
                 </div>
             </div>
@@ -171,14 +186,16 @@ export function SophisticatedSidebar({ onClose }: { onClose?: () => void }) {
                             <p className="text-[10px] text-app-text opacity-50 italic truncate font-medium">Professional Account</p>
                         </motion.div>
                     )}
-                    {!isCollapsed && (
-                        <button onClick={toggle} className="text-app-text opacity-30 hover:opacity-100 transition-opacity">
+                    {!onClose && !isCollapsed && (
+                        <button type="button" aria-label="Collapse sidebar" onClick={toggle} className="text-app-text opacity-30 hover:opacity-100 transition-opacity">
                             <ChevronDown className="w-4 h-4" />
                         </button>
                     )}
                 </div>
                 {isCollapsed && (
                     <button
+                        type="button"
+                        aria-label="Expand sidebar"
                         onClick={toggle}
                         className="mt-6 w-full flex justify-center text-app-text opacity-30 hover:opacity-100 transition-opacity"
                     >
