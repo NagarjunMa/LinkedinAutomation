@@ -14,6 +14,7 @@ import {
     LibraryBig,
     Wand2,
     MessageSquare,
+    NotebookPen,
     Coins
 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -139,6 +140,7 @@ export function SophisticatedSidebar({ onClose }: { onClose?: () => void }) {
                         <NavItem to="/dashboard/resume/tailor" label="Tailor" icon={<Wand2 className="w-5 h-5" />} isCollapsed={isCollapsed} />
                         <NavItem to="/dashboard/library" label="Library" icon={<LibraryBig className="w-5 h-5" />} isCollapsed={isCollapsed} />
                         <NavItem to="/dashboard/career" label="Career Coach" icon={<MessageSquare className="w-5 h-5" />} isCollapsed={isCollapsed} onClick={onClose} />
+                        <NavItem to="/dashboard/evidence" label="Evidence Notebook" icon={<NotebookPen className="w-5 h-5" />} isCollapsed={isCollapsed} onClick={onClose} />
                         <NavItem to="/dashboard/applications" label="Applications" icon={<Briefcase className="w-5 h-5" />} isCollapsed={isCollapsed} />
                     </div>
                 </div>
