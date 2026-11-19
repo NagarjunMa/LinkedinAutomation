@@ -9,6 +9,7 @@ export type Message = Schemas['MessageView'];
 export type Turn = Schemas['TurnInput'];
 export type Evidence = Schemas['CareerEvidenceItem'];
 export type Decision = Schemas['EvidenceDecisionInput'];
+export type EvidenceHistory = Schemas['EvidenceHistory'];
 
 const state = z.object({ session_id: z.string(), owner_id: z.string() });
 const completed = z.discriminatedUnion('type', [
@@ -59,6 +60,7 @@ export const pageSize = 50;
 export function careerApi(owner: string, signal?: AbortSignal) {
   const options = { expectedUserId: owner, signal, cache: 'no-store' as const };
   const sessionPath = (id: string) => `${sessions}/${encodeURIComponent(id)}`;
+  const evidencePath = (id: string) => `${evidence}/${encodeURIComponent(id)}`;
   const page = (offset: number) => `?limit=${pageSize}&offset=${offset}`;
   return {
     sessions: (offset: number) => makeAPIRequest<Session[]>(sessions + page(offset), options),
@@ -70,7 +72,10 @@ export function careerApi(owner: string, signal?: AbortSignal) {
       makeAPIRequest(sessionPath(id) + '/turns', { ...options, method: 'POST', body: JSON.stringify(body) },
         response => readTurn(response, onProgress)),
     evidence: (offset: number) => makeAPIRequest<Evidence[]>(evidence + page(offset), options),
+    evidenceDetail: (id: string) => makeAPIRequest<Evidence>(evidencePath(id), options),
+    evidenceHistory: (id: string, offset: number) =>
+      makeAPIRequest<EvidenceHistory>(evidencePath(id) + '/history' + page(offset), options),
     decide: (id: string, body: Decision) => makeAPIRequest<Evidence>(
-      `${evidence}/${encodeURIComponent(id)}/decision`, { ...options, method: 'PATCH', body: JSON.stringify(body) }),
+      evidencePath(id) + '/decision', { ...options, method: 'PATCH', body: JSON.stringify(body) }),
   };
 }

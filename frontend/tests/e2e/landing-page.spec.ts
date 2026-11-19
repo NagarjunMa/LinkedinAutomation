@@ -111,6 +111,10 @@ test.describe('Landing Page UI/UX Tests', () => {
     await page.goto('/dashboard', { waitUntil: 'networkidle' });
     await expect(page).toHaveURL('/');
     await expect(page.getByText(/public access closed/i)).toBeVisible();
+
+    await page.goto('/dashboard/evidence');
+    await expect(page).toHaveURL('/');
+    await expect(page.getByRole('heading', { level: 1, name: 'Evidence Notebook', exact: true })).toHaveCount(0);
   });
 
   test('should have proper meta tags for SEO', async ({ page }) => {
