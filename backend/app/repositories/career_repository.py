@@ -55,10 +55,13 @@ class CareerRepository:
     def source_content(self, row: CareerSourceRow) -> str:
         if row.extraction_version != LINKEDIN_PDF_EXTRACTION_VERSION:
             return row.content
+        return self.linkedin_document(row).raw_text
+
+    def linkedin_document(self, row: CareerSourceRow) -> LinkedInDocument:
         upload = self.session.get(LinkedInPdfUploadRow, (self.user_id, row.id, row.version))
         if upload is None or upload.state != "ready":
             raise ExternalServiceError("LinkedIn source text is unavailable")
-        return open_linkedin_document(upload).raw_text
+        return open_linkedin_document(upload)
 
     def list_sources(self, offset: int, limit: int):
         return self.session.scalars(self.visible_sources().order_by(

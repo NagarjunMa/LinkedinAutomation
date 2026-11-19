@@ -17,6 +17,8 @@ HEADINGS = {
     "honors & awards": "honors", "languages": "languages", "featured": "featured",
 }
 MAIN = {"headline", "about", "experience", "education", "projects"}
+SIDEBAR_LOCATOR_SUFFIX = ":sidebar"
+EXPLICIT_HEADLINE_LOCATOR_SUFFIX = ":headline"
 COVERAGE = ("identity", "headline", "about", "experience", "education", "projects", "skills", "certifications")
 LINK = re.compile(r"(?:https?://|www\.|linkedin\.com/in/)[^\s<>]+", re.I)
 MONTH_YEAR = r"(?:(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+)?\d{4}"
@@ -32,7 +34,7 @@ CLAIM = re.compile(
 )
 
 
-async def read_profile_pages(content: bytes) -> tuple[list[str], bool]:
+async def read_profile_pages(content: bytes) -> tuple[list[str], list[int | None]]:
     chars = min(settings.MAX_EXTRACTED_TEXT_CHARS, 100_000)
     result = await run_parser_worker(
         content, "app.services.linkedin_pdf_worker", str(settings.MAX_UPLOAD_SIZE),
@@ -43,27 +45,57 @@ async def read_profile_pages(content: bytes) -> tuple[list[str], bool]:
         isinstance(page, str) for page in pages
     ) or len("\n".join(pages)) > chars:
         raise ResumeFileError("PDF could not be parsed")
-    return pages, result.get("role_first") is True
+    sidebar_lines = result.get("sidebar_lines")
+    if not isinstance(sidebar_lines, list) or len(sidebar_lines) != len(pages) or any(
+        count is not None and (type(count) is not int or not 0 < count < len(page.splitlines()))
+        for page, count in zip(pages, sidebar_lines)
+    ):
+        raise ResumeFileError("PDF layout could not be parsed")
+    return pages, sidebar_lines
 
 
-def parse_profile_pages(pages: list[str], source: SourceRef, *, role_first: bool = False) -> LinkedInDocument:
+def parse_profile_pages(
+    pages: list[str], source: SourceRef, *, role_first: bool = False, sidebar_lines: list[int | None] | None = None,
+) -> LinkedInDocument:
     sections: list[LinkedInSection] = []
     name = location = None
     current = "unclassified"
+    explicit_headline = False
     for page_number, page in enumerate(pages, 1):
         lines = [(number, line.strip()) for number, line in enumerate(page.splitlines(), 1) if line.strip()]
-        identity_index = _identity_index(lines) if page_number == 1 else None
+        previous = current
+        previous_explicit_headline = explicit_headline
+        boundary = sidebar_lines[page_number - 1] if sidebar_lines else None
+        main_index = next((i for i, (number, _) in enumerate(lines) if number > boundary), None) if boundary else None
+        if main_index is not None:
+            current = "unclassified"
+            explicit_headline = False
+            role_first = True
+        identity_index = (main_index if main_index is not None else _identity_index(lines)) if page_number == 1 else None
+        header = page_number == 1 and main_index is not None
         for index, (line_number, line) in enumerate(lines):
+            in_sidebar = main_index is not None and index < main_index
+            if index == main_index:
+                current = "identity" if header else previous
+                explicit_headline = not header and previous_explicit_headline
             heading = HEADINGS.get(line.casefold().rstrip(":"))
             if heading:
-                current = heading
+                if not in_sidebar:
+                    header = False
+                current = "unclassified" if in_sidebar and heading in MAIN else heading
+                explicit_headline = current == "headline"
                 continue
             if identity_index is not None and index == identity_index:
                 current = "identity"
-                name = line
-            elif identity_index is not None and index == identity_index + 1:
+                name = line if len(line) <= 200 else None
+            elif identity_index is not None and index == identity_index + 1 and (header or main_index is None):
                 current = "headline"
-            elif identity_index is not None and index == identity_index + 2 and LOCATION.fullmatch(line):
+                explicit_headline = False
+            elif header and not in_sidebar:
+                current = "identity"
+                location = location or _location(line)
+            elif (main_index is None and not explicit_headline and identity_index is not None
+                  and index == identity_index + 2 and LOCATION.fullmatch(line)):
                 current = "identity"
                 location = _location(line)
             for start in range(0, len(line), 4000):
@@ -73,6 +105,10 @@ def parse_profile_pages(pages: list[str], source: SourceRef, *, role_first: bool
                 locator = f"page:{page_number}:line:{line_number}"
                 if len(line) > 4000:
                     locator += f":column:{start + 1}"
+                if in_sidebar:
+                    locator += SIDEBAR_LOCATOR_SUFFIX
+                elif current == "headline" and explicit_headline:
+                    locator += EXPLICIT_HEADLINE_LOCATOR_SUFFIX
                 sections.append(LinkedInSection(name=current, page=page_number, locator=locator, text=segment))
 
     raw_text = "\n".join(pages)

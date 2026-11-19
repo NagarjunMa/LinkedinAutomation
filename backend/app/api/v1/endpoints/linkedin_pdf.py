@@ -43,8 +43,8 @@ async def _upload(file: UploadFile, service: LinkedInPdfService, previous: Sourc
         if not (file.filename or "").lower().endswith(".pdf"):
             raise ResumeFileError("Only LinkedIn profile PDF files are supported")
         validated = await read_resume_upload(file)
-        pages, role_first = await read_profile_pages(validated.content)
-        return await run_in_threadpool(service.add, validated.content, pages, previous, role_first=role_first)
+        pages, sidebar_lines = await read_profile_pages(validated.content)
+        return await run_in_threadpool(service.add, validated.content, pages, previous, sidebar_lines=sidebar_lines)
     except ResumeFileError as exc:
         raise HTTPException(exc.status_code, str(exc)) from None
     except ApplicationError as exc:
