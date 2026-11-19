@@ -75,7 +75,7 @@ export default function SettingsPage() {
           {/* Lazy loaded tab content */}
           <Suspense fallback={<div className="animate-pulse bg-muted rounded-lg h-64" />}>
             <TabsContent value="privacy" className="space-y-6">
-              <PrivacyTab userId={user.id} />
+              <PrivacyTab key={user.id} userId={user.id} />
             </TabsContent>
           </Suspense>
 
