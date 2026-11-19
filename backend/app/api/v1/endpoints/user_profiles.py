@@ -10,6 +10,8 @@ from app.application.errors import ApplicationError
 from app.application.profile_service import ProfileApplicationService
 from app.schemas.profile import (
     EmailTrackingSettingsUpdate,
+    JobPreferencesResponse,
+    JobPreferencesUpdate,
     NotificationSettingsUpdate,
     PrivacySettingsUpdate,
     ProfileChangeHistoryResponse,
@@ -53,6 +55,18 @@ def update_profile(
 ):
     try:
         return service.update_profile(user_id, profile_data)
+    except ApplicationError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.put("/{user_id}/preferences", response_model=JobPreferencesResponse)
+def save_preferences(
+    preferences: JobPreferencesUpdate,
+    user_id: str = Path(min_length=1, max_length=100),
+    service: ProfileApplicationService = Depends(get_profile_application_service),
+) -> JobPreferencesResponse:
+    try:
+        return service.save_preferences(user_id, preferences)
     except ApplicationError as exc:
         raise to_http_exception(exc) from exc
 

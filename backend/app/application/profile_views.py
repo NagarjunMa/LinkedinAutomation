@@ -162,7 +162,8 @@ def profile_response(
         "created_at": created_at,
         "updated_at": updated_at,
         "last_resume_upload": (
-            profile.last_resume_upload if profile else latest_resume.created_at
+            (profile.last_resume_upload if profile else None)
+            or (latest_resume.created_at if latest_resume else None)
         ),
         **stats,
         "profile_completion": int(completed / len(completion_fields) * 100),

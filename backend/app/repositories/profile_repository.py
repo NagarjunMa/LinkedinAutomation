@@ -13,12 +13,9 @@ class ProfileRepository:
     def __init__(self, session: Session):
         self.session = session
 
-    def get_profile(self, user_id: str) -> UserProfile | None:
-        return (
-            self.session.query(UserProfile)
-            .filter(UserProfile.user_id == user_id)
-            .first()
-        )
+    def get_profile(self, user_id: str, *, lock: bool = False) -> UserProfile | None:
+        query = self.session.query(UserProfile).filter(UserProfile.user_id == user_id)
+        return (query.with_for_update() if lock else query).first()
 
     def latest_ready_resume(self, user_id: str) -> ResumeDocument | None:
         return (
