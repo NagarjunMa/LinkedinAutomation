@@ -47,9 +47,15 @@ def test_application_and_unexpected_errors(client, auth_headers, caplog, error, 
         client.app.dependency_overrides.pop(get_resume_application_service, None)
 
 
-def test_request_validation_does_not_echo_input(client, auth_headers):
-    response = client.post("/api/v1/jd/analyze", json={"resume_document_id": "doc", "jd_text": {"secret": "private-sentinel"}}, headers=auth_headers)
+@pytest.mark.parametrize("path,body", [
+    ("/api/v1/jd/analyze", {"resume_document_id": "doc", "jd_text": {"secret": "private-sentinel"}}),
+    ("/api/v1/career/targets", {"seniority": "Senior", "role_family": {"secret": "private-sentinel"}}),
+])
+def test_request_validation_does_not_echo_input(client, auth_headers, caplog, path, body):
+    response = client.post(path, json=body, headers=auth_headers)
     assert_envelope(response, 422, "invalid_request")
+    assert response.headers["cache-control"] == "no-store"
+    assert "private-sentinel" not in caplog.text
 
 
 def test_request_ids_are_server_owned_and_available_on_success(client, auth_headers):

@@ -30,14 +30,16 @@ from app.db.session import get_db
 from app.main import app
 from app.models.career import CareerSourceRow, LinkedInPdfUploadRow
 from app.models.career_evidence import EvidenceRow, EvidenceSourceRow
+from app.models.resume_document import ResumeDocument
 from app.models.user import User
 from app.schemas.career.common import SourceRef
 from app.schemas.career.evidence import EvidenceDecisionInput, EvidenceProposal, EvidenceRevisionRef
-from app.schemas.career.persistence import CareerTargetInput
+from app.schemas.career.persistence import CareerSourceCreate, CareerTargetInput
 from app.services.storage.exceptions import StorageDeleteError, StorageUploadError
 from app.services.storage.supabase_storage import get_storage
 
 PREFIX = "/api/v1/career/linkedin-profiles"
+TARGETS = "/api/v1/career/targets"
 FIXTURES = Path(__file__).parents[1] / "fixtures" / "anydoc"
 PDF = (FIXTURES / "linkedin-style.pdf").read_bytes()
 
@@ -485,3 +487,174 @@ def test_review_reads_owned_sources_and_rechecks_the_live_evidence_revision(setu
         assert foreign.recommendation_blocker(ref, confirmed.claim) == "evidence_not_confirmed"
         ledger.decide(draft.evidence_id, EvidenceDecisionInput(revision=2, action="mark_private"))
         assert review.recommendation_blocker(ref, confirmed.claim) == "evidence_not_confirmed"
+
+
+@pytest.mark.postgres
+def test_review_preview_is_private_and_uses_owned_ready_revisions(setup):
+    client, engine, _, (owner, other) = setup
+    uploaded = upload(client)
+    assert uploaded.status_code == 201
+    source = uploaded.json()["source"]
+    base = f"{PREFIX}/{source['source_id']}"
+    path = base + "/versions/1/review"
+    with Session(engine) as db:
+        fields = CareerTargetInput(role_family="Platform Engineer", seniority="Senior")
+        career = CareerApplicationService(db, owner)
+        target = career.create_target(fields)
+        archived = career.create_target(fields)
+        career.archive_target(archived.target_id)
+        foreign_target = CareerApplicationService(db, other).create_target(fields)
+
+    body = {"target_id": target.target_id}
+    assert client.post(path, json=body).status_code == 401
+    preview = client.post(path, headers=identity(0), json=body)
+    assert preview.status_code == 200
+    assert preview.headers["cache-control"] == "no-store"
+    data = preview.json()
+    assert set(data) == {"schema_version", "document", "target_id", "parser_version", "findings"}
+    assert data["document"] == source and data["target_id"] == target.target_id
+    assert {finding["kind"] for finding in data["findings"]} >= {"document_limit", "unsupported_claim"}
+    assert all(finding["document_locator"] for finding in data["findings"])
+    assert "Alex Example" not in preview.text
+
+    for account, target_id in (
+        (1, target.target_id), (1, foreign_target.target_id),
+        (0, foreign_target.target_id), (0, archived.target_id),
+    ):
+        assert client.post(path, headers=identity(account), json={"target_id": target_id}).status_code == 404
+    assert client.post(path, headers=identity(0), json=body | {"resume_source": source}).status_code == 404
+    assert client.post(path, headers=identity(0), json=body | {"evidence_snapshot_version": 5}).status_code == 422
+    assert client.delete(base, headers=identity(0)).status_code == 204
+    assert client.post(path, headers=identity(0), json=body).status_code == 404
+
+
+@pytest.mark.postgres
+def test_review_preview_cites_owned_resume_and_exact_pdf_version(setup):
+    client, engine, _, (owner, _) = setup
+    uploaded = upload(client)
+    assert uploaded.status_code == 201
+    document = uploaded.json()["document"]
+    [role, *_] = document["experience"]
+    base = f"{PREFIX}/{document['source']['source_id']}/versions"
+    assert upload(client, path=f"{base}/1", content=(FIXTURES / "simple.pdf").read_bytes()).status_code == 201
+
+    resume_id = str(uuid4())
+    with Session(engine) as db:
+        db.add(ResumeDocument(
+            id=resume_id, user_id=owner, original_filename="synthetic.pdf", file_path="synthetic",
+            file_type="pdf", raw_text="Synthetic résumé specimen",
+            parsed_json={
+                "contact": {"name": "Synthetic résumé specimen"},
+                "raw_text": "Synthetic résumé specimen",
+                "experience": [{"company": role["company"], "role": "Different title", "dates": "2018 - 2021"}],
+            },
+        ))
+        db.commit()
+        career = CareerApplicationService(db, owner)
+        target = career.create_target(CareerTargetInput(role_family="Platform Engineer", seniority="Senior"))
+        resume = career.add_source(CareerSourceCreate(kind="resume", resume_document_id=resume_id)).source
+
+    body = {"target_id": target.target_id, "resume_source": resume.model_dump()}
+    first = client.post(f"{base}/1/review", headers=identity(0), json=body)
+    second = client.post(f"{base}/2/review", headers=identity(0), json=body)
+    assert first.status_code == second.status_code == 200
+    assert first.json()["document"] == document["source"]
+    assert second.json()["document"] == document["source"] | {"source_version": 2}
+    [question] = [finding for finding in first.json()["findings"] if finding["kind"] == "consistency_question"]
+    assert question["resume_source"] == resume.model_dump()
+    assert question["resume_locator"] == "experience:0"
+    assert not any(finding["kind"] == "consistency_question" for finding in second.json()["findings"])
+
+
+@pytest.mark.postgres
+def test_target_picker_is_authenticated_bounded_and_owner_scoped(setup):
+    client, engine, _, (owner, _) = setup
+    fields = {"role_family": "Platform Engineer", "seniority": "Senior", "desired_work": ["Python"]}
+    assert client.get(TARGETS).status_code == 401
+    assert client.post(TARGETS, json=fields).status_code == 401
+    assert client.post(TARGETS, headers=identity(1), json=fields | {"owner_id": owner}).status_code == 422
+    foreign = client.post(TARGETS, headers=identity(1), json=fields)
+    assert foreign.status_code == 201
+    with Session(engine) as db:
+        career = CareerApplicationService(db, owner)
+        archived = career.create_target(CareerTargetInput(**fields))
+        career.archive_target(archived.target_id)
+    owned = client.post(TARGETS, headers=identity(0), json=fields)
+    assert owned.status_code == 201 and owned.json()["owner_id"] == owner
+    assert owned.headers["cache-control"] == "no-store"
+    page = client.get(TARGETS, headers=identity(0), params={"limit": 1})
+    assert page.headers["cache-control"] == "no-store" and page.json() == [owned.json()]
+    assert client.get(TARGETS, headers=identity(0), params={"offset": 1}).json() == []
+    assert client.get(TARGETS, headers=identity(0), params={"limit": 101}).status_code == 422
+
+
+@pytest.mark.postgres
+def test_recommendations_copy_checks_current_evidence_and_review_scope(setup):
+    client, engine, _, (owner, other) = setup
+    [own_pdf, other_pdf] = [upload(client, account).json()["source"]["source_id"] for account in (0, 1)]
+    fields = {"role_family": "Platform Engineer", "seniority": "Senior", "desired_work": ["Python"]}
+    own_target = client.post(TARGETS, headers=identity(0), json=fields)
+    other_target = client.post(TARGETS, headers=identity(1), json=fields)
+    assert own_target.status_code == other_target.status_code == 201
+    target_id = own_target.json()["target_id"]
+    foreign_target = other_target.json()["target_id"]
+    path = f"{PREFIX}/{own_pdf}/versions/1/recommendations"
+    copy = path + "/copy"
+
+    def add_evidence(db, account, claim, category="action", *, confirm=True, ownership="individual"):
+        source = CareerApplicationService(db, account).add_source(CareerSourceCreate(
+            kind="candidate_introduction", content=claim,
+        ))
+        ledger = EvidenceService(db, account)
+        item = ledger.propose(EvidenceProposal(
+            claim=claim, category=category, ownership=ownership,
+            sources=[{**source.source.model_dump(), "relationship": "supports", "locator": "placeholder",
+                      "excerpt": claim, "extraction": "candidate"}],
+        ))
+        return ledger.decide(item.evidence_id, EvidenceDecisionInput(revision=1, action="confirm")) if confirm else item
+
+    def reference(item):
+        return {"evidence_id": item.evidence_id, "revision": item.revision}
+
+    with Session(engine) as db:
+        action = add_evidence(db, owner, "Used Python to build a deployment service.")
+        skill = add_evidence(db, owner, "Python", "skill")
+        unused = add_evidence(db, owner, "Kubernetes", "skill")
+        add_evidence(db, owner, "Led a team of 27 engineers.")
+        add_evidence(db, owner, "Built a Rust compiler.", ownership="team")
+        proposed = add_evidence(db, owner, "Built an Ada parser.", confirm=False)
+        foreign = add_evidence(db, other, "Built a Java deployment service.")
+
+    body = {"target_id": target_id}
+    assert client.post(path, json=body).status_code == 401
+    assert client.post(path, headers=identity(0), json={"target_id": foreign_target}).status_code == 404
+    assert client.post(path, headers=identity(1), json={"target_id": foreign_target}).status_code == 404
+    response = client.post(path, headers=identity(0), json=body)
+    assert response.status_code == 200 and response.headers["cache-control"] == "no-store"
+    suggestions = {item["section"]: item for item in response.json()}
+    assert set(suggestions) == {"headline", "about", "experience", "skills"}
+    for section in ("headline", "about", "experience"):
+        assert suggestions[section]["text"] == action.claim
+        assert suggestions[section]["evidence_revisions"] == [reference(action)]
+    assert suggestions["skills"]["text"] == skill.claim
+    assert suggestions["skills"]["evidence_revisions"] == [reference(skill), reference(action)]
+
+    selection = {"section": "skills", "evidence_revisions": [reference(skill), reference(action)]}
+    copied = client.post(copy, headers=identity(0), json=body | {"selection": selection})
+    assert copied.status_code == 200 and copied.json() == suggestions["skills"]
+    assert copied.headers["cache-control"] == "no-store"
+    blocked = {"section": "skills", "evidence_revisions": [reference(unused), reference(action)]}
+    assert client.post(copy, headers=identity(0), json=body | {"selection": blocked}).status_code == 409
+    for item in (proposed, foreign):
+        invalid = {"section": "about", "evidence_revisions": [reference(item)]}
+        assert client.post(copy, headers=identity(0), json=body | {"selection": invalid}).status_code == 409
+    assert client.post(copy, headers=identity(0), json=body | {"selection": selection | {"text": "Injected"}}).status_code == 422
+    assert client.post(f"{PREFIX}/{other_pdf}/versions/1/recommendations/copy", headers=identity(0),
+                       json=body | {"selection": selection}).status_code == 404
+
+    with Session(engine) as db:
+        EvidenceService(db, owner).decide(action.evidence_id, EvidenceDecisionInput(revision=2, action="mark_private"))
+    assert client.post(copy, headers=identity(0), json=body | {"selection": selection}).status_code == 409
+    assert client.post(path, headers=identity(0), json=body).json() == []
+    assert client.delete(f"{PREFIX}/{own_pdf}", headers=identity(0)).status_code == 204
+    assert client.post(copy, headers=identity(0), json=body | {"selection": selection}).status_code == 404

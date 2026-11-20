@@ -182,6 +182,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/career/linkedin-profiles/{source_id}/versions/{version}/recommendations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** List Linkedin Recommendations */
+        post: operations["list_linkedin_recommendations_api_v1_career_linkedin_profiles__source_id__versions__version__recommendations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/career/linkedin-profiles/{source_id}/versions/{version}/recommendations/copy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Copy Linkedin Recommendation */
+        post: operations["copy_linkedin_recommendation_api_v1_career_linkedin_profiles__source_id__versions__version__recommendations_copy_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/career/linkedin-profiles/{source_id}/versions/{version}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview Linkedin Review */
+        post: operations["preview_linkedin_review_api_v1_career_linkedin_profiles__source_id__versions__version__review_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/career/sessions": {
         parameters: {
             query?: never;
@@ -262,6 +313,24 @@ export interface paths {
         put?: never;
         /** Create Turn */
         post: operations["create_turn_api_v1_career_sessions__session_id__turns_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/career/targets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Active Targets */
+        get: operations["list_active_targets_api_v1_career_targets_get"];
+        put?: never;
+        /** Create Career Target */
+        post: operations["create_career_target_api_v1_career_targets_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1278,6 +1347,48 @@ export interface components {
          * @enum {string}
          */
         CareerStage: "student" | "new_graduate" | "early_career" | "experienced_ic" | "technical_leader" | "career_switcher" | "returning_professional";
+        /** CareerTarget */
+        CareerTarget: {
+            /** Desired Work */
+            desired_work?: string[];
+            /** Exclusions */
+            exclusions?: string[];
+            job_description?: components["schemas"]["SourceRef"] | null;
+            /** Location */
+            location?: string | null;
+            /** Owner Id */
+            owner_id: string;
+            /** Role Family */
+            role_family: string;
+            /**
+             * Schema Version
+             * @constant
+             */
+            schema_version: 1;
+            /** Seniority */
+            seniority: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "active" | "archived";
+            /** Target Id */
+            target_id: string;
+        };
+        /** CareerTargetInput */
+        CareerTargetInput: {
+            /** Desired Work */
+            desired_work?: string[];
+            /** Exclusions */
+            exclusions?: string[];
+            job_description?: components["schemas"]["SourceRef"] | null;
+            /** Location */
+            location?: string | null;
+            /** Role Family */
+            role_family: string;
+            /** Seniority */
+            seniority: string;
+        };
         /** ChangeItem */
         ChangeItem: {
             /** Bullet Id */
@@ -1865,6 +1976,12 @@ export interface components {
             /** Total Jobs */
             total_jobs: number;
         };
+        /** LinkedInCopyRequest */
+        LinkedInCopyRequest: {
+            selection: components["schemas"]["LinkedInRecommendationSelection"];
+            /** Target Id */
+            target_id: string;
+        };
         /** LinkedInDocument */
         LinkedInDocument: {
             /** Contact Links */
@@ -1922,6 +2039,86 @@ export interface components {
             /** Title */
             title?: string | null;
         };
+        /** LinkedInFinding */
+        LinkedInFinding: {
+            /** Document Locator */
+            document_locator?: string | null;
+            /** Evidence Revisions */
+            evidence_revisions?: components["schemas"]["EvidenceRevisionRef"][];
+            /** Explanation */
+            explanation: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "missing_confirmed_evidence" | "unsupported_claim" | "ambiguous_claim" | "communication_gap" | "evidence_gap" | "consistency_question" | "experience_gap" | "knowledge_gap" | "positioning_gap" | "weak_prominence" | "interview_question" | "document_limit";
+            /** Resume Locator */
+            resume_locator?: string | null;
+            resume_source?: components["schemas"]["SourceRef"] | null;
+            /** Target Requirement Id */
+            target_requirement_id?: string | null;
+        } & (unknown & unknown & unknown & ({
+            document_locator: string;
+        } | {
+            target_requirement_id: string;
+        } | {
+            evidence_revisions: unknown;
+        }) & ({
+            resume_locator?: null;
+            resume_source?: null;
+        } | {
+            resume_locator: string;
+            /** SourceRef */
+            resume_source: {
+                /** Source Id */
+                source_id: string;
+                /** Source Version */
+                source_version: number;
+            };
+        }));
+        /** LinkedInRecommendation */
+        LinkedInRecommendation: {
+            /** Evidence Revisions */
+            evidence_revisions: components["schemas"]["EvidenceRevisionRef"][];
+            /**
+             * Section
+             * @enum {string}
+             */
+            section: "headline" | "about" | "experience" | "skills";
+            /** Text */
+            text: string;
+        };
+        /** LinkedInRecommendationSelection */
+        LinkedInRecommendationSelection: {
+            /** Evidence Revisions */
+            evidence_revisions: components["schemas"]["EvidenceRevisionRef"][];
+            /**
+             * Section
+             * @enum {string}
+             */
+            section: "headline" | "about" | "experience" | "skills";
+        };
+        /** LinkedInReviewPreview */
+        LinkedInReviewPreview: {
+            document: components["schemas"]["SourceRef"];
+            /** Findings */
+            findings: components["schemas"]["LinkedInFinding"][];
+            /** Parser Version */
+            parser_version: string;
+            /**
+             * Schema Version
+             * @constant
+             */
+            schema_version: 1;
+            /** Target Id */
+            target_id: string;
+        };
+        /** LinkedInReviewRequest */
+        LinkedInReviewRequest: {
+            resume_source?: components["schemas"]["SourceRef"] | null;
+            /** Target Id */
+            target_id: string;
+        };
         /** LinkedInSection */
         LinkedInSection: {
             /** Locator */
@@ -1935,6 +2132,11 @@ export interface components {
             page: number;
             /** Text */
             text: string;
+        };
+        /** LinkedInTargetSelection */
+        LinkedInTargetSelection: {
+            /** Target Id */
+            target_id: string;
         };
         /** LinkedInUpload */
         LinkedInUpload: {
@@ -3401,6 +3603,177 @@ export interface operations {
             };
         };
     };
+    list_linkedin_recommendations_api_v1_career_linkedin_profiles__source_id__versions__version__recommendations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                source_id: string;
+                version: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinkedInTargetSelection"];
+            };
+        };
+        responses: {
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkedInRecommendation"][];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+        };
+    };
+    copy_linkedin_recommendation_api_v1_career_linkedin_profiles__source_id__versions__version__recommendations_copy_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                source_id: string;
+                version: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinkedInCopyRequest"];
+            };
+        };
+        responses: {
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkedInRecommendation"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+        };
+    };
+    preview_linkedin_review_api_v1_career_linkedin_profiles__source_id__versions__version__review_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                source_id: string;
+                version: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinkedInReviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkedInReviewPreview"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+        };
+    };
     list_sessions_api_v1_career_sessions_get: {
         parameters: {
             query?: {
@@ -3709,6 +4082,113 @@ export interface operations {
                 };
                 content: {
                     "text/event-stream": string;
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+        };
+    };
+    list_active_targets_api_v1_career_targets_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CareerTarget"][];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+        };
+    };
+    create_career_target_api_v1_career_targets_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CareerTargetInput"];
+            };
+        };
+        responses: {
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CareerTarget"];
                 };
             };
             /** @description Unprocessable Entity */

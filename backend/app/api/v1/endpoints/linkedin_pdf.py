@@ -9,11 +9,15 @@ from starlette.concurrency import run_in_threadpool
 from app.api.error_mapping import to_http_exception
 from app.application.errors import ApplicationError, ExternalServiceError
 from app.application.linkedin_pdf_service import LinkedInPdfService
+from app.application.linkedin_review import LinkedInReviewService
 from app.core.auth import get_current_user_id
 from app.core.config import settings
 from app.db.session import get_db
 from app.schemas.career.common import Identifier, SourceRef
-from app.schemas.career.sources import LinkedInUpload, LinkedInUploadSummary
+from app.schemas.career.sources import (
+    LinkedInCopyRequest, LinkedInRecommendation, LinkedInReviewPreview, LinkedInReviewRequest,
+    LinkedInTargetSelection, LinkedInUpload, LinkedInUploadSummary,
+)
 from app.services.linkedin_pdf import read_profile_pages
 from app.services.resume.file_security import ResumeFileError, read_resume_upload
 from app.services.storage.supabase_storage import StorageClient, get_storage
@@ -32,6 +36,14 @@ def _service(response: Response, owner: str = Depends(get_current_user_id), db: 
 Service = Annotated[LinkedInPdfService, Depends(_service)]
 Pdf = Annotated[UploadFile, File()]
 Version = Annotated[int, Path(ge=1, le=2_147_483_647)]
+
+
+def _review_service(response: Response, owner: str = Depends(get_current_user_id), db: Session = Depends(get_db)):
+    response.headers["Cache-Control"] = "no-store"
+    return LinkedInReviewService(db, owner)
+
+
+ReviewService = Annotated[LinkedInReviewService, Depends(_review_service)]
 
 
 async def _upload(file: UploadFile, service: LinkedInPdfService, previous: SourceRef | None = None):
@@ -71,6 +83,39 @@ async def append_linkedin_pdf(source_id: Identifier, version: Version, file: Pdf
 def get_linkedin_pdf(source_id: Identifier, version: Version, service: Service) -> LinkedInUpload:
     try:
         return service.get(SourceRef(source_id=source_id, source_version=version))
+    except ApplicationError as exc:
+        raise to_http_exception(exc) from None
+
+
+@router.post("/{source_id}/versions/{version}/review")
+def preview_linkedin_review(
+    source_id: Identifier, version: Version, data: LinkedInReviewRequest, service: ReviewService,
+) -> LinkedInReviewPreview:
+    source = SourceRef(source_id=source_id, source_version=version)
+    try:
+        return service.preview(source, data.target_id, resume_source=data.resume_source)
+    except ApplicationError as exc:
+        raise to_http_exception(exc) from None
+
+
+@router.post("/{source_id}/versions/{version}/recommendations")
+def list_linkedin_recommendations(
+    source_id: Identifier, version: Version, data: LinkedInTargetSelection, service: ReviewService,
+) -> list[LinkedInRecommendation]:
+    try:
+        return service.recommendations(SourceRef(source_id=source_id, source_version=version), data.target_id)
+    except ApplicationError as exc:
+        raise to_http_exception(exc) from None
+
+
+@router.post("/{source_id}/versions/{version}/recommendations/copy")
+def copy_linkedin_recommendation(
+    source_id: Identifier, version: Version, data: LinkedInCopyRequest, service: ReviewService,
+) -> LinkedInRecommendation:
+    try:
+        return service.copy_recommendation(
+            SourceRef(source_id=source_id, source_version=version), data.target_id, data.selection,
+        )
     except ApplicationError as exc:
         raise to_http_exception(exc) from None
 

@@ -134,7 +134,7 @@ class LinkedInFinding(BaseModel):
         {"oneOf": [
             {"properties": {"resume_source": {"type": "null"}, "resume_locator": {"type": "null"}}},
             {"required": ["resume_source", "resume_locator"], "properties": {
-                "resume_source": {"type": "object"}, "resume_locator": {"type": "string"},
+                "resume_source": SourceRef.model_json_schema(), "resume_locator": {"type": "string"},
             }},
         ]},
     ]})
@@ -166,11 +166,49 @@ class LinkedInFinding(BaseModel):
         return self
 
 
-class LinkedInReview(CareerContract):
+class LinkedInTargetSelection(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    target_id: Identifier
+
+
+class LinkedInReviewRequest(LinkedInTargetSelection):
+    resume_source: SourceRef | None = None
+
+
+LinkedInRecommendationSection = Literal["headline", "about", "experience", "skills"]
+
+
+class LinkedInRecommendationSelection(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    section: LinkedInRecommendationSection
+    evidence_revisions: list[EvidenceRevisionRef] = Field(min_length=1, max_length=2)
+
+    @model_validator(mode="after")
+    def validate_citations(self) -> Self:
+        expected = 2 if self.section == "skills" else 1
+        if len(self.evidence_revisions) != expected or len({ref.evidence_id for ref in self.evidence_revisions}) != expected:
+            raise ValueError("Use one contribution citation, or distinct skill and application citations in that order")
+        return self
+
+
+class LinkedInRecommendation(LinkedInRecommendationSelection):
+    text: Text
+
+
+class LinkedInCopyRequest(LinkedInTargetSelection):
+    selection: LinkedInRecommendationSelection
+
+
+class LinkedInReviewPreview(CareerContract):
     document: SourceRef
     target_id: Identifier
-    evidence_snapshot_version: Revision
     parser_version: Identifier
+    findings: list[LinkedInFinding]
+
+
+class LinkedInReview(LinkedInReviewPreview):
+    evidence_snapshot_version: Revision
     model_manifest_id: Identifier | None = None
     generated_artifact_ids: list[Identifier] = Field(default_factory=list)
-    findings: list[LinkedInFinding]

@@ -7,7 +7,7 @@ from itertools import takewhile
 from sqlalchemy.orm import Session
 
 from app.application.career_service import CareerApplicationService
-from app.application.errors import InvalidOperationError, ResourceNotFoundError
+from app.application.errors import InvalidOperationError, ResourceConflictError, ResourceNotFoundError
 from app.application.evidence_service import EvidenceService
 from app.repositories.career_repository import CareerRepository
 from app.schemas.career.common import SourceRef
@@ -18,7 +18,11 @@ from app.schemas.career.sources import (
     CareerTarget,
     LinkedInDocument,
     LinkedInFinding,
+    LinkedInRecommendation,
+    LinkedInRecommendationSection,
+    LinkedInRecommendationSelection,
     LinkedInReview,
+    LinkedInReviewPreview,
     LinkedInSection,
     LinkedInTargetRequirement,
 )
@@ -30,6 +34,13 @@ from app.services.resume.parser import DATE_RANGE_RE
 
 _PROFESSIONAL_SECTIONS = {"headline", "about", "experience", "projects", "skills"}
 _PROMINENT_SECTIONS = {"headline", "about"}
+_CONTRIBUTION_CATEGORIES = {"action", "outcome", "decision", "validation"}
+_SECTION_LIMITS: dict[LinkedInRecommendationSection, int] = {
+    "headline": 120, "about": 500, "experience": 500, "skills": 50,
+}
+_SKILL_LABEL = re.compile(r"[\w+#][\w.+# /-]*")
+_EXPLICIT_SKILL_USE = re.compile(r"^(?:i )?used (.{1,50}?) to \S")
+_OPTIONS_PER_SECTION = 3
 _YEAR = re.compile(r"\b(?:19|20)\d{2}\b")
 _NUMBER = re.compile(r"(?<!\w)\d+(?:[,.]\d+)*")
 _ESTIMATE_PREFIX = re.compile(r"\b(?:estimated|approximately|roughly|about)\s+(?:[$€£]\s*)?$", re.I)
@@ -55,7 +66,7 @@ _NO_CAPABILITY_SUFFIX = re.compile(r"^\s+(?:(?:is|was)\s+)?(?:not|never)\s+(?:us
 
 
 class LinkedInReviewService:
-    """Internal application boundary. The caller supplies one selected target view."""
+    """Review an owner's uploaded export against one selected target."""
 
     def __init__(self, db: Session, owner: str):
         self.owner = owner
@@ -67,13 +78,15 @@ class LinkedInReviewService:
         self, document: SourceRef, target_id: str, *, evidence_snapshot_version: int,
         requirements: Iterable[LinkedInTargetRequirement] = (), resume_source: SourceRef | None = None,
     ) -> LinkedInReview:
-        target = self.career.get_target(target_id)
-        if target.owner_id != self.owner or target.status != "active":
-            raise ResourceNotFoundError("Active target not found")
-        source = self.sources.get_source(document)
-        if source is None or source.kind != "linkedin_profile_pdf" or source.extraction_version != LINKEDIN_PDF_EXTRACTION_VERSION:
-            raise ResourceNotFoundError("LinkedIn PDF not found")
-        parsed = self.sources.linkedin_document(source)
+        preview = self.preview(document, target_id, requirements=requirements, resume_source=resume_source)
+        return LinkedInReview(**preview.model_dump(), evidence_snapshot_version=evidence_snapshot_version)
+
+    def preview(
+        self, document: SourceRef, target_id: str, *, requirements: Iterable[LinkedInTargetRequirement] = (),
+        resume_source: SourceRef | None = None,
+    ) -> LinkedInReviewPreview:
+        target = self._active_target(target_id)
+        parsed = self.sources.linkedin_document(self._pdf_source(document))
         if parsed.source != document:
             raise InvalidOperationError("LinkedIn source snapshot does not match the requested revision")
 
@@ -87,32 +100,89 @@ class LinkedInReviewService:
             resume = self._resume_snapshot(resume_source)
             if parsed.parse_status != "unreadable":
                 findings.extend(_chronology_questions(parsed, resume_source, resume))
-        return LinkedInReview(
+        return LinkedInReviewPreview(
             schema_version=1, document=document, target_id=target.target_id,
-            evidence_snapshot_version=evidence_snapshot_version,
             parser_version=LINKEDIN_PDF_EXTRACTION_VERSION, findings=findings,
         )
+
+    def recommendations(self, document: SourceRef, target_id: str) -> list[LinkedInRecommendation]:
+        target = self._active_target(target_id)
+        self._pdf_source(document)
+        cues = (target.role_family, *target.desired_work)
+        items = sorted(
+            (item for item in self.evidence.list_eligible() if self._copy_eligible(item)),
+            key=lambda item: (not any(_positive_capability(item.claim, cue) for cue in cues), item.evidence_id),
+        )
+        contributions = [item for item in items if _contribution(item)]
+        skills = [item for item in items if _skill(item)]
+        applications: dict[str, CareerEvidenceItem] = {}
+        for contribution in contributions:
+            if capability := _applied_skill(contribution):
+                applications.setdefault(capability, contribution)
+        suggestions = []
+        for section in _SECTION_LIMITS:
+            options: dict[str, LinkedInRecommendation] = {}
+            candidates = skills if section == "skills" else contributions
+            for item in candidates:
+                if item.claim in options:
+                    continue
+                selected = [item]
+                if section == "skills":
+                    application = applications.get(_phrase(item.claim))
+                    if application is None:
+                        continue
+                    selected.append(application)
+                suggestion = _render_recommendation(section, selected)
+                if suggestion is not None:
+                    options[suggestion.text] = suggestion
+                if len(options) == _OPTIONS_PER_SECTION:
+                    break
+            suggestions.extend(options.values())
+        return suggestions
+
+    def copy_recommendation(
+        self, document: SourceRef, target_id: str, selection: LinkedInRecommendationSelection,
+    ) -> LinkedInRecommendation:
+        self._active_target(target_id)
+        self._pdf_source(document)
+        # Read the exact cited revisions together, including the application evidence for a skill.
+        items = {
+            (item.evidence_id, item.revision): item
+            for item in self.evidence.list_eligible(references=selection.evidence_revisions)
+            if self._copy_eligible(item)
+        }
+        ordered = []
+        for ref in selection.evidence_revisions:
+            item = items.get((ref.evidence_id, ref.revision))
+            if item is None:
+                raise ResourceConflictError("Recommendation changed. Refresh the review.")
+            ordered.append(item)
+        suggestion = _render_recommendation(selection.section, ordered)
+        if suggestion is None:
+            raise ResourceConflictError("Recommendation changed. Refresh the review.")
+        return suggestion
 
     def recommendation_blocker(self, reference: EvidenceRevisionRef, text: str) -> ProposalRejection | None:
         # Recheck the exact current revision whenever a caller asks to use wording.
         item = self.evidence.eligible(reference)
         if item is None or not _eligible(item, self.owner) or _ref(item) != reference:
             return "evidence_not_confirmed"
-        if text != item.claim:
-            return "proposal_rejected"
-        # Shared work needs an attribution-aware plan before it is safe to copy verbatim.
-        if item.ownership != "individual":
-            return "ownership_upgrade"
-        if any(not _contains(text, qualifier) for qualifier in item.qualifiers):
-            return "qualifier_removed"
-        numbers = list(_NUMBER.finditer(text))
-        if numbers and item.measurement is None:
-            return "number_not_approved"
-        if item.measurement and item.measurement.estimated and any(
-            not _ESTIMATE_PREFIX.search(text[:number.start()]) for number in numbers
-        ):
-            return "qualifier_removed"
-        return None
+        return _wording_blocker(item, text)
+
+    def _copy_eligible(self, item: CareerEvidenceItem) -> bool:
+        return _eligible(item, self.owner) and _wording_blocker(item, item.claim) is None
+
+    def _active_target(self, target_id: str) -> CareerTarget:
+        target = self.career.get_target(target_id)
+        if target.owner_id != self.owner or target.status != "active":
+            raise ResourceNotFoundError("Active target not found")
+        return target
+
+    def _pdf_source(self, document: SourceRef):
+        source = self.sources.get_source(document)
+        if source is None or source.kind != "linkedin_profile_pdf" or source.extraction_version != LINKEDIN_PDF_EXTRACTION_VERSION:
+            raise ResourceNotFoundError("LinkedIn PDF not found")
+        return source
 
     def _resume_snapshot(self, reference: SourceRef) -> ResumeDocumentJSON:
         source = self.sources.get_source(reference)
@@ -130,6 +200,55 @@ def _eligible(item: CareerEvidenceItem, owner: str) -> bool:
 
 def _ref(item: CareerEvidenceItem) -> EvidenceRevisionRef:
     return EvidenceRevisionRef(evidence_id=item.evidence_id, revision=item.revision)
+
+
+def _wording_blocker(item: CareerEvidenceItem, text: str) -> ProposalRejection | None:
+    if text != item.claim:
+        return "proposal_rejected"
+    # Shared work needs an attribution-aware plan before it is safe to copy verbatim.
+    if item.ownership != "individual":
+        return "ownership_upgrade"
+    if any(not _contains(text, qualifier) for qualifier in item.qualifiers):
+        return "qualifier_removed"
+    numbers = list(_NUMBER.finditer(text))
+    if numbers and item.measurement is None:
+        return "number_not_approved"
+    if item.measurement and item.measurement.estimated and any(
+        not _ESTIMATE_PREFIX.search(text[:number.start()]) for number in numbers
+    ):
+        return "qualifier_removed"
+    return None
+
+
+def _contribution(item: CareerEvidenceItem) -> bool:
+    return (item.category in _CONTRIBUTION_CATEGORIES
+            and (_action_claim(item.claim) or bool(_applied_skill(item))))
+
+
+def _skill(item: CareerEvidenceItem) -> bool:
+    return (item.category == "skill" and len(item.claim) <= _SECTION_LIMITS["skills"]
+            and _SKILL_LABEL.fullmatch(item.claim) is not None)
+
+
+def _applied_skill(item: CareerEvidenceItem) -> str:
+    # shortcut: require a direct "Used <skill> to ..." claim until the ledger stores applied skill links.
+    match = _EXPLICIT_SKILL_USE.match(_phrase(item.claim))
+    return match[1] if match is not None else ""
+
+
+def _render_recommendation(
+    section: LinkedInRecommendationSection, items: list[CareerEvidenceItem],
+) -> LinkedInRecommendation | None:
+    item = items[0]
+    if len(item.claim) > _SECTION_LIMITS[section]:
+        return None
+    if section == "skills":
+        application = items[1]
+        if not (_skill(item) and _contribution(application) and _applied_skill(application) == _phrase(item.claim)):
+            return None
+    elif not _contribution(item) or (section == "headline" and len(item.claim.splitlines()) != 1):
+        return None
+    return LinkedInRecommendation(section=section, text=item.claim, evidence_revisions=[_ref(entry) for entry in items])
 
 
 def _phrase(text: str) -> str:
