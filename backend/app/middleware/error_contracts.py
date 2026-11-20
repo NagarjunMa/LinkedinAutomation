@@ -12,7 +12,7 @@ from app.api.error_mapping import safe_error_envelope
 
 logger = logging.getLogger(__name__)
 PREFIXES = ("/api/v1/resumes", "/api/v1/jd", "/api/v1/career/sessions", "/api/v1/career/evidence",
-            "/api/v1/career/linkedin-profiles")
+            "/api/v1/career/targets", "/api/v1/career/linkedin-profiles")
 
 
 class WorkflowErrorMiddleware:

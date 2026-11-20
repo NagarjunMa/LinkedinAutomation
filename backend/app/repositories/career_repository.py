@@ -97,8 +97,11 @@ class CareerRepository:
         query = self._targets().where(CareerTargetRow.id == target_id).execution_options(populate_existing=True)
         return self.session.scalar(query.with_for_update() if lock else query)
 
-    def list_targets(self, offset: int, limit: int):
-        return self.session.scalars(self._targets().order_by(CareerTargetRow.id)
+    def list_targets(self, offset: int, limit: int, *, active_only: bool = False):
+        query = self._targets()
+        if active_only:
+            query = query.where(CareerTargetRow.status == "active")
+        return self.session.scalars(query.order_by(CareerTargetRow.id)
                                     .offset(offset).limit(limit).execution_options(populate_existing=True))
 
 

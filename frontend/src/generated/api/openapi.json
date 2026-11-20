@@ -982,6 +982,177 @@
         "title": "CareerStage",
         "type": "string"
       },
+      "CareerTarget": {
+        "additionalProperties": false,
+        "properties": {
+          "desired_work": {
+            "items": {
+              "maxLength": 200,
+              "minLength": 1,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            "title": "Desired Work",
+            "type": "array"
+          },
+          "exclusions": {
+            "items": {
+              "maxLength": 200,
+              "minLength": 1,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            "title": "Exclusions",
+            "type": "array"
+          },
+          "job_description": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "location": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "pattern": "\\S",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          },
+          "owner_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+            "title": "Owner Id",
+            "type": "string"
+          },
+          "role_family": {
+            "maxLength": 200,
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Role Family",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "seniority": {
+            "maxLength": 200,
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Seniority",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "active",
+              "archived"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "target_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+            "title": "Target Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema_version",
+          "target_id",
+          "owner_id",
+          "role_family",
+          "seniority",
+          "status"
+        ],
+        "title": "CareerTarget",
+        "type": "object"
+      },
+      "CareerTargetInput": {
+        "additionalProperties": false,
+        "properties": {
+          "desired_work": {
+            "items": {
+              "maxLength": 200,
+              "minLength": 1,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Desired Work",
+            "type": "array"
+          },
+          "exclusions": {
+            "items": {
+              "maxLength": 200,
+              "minLength": 1,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Exclusions",
+            "type": "array"
+          },
+          "job_description": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "location": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "pattern": "\\S",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          },
+          "role_family": {
+            "maxLength": 200,
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Role Family",
+            "type": "string"
+          },
+          "seniority": {
+            "maxLength": 200,
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Seniority",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role_family",
+          "seniority"
+        ],
+        "title": "CareerTargetInput",
+        "type": "object"
+      },
       "ChangeItem": {
         "properties": {
           "bullet_id": {
@@ -3037,6 +3208,27 @@
         "title": "JobStats",
         "type": "object"
       },
+      "LinkedInCopyRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "selection": {
+            "$ref": "#/components/schemas/LinkedInRecommendationSelection"
+          },
+          "target_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+            "title": "Target Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "target_id",
+          "selection"
+        ],
+        "title": "LinkedInCopyRequest",
+        "type": "object"
+      },
       "LinkedInDocument": {
         "additionalProperties": false,
         "properties": {
@@ -3272,6 +3464,392 @@
         "title": "LinkedInExperience",
         "type": "object"
       },
+      "LinkedInFinding": {
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "unsupported_claim",
+                    "ambiguous_claim",
+                    "evidence_gap",
+                    "consistency_question"
+                  ]
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "document_locator": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "document_locator"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "missing_confirmed_evidence",
+                    "communication_gap",
+                    "weak_prominence"
+                  ]
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "evidence_revisions": {
+                  "minItems": 1
+                }
+              },
+              "required": [
+                "evidence_revisions"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "experience_gap",
+                    "knowledge_gap"
+                  ]
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "target_requirement_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "target_requirement_id"
+              ]
+            }
+          },
+          {
+            "anyOf": [
+              {
+                "properties": {
+                  "document_locator": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "document_locator"
+                ]
+              },
+              {
+                "properties": {
+                  "target_requirement_id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "target_requirement_id"
+                ]
+              },
+              {
+                "properties": {
+                  "evidence_revisions": {
+                    "minItems": 1
+                  }
+                },
+                "required": [
+                  "evidence_revisions"
+                ]
+              }
+            ]
+          },
+          {
+            "oneOf": [
+              {
+                "properties": {
+                  "resume_locator": {
+                    "type": "null"
+                  },
+                  "resume_source": {
+                    "type": "null"
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "resume_locator": {
+                    "type": "string"
+                  },
+                  "resume_source": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "source_id": {
+                        "maxLength": 128,
+                        "minLength": 1,
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+                        "title": "Source Id",
+                        "type": "string"
+                      },
+                      "source_version": {
+                        "minimum": 1,
+                        "title": "Source Version",
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "source_id",
+                      "source_version"
+                    ],
+                    "title": "SourceRef",
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "resume_source",
+                  "resume_locator"
+                ]
+              }
+            ]
+          }
+        ],
+        "properties": {
+          "document_locator": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "pattern": "\\S",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document Locator"
+          },
+          "evidence_revisions": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceRevisionRef"
+            },
+            "title": "Evidence Revisions",
+            "type": "array"
+          },
+          "explanation": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Explanation",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "missing_confirmed_evidence",
+              "unsupported_claim",
+              "ambiguous_claim",
+              "communication_gap",
+              "evidence_gap",
+              "consistency_question",
+              "experience_gap",
+              "knowledge_gap",
+              "positioning_gap",
+              "weak_prominence",
+              "interview_question",
+              "document_limit"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "resume_locator": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "pattern": "\\S",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resume Locator"
+          },
+          "resume_source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "target_requirement_id": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Requirement Id"
+          }
+        },
+        "required": [
+          "kind",
+          "explanation"
+        ],
+        "title": "LinkedInFinding",
+        "type": "object"
+      },
+      "LinkedInRecommendation": {
+        "additionalProperties": false,
+        "properties": {
+          "evidence_revisions": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceRevisionRef"
+            },
+            "maxItems": 2,
+            "minItems": 1,
+            "title": "Evidence Revisions",
+            "type": "array"
+          },
+          "section": {
+            "enum": [
+              "headline",
+              "about",
+              "experience",
+              "skills"
+            ],
+            "title": "Section",
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "section",
+          "evidence_revisions",
+          "text"
+        ],
+        "title": "LinkedInRecommendation",
+        "type": "object"
+      },
+      "LinkedInRecommendationSelection": {
+        "additionalProperties": false,
+        "properties": {
+          "evidence_revisions": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceRevisionRef"
+            },
+            "maxItems": 2,
+            "minItems": 1,
+            "title": "Evidence Revisions",
+            "type": "array"
+          },
+          "section": {
+            "enum": [
+              "headline",
+              "about",
+              "experience",
+              "skills"
+            ],
+            "title": "Section",
+            "type": "string"
+          }
+        },
+        "required": [
+          "section",
+          "evidence_revisions"
+        ],
+        "title": "LinkedInRecommendationSelection",
+        "type": "object"
+      },
+      "LinkedInReviewPreview": {
+        "additionalProperties": false,
+        "properties": {
+          "document": {
+            "$ref": "#/components/schemas/SourceRef"
+          },
+          "findings": {
+            "items": {
+              "$ref": "#/components/schemas/LinkedInFinding"
+            },
+            "title": "Findings",
+            "type": "array"
+          },
+          "parser_version": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+            "title": "Parser Version",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "target_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+            "title": "Target Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema_version",
+          "document",
+          "target_id",
+          "parser_version",
+          "findings"
+        ],
+        "title": "LinkedInReviewPreview",
+        "type": "object"
+      },
+      "LinkedInReviewRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "resume_source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "target_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+            "title": "Target Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "target_id"
+        ],
+        "title": "LinkedInReviewRequest",
+        "type": "object"
+      },
       "LinkedInSection": {
         "additionalProperties": false,
         "properties": {
@@ -3324,6 +3902,23 @@
           "text"
         ],
         "title": "LinkedInSection",
+        "type": "object"
+      },
+      "LinkedInTargetSelection": {
+        "additionalProperties": false,
+        "properties": {
+          "target_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+            "title": "Target Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "target_id"
+        ],
+        "title": "LinkedInTargetSelection",
         "type": "object"
       },
       "LinkedInUpload": {
@@ -7430,6 +8025,355 @@
         ]
       }
     },
+    "/api/v1/career/linkedin-profiles/{source_id}/versions/{version}/recommendations": {
+      "post": {
+        "operationId": "list_linkedin_recommendations_api_v1_career_linkedin_profiles__source_id__versions__version__recommendations_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "source_id",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+              "title": "Source Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "version",
+            "required": true,
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Version",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkedInTargetSelection"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LinkedInRecommendation"
+                  },
+                  "title": "Response List Linkedin Recommendations Api V1 Career Linkedin Profiles  Source Id  Versions  Version  Recommendations Post",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Client Error",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Server Error",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Linkedin Recommendations",
+        "tags": [
+          "linkedin-pdf"
+        ]
+      }
+    },
+    "/api/v1/career/linkedin-profiles/{source_id}/versions/{version}/recommendations/copy": {
+      "post": {
+        "operationId": "copy_linkedin_recommendation_api_v1_career_linkedin_profiles__source_id__versions__version__recommendations_copy_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "source_id",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+              "title": "Source Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "version",
+            "required": true,
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Version",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkedInCopyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkedInRecommendation"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Client Error",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Server Error",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Copy Linkedin Recommendation",
+        "tags": [
+          "linkedin-pdf"
+        ]
+      }
+    },
+    "/api/v1/career/linkedin-profiles/{source_id}/versions/{version}/review": {
+      "post": {
+        "operationId": "preview_linkedin_review_api_v1_career_linkedin_profiles__source_id__versions__version__review_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "source_id",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+              "title": "Source Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "version",
+            "required": true,
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Version",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkedInReviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkedInReviewPreview"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Client Error",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Server Error",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Preview Linkedin Review",
+        "tags": [
+          "linkedin-pdf"
+        ]
+      }
+    },
     "/api/v1/career/sessions": {
       "get": {
         "operationId": "list_sessions_api_v1_career_sessions_get",
@@ -8039,6 +8983,204 @@
         "summary": "Create Turn",
         "tags": [
           "career-interviews"
+        ]
+      }
+    },
+    "/api/v1/career/targets": {
+      "get": {
+        "operationId": "list_active_targets_api_v1_career_targets_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 1000000,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CareerTarget"
+                  },
+                  "title": "Response List Active Targets Api V1 Career Targets Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Client Error",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Server Error",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Active Targets",
+        "tags": [
+          "career-targets"
+        ]
+      },
+      "post": {
+        "operationId": "create_career_target_api_v1_career_targets_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CareerTargetInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CareerTarget"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Client Error",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Server Error",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Career Target",
+        "tags": [
+          "career-targets"
         ]
       }
     },

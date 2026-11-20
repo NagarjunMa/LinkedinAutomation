@@ -102,8 +102,12 @@ class EvidenceService:
         ))
         return self._view(row, career_cipher(scope="Career evidence")) if row else None
 
-    def list_eligible(self) -> list[CareerEvidenceItem]:
-        rows = self.db.scalars(self._eligible_rows().order_by(Item.evidence_id)).all()
+    def list_eligible(self, *, references: Sequence[EvidenceRevisionRef] | None = None) -> list[CareerEvidenceItem]:
+        query = self._eligible_rows()
+        if references is not None:
+            keys = [(ref.evidence_id, ref.revision) for ref in references]
+            query = query.where(tuple_(Item.evidence_id, Item.revision).in_(keys))
+        rows = self.db.scalars(query.order_by(Item.evidence_id)).all()
         if not rows:
             return []
         cipher = career_cipher(scope="Career evidence")

@@ -85,9 +85,9 @@ class CareerApplicationService:
     def get_target(self, target_id: str) -> CareerTarget:
         return _target_view(self._target(target_id))
 
-    def list_targets(self, *, offset: int = 0, limit: int = 50) -> list[CareerTarget]:
+    def list_targets(self, *, offset: int = 0, limit: int = 50, active_only: bool = False) -> list[CareerTarget]:
         _validate_page(offset, limit)
-        return [_target_view(row) for row in self.repo.list_targets(offset, limit)]
+        return [_target_view(row) for row in self.repo.list_targets(offset, limit, active_only=active_only)]
 
     def update_target(self, target_id: str, data: CareerTargetInput) -> CareerTarget:
         self._target(target_id)

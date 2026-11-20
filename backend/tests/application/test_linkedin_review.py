@@ -75,6 +75,25 @@ def context(monkeypatch):
     return service, document, target, resume, ledger
 
 
+def test_copyable_skill_requires_application_and_ranks_target_relevance(context):
+    service, _, _, _, ledger = context
+    ledger[:] = [
+        evidence("a-irrelevant", "Built documentation about using Kubernetes."),
+        evidence("b-negated", "Built a test service without using Terraform."),
+        evidence("c-target", "Used Python to build a deployment service."),
+        evidence("p", "Python", category="skill"),
+        evidence("k", "Kubernetes", category="skill"),
+        evidence("t", "Terraform", category="skill"),
+    ]
+    service.career.get_target("platform").desired_work = ["Python"]
+
+    suggestions = service.recommendations(PDF, "platform")
+    assert suggestions[0].section == "headline" and suggestions[0].text == ledger[2].claim
+    [skill] = [suggestion for suggestion in suggestions if suggestion.section == "skills"]
+    assert skill.text == "Python"
+    assert [ref.evidence_id for ref in skill.evidence_revisions] == ["p", "c-target"]
+
+
 def test_review_reports_export_cited_gaps_and_neutral_chronology(context):
     service, _, _, _, _ = context
     requirements = [
