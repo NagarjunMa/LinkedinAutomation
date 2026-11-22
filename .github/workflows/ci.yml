@@ -323,7 +323,7 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: test
         run: |
           npm run test:e2e
-          npx playwright test tests/e2e/career-coach.spec.ts tests/e2e/evidence-notebook.spec.ts --project=chromium --project="Mobile Chrome"
+          npx playwright test tests/e2e/career-coach.spec.ts tests/e2e/evidence-notebook.spec.ts tests/e2e/linkedin-review.spec.ts --project=chromium --project="Mobile Chrome"
 
       - name: Run public-preview landing smoke
         env:
