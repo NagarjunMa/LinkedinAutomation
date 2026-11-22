@@ -1,6 +1,7 @@
-from app.application.target_coverage import project_target_coverage
+from app.application.target_coverage import project_target_coverage, project_target_resume_coverage
 from app.schemas.career.evidence import CareerEvidenceItem
 from app.schemas.career.sources import CareerTarget
+from app.schemas.resume_v2 import Bullet, Contact, ExperienceEntry, ProjectEntry, ResumeDocumentJSON
 
 
 def evidence(evidence_id, claim, *, category="action", **overrides):
@@ -90,3 +91,54 @@ def test_learning_analytics_is_a_literal_skill_label():
     assert [area.reason_code for area in view.focus] == [
         "skill_without_application", "no_matching_confirmed_evidence",
     ]
+
+
+
+def test_resume_comparison_accepts_any_displayed_eligible_application_without_changing_the_winner():
+    chosen = target("Python", "Go", "Rust")
+    ledger = [
+        evidence("a-python", "Used Python to deploy a service."),
+        evidence("z-python", "Used Python to write tests."),
+        evidence("go", "Used Go to build a scoring service."),
+        evidence("go-private", "Used Go to build a private service.", is_private=True),
+        evidence("rust", "I am learning Rust.", category="skill"),
+        evidence("rust-proposed", "Used Rust to build a CLI.", lifecycle="proposed"),
+    ]
+    resume = ResumeDocumentJSON(
+        contact=Contact(name="Synthetic candidate"),
+        raw_text="Used Go to build a scoring service.",
+        experience=[ExperienceEntry(
+            company="Used Go to build a scoring service.", role="Engineer", bullets=[
+                Bullet(id="private", text="Used Go to build a private service.", raw_text="Ignored"),
+                Bullet(id="proposed", text="Used Rust to build a CLI.", raw_text="Ignored"),
+            ],
+        )],
+        projects=[ProjectEntry(
+            name="Testing helper",
+            bullets=[Bullet(id="displayed", text="• used PYTHON  to write tests!", raw_text="Ignored")],
+        )],
+    )
+
+    view = project_target_resume_coverage(chosen, ledger, "resume", resume)
+    assert view == project_target_resume_coverage(chosen, reversed(ledger), "resume", resume)
+    assert view.coverage == project_target_coverage(chosen, ledger)
+    assert view.coverage.focus[0].evidence.evidence_id == "a-python"
+    assert view.coverage.focus[2].state == "knowledge_gap"
+    [gap] = view.findings
+    assert gap.focus_label == "Go" and gap.evidence.evidence_id == "go"
+
+
+def test_resume_comparison_reports_document_limit_for_punctuation_only_bullets():
+    resume = ResumeDocumentJSON(
+        contact=Contact(name="Synthetic candidate"),
+        raw_text="—",
+        experience=[ExperienceEntry(
+            company="Example", role="Engineer",
+            bullets=[Bullet(id="separator", text="—", raw_text="• —")],
+        )],
+    )
+    view = project_target_resume_coverage(
+        target("Python"), [evidence("python", "Used Python to build tests.")], "resume", resume,
+    )
+    [finding] = view.findings
+    assert finding.kind == "document_limit" and finding.evidence is None

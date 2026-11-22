@@ -1,13 +1,16 @@
 """Project current evidence onto the focus areas of a single career target."""
 
 from collections.abc import Iterable
+from itertools import chain
 
 from app.application.evidence_terms import CONTRIBUTION_CATEGORIES, applied_skill, normalized_phrase
 from app.schemas.career.evidence import CareerEvidenceItem, EvidenceRevisionRef
 from app.schemas.career.sources import CareerTarget
 from app.schemas.career.target_coverage import (
-    TargetCoverageReason, TargetCoverageState, TargetFocusCoverage, TargetRoleCoverage,
+    ResumeCoverageFinding, TargetCoverageReason, TargetCoverageState, TargetFocusCoverage, TargetResumeCoverage,
+    TargetRoleCoverage,
 )
+from app.schemas.resume_v2 import ResumeDocumentJSON
 
 _STATES: dict[TargetCoverageReason, TargetCoverageState] = {
     "confirmed_application": "supported",
@@ -20,12 +23,53 @@ _REASON_ORDER = {reason: index for index, reason in enumerate(_STATES)}
 
 
 def project_target_coverage(target: CareerTarget, evidence: Iterable[CareerEvidenceItem]) -> TargetRoleCoverage:
+    coverage, _ = _project(target, evidence)
+    return coverage
+
+
+def project_target_resume_coverage(
+    target: CareerTarget, evidence: Iterable[CareerEvidenceItem],
+    resume_document_id: str, resume: ResumeDocumentJSON | None,
+) -> TargetResumeCoverage:
+    # shortcut: match whole parsed action bullets until reliable claim-to-document links exist.
+    displayed_claims = {
+        text
+        for entry in chain(resume.experience, resume.projects)
+        for bullet in entry.bullets
+        if (text := normalized_phrase(bullet.text)) and any(character.isalpha() for character in text)
+    } if resume else set()
+    coverage, displayed_focus = _project(target, evidence, displayed_claims)
+    if displayed_claims:
+        findings = [
+            ResumeCoverageFinding(
+                kind="communication_gap", reason_code="confirmed_application_not_found_in_resume",
+                focus_label=focus.label, evidence=focus.evidence,
+                explanation="The cited claim did not appear as an exact match in the parsed experience or project bullets.",
+            )
+            for focus in coverage.focus
+            if focus.state == "supported" and normalized_phrase(focus.label) not in displayed_focus
+        ]
+    else:
+        findings = [ResumeCoverageFinding(
+            kind="document_limit", reason_code="resume_comparable_bullets_unavailable",
+            focus_label=None, evidence=None,
+            explanation="No comparable experience or project bullets are available in this parsed résumé.",
+        )]
+    return TargetResumeCoverage(
+        schema_version=1, resume_document_id=resume_document_id, coverage=coverage, findings=findings,
+    )
+
+
+def _project(
+    target: CareerTarget, evidence: Iterable[CareerEvidenceItem], displayed_claims: set[str] | None = None,
+) -> tuple[TargetRoleCoverage, set[str]]:
     labels: dict[str, str] = {}
     for label in target.desired_work:
         if normalized := normalized_phrase(label):
             labels.setdefault(normalized, label)
 
     matches: dict[str, tuple[TargetCoverageReason, CareerEvidenceItem]] = {}
+    displayed_focus: set[str] = set()
     for item in evidence:
         if item.owner_id != target.owner_id or item.lifecycle != "confirmed" or item.is_private:
             continue
@@ -35,6 +79,8 @@ def project_target_coverage(target: CareerTarget, evidence: Iterable[CareerEvide
         capability, reason = signal
         if capability not in labels:
             continue
+        if displayed_claims and reason == "confirmed_application" and normalized_phrase(item.claim) in displayed_claims:
+            displayed_focus.add(capability)
         current = matches.get(capability)
         if current is None or _order(reason, item) < _order(*current):
             matches[capability] = (reason, item)
@@ -52,7 +98,7 @@ def project_target_coverage(target: CareerTarget, evidence: Iterable[CareerEvide
     return TargetRoleCoverage(
         schema_version=1, target_id=target.target_id, policy_version="target-coverage-v1",
         focus=coverage, positioning_reason=None if labels else "target_focus_missing",
-    )
+    ), displayed_focus
 
 
 def _evidence_signal(item: CareerEvidenceItem) -> tuple[str, TargetCoverageReason] | None:

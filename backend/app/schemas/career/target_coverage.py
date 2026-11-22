@@ -4,7 +4,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
-from .common import CareerContract, Identifier, Label
+from .common import CareerContract, Identifier, Label, Text
 from .evidence import EvidenceRevisionRef, EvidenceSupport
 
 TargetCoverageState = Literal["supported", "evidence_gap", "knowledge_gap", "experience_gap"]
@@ -29,3 +29,19 @@ class TargetRoleCoverage(CareerContract):
     policy_version: Literal["target-coverage-v1"]
     focus: list[TargetFocusCoverage]
     positioning_reason: Literal["target_focus_missing"] | None
+
+
+class ResumeCoverageFinding(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    kind: Literal["communication_gap", "document_limit"]
+    reason_code: Literal["confirmed_application_not_found_in_resume", "resume_comparable_bullets_unavailable"]
+    focus_label: Label | None
+    evidence: EvidenceRevisionRef | None
+    explanation: Text
+
+
+class TargetResumeCoverage(CareerContract):
+    resume_document_id: Identifier
+    coverage: TargetRoleCoverage
+    findings: list[ResumeCoverageFinding]

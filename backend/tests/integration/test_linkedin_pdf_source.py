@@ -649,6 +649,82 @@ def test_target_coverage_reads_current_owned_evidence_without_mutation(setup):
 
 
 @pytest.mark.postgres
+def test_target_resume_comparison_is_read_only_and_owner_scoped(setup):
+    client, engine, _, (owner, other) = setup
+    claim = "Used Python to build a deployment service."
+    parsed = {
+        "contact": {"name": "Synthetic candidate"},
+        "raw_text": claim,
+        "experience": [{"company": claim, "role": "Engineer", "bullets": [
+            {"id": "unrelated", "text": "Maintained build scripts.", "raw_text": "Maintained build scripts."},
+        ]}],
+    }
+    with Session(engine) as db:
+        career = CareerApplicationService(db, owner)
+        target = career.create_target(CareerTargetInput(
+            role_family="Platform Engineer", seniority="Senior", desired_work=["Python", "Rust"],
+        ))
+        source = career.add_source(CareerSourceCreate(kind="candidate_introduction", content=claim))
+        ledger = EvidenceService(db, owner)
+        proposed = ledger.propose(EvidenceProposal(
+            claim=claim, category="action", ownership="individual",
+            sources=[{**source.source.model_dump(), "relationship": "supports", "locator": "placeholder",
+                      "excerpt": claim, "extraction": "candidate"}],
+        ))
+        confirmed = ledger.decide(proposed.evidence_id, EvidenceDecisionInput(revision=1, action="confirm"))
+        before = ledger.list()
+        resume_ids = [str(uuid4()) for _ in range(4)]
+        for resume_id, user_id, state, document in zip(
+            resume_ids,
+            (owner, other, owner, owner),
+            ("ready", "ready", "pending", "ready"),
+            (parsed, parsed, parsed, parsed | {"experience": []}),
+        ):
+            db.add(ResumeDocument(
+                id=resume_id, user_id=user_id, original_filename="synthetic.pdf", file_path="synthetic",
+                file_type="pdf", storage_status=state, raw_text=claim, parsed_json=document,
+            ))
+        db.commit()
+
+    coverage_path = f"{TARGETS}/{target.target_id}/coverage"
+    own, foreign, pending, limited = [f"{coverage_path}/resume/{value}" for value in resume_ids]
+    headers = identity(0)
+    response = client.get(own, headers=headers)
+    assert response.status_code == 200 and response.headers["cache-control"] == "no-store"
+    assert response.json()["resume_document_id"] == resume_ids[0]
+    assert response.json()["coverage"] == client.get(coverage_path, headers=headers).json()
+    [finding] = response.json()["findings"]
+    assert (finding["kind"], finding["reason_code"], finding["focus_label"]) == (
+        "communication_gap", "confirmed_application_not_found_in_resume", "Python",
+    )
+    assert finding["evidence"] == {"evidence_id": confirmed.evidence_id, "revision": confirmed.revision}
+    assert claim not in response.text and "Maintained build scripts." not in response.text
+    assert client.get(own, headers=headers).content == response.content
+    assert client.get(own).status_code == 401
+    assert client.get(own, headers=identity(1)).status_code == 404
+
+    missing = client.get(f"{coverage_path}/resume/{uuid4()}", headers=headers)
+    for inaccessible in (foreign, pending):
+        result = client.get(inaccessible, headers=headers)
+        assert result.status_code == missing.status_code == 404
+        assert result.headers["cache-control"] == "no-store"
+        assert result.json()["message"] == missing.json()["message"]
+
+    limited_response = client.get(limited, headers=headers)
+    assert limited_response.status_code == 200
+    [limit] = limited_response.json()["findings"]
+    assert (limit["kind"], limit["reason_code"], limit["evidence"]) == (
+        "document_limit", "resume_comparable_bullets_unavailable", None,
+    )
+
+    with Session(engine) as db:
+        ledger = EvidenceService(db, owner)
+        assert ledger.list() == before
+        ledger.decide(confirmed.evidence_id, EvidenceDecisionInput(revision=confirmed.revision, action="mark_private"))
+    assert client.get(own, headers=headers).json()["findings"] == []
+
+
+@pytest.mark.postgres
 def test_recommendations_copy_checks_current_evidence_and_review_scope(setup):
     client, engine, _, (owner, other) = setup
     [own_pdf, other_pdf] = [upload(client, account).json()["source"]["source_id"] for account in (0, 1)]
