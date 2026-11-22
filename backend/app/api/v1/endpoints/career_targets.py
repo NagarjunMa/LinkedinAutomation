@@ -10,8 +10,10 @@ from app.application.career_service import CareerApplicationService
 from app.application.errors import ApplicationError
 from app.core.auth import get_current_user_id
 from app.db.session import get_db
+from app.schemas.career.common import Identifier
 from app.schemas.career.persistence import CareerTargetInput
 from app.schemas.career.sources import CareerTarget
+from app.schemas.career.target_coverage import TargetRoleCoverage
 
 router = APIRouter(prefix="/career/targets", tags=["career-targets"])
 
@@ -31,6 +33,14 @@ def list_active_targets(
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
 ) -> list[CareerTarget]:
     return service.list_targets(offset=offset, limit=limit, active_only=True)
+
+
+@router.get("/{target_id}/coverage")
+def get_target_coverage(target_id: Identifier, service: Service) -> TargetRoleCoverage:
+    try:
+        return service.target_coverage(target_id)
+    except ApplicationError as exc:
+        raise to_http_exception(exc) from None
 
 
 @router.post("", status_code=201)

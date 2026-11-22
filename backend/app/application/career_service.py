@@ -6,11 +6,14 @@ from uuid import uuid4
 from sqlalchemy.orm import Session
 
 from app.application.errors import InvalidOperationError, ResourceConflictError, ResourceNotFoundError
+from app.application.evidence_service import EvidenceService
+from app.application.target_coverage import project_target_coverage
 from app.models.career import CareerSourceRow, CareerTargetRow
 from app.repositories.career_repository import CareerRepository
 from app.schemas.career.common import SourceRef
 from app.schemas.career.persistence import CareerSourceCreate, CareerTargetInput
 from app.schemas.career.sources import CareerSource, CareerTarget
+from app.schemas.career.target_coverage import TargetRoleCoverage
 
 
 class CareerApplicationService:
@@ -84,6 +87,13 @@ class CareerApplicationService:
 
     def get_target(self, target_id: str) -> CareerTarget:
         return _target_view(self._target(target_id))
+
+    def target_coverage(self, target_id: str) -> TargetRoleCoverage:
+        target = self.get_target(target_id)
+        if target.status != "active":
+            raise ResourceNotFoundError("Active target not found")
+        evidence = EvidenceService(self.session, self.repo.user_id).list_eligible() if target.desired_work else []
+        return project_target_coverage(target, evidence)
 
     def list_targets(self, *, offset: int = 0, limit: int = 50, active_only: bool = False) -> list[CareerTarget]:
         _validate_page(offset, limit)

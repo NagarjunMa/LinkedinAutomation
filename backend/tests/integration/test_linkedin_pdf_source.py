@@ -589,6 +589,66 @@ def test_target_picker_is_authenticated_bounded_and_owner_scoped(setup):
 
 
 @pytest.mark.postgres
+def test_target_coverage_reads_current_owned_evidence_without_mutation(setup):
+    client, engine, _, (owner, other) = setup
+    with Session(engine) as db:
+        career = CareerApplicationService(db, owner)
+        target = career.create_target(CareerTargetInput(
+            role_family="Platform Engineer", seniority="Senior", desired_work=["Python", "Ruby"],
+        ))
+        alternative = career.create_target(CareerTargetInput(
+            role_family="Data Engineer", seniority="Senior", desired_work=["Ruby"],
+        ))
+        foreign = CareerApplicationService(db, other).create_target(CareerTargetInput(
+            role_family="Platform Engineer", seniority="Senior", desired_work=["Python"],
+        ))
+        claim = "Used Python to build a deployment service."
+        source = career.add_source(CareerSourceCreate(kind="candidate_introduction", content=claim))
+        ledger = EvidenceService(db, owner)
+        proposed = ledger.propose(EvidenceProposal(
+            claim=claim, category="action", ownership="individual",
+            sources=[{**source.source.model_dump(), "relationship": "supports", "locator": "placeholder",
+                      "excerpt": claim, "extraction": "candidate"}],
+        ))
+        confirmed = ledger.decide(proposed.evidence_id, EvidenceDecisionInput(revision=1, action="confirm"))
+        before = ledger.list()
+
+    path = f"{TARGETS}/{target.target_id}/coverage"
+    response = client.get(path, headers=identity(0))
+    assert response.status_code == 200 and response.headers["cache-control"] == "no-store"
+    assert response.json()["target_id"] == target.target_id
+    [python, ruby] = response.json()["focus"]
+    assert python["state"] == "supported" and python["reason_code"] == "confirmed_application"
+    assert python["evidence"] == {"evidence_id": confirmed.evidence_id, "revision": confirmed.revision}
+    assert ruby["state"] == "experience_gap" and ruby["evidence"] is None
+    assert claim not in response.text
+    assert client.get(path).status_code == 401
+    assert client.get(path, headers=identity(1)).status_code == 404
+    assert client.get(f"{TARGETS}/{foreign.target_id}/coverage", headers=identity(0)).status_code == 404
+    assert client.get(f"{TARGETS}/{alternative.target_id}/coverage", headers=identity(0)).json()["focus"] == [ruby]
+    assert client.get(path, headers=identity(0)).content == response.content
+    with Session(engine) as db:
+        ledger = EvidenceService(db, owner)
+        assert ledger.list() == before
+        edited = ledger.decide(confirmed.evidence_id, EvidenceDecisionInput(
+            revision=confirmed.revision, action="edit", claim="I am learning Python.",
+        ))
+        learned = ledger.decide(edited.evidence_id, EvidenceDecisionInput(revision=edited.revision, action="confirm"))
+        assert learned.category == "action"
+    learning = client.get(path, headers=identity(0)).json()["focus"][0]
+    assert learning["state"] == "knowledge_gap" and learning["reason_code"] == "learning_only"
+    assert learning["evidence"] == {"evidence_id": learned.evidence_id, "revision": learned.revision}
+    with Session(engine) as db:
+        EvidenceService(db, owner).decide(learned.evidence_id, EvidenceDecisionInput(
+            revision=learned.revision, action="mark_private",
+        ))
+    assert client.get(path, headers=identity(0)).json()["focus"][0]["evidence"] is None
+    with Session(engine) as db:
+        CareerApplicationService(db, owner).archive_target(target.target_id)
+    assert client.get(path, headers=identity(0)).status_code == 404
+
+
+@pytest.mark.postgres
 def test_recommendations_copy_checks_current_evidence_and_review_scope(setup):
     client, engine, _, (owner, other) = setup
     [own_pdf, other_pdf] = [upload(client, account).json()["source"]["source_id"] for account in (0, 1)]
