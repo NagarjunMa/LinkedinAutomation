@@ -354,6 +354,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/career/targets/{target_id}/coverage/resume/{resume_document_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Target Resume Coverage */
+        get: operations["get_target_resume_coverage_api_v1_career_targets__target_id__coverage_resume__resume_document_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/credits/balance": {
         parameters: {
             query?: never;
@@ -2325,6 +2342,24 @@ export interface components {
              */
             type: "technical" | "experience" | "credential";
         };
+        /** ResumeCoverageFinding */
+        ResumeCoverageFinding: {
+            evidence: components["schemas"]["EvidenceRevisionRef"] | null;
+            /** Explanation */
+            explanation: string;
+            /** Focus Label */
+            focus_label: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "communication_gap" | "document_limit";
+            /**
+             * Reason Code
+             * @enum {string}
+             */
+            reason_code: "confirmed_application_not_found_in_resume" | "resume_comparable_bullets_unavailable";
+        };
         /** ResumeDetailResponse */
         ResumeDetailResponse: {
             evaluation: components["schemas"]["ResumeSavedEvaluation"] | null;
@@ -2741,6 +2776,19 @@ export interface components {
              * @enum {string}
              */
             state: "supported" | "evidence_gap" | "knowledge_gap" | "experience_gap";
+        };
+        /** TargetResumeCoverage */
+        TargetResumeCoverage: {
+            coverage: components["schemas"]["TargetRoleCoverage"];
+            /** Findings */
+            findings: components["schemas"]["ResumeCoverageFinding"][];
+            /** Resume Document Id */
+            resume_document_id: string;
+            /**
+             * Schema Version
+             * @constant
+             */
+            schema_version: 1;
         };
         /** TargetRoleCoverage */
         TargetRoleCoverage: {
@@ -4295,6 +4343,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TargetRoleCoverage"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+        };
+    };
+    get_target_resume_coverage_api_v1_career_targets__target_id__coverage_resume__resume_document_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                resume_document_id: string;
+                target_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TargetResumeCoverage"];
                 };
             };
             /** @description Unprocessable Entity */

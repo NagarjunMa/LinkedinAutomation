@@ -3,17 +3,20 @@ from datetime import datetime, timezone
 from hashlib import sha256
 from uuid import uuid4
 
+from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 from app.application.errors import InvalidOperationError, ResourceConflictError, ResourceNotFoundError
 from app.application.evidence_service import EvidenceService
-from app.application.target_coverage import project_target_coverage
+from app.application.target_coverage import project_target_coverage, project_target_resume_coverage
 from app.models.career import CareerSourceRow, CareerTargetRow
 from app.repositories.career_repository import CareerRepository
 from app.schemas.career.common import SourceRef
+from app.schemas.career.evidence import CareerEvidenceItem
 from app.schemas.career.persistence import CareerSourceCreate, CareerTargetInput
 from app.schemas.career.sources import CareerSource, CareerTarget
-from app.schemas.career.target_coverage import TargetRoleCoverage
+from app.schemas.career.target_coverage import TargetResumeCoverage, TargetRoleCoverage
+from app.schemas.resume_v2 import ResumeDocumentJSON
 
 
 class CareerApplicationService:
@@ -89,11 +92,28 @@ class CareerApplicationService:
         return _target_view(self._target(target_id))
 
     def target_coverage(self, target_id: str) -> TargetRoleCoverage:
+        target = self._coverage_target(target_id)
+        return project_target_coverage(target, self._coverage_evidence(target))
+
+    def target_resume_coverage(self, target_id: str, resume_document_id: str) -> TargetResumeCoverage:
+        target = self._coverage_target(target_id)
+        document = self.repo.ready_resume(resume_document_id)
+        if document is None:
+            raise ResourceNotFoundError("Résumé not found")
+        try:
+            resume = ResumeDocumentJSON.model_validate(document.parsed_json)
+        except ValidationError:
+            resume = None
+        return project_target_resume_coverage(target, self._coverage_evidence(target), resume_document_id, resume)
+
+    def _coverage_target(self, target_id: str) -> CareerTarget:
         target = self.get_target(target_id)
         if target.status != "active":
             raise ResourceNotFoundError("Active target not found")
-        evidence = EvidenceService(self.session, self.repo.user_id).list_eligible() if target.desired_work else []
-        return project_target_coverage(target, evidence)
+        return target
+
+    def _coverage_evidence(self, target: CareerTarget) -> list[CareerEvidenceItem]:
+        return EvidenceService(self.session, self.repo.user_id).list_eligible() if target.desired_work else []
 
     def list_targets(self, *, offset: int = 0, limit: int = 50, active_only: bool = False) -> list[CareerTarget]:
         _validate_page(offset, limit)

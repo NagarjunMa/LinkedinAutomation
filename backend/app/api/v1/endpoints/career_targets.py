@@ -13,7 +13,7 @@ from app.db.session import get_db
 from app.schemas.career.common import Identifier
 from app.schemas.career.persistence import CareerTargetInput
 from app.schemas.career.sources import CareerTarget
-from app.schemas.career.target_coverage import TargetRoleCoverage
+from app.schemas.career.target_coverage import TargetResumeCoverage, TargetRoleCoverage
 
 router = APIRouter(prefix="/career/targets", tags=["career-targets"])
 
@@ -39,6 +39,16 @@ def list_active_targets(
 def get_target_coverage(target_id: Identifier, service: Service) -> TargetRoleCoverage:
     try:
         return service.target_coverage(target_id)
+    except ApplicationError as exc:
+        raise to_http_exception(exc) from None
+
+
+@router.get("/{target_id}/coverage/resume/{resume_document_id}")
+def get_target_resume_coverage(
+    target_id: Identifier, resume_document_id: Identifier, service: Service,
+) -> TargetResumeCoverage:
+    try:
+        return service.target_resume_coverage(target_id, resume_document_id)
     except ApplicationError as exc:
         raise to_http_exception(exc) from None
 
