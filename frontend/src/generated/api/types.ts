@@ -337,6 +337,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/career/targets/{target_id}/coverage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Target Coverage */
+        get: operations["get_target_coverage_api_v1_career_targets__target_id__coverage_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/credits/balance": {
         parameters: {
             query?: never;
@@ -2707,6 +2724,43 @@ export interface components {
             /** Version Id */
             version_id: string;
         };
+        /** TargetFocusCoverage */
+        TargetFocusCoverage: {
+            evidence: components["schemas"]["EvidenceRevisionRef"] | null;
+            /** Evidence Support */
+            evidence_support: ("candidate_statement" | "document_backed" | "artifact_linked" | "independently_verified") | null;
+            /** Label */
+            label: string;
+            /**
+             * Reason Code
+             * @enum {string}
+             */
+            reason_code: "confirmed_application" | "application_scope_unclear" | "skill_without_application" | "learning_only" | "no_matching_confirmed_evidence";
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "supported" | "evidence_gap" | "knowledge_gap" | "experience_gap";
+        };
+        /** TargetRoleCoverage */
+        TargetRoleCoverage: {
+            /** Focus */
+            focus: components["schemas"]["TargetFocusCoverage"][];
+            /**
+             * Policy Version
+             * @constant
+             */
+            policy_version: "target-coverage-v1";
+            /** Positioning Reason */
+            positioning_reason: "target_focus_missing" | null;
+            /**
+             * Schema Version
+             * @constant
+             */
+            schema_version: 1;
+            /** Target Id */
+            target_id: string;
+        };
         /**
          * TimeRange
          * @enum {string}
@@ -4189,6 +4243,58 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CareerTarget"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+        };
+    };
+    get_target_coverage_api_v1_career_targets__target_id__coverage_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                target_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TargetRoleCoverage"];
                 };
             };
             /** @description Unprocessable Entity */

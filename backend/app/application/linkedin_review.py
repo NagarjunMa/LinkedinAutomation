@@ -9,6 +9,9 @@ from sqlalchemy.orm import Session
 from app.application.career_service import CareerApplicationService
 from app.application.errors import InvalidOperationError, ResourceConflictError, ResourceNotFoundError
 from app.application.evidence_service import EvidenceService
+from app.application.evidence_terms import BULLET_PREFIX as _BULLET_PREFIX
+from app.application.evidence_terms import CONTRIBUTION_CATEGORIES as _CONTRIBUTION_CATEGORIES
+from app.application.evidence_terms import applied_skill, normalized_phrase as _phrase
 from app.repositories.career_repository import CareerRepository
 from app.schemas.career.common import SourceRef
 from app.schemas.career.evidence import CareerEvidenceItem, EvidenceRevisionRef
@@ -34,17 +37,14 @@ from app.services.resume.parser import DATE_RANGE_RE
 
 _PROFESSIONAL_SECTIONS = {"headline", "about", "experience", "projects", "skills"}
 _PROMINENT_SECTIONS = {"headline", "about"}
-_CONTRIBUTION_CATEGORIES = {"action", "outcome", "decision", "validation"}
 _SECTION_LIMITS: dict[LinkedInRecommendationSection, int] = {
     "headline": 120, "about": 500, "experience": 500, "skills": 50,
 }
 _SKILL_LABEL = re.compile(r"[\w+#][\w.+# /-]*")
-_EXPLICIT_SKILL_USE = re.compile(r"^(?:i )?used (.{1,50}?) to \S")
 _OPTIONS_PER_SECTION = 3
 _YEAR = re.compile(r"\b(?:19|20)\d{2}\b")
 _NUMBER = re.compile(r"(?<!\w)\d+(?:[,.]\d+)*")
 _ESTIMATE_PREFIX = re.compile(r"\b(?:estimated|approximately|roughly|about)\s+(?:[$€£]\s*)?$", re.I)
-_BULLET_PREFIX = re.compile(r"^[•*-]\s+")
 _EMAIL = re.compile(r"[\w.+-]+@[\w-]+\.[\w.-]+")
 _DOMAIN = r"(?:[\w-]+\.)+(?:[^\W\d_]{2,}|xn--[a-z0-9-]+)(?::\d+)?"
 _BARE_LINK = re.compile(rf"(?<![\w@]){_DOMAIN}[/?#][^\s<>]*", re.I)
@@ -117,7 +117,7 @@ class LinkedInReviewService:
         skills = [item for item in items if _skill(item)]
         applications: dict[str, CareerEvidenceItem] = {}
         for contribution in contributions:
-            if capability := _applied_skill(contribution):
+            if capability := applied_skill(contribution.claim):
                 applications.setdefault(capability, contribution)
         suggestions = []
         for section in _SECTION_LIMITS:
@@ -222,18 +222,12 @@ def _wording_blocker(item: CareerEvidenceItem, text: str) -> ProposalRejection |
 
 def _contribution(item: CareerEvidenceItem) -> bool:
     return (item.category in _CONTRIBUTION_CATEGORIES
-            and (_action_claim(item.claim) or bool(_applied_skill(item))))
+            and (_action_claim(item.claim) or bool(applied_skill(item.claim))))
 
 
 def _skill(item: CareerEvidenceItem) -> bool:
     return (item.category == "skill" and len(item.claim) <= _SECTION_LIMITS["skills"]
             and _SKILL_LABEL.fullmatch(item.claim) is not None)
-
-
-def _applied_skill(item: CareerEvidenceItem) -> str:
-    # shortcut: require a direct "Used <skill> to ..." claim until the ledger stores applied skill links.
-    match = _EXPLICIT_SKILL_USE.match(_phrase(item.claim))
-    return match[1] if match is not None else ""
 
 
 def _render_recommendation(
@@ -244,15 +238,11 @@ def _render_recommendation(
         return None
     if section == "skills":
         application = items[1]
-        if not (_skill(item) and _contribution(application) and _applied_skill(application) == _phrase(item.claim)):
+        if not (_skill(item) and _contribution(application) and applied_skill(application.claim) == _phrase(item.claim)):
             return None
     elif not _contribution(item) or (section == "headline" and len(item.claim.splitlines()) != 1):
         return None
     return LinkedInRecommendation(section=section, text=item.claim, evidence_revisions=[_ref(entry) for entry in items])
-
-
-def _phrase(text: str) -> str:
-    return " ".join(_BULLET_PREFIX.sub("", text.strip()).casefold().split()).rstrip(".!?")
 
 
 def _term_matches(text: str, term: str) -> Iterator[re.Match[str]]:

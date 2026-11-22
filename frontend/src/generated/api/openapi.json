@@ -5718,6 +5718,125 @@
         "title": "TailoredResumeListItem",
         "type": "object"
       },
+      "TargetFocusCoverage": {
+        "additionalProperties": false,
+        "properties": {
+          "evidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EvidenceRevisionRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "evidence_support": {
+            "anyOf": [
+              {
+                "enum": [
+                  "candidate_statement",
+                  "document_backed",
+                  "artifact_linked",
+                  "independently_verified"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Support"
+          },
+          "label": {
+            "maxLength": 200,
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Label",
+            "type": "string"
+          },
+          "reason_code": {
+            "enum": [
+              "confirmed_application",
+              "application_scope_unclear",
+              "skill_without_application",
+              "learning_only",
+              "no_matching_confirmed_evidence"
+            ],
+            "title": "Reason Code",
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "supported",
+              "evidence_gap",
+              "knowledge_gap",
+              "experience_gap"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "state",
+          "reason_code",
+          "evidence",
+          "evidence_support"
+        ],
+        "title": "TargetFocusCoverage",
+        "type": "object"
+      },
+      "TargetRoleCoverage": {
+        "additionalProperties": false,
+        "properties": {
+          "focus": {
+            "items": {
+              "$ref": "#/components/schemas/TargetFocusCoverage"
+            },
+            "title": "Focus",
+            "type": "array"
+          },
+          "policy_version": {
+            "const": "target-coverage-v1",
+            "title": "Policy Version",
+            "type": "string"
+          },
+          "positioning_reason": {
+            "anyOf": [
+              {
+                "const": "target_focus_missing",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Positioning Reason"
+          },
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "target_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+            "title": "Target Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema_version",
+          "target_id",
+          "policy_version",
+          "focus",
+          "positioning_reason"
+        ],
+        "title": "TargetRoleCoverage",
+        "type": "object"
+      },
       "TimeRange": {
         "enum": [
           "last_7_days",
@@ -9179,6 +9298,100 @@
           }
         ],
         "summary": "Create Career Target",
+        "tags": [
+          "career-targets"
+        ]
+      }
+    },
+    "/api/v1/career/targets/{target_id}/coverage": {
+      "get": {
+        "operationId": "get_target_coverage_api_v1_career_targets__target_id__coverage_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "target_id",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+              "title": "Target Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TargetRoleCoverage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Client Error",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Server Error",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Target Coverage",
         "tags": [
           "career-targets"
         ]
