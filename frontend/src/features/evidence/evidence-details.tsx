@@ -21,8 +21,8 @@ const cautions = {
 
 type Caution = keyof typeof cautions;
 
-export function EvidenceDetails({ session, id, close, listedRevision, saving, setSaving }: {
-  session: EvidenceOwner; id: string; close: () => void; listedRevision?: number; saving: boolean; setSaving: (saving: boolean) => void;
+export function EvidenceDetails({ session, id, close, listedRevision, citedRevision, saving, setSaving }: {
+  session: EvidenceOwner; id: string; close: () => void; listedRevision?: number; citedRevision?: number; saving: boolean; setSaving: (saving: boolean) => void;
 }) {
   const { owner, isCurrentUser } = session;
   const client = useQueryClient();
@@ -33,7 +33,7 @@ export function EvidenceDetails({ session, id, close, listedRevision, saving, se
   const operation = useRef<AbortController | null>(null);
   const [issue, setIssue] = useState('');
   const [editRevision, setEditRevision] = useState<number>();
-  const [showHistory, setShowHistory] = useState(false);
+  const [showHistory, setShowHistory] = useState(citedRevision !== undefined);
   const [notice, setNotice] = useState('');
   const [highestListedRevision, setHighestListedRevision] = useState(listedRevision ?? 0);
   if (listedRevision !== undefined && listedRevision > highestListedRevision) {
@@ -144,6 +144,7 @@ export function EvidenceDetails({ session, id, close, listedRevision, saving, se
   if (canResolve) actions.push('resolve_contradiction');
   const historyPages = history.data?.pages ?? [];
   const decisions = new Map(historyPages.flatMap(page => page.decisions).map(decision => [decision.resulting_revision, decision]));
+  const revisions = historyPages.flatMap(page => page.revisions);
 
   return (
     <section aria-labelledby="evidence-details" className="min-w-0 space-y-4 rounded-xl border border-border bg-card p-4 [overflow-wrap:anywhere] sm:p-5">
@@ -208,12 +209,20 @@ export function EvidenceDetails({ session, id, close, listedRevision, saving, se
             <p role="alert">Revision history is unavailable.</p>
             <Button variant="outline" disabled={history.isFetching} onClick={() => void (history.isFetchNextPageError ? history.fetchNextPage() : history.refetch())}>Retry history</Button>
           </>}
+          {citedRevision !== undefined && (
+            <p className="font-medium">
+              LinkedIn Review cites revision {citedRevision}.
+              {history.isSuccess && !revisions.some(revision => revision.revision === citedRevision)
+                ? (history.hasNextPage ? ' Load more revisions to find it.' : ' This revision is unavailable.') : ''}
+            </p>
+          )}
           <ol className="space-y-2">
-            {historyPages.flatMap(page => page.revisions).map(revision => {
+            {revisions.map(revision => {
               const decision = decisions.get(revision.revision);
               const action = decision?.action;
               const label = action === 'confirm' ? 'Confirmed' : action === 'edit' ? 'Edited' : action ? cautions[action][1] : evidenceStatus(revision);
-              return <li key={revision.revision} className="rounded-md border border-border p-3">
+              return <li key={revision.revision} aria-current={revision.revision === citedRevision ? true : undefined}
+                className="rounded-md border border-border p-3 aria-[current=true]:border-primary">
                 <p className="font-medium">Revision {revision.revision} · {label}</p>
                 <p className="whitespace-pre-wrap">{revision.claim}</p>
                 <p className="text-muted-foreground">{evidenceStatus(revision)}</p>

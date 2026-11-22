@@ -10,20 +10,22 @@ import { careerApi, pageSize, type Evidence } from '@/features/career-coach/api'
 import { EvidenceDetails } from './evidence-details';
 import { checkEvidenceOwner, evidenceStatus, statuses, supportLevels, type EvidenceOwner } from './evidence-model';
 
-export function EvidenceNotebook() {
+type EvidenceCitation = { initialEvidence?: string; citedRevision?: number };
+
+export function EvidenceNotebook({ initialEvidence, citedRevision }: EvidenceCitation) {
   const { user, isCurrentUser } = useAuth();
   return user && isCurrentUser(user.id)
-    ? <Notebook key={user.id} owner={user.id} isCurrentUser={isCurrentUser} /> : null;
+    ? <Notebook key={user.id} owner={user.id} isCurrentUser={isCurrentUser} initialEvidence={initialEvidence} citedRevision={citedRevision} /> : null;
 }
 
-function Notebook(session: EvidenceOwner) {
+function Notebook(session: EvidenceOwner & EvidenceCitation) {
   const { owner } = session;
   const client = useQueryClient();
   const listKey = ['evidence-notebook', owner];
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [support, setSupport] = useState('');
-  const [selected, setSelected] = useState<string>();
+  const [selected, setSelected] = useState(session.initialEvidence);
   const [saving, setSaving] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
@@ -110,6 +112,7 @@ function Notebook(session: EvidenceOwner) {
             </Button>}
         </section>
         {selected && <EvidenceDetails key={selected} session={session} id={selected}
+          citedRevision={selected === session.initialEvidence ? session.citedRevision : undefined}
           listedRevision={items.find(item => item.evidence_id === selected)?.revision}
           saving={saving} setSaving={setSaving} close={() => {
           setSelected(undefined);

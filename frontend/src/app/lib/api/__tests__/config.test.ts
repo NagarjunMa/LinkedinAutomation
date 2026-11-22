@@ -186,7 +186,10 @@ describe('frontend API authentication boundary', () => {
     expect(JSON.stringify(error)).not.toContain('private-sentinel');
   });
 
-  it.each(['/api/v1/resumes', '/api/v1/career/evidence?offset=0', '/api/v1/career/sessions/session/turns'])(
+  it.each([
+    '/api/v1/resumes', '/api/v1/career/evidence?offset=0', '/api/v1/career/sessions/session/turns',
+    '/api/v1/career/targets', '/api/v1/career/linkedin-profiles/upload/versions/1/recommendations/copy',
+  ])(
     'bounds error reads and retains only a valid header request ID for %s', async path => {
     const cancel = vi.fn();
     const requestId = '7018a0a3-9431-4bc4-b4ce-719a579588a1';
