@@ -5779,6 +5779,163 @@
         "title": "TailoredResumeListItem",
         "type": "object"
       },
+      "TargetCoverageDetails": {
+        "additionalProperties": false,
+        "properties": {
+          "focus": {
+            "items": {
+              "$ref": "#/components/schemas/TargetFocusExplanation"
+            },
+            "title": "Focus",
+            "type": "array"
+          },
+          "ordered_criteria": {
+            "items": {
+              "enum": [
+                "coverage_signal_priority",
+                "scope_meets_requirement",
+                "stable_id_tiebreak"
+              ],
+              "type": "string"
+            },
+            "title": "Ordered Criteria",
+            "type": "array"
+          },
+          "required_scope": {
+            "anyOf": [
+              {
+                "enum": [
+                  "component",
+                  "team",
+                  "cross_team",
+                  "organization"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Required Scope"
+          },
+          "target_level": {
+            "anyOf": [
+              {
+                "enum": [
+                  "intern",
+                  "entry",
+                  "junior",
+                  "mid",
+                  "senior",
+                  "staff",
+                  "principal"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Recognized saved target level. This does not describe the candidate's level.",
+            "title": "Target Level"
+          }
+        },
+        "required": [
+          "target_level",
+          "required_scope",
+          "ordered_criteria",
+          "focus"
+        ],
+        "title": "TargetCoverageDetails",
+        "type": "object"
+      },
+      "TargetEvidenceAlternative": {
+        "additionalProperties": false,
+        "properties": {
+          "evidence": {
+            "$ref": "#/components/schemas/EvidenceRevisionRef"
+          },
+          "reason_code": {
+            "enum": [
+              "coverage_signal_priority",
+              "scope_meets_requirement",
+              "stable_id_tiebreak"
+            ],
+            "title": "Reason Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "evidence",
+          "reason_code"
+        ],
+        "title": "TargetEvidenceAlternative",
+        "type": "object"
+      },
+      "TargetEvidenceSelection": {
+        "additionalProperties": false,
+        "properties": {
+          "alternative_count": {
+            "description": "Total eligible alternatives, including any omitted from the displayed list.",
+            "minimum": 0,
+            "title": "Alternative Count",
+            "type": "integer"
+          },
+          "alternatives": {
+            "items": {
+              "$ref": "#/components/schemas/TargetEvidenceAlternative"
+            },
+            "title": "Alternatives",
+            "type": "array"
+          },
+          "explanation": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Explanation",
+            "type": "string"
+          },
+          "reason_code": {
+            "anyOf": [
+              {
+                "enum": [
+                  "coverage_signal_priority",
+                  "scope_meets_requirement",
+                  "stable_id_tiebreak"
+                ],
+                "type": "string"
+              },
+              {
+                "enum": [
+                  "only_matching_evidence",
+                  "no_matching_evidence"
+                ],
+                "type": "string"
+              }
+            ],
+            "title": "Reason Code"
+          },
+          "selected": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EvidenceRevisionRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "selected",
+          "reason_code",
+          "explanation",
+          "alternatives",
+          "alternative_count"
+        ],
+        "title": "TargetEvidenceSelection",
+        "type": "object"
+      },
       "TargetFocusCoverage": {
         "additionalProperties": false,
         "properties": {
@@ -5848,6 +6005,31 @@
         "title": "TargetFocusCoverage",
         "type": "object"
       },
+      "TargetFocusExplanation": {
+        "additionalProperties": false,
+        "properties": {
+          "label": {
+            "maxLength": 200,
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Label",
+            "type": "string"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/TargetScopeAlignment"
+          },
+          "selection": {
+            "$ref": "#/components/schemas/TargetEvidenceSelection"
+          }
+        },
+        "required": [
+          "label",
+          "scope",
+          "selection"
+        ],
+        "title": "TargetFocusExplanation",
+        "type": "object"
+      },
       "TargetResumeCoverage": {
         "additionalProperties": false,
         "properties": {
@@ -5886,6 +6068,16 @@
       "TargetRoleCoverage": {
         "additionalProperties": false,
         "properties": {
+          "details": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TargetCoverageDetails"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "focus": {
             "items": {
               "$ref": "#/components/schemas/TargetFocusCoverage"
@@ -5894,7 +6086,10 @@
             "type": "array"
           },
           "policy_version": {
-            "const": "target-coverage-v1",
+            "enum": [
+              "target-coverage-v1",
+              "target-coverage-v2"
+            ],
             "title": "Policy Version",
             "type": "string"
           },
@@ -5931,6 +6126,44 @@
           "positioning_reason"
         ],
         "title": "TargetRoleCoverage",
+        "type": "object"
+      },
+      "TargetScopeAlignment": {
+        "additionalProperties": false,
+        "properties": {
+          "observed_scope": {
+            "anyOf": [
+              {
+                "enum": [
+                  "component",
+                  "team",
+                  "cross_team",
+                  "organization"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observed Scope"
+          },
+          "state": {
+            "enum": [
+              "requirement_unspecified",
+              "unavailable",
+              "meets_requirement",
+              "below_requirement"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "state",
+          "observed_scope"
+        ],
+        "title": "TargetScopeAlignment",
         "type": "object"
       },
       "TimeRange": {
@@ -9414,6 +9647,42 @@
               "title": "Target Id",
               "type": "string"
             }
+          },
+          {
+            "description": "Include the eligibility and ordering explanation for each focus.",
+            "in": "query",
+            "name": "explain",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "Include the eligibility and ordering explanation for each focus.",
+              "title": "Explain",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Minimum scope for the saved target level. Order: component, team, cross_team, organization. Only recognized scope labels on confirmed applied evidence count.",
+            "in": "query",
+            "name": "required_scope",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "component",
+                    "team",
+                    "cross_team",
+                    "organization"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Minimum scope for the saved target level. Order: component, team, cross_team, organization. Only recognized scope labels on confirmed applied evidence count.",
+              "title": "Required Scope"
+            }
           }
         ],
         "responses": {
@@ -9519,6 +9788,42 @@
               "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
               "title": "Resume Document Id",
               "type": "string"
+            }
+          },
+          {
+            "description": "Include the eligibility and ordering explanation for each focus.",
+            "in": "query",
+            "name": "explain",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "Include the eligibility and ordering explanation for each focus.",
+              "title": "Explain",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Minimum scope for the saved target level. Order: component, team, cross_team, organization. Only recognized scope labels on confirmed applied evidence count.",
+            "in": "query",
+            "name": "required_scope",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "component",
+                    "team",
+                    "cross_team",
+                    "organization"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Minimum scope for the saved target level. Order: component, team, cross_team, organization. Only recognized scope labels on confirmed applied evidence count.",
+              "title": "Required Scope"
             }
           }
         ],
