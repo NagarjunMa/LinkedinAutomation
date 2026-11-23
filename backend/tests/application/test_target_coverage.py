@@ -142,3 +142,87 @@ def test_resume_comparison_reports_document_limit_for_punctuation_only_bullets()
     )
     [finding] = view.findings
     assert finding.kind == "document_limit" and finding.evidence is None
+
+
+def test_scope_calibration_uses_recorded_scope_without_assigning_a_candidate_level():
+    chosen = target("Python", "Go", "Rust", "Java")
+    ledger = [
+        evidence("a", "Used Python to test a component.", scope="Component"),
+        evidence("b", "Used Python to coordinate a migration.", scope="Cross-team"),
+        evidence("c", "Used Go to ship a change.", scope="Organization"),
+        evidence("d", "Used Rust to build a CLI.", scope="Team"),
+        evidence("e", "Used Java to write tests.", scope="At an organization of thousands"),
+    ]
+    view = project_target_coverage(chosen, ledger, required_scope="cross_team")
+    assert project_target_coverage(chosen, reversed(ledger), required_scope="cross_team") == view
+    assert view.policy_version == "target-coverage-v2"
+    assert view.details.target_level == "senior"
+    assert view.details.required_scope == "cross_team"
+    assert [focus.scope.state for focus in view.details.focus] == [
+        "meets_requirement", "meets_requirement", "below_requirement", "unavailable",
+    ]
+    assert [focus.scope.observed_scope for focus in view.details.focus] == [
+        "cross_team", "organization", "team", None,
+    ]
+    python = view.details.focus[0]
+    assert python.selection.selected.evidence_id == view.focus[0].evidence.evidence_id == "b"
+    assert python.selection.reason_code == "scope_meets_requirement"
+    assert python.selection.alternatives[0].evidence.evidence_id == "a"
+    assert python.selection.alternatives[0].reason_code == "scope_meets_requirement"
+    assert "At an organization" not in view.model_dump_json()
+    legacy = project_target_coverage(chosen, ledger).model_dump(exclude_unset=True)
+    assert legacy["policy_version"] == "target-coverage-v1" and "details" not in legacy
+    assert legacy["focus"][0]["evidence"]["evidence_id"] == "a"
+
+
+def test_selection_explanations_describe_priority_and_ties_without_ineligible_references():
+    chosen = target("Python", "Go", "Rust")
+    ledger = [
+        evidence("b", "Used Python to build a CLI.", scope="Team"),
+        evidence("a", "Used Python to parse records."),
+        evidence("c", "Python", category="skill"),
+        evidence("private", "Used Python to deploy a service.", is_private=True),
+        evidence("foreign", "Used Python to deploy a service.", owner_id="other"),
+        evidence("proposed", "Used Python to deploy a service.", lifecycle="proposed"),
+        evidence("same-team", "Used Go to build a CLI.", ownership="team", scope="Organization"),
+    ]
+    view = project_target_coverage(chosen, ledger, explain=True)
+    python, go, rust = view.details.focus
+    assert python.scope.state == "requirement_unspecified"
+    assert python.selection.selected.model_dump() == {"evidence_id": "a", "revision": 3}
+    assert python.selection.reason_code == "stable_id_tiebreak"
+    assert [(item.evidence.evidence_id, item.reason_code) for item in python.selection.alternatives] == [
+        ("b", "stable_id_tiebreak"), ("c", "coverage_signal_priority"),
+    ]
+    assert go.selection.reason_code == "only_matching_evidence"
+    assert go.scope.observed_scope is None
+    assert rust.selection.reason_code == "no_matching_evidence"
+    assert rust.selection.selected is None
+    for identifier in ("private", "foreign", "proposed"):
+        assert f'"{identifier}"' not in view.model_dump_json()
+
+
+def test_comparison_keeps_other_eligible_bullets_and_explains_only_displayed_competitors():
+    chosen = target("Python").model_copy(update={"seniority": "Lead Platform Engineer"})
+    ledger = [
+        evidence(f"match-{index:02}", "Used Python to build a CLI.", scope="Component")
+        for index in range(15)
+    ]
+    ledger.append(evidence("winner", "Used Python to coordinate releases.", scope="Cross team"))
+    resume = ResumeDocumentJSON(
+        contact=Contact(name="Synthetic candidate"),
+        raw_text="",
+        projects=[ProjectEntry(name="CLI", bullets=[
+            Bullet(id="cli", text="Used Python to build a CLI.", raw_text="Used Python to build a CLI."),
+        ])],
+    )
+    view = project_target_resume_coverage(chosen, ledger, "resume", resume, required_scope="cross_team")
+    assert view.findings == []
+    assert view.coverage.details.target_level is None
+    [focus] = view.coverage.details.focus
+    assert focus.scope.observed_scope == "cross_team"
+    assert focus.selection.alternative_count == 15
+    assert [option.evidence.evidence_id for option in focus.selection.alternatives] == [
+        "match-00", "match-01", "match-02", "match-03", "match-04",
+    ]
+    assert view.coverage == project_target_coverage(chosen, reversed(ledger), required_scope="cross_team")

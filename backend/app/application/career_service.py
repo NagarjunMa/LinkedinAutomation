@@ -15,7 +15,7 @@ from app.schemas.career.common import SourceRef
 from app.schemas.career.evidence import CareerEvidenceItem
 from app.schemas.career.persistence import CareerSourceCreate, CareerTargetInput
 from app.schemas.career.sources import CareerSource, CareerTarget
-from app.schemas.career.target_coverage import TargetResumeCoverage, TargetRoleCoverage
+from app.schemas.career.target_coverage import CoverageScope, TargetResumeCoverage, TargetRoleCoverage
 from app.schemas.resume_v2 import ResumeDocumentJSON
 
 
@@ -91,11 +91,18 @@ class CareerApplicationService:
     def get_target(self, target_id: str) -> CareerTarget:
         return _target_view(self._target(target_id))
 
-    def target_coverage(self, target_id: str) -> TargetRoleCoverage:
+    def target_coverage(
+        self, target_id: str, *, explain: bool = False, required_scope: CoverageScope | None = None,
+    ) -> TargetRoleCoverage:
         target = self._coverage_target(target_id)
-        return project_target_coverage(target, self._coverage_evidence(target))
+        return project_target_coverage(
+            target, self._coverage_evidence(target), explain=explain, required_scope=required_scope,
+        )
 
-    def target_resume_coverage(self, target_id: str, resume_document_id: str) -> TargetResumeCoverage:
+    def target_resume_coverage(
+        self, target_id: str, resume_document_id: str, *,
+        explain: bool = False, required_scope: CoverageScope | None = None,
+    ) -> TargetResumeCoverage:
         target = self._coverage_target(target_id)
         document = self.repo.ready_resume(resume_document_id)
         if document is None:
@@ -104,7 +111,10 @@ class CareerApplicationService:
             resume = ResumeDocumentJSON.model_validate(document.parsed_json)
         except ValidationError:
             resume = None
-        return project_target_resume_coverage(target, self._coverage_evidence(target), resume_document_id, resume)
+        return project_target_resume_coverage(
+            target, self._coverage_evidence(target), resume_document_id, resume,
+            explain=explain, required_scope=required_scope,
+        )
 
     def _coverage_target(self, target_id: str) -> CareerTarget:
         target = self.get_target(target_id)

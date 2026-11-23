@@ -2759,6 +2759,44 @@ export interface components {
             /** Version Id */
             version_id: string;
         };
+        /** TargetCoverageDetails */
+        TargetCoverageDetails: {
+            /** Focus */
+            focus: components["schemas"]["TargetFocusExplanation"][];
+            /** Ordered Criteria */
+            ordered_criteria: ("coverage_signal_priority" | "scope_meets_requirement" | "stable_id_tiebreak")[];
+            /** Required Scope */
+            required_scope: ("component" | "team" | "cross_team" | "organization") | null;
+            /**
+             * Target Level
+             * @description Recognized saved target level. This does not describe the candidate's level.
+             */
+            target_level: ("intern" | "entry" | "junior" | "mid" | "senior" | "staff" | "principal") | null;
+        };
+        /** TargetEvidenceAlternative */
+        TargetEvidenceAlternative: {
+            evidence: components["schemas"]["EvidenceRevisionRef"];
+            /**
+             * Reason Code
+             * @enum {string}
+             */
+            reason_code: "coverage_signal_priority" | "scope_meets_requirement" | "stable_id_tiebreak";
+        };
+        /** TargetEvidenceSelection */
+        TargetEvidenceSelection: {
+            /**
+             * Alternative Count
+             * @description Total eligible alternatives, including any omitted from the displayed list.
+             */
+            alternative_count: number;
+            /** Alternatives */
+            alternatives: components["schemas"]["TargetEvidenceAlternative"][];
+            /** Explanation */
+            explanation: string;
+            /** Reason Code */
+            reason_code: ("coverage_signal_priority" | "scope_meets_requirement" | "stable_id_tiebreak") | ("only_matching_evidence" | "no_matching_evidence");
+            selected: components["schemas"]["EvidenceRevisionRef"] | null;
+        };
         /** TargetFocusCoverage */
         TargetFocusCoverage: {
             evidence: components["schemas"]["EvidenceRevisionRef"] | null;
@@ -2777,6 +2815,13 @@ export interface components {
              */
             state: "supported" | "evidence_gap" | "knowledge_gap" | "experience_gap";
         };
+        /** TargetFocusExplanation */
+        TargetFocusExplanation: {
+            /** Label */
+            label: string;
+            scope: components["schemas"]["TargetScopeAlignment"];
+            selection: components["schemas"]["TargetEvidenceSelection"];
+        };
         /** TargetResumeCoverage */
         TargetResumeCoverage: {
             coverage: components["schemas"]["TargetRoleCoverage"];
@@ -2792,13 +2837,14 @@ export interface components {
         };
         /** TargetRoleCoverage */
         TargetRoleCoverage: {
+            details?: components["schemas"]["TargetCoverageDetails"] | null;
             /** Focus */
             focus: components["schemas"]["TargetFocusCoverage"][];
             /**
              * Policy Version
-             * @constant
+             * @enum {string}
              */
-            policy_version: "target-coverage-v1";
+            policy_version: "target-coverage-v1" | "target-coverage-v2";
             /** Positioning Reason */
             positioning_reason: "target_focus_missing" | null;
             /**
@@ -2808,6 +2854,16 @@ export interface components {
             schema_version: 1;
             /** Target Id */
             target_id: string;
+        };
+        /** TargetScopeAlignment */
+        TargetScopeAlignment: {
+            /** Observed Scope */
+            observed_scope: ("component" | "team" | "cross_team" | "organization") | null;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "requirement_unspecified" | "unavailable" | "meets_requirement" | "below_requirement";
         };
         /**
          * TimeRange
@@ -4307,7 +4363,12 @@ export interface operations {
     };
     get_target_coverage_api_v1_career_targets__target_id__coverage_get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Include the eligibility and ordering explanation for each focus. */
+                explain?: boolean;
+                /** @description Minimum scope for the saved target level. Order: component, team, cross_team, organization. Only recognized scope labels on confirmed applied evidence count. */
+                required_scope?: ("component" | "team" | "cross_team" | "organization") | null;
+            };
             header?: never;
             path: {
                 target_id: string;
@@ -4359,7 +4420,12 @@ export interface operations {
     };
     get_target_resume_coverage_api_v1_career_targets__target_id__coverage_resume__resume_document_id__get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Include the eligibility and ordering explanation for each focus. */
+                explain?: boolean;
+                /** @description Minimum scope for the saved target level. Order: component, team, cross_team, organization. Only recognized scope labels on confirmed applied evidence count. */
+                required_scope?: ("component" | "team" | "cross_team" | "organization") | null;
+            };
             header?: never;
             path: {
                 resume_document_id: string;
