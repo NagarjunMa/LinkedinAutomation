@@ -30,6 +30,7 @@ from app.db.session import get_db
 from app.main import app
 from app.models.career import CareerSourceRow, LinkedInPdfUploadRow
 from app.models.career_evidence import EvidenceRow, EvidenceSourceRow
+from app.models.jd_evaluation import JDEvaluation
 from app.models.resume_document import ResumeDocument
 from app.models.user import User
 from app.schemas.career.common import SourceRef
@@ -794,3 +795,119 @@ def test_recommendations_copy_checks_current_evidence_and_review_scope(setup):
     assert client.post(path, headers=identity(0), json=body).json() == []
     assert client.delete(f"{PREFIX}/{own_pdf}", headers=identity(0)).status_code == 204
     assert client.post(copy, headers=identity(0), json=body | {"selection": selection}).status_code == 404
+
+
+
+@pytest.mark.postgres
+def test_target_jd_mapping_reads_owned_source_and_current_evidence(setup):
+    client, engine, _, (owner, other) = setup
+    jd_text = "Python\n3 years of Go\nTerraform\nAWS\nDocker\nC++\nJava is not required\nRusty toolchain"
+    entries = [
+        ("Python", "Python", "technical"),
+        ("Go", "Go", "technical"),
+        ("Terraform", "Terraform", "technical"),
+        ("AWS", "AWS", "technical"),
+        ("Docker", "Docker", "technical"),
+        ("C++", "C++", "technical"),
+        ("Java", "Java is not required", "technical"),
+        ("Kubernetes", "Kubernetes", "technical"),
+        ("Rust", "Rust", "technical"),
+    ]
+    requirements = [{"skill": skill, "evidence_from_jd": quote, "type": kind} for skill, quote, kind in entries]
+    extraction = {
+        "must_have": requirements[:5], "good_to_have": requirements[5:],
+        "seniority": "senior", "primary_role_category": "SWE", "country_hint": "US",
+    }
+    python_claim = "Used Python to build a deployment service."
+    parsed = {
+        "contact": {"name": "Synthetic candidate"}, "raw_text": python_claim,
+        "experience": [{"company": "Synthetic Company", "role": "Engineer", "bullets": [
+            {"id": "python", "text": python_claim, "raw_text": python_claim},
+        ]}],
+    }
+    with Session(engine) as db:
+        career = CareerApplicationService(db, owner)
+        source = career.add_source(CareerSourceCreate(kind="job_description", content=jd_text))
+        target_input = CareerTargetInput(
+            role_family="Platform Engineer", seniority="Senior", job_description=source.source,
+        )
+        target = career.create_target(target_input)
+        peer_target = CareerApplicationService(db, other).create_target(
+            target_input.model_copy(update={"job_description": None}),
+        )
+        ledger = EvidenceService(db, owner)
+        confirmed = []
+        for claim, category in [
+            (python_claim, "action"), ("Used Go to build a service.", "action"),
+            ("Used Terraform to configure networking.", "action"), ("AWS", "skill"),
+            ("I am learning Docker.", "skill"), ("Used Rust to build a service.", "action"),
+        ]:
+            supporting_source = career.add_source(CareerSourceCreate(kind="candidate_introduction", content=claim))
+            proposal = ledger.propose(EvidenceProposal(
+                claim=claim, category=category, ownership="individual",
+                sources=[{**supporting_source.source.model_dump(), "relationship": "supports", "locator": "fixture",
+                          "excerpt": claim, "extraction": "candidate"}],
+            ))
+            confirmed.append(ledger.decide(proposal.evidence_id, EvidenceDecisionInput(revision=1, action="confirm")))
+        before = ledger.list()
+
+        resume_ids = [str(uuid4()), str(uuid4())]
+        for user_id, resume_id in zip((owner, other), resume_ids):
+            db.add(ResumeDocument(
+                id=resume_id, user_id=user_id, original_filename="synthetic.pdf", file_path="synthetic",
+                file_type="pdf", raw_text=python_claim, parsed_json=parsed,
+            ))
+        db.flush()
+        evaluation_ids = [str(uuid4()) for _ in range(3)]
+        for index, (user_id, resume_id, saved_jd) in enumerate((
+            (owner, resume_ids[0], jd_text), (other, resume_ids[1], jd_text),
+            (owner, resume_ids[0], "A different job description"),
+        )):
+            db.add(JDEvaluation(
+                id=evaluation_ids[index], user_id=user_id, resume_document_id=resume_id,
+                jd_text=saved_jd, extracted_requirements=extraction, diff_plan={}, match_score=0,
+            ))
+        db.commit()
+
+    path = f"{TARGETS}/{target.target_id}/jd-mapping/{evaluation_ids[0]}"
+    headers = identity(0)
+    response = client.get(path, headers=headers)
+    assert response.status_code == 200
+    assert response.headers["cache-control"] == "no-store"
+    assert client.get(path, headers=headers).content == response.content
+    body = response.json()
+    assert body["jd_evaluation_id"] == evaluation_ids[0]
+    assert body["resume_document_id"] == resume_ids[0]
+    assert body["jd_source"] == source.source.model_dump()
+    results = body["requirements"]
+    assert all("skill" not in item for item in results)
+    assert [item["state"] for item in results] == [
+        "supported", "partial", "communication_gap", "evidence_gap", "knowledge_gap",
+        "experience_gap", "unresolved", "unresolved", "unresolved",
+    ]
+    assert [item["priority"] for item in results] == ["must_have"] * 5 + ["preferred"] * 4
+    for index, item in enumerate(confirmed[:5]):
+        assert results[index]["evidence"] == {"evidence_id": item.evidence_id, "revision": item.revision}
+    assert len(set(item["requirement"]["revision"] for item in results)) == len(results)
+    [start, end] = (results[0]["requirement"][key] for key in ("source_start", "source_end"))
+    assert jd_text[start:end] == "Python"
+    assert results[-1]["requirement"]["source_start"] is None
+    assert results[-1]["evidence"] is None
+    assert python_claim not in response.text and jd_text not in response.text
+    assert client.get(path).status_code == 401
+    assert client.get(path, headers=identity(1)).status_code == 404
+    assert client.get(f"{TARGETS}/{peer_target.target_id}/jd-mapping/{evaluation_ids[0]}",
+                      headers=identity(1)).status_code == 404
+    assert client.get(f"{TARGETS}/{target.target_id}/jd-mapping/{evaluation_ids[1]}",
+                      headers=headers).status_code == 404
+    assert client.get(f"{TARGETS}/{target.target_id}/jd-mapping/{evaluation_ids[2]}",
+                      headers=headers).status_code == 409
+    with Session(engine) as db:
+        ledger = EvidenceService(db, owner)
+        assert ledger.list() == before
+        assert db.get(JDEvaluation, evaluation_ids[0]).extracted_requirements == extraction
+        ledger.decide(confirmed[0].evidence_id, EvidenceDecisionInput(
+            revision=confirmed[0].revision, action="mark_private",
+        ))
+    after = client.get(path, headers=headers).json()["requirements"][0]
+    assert after["state"] == "experience_gap" and after["evidence"] is None

@@ -11,6 +11,7 @@ from app.application.errors import ApplicationError
 from app.core.auth import get_current_user_id
 from app.db.session import get_db
 from app.schemas.career.common import Identifier
+from app.schemas.career.jd_mapping import TargetJDMapping
 from app.schemas.career.persistence import CareerTargetInput
 from app.schemas.career.sources import CareerTarget
 from app.schemas.career.target_coverage import CoverageScope, TargetResumeCoverage, TargetRoleCoverage
@@ -62,6 +63,14 @@ def get_target_resume_coverage(
         return service.target_resume_coverage(
             target_id, resume_document_id, explain=explain, required_scope=required_scope,
         )
+    except ApplicationError as exc:
+        raise to_http_exception(exc) from None
+
+
+@router.get("/{target_id}/jd-mapping/{evaluation_id}")
+def get_target_jd_mapping(target_id: Identifier, evaluation_id: Identifier, service: Service) -> TargetJDMapping:
+    try:
+        return service.target_jd_mapping(target_id, evaluation_id)
     except ApplicationError as exc:
         raise to_http_exception(exc) from None
 

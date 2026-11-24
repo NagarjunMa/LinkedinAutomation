@@ -371,6 +371,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/career/targets/{target_id}/jd-mapping/{evaluation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Target Jd Mapping */
+        get: operations["get_target_jd_mapping_api_v1_career_targets__target_id__jd_mapping__evaluation_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/credits/balance": {
         parameters: {
             query?: never;
@@ -1792,6 +1809,50 @@ export interface components {
             /** Versions Count */
             versions_count: number;
         };
+        /** JDRequirementMapping */
+        JDRequirementMapping: {
+            evidence: components["schemas"]["EvidenceRevisionRef"] | null;
+            /** Follow Up */
+            follow_up: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "technical" | "experience" | "credential";
+            /**
+             * Priority
+             * @enum {string}
+             */
+            priority: "must_have" | "preferred";
+            /**
+             * Reason Code
+             * @enum {string}
+             */
+            reason_code: "confirmed_application" | "additional_qualification_unverified" | "confirmed_application_not_found_in_resume" | "application_scope_unclear" | "skill_without_application" | "no_matching_confirmed_evidence" | "learning_only" | "requirement_not_grounded" | "requirement_not_affirmative" | "qualification_unresolved";
+            requirement: components["schemas"]["JDRequirementRef"];
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "supported" | "partial" | "communication_gap" | "evidence_gap" | "experience_gap" | "knowledge_gap" | "unresolved";
+        };
+        /** JDRequirementRef */
+        JDRequirementRef: {
+            /** Requirement Id */
+            requirement_id: string;
+            /** Revision */
+            revision: string;
+            /**
+             * Source End
+             * @description Exclusive Unicode code-point end offset in the saved job description.
+             */
+            source_end: number | null;
+            /**
+             * Source Start
+             * @description Zero-based Unicode code-point offset in the saved job description.
+             */
+            source_start: number | null;
+        };
         /** JobApplicationListItem */
         JobApplicationListItem: {
             /**
@@ -2821,6 +2882,32 @@ export interface components {
             label: string;
             scope: components["schemas"]["TargetScopeAlignment"];
             selection: components["schemas"]["TargetEvidenceSelection"];
+        };
+        /** TargetJDMapping */
+        TargetJDMapping: {
+            /** Jd Evaluation Id */
+            jd_evaluation_id: string;
+            jd_source: components["schemas"]["SourceRef"] | null;
+            /** Jd Text Sha256 */
+            jd_text_sha256: string;
+            /**
+             * Policy Version
+             * @constant
+             */
+            policy_version: "jd-mapping-v1";
+            /** Requirements */
+            requirements: components["schemas"]["JDRequirementMapping"][];
+            /** Resume Comparable */
+            resume_comparable: boolean;
+            /** Resume Document Id */
+            resume_document_id: string;
+            /**
+             * Schema Version
+             * @constant
+             */
+            schema_version: 1;
+            /** Target Id */
+            target_id: string;
         };
         /** TargetResumeCoverage */
         TargetResumeCoverage: {
@@ -4462,6 +4549,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TargetResumeCoverage"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+        };
+    };
+    get_target_jd_mapping_api_v1_career_targets__target_id__jd_mapping__evaluation_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                evaluation_id: string;
+                target_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TargetJDMapping"];
                 };
             };
             /** @description Unprocessable Entity */

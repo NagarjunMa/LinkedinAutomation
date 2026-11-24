@@ -9,13 +9,17 @@ from sqlalchemy.orm import Session
 from app.application.errors import InvalidOperationError, ResourceConflictError, ResourceNotFoundError
 from app.application.evidence_service import EvidenceService
 from app.application.target_coverage import project_target_coverage, project_target_resume_coverage
+from app.application.target_jd_mapping import project_target_jd_mapping
 from app.models.career import CareerSourceRow, CareerTargetRow
 from app.repositories.career_repository import CareerRepository
+from app.repositories.jd_repository import JDEvaluationRepository
 from app.schemas.career.common import SourceRef
 from app.schemas.career.evidence import CareerEvidenceItem
+from app.schemas.career.jd_mapping import TargetJDMapping
 from app.schemas.career.persistence import CareerSourceCreate, CareerTargetInput
 from app.schemas.career.sources import CareerSource, CareerTarget
 from app.schemas.career.target_coverage import CoverageScope, TargetResumeCoverage, TargetRoleCoverage
+from app.schemas.jd import JDExtraction
 from app.schemas.resume_v2 import ResumeDocumentJSON
 
 
@@ -107,13 +111,32 @@ class CareerApplicationService:
         document = self.repo.ready_resume(resume_document_id)
         if document is None:
             raise ResourceNotFoundError("Résumé not found")
-        try:
-            resume = ResumeDocumentJSON.model_validate(document.parsed_json)
-        except ValidationError:
-            resume = None
+        resume = _parsed_resume(document.parsed_json)
         return project_target_resume_coverage(
             target, self._coverage_evidence(target), resume_document_id, resume,
             explain=explain, required_scope=required_scope,
+        )
+
+    def target_jd_mapping(self, target_id: str, evaluation_id: str) -> TargetJDMapping:
+        target = self._coverage_target(target_id)
+        evaluation = JDEvaluationRepository(self.session).get_owned(evaluation_id, self.repo.user_id)
+        if evaluation is None:
+            raise ResourceNotFoundError("Job analysis not found")
+        document = self.repo.ready_resume(evaluation.resume_document_id)
+        if document is None:
+            raise ResourceNotFoundError("Résumé not found")
+        jd_digest = sha256(evaluation.jd_text.encode()).hexdigest()
+        if target.job_description and self.get_source(target.job_description).content_sha256 != jd_digest:
+            raise ResourceConflictError("Job analysis does not match the target's saved description")
+        try:
+            extraction = JDExtraction.model_validate(evaluation.extracted_requirements)
+        except ValidationError:
+            raise InvalidOperationError("Saved job analysis requirements are invalid") from None
+        resume = _parsed_resume(document.parsed_json)
+        return project_target_jd_mapping(
+            target, EvidenceService(self.session, self.repo.user_id).list_eligible(),
+            evaluation_id=evaluation.id, jd_text=evaluation.jd_text, jd_text_sha256=jd_digest,
+            extraction=extraction, resume_document_id=document.id, resume=resume,
         )
 
     def _coverage_target(self, target_id: str) -> CareerTarget:
@@ -176,6 +199,13 @@ class CareerApplicationService:
     def _check_jd(self, source: SourceRef | None) -> None:
         if source and self._source(source, lock=True).kind != "job_description":
             raise ResourceNotFoundError("Job description not found")
+
+
+def _parsed_resume(value: object) -> ResumeDocumentJSON | None:
+    try:
+        return ResumeDocumentJSON.model_validate(value)
+    except ValidationError:
+        return None
 
 
 def _apply_target(row: CareerTargetRow, data: CareerTargetInput) -> None:
