@@ -2323,6 +2323,148 @@
         "title": "JDProgressRow",
         "type": "object"
       },
+      "JDRequirementMapping": {
+        "additionalProperties": false,
+        "properties": {
+          "evidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EvidenceRevisionRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "follow_up": {
+            "anyOf": [
+              {
+                "maxLength": 4000,
+                "minLength": 1,
+                "pattern": "\\S",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Follow Up"
+          },
+          "kind": {
+            "enum": [
+              "technical",
+              "experience",
+              "credential"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "priority": {
+            "enum": [
+              "must_have",
+              "preferred"
+            ],
+            "title": "Priority",
+            "type": "string"
+          },
+          "reason_code": {
+            "enum": [
+              "confirmed_application",
+              "additional_qualification_unverified",
+              "confirmed_application_not_found_in_resume",
+              "application_scope_unclear",
+              "skill_without_application",
+              "no_matching_confirmed_evidence",
+              "learning_only",
+              "requirement_not_grounded",
+              "requirement_not_affirmative",
+              "qualification_unresolved"
+            ],
+            "title": "Reason Code",
+            "type": "string"
+          },
+          "requirement": {
+            "$ref": "#/components/schemas/JDRequirementRef"
+          },
+          "state": {
+            "enum": [
+              "supported",
+              "partial",
+              "communication_gap",
+              "evidence_gap",
+              "experience_gap",
+              "knowledge_gap",
+              "unresolved"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "requirement",
+          "priority",
+          "kind",
+          "state",
+          "reason_code",
+          "evidence",
+          "follow_up"
+        ],
+        "title": "JDRequirementMapping",
+        "type": "object"
+      },
+      "JDRequirementRef": {
+        "additionalProperties": false,
+        "properties": {
+          "requirement_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+            "title": "Requirement Id",
+            "type": "string"
+          },
+          "revision": {
+            "maxLength": 64,
+            "minLength": 64,
+            "pattern": "^[0-9a-f]+$",
+            "title": "Revision",
+            "type": "string"
+          },
+          "source_end": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Exclusive Unicode code-point end offset in the saved job description.",
+            "title": "Source End"
+          },
+          "source_start": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Zero-based Unicode code-point offset in the saved job description.",
+            "title": "Source Start"
+          }
+        },
+        "required": [
+          "requirement_id",
+          "revision",
+          "source_start",
+          "source_end"
+        ],
+        "title": "JDRequirementRef",
+        "type": "object"
+      },
       "JobApplicationListItem": {
         "properties": {
           "application_date": {
@@ -6028,6 +6170,83 @@
           "selection"
         ],
         "title": "TargetFocusExplanation",
+        "type": "object"
+      },
+      "TargetJDMapping": {
+        "additionalProperties": false,
+        "properties": {
+          "jd_evaluation_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+            "title": "Jd Evaluation Id",
+            "type": "string"
+          },
+          "jd_source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "jd_text_sha256": {
+            "maxLength": 64,
+            "minLength": 64,
+            "pattern": "^[0-9a-f]+$",
+            "title": "Jd Text Sha256",
+            "type": "string"
+          },
+          "policy_version": {
+            "const": "jd-mapping-v1",
+            "title": "Policy Version",
+            "type": "string"
+          },
+          "requirements": {
+            "items": {
+              "$ref": "#/components/schemas/JDRequirementMapping"
+            },
+            "title": "Requirements",
+            "type": "array"
+          },
+          "resume_comparable": {
+            "title": "Resume Comparable",
+            "type": "boolean"
+          },
+          "resume_document_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+            "title": "Resume Document Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "target_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+            "title": "Target Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema_version",
+          "policy_version",
+          "target_id",
+          "jd_evaluation_id",
+          "jd_source",
+          "jd_text_sha256",
+          "resume_document_id",
+          "resume_comparable",
+          "requirements"
+        ],
+        "title": "TargetJDMapping",
         "type": "object"
       },
       "TargetResumeCoverage": {
@@ -9899,6 +10118,112 @@
           }
         ],
         "summary": "Get Target Resume Coverage",
+        "tags": [
+          "career-targets"
+        ]
+      }
+    },
+    "/api/v1/career/targets/{target_id}/jd-mapping/{evaluation_id}": {
+      "get": {
+        "operationId": "get_target_jd_mapping_api_v1_career_targets__target_id__jd_mapping__evaluation_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "target_id",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+              "title": "Target Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "evaluation_id",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+              "title": "Evaluation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TargetJDMapping"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Client Error",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Server Error",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Target Jd Mapping",
         "tags": [
           "career-targets"
         ]
