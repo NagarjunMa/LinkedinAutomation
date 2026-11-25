@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   submit: null as JdInputFormProps['onSubmit'] | null,
   select: null as DiffViewProps['onAcceptedChangesChange'] | null,
 }));
+vi.mock('@/contexts/auth-context', () => ({ useAuth: () => ({ user: { id: 'owner' }, isCurrentUser: () => true }) }));
 vi.mock('@/hooks/use-jd-analyze', () => ({
   useJdAnalyze: () => ({ mutateAsync: mocks.analyze, isPending: false }),
 }));
@@ -215,4 +216,12 @@ it.each([
   expect(screen.queryByTestId('tailor-apply')).not.toBeInTheDocument();
   expect(mocks.analyze).toHaveBeenCalledTimes(1);
   await analyzeSuccessfully();
+});
+
+
+it('offers an on-demand evidence review after analysis', async () => {
+  render(<TailorPage />);
+  expect(screen.queryByText('Review claim defensibility')).not.toBeInTheDocument();
+  await analyzeSuccessfully();
+  expect(screen.getByText('Review claim defensibility')).toBeVisible();
 });

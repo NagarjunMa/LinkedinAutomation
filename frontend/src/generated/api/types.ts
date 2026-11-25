@@ -371,6 +371,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/career/targets/{target_id}/defensibility/{evaluation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Target Defensibility */
+        get: operations["get_target_defensibility_api_v1_career_targets__target_id__defensibility__evaluation_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/career/targets/{target_id}/jd-mapping/{evaluation_id}": {
         parameters: {
             query?: never;
@@ -1503,6 +1520,51 @@ export interface components {
             jobs_applied: number;
             /** Jobs Extracted */
             jobs_extracted: number;
+        };
+        /** DefensibilityRequirement */
+        DefensibilityRequirement: {
+            claim: components["schemas"]["DefensibleClaim"] | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "technical" | "experience" | "credential";
+            /**
+             * Priority
+             * @enum {string}
+             */
+            priority: "must_have" | "preferred";
+            /** Questions */
+            questions: string[];
+            requirement: components["schemas"]["JDRequirementRef"];
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "supported" | "partial" | "communication_gap" | "evidence_gap" | "experience_gap" | "knowledge_gap" | "unresolved";
+            /** Unknowns */
+            unknowns: ("evidence" | "ownership" | "measurement" | "qualification")[];
+        };
+        /** DefensibleClaim */
+        DefensibleClaim: {
+            evidence: components["schemas"]["EvidenceRevisionRef"];
+            measurement: components["schemas"]["EvidenceMeasurement"] | null;
+            /**
+             * Ownership
+             * @enum {string}
+             */
+            ownership: "individual" | "shared" | "team" | "unknown";
+            /** Qualifiers */
+            qualifiers: string[];
+            /** Scope */
+            scope: string | null;
+            /**
+             * Support
+             * @enum {string}
+             */
+            support: "candidate_statement" | "document_backed" | "artifact_linked" | "independently_verified";
+            /** Text */
+            text: string;
         };
         /** DiffPlan */
         DiffPlan: {
@@ -2833,6 +2895,31 @@ export interface components {
              * @description Recognized saved target level. This does not describe the candidate's level.
              */
             target_level: ("intern" | "entry" | "junior" | "mid" | "senior" | "staff" | "principal") | null;
+        };
+        /** TargetDefensibility */
+        TargetDefensibility: {
+            /**
+             * Guidance
+             * @enum {string}
+             */
+            guidance: "insufficient_requirements" | "review_required_gaps" | "prepare_with_evidence";
+            /** Jd Evaluation Id */
+            jd_evaluation_id: string;
+            /** Jd Text Sha256 */
+            jd_text_sha256: string;
+            /** Owner Id */
+            owner_id: string;
+            /** Requirements */
+            requirements: components["schemas"]["DefensibilityRequirement"][];
+            /** Resume Comparable */
+            resume_comparable: boolean;
+            /**
+             * Schema Version
+             * @constant
+             */
+            schema_version: 1;
+            /** Target Id */
+            target_id: string;
         };
         /** TargetEvidenceAlternative */
         TargetEvidenceAlternative: {
@@ -4549,6 +4636,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TargetResumeCoverage"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+        };
+    };
+    get_target_defensibility_api_v1_career_targets__target_id__defensibility__evaluation_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                evaluation_id: string;
+                target_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TargetDefensibility"];
                 };
             };
             /** @description Unprocessable Entity */

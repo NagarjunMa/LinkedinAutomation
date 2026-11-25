@@ -849,6 +849,13 @@ def test_target_jd_mapping_reads_owned_source_and_current_evidence(setup):
                           "excerpt": claim, "extraction": "candidate"}],
             ))
             confirmed.append(ledger.decide(proposal.evidence_id, EvidenceDecisionInput(revision=1, action="confirm")))
+        confirmed[0] = ledger.decide(confirmed[0].evidence_id, EvidenceDecisionInput(
+            revision=confirmed[0].revision, action="edit",
+            measurement={"method": "Compared baseline with a synthetic replay", "scope": "Deployment service", "estimated": True},
+        ))
+        confirmed[0] = ledger.decide(confirmed[0].evidence_id, EvidenceDecisionInput(
+            revision=confirmed[0].revision, action="confirm",
+        ))
         before = ledger.list()
 
         resume_ids = [str(uuid4()), str(uuid4())]
@@ -902,6 +909,31 @@ def test_target_jd_mapping_reads_owned_source_and_current_evidence(setup):
                       headers=headers).status_code == 404
     assert client.get(f"{TARGETS}/{target.target_id}/jd-mapping/{evaluation_ids[2]}",
                       headers=headers).status_code == 409
+    defensibility = f"{TARGETS}/{target.target_id}/defensibility/{evaluation_ids[0]}"
+    review = client.get(defensibility, headers=headers)
+    assert review.status_code == 200
+    assert review.headers["cache-control"] == "no-store"
+    assert client.get(defensibility, headers=headers).json() == review.json()
+    report = review.json()
+    assert report["guidance"] == "review_required_gaps"
+    assert report["jd_text_sha256"] == body["jd_text_sha256"]
+    assert report["resume_comparable"] == body["resume_comparable"]
+    claims = report["requirements"]
+    first = claims[0]
+    assert first["requirement"] == results[0]["requirement"]
+    assert first["state"] == "supported"
+    assert first["claim"]["text"] == python_claim
+    assert first["claim"]["ownership"] == "individual"
+    assert first["claim"]["evidence"] == results[0]["evidence"]
+    assert first["claim"]["measurement"]["estimated"] is True
+    assert "sources" not in first["claim"] and jd_text not in review.text
+    assert claims[-1]["claim"] is None and claims[-1]["questions"]
+    assert client.get(defensibility).status_code == 401
+    assert client.get(defensibility, headers=identity(1)).status_code == 404
+    assert client.get(f"{TARGETS}/{peer_target.target_id}/defensibility/{evaluation_ids[0]}",
+                      headers=identity(1)).status_code == 404
+    assert client.get(f"{TARGETS}/{target.target_id}/defensibility/{evaluation_ids[1]}", headers=headers).status_code == 404
+    assert client.get(f"{TARGETS}/{target.target_id}/defensibility/{evaluation_ids[2]}", headers=headers).status_code == 409
     with Session(engine) as db:
         ledger = EvidenceService(db, owner)
         assert ledger.list() == before
@@ -911,3 +943,5 @@ def test_target_jd_mapping_reads_owned_source_and_current_evidence(setup):
         ))
     after = client.get(path, headers=headers).json()["requirements"][0]
     assert after["state"] == "experience_gap" and after["evidence"] is None
+    revoked = client.get(defensibility, headers=headers).json()["requirements"][0]
+    assert revoked["state"] == "experience_gap" and revoked["claim"] is None

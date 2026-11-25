@@ -6,6 +6,7 @@ import { JdInputForm } from '@/components/jd/jd-input-form';
 import { JdAnalysisPanel } from '@/components/jd/jd-analysis-panel';
 import { DiffView } from '@/components/jd/diff-view';
 import { PreviewPanel } from '@/components/tailor/preview-panel';
+import { ClaimDefensibility } from '@/features/claim-defensibility/claim-defensibility';
 import { useTailorWorkflow } from '@/hooks/use-tailor-workflow';
 
 export default function TailorPage() {
@@ -39,6 +40,8 @@ export default function TailorPage() {
             extraction={analysis.result.extracted_requirements}
             plan={analysis.result.diff_plan}
           />
+
+          <ClaimDefensibility key={analysis.generation} evaluationId={analysis.result.jd_evaluation_id} />
 
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(520px,640px)] gap-8 items-start">
             {/* Left column: diff view + Apply button */}

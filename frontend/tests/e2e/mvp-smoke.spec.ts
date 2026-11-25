@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import path from 'path';
+import { createHash } from 'node:crypto';
 import { seedResumeSession } from './resume-session';
 import type { components } from '../../src/generated/api/types';
 
@@ -765,3 +766,72 @@ for (const initialAnalytics of ['disabled', 'missing', null] as const) {
     else await expect(toggle).not.toBeChecked();
   });
 }
+
+test('claim defensibility keeps evidence and unknowns visible on desktop and mobile', async ({ page, context }) => {
+  await seedResumeSession(context);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.route(`${API}/api/v1/credits/balance`, route => route.fulfill({ json: { balance: 90 } }));
+  await page.route(`${API}/api/v1/resumes/upload`, route => route.fulfill({ status: 201, json: UPLOAD_RESPONSE }));
+  await page.route(`${API}/api/v1/jd/analyze`, route => route.fulfill({ json: ANALYZE_RESPONSE }));
+  await page.route(`${API}/api/v1/career/targets?**`, route => route.fulfill({ json: [{
+    owner_id: 'resume-test-user', target_id: 'platform', status: 'active', role_family: 'Platform Engineer', seniority: 'Senior',
+  }] }));
+  const description = '🔎 Secondary text\n'.repeat(40) + 'Python\n' + 'More job details\n'.repeat(40);
+  const start = Array.from(description.slice(0, description.indexOf('Python'))).length;
+  const requirement = { requirement_id: 'must_have-1', revision: 'a'.repeat(64), source_start: start, source_end: start + 6 };
+  const proof = { evidence_id: 'synthetic-evidence', revision: 2 };
+  let revoked = false;
+  await page.route(`${API}/api/v1/career/targets/platform/defensibility/jd-1`, route => {
+    expect(route.request().headers().authorization).toBe('Bearer synthetic-resume-test-token');
+    return route.fulfill({ json: {
+      schema_version: 1, owner_id: 'resume-test-user', target_id: 'platform', jd_evaluation_id: 'jd-1',
+      jd_text_sha256: createHash('sha256').update(description).digest('hex'), resume_comparable: false,
+      guidance: revoked ? 'review_required_gaps' : 'prepare_with_evidence',
+      requirements: [{ requirement, priority: 'must_have', kind: 'technical', state: revoked ? 'unresolved' : 'supported',
+        claim: revoked ? null : {
+          evidence: proof, text: 'Built a synthetic deployment checker', ownership: 'team',
+          support: 'candidate_statement', scope: null, qualifiers: [],
+          measurement: { estimated: true, method: 'Synthetic timing', scope: 'One service' },
+        },
+        unknowns: revoked ? ['evidence'] : [],
+        questions: ['What did you personally deliver?'],
+      }],
+    } });
+  });
+  await page.goto('/dashboard/resume/tailor');
+  await page.locator('input[type=file]').setInputFiles(path.resolve('tests/fixtures/sample-resume.pdf'));
+  await page.getByRole('button', { name: 'Upload' }).click();
+  const jd = page.locator('#jd');
+  await jd.fill(description);
+  await page.getByRole('button', { name: /Analyze \(2 credits\)/ }).click();
+
+  const panel = page.locator('details').filter({ has: page.getByText('Review claim defensibility', { exact: true }) });
+  await panel.locator('summary').first().press('Enter');
+  await panel.getByRole('combobox', { name: 'Career target' }).selectOption('platform');
+  await expect(panel.getByText('Built a synthetic deployment checker')).toBeVisible();
+  await expect(panel.getByText('Estimated · Synthetic timing · One service')).toBeVisible();
+  await expect(panel.getByText('Résumé comparison unavailable for this analysis.')).toBeVisible();
+  await panel.getByRole('button', { name: 'Show requirement text' }).click();
+  await expect(panel.getByText('Python', { exact: true })).toBeVisible();
+  await jd.fill(description + ' Updated after analysis.');
+  await expect(panel.getByText('Python', { exact: true })).toHaveCount(0);
+  await panel.getByRole('button', { name: 'Show requirement text' }).click();
+  await expect(panel.getByText('Use the original analyzed job description to preview this requirement.')).toBeVisible();
+  await expect(panel.getByText('Python', { exact: true })).toHaveCount(0);
+  await page.setViewportSize({ width: 390, height: 844 });
+  const evidenceLink = panel.getByRole('link', { name: /Evidence revision 2/ });
+  await expect(evidenceLink).toHaveAttribute('href', '/dashboard/evidence?evidence=synthetic-evidence&revision=2');
+  await expect(evidenceLink).toHaveAttribute('target', '_blank');
+  await context.route(`${API}/api/v1/career/evidence**`, route => route.fulfill({ json: [] }));
+  const [evidenceTab] = await Promise.all([page.waitForEvent('popup'), evidenceLink.click()]);
+  await expect(evidenceTab).toHaveURL(/\/dashboard\/evidence\?evidence=synthetic-evidence&revision=2$/);
+  await expect(panel.getByText('Built a synthetic deployment checker')).toBeVisible();
+  await evidenceTab.close();
+  await panel.getByText('Questions to prepare for', { exact: true }).press('Enter');
+  await expect(panel.getByText('What did you personally deliver?')).toBeVisible();
+  expect(await panel.evaluate(node => node.scrollWidth - node.clientWidth)).toBe(0);
+  revoked = true;
+  await panel.getByRole('button', { name: 'Refresh evidence' }).click();
+  await expect(panel.getByText('Eligible evidence unavailable')).toBeVisible();
+  await expect(panel.getByRole('link', { name: /Evidence revision 2/ })).toHaveCount(0);
+});
