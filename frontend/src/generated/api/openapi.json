@@ -1352,6 +1352,168 @@
         "title": "DailyJobStats",
         "type": "object"
       },
+      "DefensibilityRequirement": {
+        "additionalProperties": false,
+        "properties": {
+          "claim": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DefensibleClaim"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "kind": {
+            "enum": [
+              "technical",
+              "experience",
+              "credential"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "priority": {
+            "enum": [
+              "must_have",
+              "preferred"
+            ],
+            "title": "Priority",
+            "type": "string"
+          },
+          "questions": {
+            "items": {
+              "maxLength": 4000,
+              "minLength": 1,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            "title": "Questions",
+            "type": "array"
+          },
+          "requirement": {
+            "$ref": "#/components/schemas/JDRequirementRef"
+          },
+          "state": {
+            "enum": [
+              "supported",
+              "partial",
+              "communication_gap",
+              "evidence_gap",
+              "experience_gap",
+              "knowledge_gap",
+              "unresolved"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "unknowns": {
+            "items": {
+              "enum": [
+                "evidence",
+                "ownership",
+                "measurement",
+                "qualification"
+              ],
+              "type": "string"
+            },
+            "title": "Unknowns",
+            "type": "array"
+          }
+        },
+        "required": [
+          "requirement",
+          "priority",
+          "kind",
+          "state",
+          "claim",
+          "unknowns",
+          "questions"
+        ],
+        "title": "DefensibilityRequirement",
+        "type": "object"
+      },
+      "DefensibleClaim": {
+        "additionalProperties": false,
+        "properties": {
+          "evidence": {
+            "$ref": "#/components/schemas/EvidenceRevisionRef"
+          },
+          "measurement": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EvidenceMeasurement"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ownership": {
+            "enum": [
+              "individual",
+              "shared",
+              "team",
+              "unknown"
+            ],
+            "title": "Ownership",
+            "type": "string"
+          },
+          "qualifiers": {
+            "items": {
+              "maxLength": 200,
+              "minLength": 1,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            "title": "Qualifiers",
+            "type": "array"
+          },
+          "scope": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "pattern": "\\S",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope"
+          },
+          "support": {
+            "enum": [
+              "candidate_statement",
+              "document_backed",
+              "artifact_linked",
+              "independently_verified"
+            ],
+            "title": "Support",
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "evidence",
+          "text",
+          "support",
+          "ownership",
+          "scope",
+          "measurement",
+          "qualifiers"
+        ],
+        "title": "DefensibleClaim",
+        "type": "object"
+      },
       "DiffPlan": {
         "properties": {
           "bullet_fit": {
@@ -5991,6 +6153,76 @@
         "title": "TargetCoverageDetails",
         "type": "object"
       },
+      "TargetDefensibility": {
+        "additionalProperties": false,
+        "properties": {
+          "guidance": {
+            "enum": [
+              "insufficient_requirements",
+              "review_required_gaps",
+              "prepare_with_evidence"
+            ],
+            "title": "Guidance",
+            "type": "string"
+          },
+          "jd_evaluation_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+            "title": "Jd Evaluation Id",
+            "type": "string"
+          },
+          "jd_text_sha256": {
+            "maxLength": 64,
+            "minLength": 64,
+            "pattern": "^[0-9a-f]+$",
+            "title": "Jd Text Sha256",
+            "type": "string"
+          },
+          "owner_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+            "title": "Owner Id",
+            "type": "string"
+          },
+          "requirements": {
+            "items": {
+              "$ref": "#/components/schemas/DefensibilityRequirement"
+            },
+            "title": "Requirements",
+            "type": "array"
+          },
+          "resume_comparable": {
+            "title": "Resume Comparable",
+            "type": "boolean"
+          },
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "target_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+            "title": "Target Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema_version",
+          "owner_id",
+          "target_id",
+          "jd_evaluation_id",
+          "jd_text_sha256",
+          "resume_comparable",
+          "guidance",
+          "requirements"
+        ],
+        "title": "TargetDefensibility",
+        "type": "object"
+      },
       "TargetEvidenceAlternative": {
         "additionalProperties": false,
         "properties": {
@@ -10118,6 +10350,112 @@
           }
         ],
         "summary": "Get Target Resume Coverage",
+        "tags": [
+          "career-targets"
+        ]
+      }
+    },
+    "/api/v1/career/targets/{target_id}/defensibility/{evaluation_id}": {
+      "get": {
+        "operationId": "get_target_defensibility_api_v1_career_targets__target_id__defensibility__evaluation_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "target_id",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+              "title": "Target Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "evaluation_id",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+              "title": "Evaluation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TargetDefensibility"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Client Error",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Server Error",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Target Defensibility",
         "tags": [
           "career-targets"
         ]

@@ -11,6 +11,7 @@ from app.application.errors import ApplicationError
 from app.core.auth import get_current_user_id
 from app.db.session import get_db
 from app.schemas.career.common import Identifier
+from app.schemas.career.defensibility import TargetDefensibility
 from app.schemas.career.jd_mapping import TargetJDMapping
 from app.schemas.career.persistence import CareerTargetInput
 from app.schemas.career.sources import CareerTarget
@@ -71,6 +72,14 @@ def get_target_resume_coverage(
 def get_target_jd_mapping(target_id: Identifier, evaluation_id: Identifier, service: Service) -> TargetJDMapping:
     try:
         return service.target_jd_mapping(target_id, evaluation_id)
+    except ApplicationError as exc:
+        raise to_http_exception(exc) from None
+
+
+@router.get("/{target_id}/defensibility/{evaluation_id}")
+def get_target_defensibility(target_id: Identifier, evaluation_id: Identifier, service: Service) -> TargetDefensibility:
+    try:
+        return service.target_defensibility(target_id, evaluation_id)
     except ApplicationError as exc:
         raise to_http_exception(exc) from None
 

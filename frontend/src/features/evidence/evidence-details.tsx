@@ -211,7 +211,7 @@ export function EvidenceDetails({ session, id, close, listedRevision, citedRevis
           </>}
           {citedRevision !== undefined && (
             <p className="font-medium">
-              LinkedIn Review cites revision {citedRevision}.
+              Cited evidence revision {citedRevision}.
               {history.isSuccess && !revisions.some(revision => revision.revision === citedRevision)
                 ? (history.hasNextPage ? ' Load more revisions to find it.' : ' This revision is unavailable.') : ''}
             </p>

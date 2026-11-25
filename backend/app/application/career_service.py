@@ -9,11 +9,13 @@ from sqlalchemy.orm import Session
 from app.application.errors import InvalidOperationError, ResourceConflictError, ResourceNotFoundError
 from app.application.evidence_service import EvidenceService
 from app.application.target_coverage import project_target_coverage, project_target_resume_coverage
+from app.application.target_defensibility import project_target_defensibility
 from app.application.target_jd_mapping import project_target_jd_mapping
 from app.models.career import CareerSourceRow, CareerTargetRow
 from app.repositories.career_repository import CareerRepository
 from app.repositories.jd_repository import JDEvaluationRepository
 from app.schemas.career.common import SourceRef
+from app.schemas.career.defensibility import TargetDefensibility
 from app.schemas.career.evidence import CareerEvidenceItem
 from app.schemas.career.jd_mapping import TargetJDMapping
 from app.schemas.career.persistence import CareerSourceCreate, CareerTargetInput
@@ -118,6 +120,16 @@ class CareerApplicationService:
         )
 
     def target_jd_mapping(self, target_id: str, evaluation_id: str) -> TargetJDMapping:
+        mapping, _ = self._target_jd_mapping(target_id, evaluation_id)
+        return mapping
+
+    def target_defensibility(self, target_id: str, evaluation_id: str) -> TargetDefensibility:
+        mapping, eligible = self._target_jd_mapping(target_id, evaluation_id)
+        return project_target_defensibility(self.repo.user_id, mapping, eligible)
+
+    def _target_jd_mapping(
+        self, target_id: str, evaluation_id: str,
+    ) -> tuple[TargetJDMapping, list[CareerEvidenceItem]]:
         target = self._coverage_target(target_id)
         evaluation = JDEvaluationRepository(self.session).get_owned(evaluation_id, self.repo.user_id)
         if evaluation is None:
@@ -133,11 +145,13 @@ class CareerApplicationService:
         except ValidationError:
             raise InvalidOperationError("Saved job analysis requirements are invalid") from None
         resume = _parsed_resume(document.parsed_json)
-        return project_target_jd_mapping(
-            target, EvidenceService(self.session, self.repo.user_id).list_eligible(),
+        eligible = EvidenceService(self.session, self.repo.user_id).list_eligible()
+        mapping = project_target_jd_mapping(
+            target, eligible,
             evaluation_id=evaluation.id, jd_text=evaluation.jd_text, jd_text_sha256=jd_digest,
             extraction=extraction, resume_document_id=document.id, resume=resume,
         )
+        return mapping, eligible
 
     def _coverage_target(self, target_id: str) -> CareerTarget:
         target = self.get_target(target_id)
