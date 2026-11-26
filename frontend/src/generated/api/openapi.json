@@ -1710,12 +1710,60 @@
         "type": "object"
       },
       "EvalRequest": {
+        "anyOf": [
+          {
+            "properties": {
+              "target_role": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "target_role"
+            ]
+          },
+          {
+            "properties": {
+              "target_id": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "target_id"
+            ]
+          }
+        ],
         "properties": {
+          "grounded_review": {
+            "default": false,
+            "title": "Grounded Review",
+            "type": "boolean"
+          },
+          "target_id": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Id"
+          },
           "target_role": {
-            "maxLength": 200,
-            "minLength": 2,
-            "title": "Target Role",
-            "type": "string"
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 2,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Role"
           },
           "version_id": {
             "anyOf": [
@@ -1731,9 +1779,6 @@
             "title": "Version Id"
           }
         },
-        "required": [
-          "target_role"
-        ],
         "title": "EvalRequest",
         "type": "object"
       },
@@ -2324,6 +2369,91 @@
           "userAgent"
         ],
         "title": "FrontendLogSchema",
+        "type": "object"
+      },
+      "GroundedResumeReview": {
+        "additionalProperties": false,
+        "properties": {
+          "findings": {
+            "items": {
+              "$ref": "#/components/schemas/ResumeRequirementFinding"
+            },
+            "title": "Findings",
+            "type": "array"
+          },
+          "mode": {
+            "enum": [
+              "evidence_grounded",
+              "document_only"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "needs_refresh": {
+            "default": false,
+            "title": "Needs Refresh",
+            "type": "boolean"
+          },
+          "policy": {
+            "$ref": "#/components/schemas/ResumePolicyProfile"
+          },
+          "resume_version_id": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resume Version Id"
+          },
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "target_id": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Id"
+          },
+          "target_role": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "pattern": "\\S",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Role"
+          }
+        },
+        "required": [
+          "schema_version",
+          "policy",
+          "mode",
+          "target_id",
+          "resume_version_id",
+          "findings"
+        ],
+        "title": "GroundedResumeReview",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -4790,6 +4920,27 @@
               }
             ]
           },
+          "grounded_evaluation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grounded Evaluation Id"
+          },
+          "grounded_review": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GroundedResumeReview"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "resume": {
             "$ref": "#/components/schemas/ResumeListItem"
           }
@@ -4828,6 +4979,16 @@
             },
             "title": "Format Issues",
             "type": "array"
+          },
+          "grounded_review": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GroundedResumeReview"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "overall_score": {
             "maximum": 100,
@@ -5027,6 +5188,300 @@
           "totalCount"
         ],
         "title": "ResumeListResponse",
+        "type": "object"
+      },
+      "ResumePolicyProfile": {
+        "additionalProperties": false,
+        "properties": {
+          "market_overlay": {
+            "enum": [
+              "us_canada_engineering",
+              "india",
+              "universal"
+            ],
+            "title": "Market Overlay",
+            "type": "string"
+          },
+          "page_limit": {
+            "minimum": 1,
+            "title": "Page Limit",
+            "type": "integer"
+          },
+          "policy_version": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+            "title": "Policy Version",
+            "type": "string"
+          },
+          "profile_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+            "title": "Profile Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "universal_rules_version": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+            "title": "Universal Rules Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema_version",
+          "profile_id",
+          "policy_version",
+          "universal_rules_version",
+          "market_overlay",
+          "page_limit"
+        ],
+        "title": "ResumePolicyProfile",
+        "type": "object"
+      },
+      "ResumeRequirementFinding": {
+        "additionalProperties": false,
+        "oneOf": [
+          {
+            "properties": {
+              "source": {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              "source_locator": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "source",
+              "source_locator"
+            ]
+          },
+          {
+            "properties": {
+              "evidence_revisions": {
+                "minItems": 1
+              },
+              "source": {
+                "type": "null"
+              },
+              "source_locator": {
+                "type": "null"
+              }
+            },
+            "required": [
+              "evidence_revisions"
+            ]
+          }
+        ],
+        "properties": {
+          "blocking": {
+            "title": "Blocking",
+            "type": "boolean"
+          },
+          "category": {
+            "enum": [
+              "evidence",
+              "communication",
+              "role_clarity",
+              "formatting",
+              "parseability",
+              "defensibility",
+              "document_limit"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "evidence_revisions": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceRevisionRef"
+            },
+            "title": "Evidence Revisions",
+            "type": "array"
+          },
+          "explanation": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Explanation",
+            "type": "string"
+          },
+          "finding_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+            "title": "Finding Id",
+            "type": "string"
+          },
+          "focus_label": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "pattern": "\\S",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Focus Label"
+          },
+          "next_action": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Next Action",
+            "type": "string"
+          },
+          "policy_profile_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+            "title": "Policy Profile Id",
+            "type": "string"
+          },
+          "reason_code": {
+            "anyOf": [
+              {
+                "enum": [
+                  "must_have_relevance",
+                  "ownership_clearer",
+                  "outcome_more_defensible",
+                  "technical_depth_stronger",
+                  "level_better_aligned",
+                  "more_recent",
+                  "redundant_evidence",
+                  "page_budget_excluded",
+                  "stable_id_tiebreak"
+                ],
+                "type": "string"
+              },
+              {
+                "enum": [
+                  "model_unavailable",
+                  "model_timeout"
+                ],
+                "type": "string"
+              },
+              {
+                "enum": [
+                  "number_not_approved",
+                  "skill_not_approved",
+                  "employer_not_approved",
+                  "outcome_not_approved",
+                  "ownership_upgrade",
+                  "qualifier_removed",
+                  "entity_not_approved"
+                ],
+                "type": "string"
+              },
+              {
+                "enum": [
+                  "evidence_not_confirmed",
+                  "evidence_private",
+                  "evidence_rejected",
+                  "evidence_unavailable",
+                  "evidence_contradicted",
+                  "evidence_revision_stale"
+                ],
+                "type": "string"
+              },
+              {
+                "enum": [
+                  "schema_invalid",
+                  "proposal_rejected"
+                ],
+                "type": "string"
+              },
+              {
+                "const": "safe_render_used",
+                "type": "string"
+              },
+              {
+                "enum": [
+                  "reading_order_failed",
+                  "parser_field_missing",
+                  "layout_overflow",
+                  "minimum_font_violated",
+                  "link_invalid",
+                  "document_limit",
+                  "confirmed_application",
+                  "confirmed_application_not_found_in_resume",
+                  "ownership_needs_clarification",
+                  "layout_check",
+                  "responsibility_only_bullet"
+                ],
+                "type": "string"
+              }
+            ],
+            "title": "Reason Code"
+          },
+          "rule_version": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+            "title": "Rule Version",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "severity": {
+            "enum": [
+              "info",
+              "warning",
+              "error"
+            ],
+            "title": "Severity",
+            "type": "string"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source_locator": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "pattern": "\\S",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Locator"
+          }
+        },
+        "required": [
+          "schema_version",
+          "finding_id",
+          "category",
+          "severity",
+          "blocking",
+          "reason_code",
+          "policy_profile_id",
+          "rule_version",
+          "explanation",
+          "next_action"
+        ],
+        "title": "ResumeRequirementFinding",
         "type": "object"
       },
       "ResumeSavedEvaluation": {
@@ -12352,6 +12807,25 @@
             "schema": {
               "title": "Resume Document Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "grounded_evaluation_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 128,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Grounded Evaluation Id"
             }
           }
         ],

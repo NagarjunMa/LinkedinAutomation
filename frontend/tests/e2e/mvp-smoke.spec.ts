@@ -493,6 +493,64 @@ for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 
   });
 }
 
+test('grounded résumé findings use the selected target and refresh revoked citations', async ({ page, context }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await seedResumeSession(context);
+  await page.route(`${API}/api/v1/credits/balance`, route => route.fulfill({ json: { balance: 90 } }));
+  await page.route(`${API}/api/v1/resumes/upload`, route => route.fulfill({ status: 201, json: UPLOAD_RESPONSE }));
+  await page.route(`${API}/api/v1/career/targets?**`, route => route.fulfill({ json: [{
+    owner_id: 'resume-test-user', target_id: 'platform', status: 'active',
+    role_family: 'Platform Engineer', seniority: 'Senior',
+  }] }));
+  const review = {
+    schema_version: 1, mode: 'evidence_grounded', target_id: 'platform', target_role: 'Platform Engineer', resume_version_id: null,
+    policy: { schema_version: 1, profile_id: 'universal', policy_version: 'resume-review-v1',
+      universal_rules_version: 'resume-review-v1', market_overlay: 'universal', page_limit: 2 },
+    findings: [{
+      schema_version: 1, finding_id: 'evidence-1', category: 'evidence', severity: 'info', blocking: false,
+      policy_profile_id: 'universal', rule_version: 'resume-review-v1', reason_code: 'confirmed_application',
+      explanation: 'Confirmed evidence supports this target focus.', next_action: 'Review the cited revision.',
+      source: null, source_locator: null, evidence_revisions: [{ evidence_id: 'synthetic-proof', revision: 2 }],
+    }],
+  } satisfies components['schemas']['GroundedResumeReview'];
+  await page.route(`${API}/api/v1/resumes/doc-2/evaluate`, route => {
+    expect(route.request().postDataJSON()).toEqual({ grounded_review: true, target_id: 'platform' });
+    return route.fulfill({ json: {
+      evaluation_id: 'eval-1', overall_score: 62, readiness_label: 'needs_work',
+      score_breakdown: { content_quality: 60, role_fit: 65, evidence_strength: 60, recruiter_readability: 70 },
+      score_explanation: [], top_actions_before_applying: [], parser_confidence: 'high',
+      bullet_flags: [], format_issues: [], summary_critique: null, ats_parseability: 88, ats_raw_text: '',
+      grounded_review: review,
+    } satisfies components['schemas']['ResumeEvaluationResponse'] });
+  });
+  await page.route(`${API}/api/v1/resumes/doc-2?**`, route => {
+    expect(new URL(route.request().url()).searchParams.get('grounded_evaluation_id')).toBe('eval-1');
+    return route.fulfill({ json: {
+      resume: { id: 'doc-2', resume_document_id: 'doc-2', filename: 'test.pdf', original_filename: 'test.pdf',
+        file_size: 0, file_type: 'pdf', uploaded_at: null, evaluation_status: 'completed',
+        is_primary: true, evaluation_result: null },
+      evaluation: null,
+      grounded_evaluation_id: 'eval-1',
+      grounded_review: { ...review, findings: [], needs_refresh: true, mode: 'document_only' },
+    } satisfies components['schemas']['ResumeDetailResponse'] });
+  });
+  await page.goto('/dashboard/resume');
+  await page.locator('input[type=file]').setInputFiles(path.resolve('tests/fixtures/sample-resume.pdf'));
+  await page.getByRole('button', { name: 'Upload', exact: true }).click();
+  await expect(page).toHaveURL(/\/doc-2\/edit$/);
+  await page.getByLabel('Target role', { exact: true }).fill('');
+  await page.getByText('Use a saved career target').click();
+  await page.getByRole('combobox', { name: 'Career target' }).selectOption('platform');
+  await page.getByRole('button', { name: 'Evaluate (1 credit)' }).click();
+  const citation = page.getByRole('link', { name: 'View evidence revision 2' });
+  await expect(citation).toHaveAttribute('href', '/dashboard/evidence?evidence=synthetic-proof&revision=2');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole('button', { name: 'Refresh saved findings' }).click();
+  await expect(page.getByText(/Some cited evidence is no longer eligible/)).toBeVisible();
+  await expect(citation).toHaveCount(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
 test('docs explain document limits and evidence-backed terminology on mobile', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/docs');

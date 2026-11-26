@@ -1,10 +1,10 @@
 """HTTP adapters for resume document workflows."""
 
 import logging
-from typing import Optional
+from typing import Optional, Self
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.api.dependencies import get_resume_application_service
 from app.api.error_mapping import to_http_exception
@@ -12,6 +12,7 @@ from app.api.response_contracts import PrivateResponseRoute
 from app.application.errors import ApplicationError
 from app.application.resume_service import ResumeApplicationService
 from app.core.auth import get_current_user_id
+from app.schemas.career.common import Identifier
 from app.schemas.resume_responses import (
     ResumeDetailResponse,
     ResumeEvaluationResponse,
@@ -38,8 +39,21 @@ router = APIRouter(tags=["resumes-v2"], route_class=ResumeResponseRoute)
 
 
 class EvalRequest(BaseModel):
-    target_role: str = Field(..., min_length=2, max_length=200)
+    model_config = ConfigDict(json_schema_extra={"anyOf": [
+        {"required": ["target_role"], "properties": {"target_role": {"type": "string"}}},
+        {"required": ["target_id"], "properties": {"target_id": {"type": "string"}}},
+    ]})
+
+    target_role: str | None = Field(default=None, min_length=2, max_length=200)
     version_id: Optional[str] = Field(default=None, min_length=1, max_length=100)
+    target_id: Identifier | None = None
+    grounded_review: bool = False
+
+    @model_validator(mode="after")
+    def require_target_context(self) -> Self:
+        if self.target_id is None and self.target_role is None:
+            raise ValueError("A target role or a saved target is required")
+        return self
 
 
 class RewriteRequest(BaseModel):
@@ -79,11 +93,14 @@ def list_resumes(
 @router.get("/{resume_document_id}", response_model=ResumeDetailResponse)
 def get_resume(
     resume_document_id: str,
+    response: Response,
+    grounded_evaluation_id: Identifier | None = None,
     service: ResumeApplicationService = Depends(get_resume_application_service),
     current_user_id: str = Depends(get_current_user_id),
 ):
     try:
-        return service.get(resume_document_id, current_user_id)
+        response.headers["Cache-Control"] = "no-store"
+        return service.get(resume_document_id, current_user_id, grounded_evaluation_id=grounded_evaluation_id)
     except ApplicationError as exc:
         raise to_http_exception(exc) from exc
 
@@ -105,12 +122,16 @@ def delete_resume(
 async def evaluate(
     resume_document_id: str,
     body: EvalRequest,
+    response: Response,
     service: ResumeApplicationService = Depends(get_resume_application_service),
     current_user_id: str = Depends(get_current_user_id),
 ):
     try:
-        return await service.evaluate(resume_document_id, body.target_role, current_user_id,
-                                      version_id=body.version_id)
+        response.headers["Cache-Control"] = "no-store"
+        return await service.evaluate(
+            resume_document_id, body.target_role, current_user_id, version_id=body.version_id,
+            target_id=body.target_id, grounded_review=body.grounded_review,
+        )
     except ApplicationError as exc:
         raise to_http_exception(exc) from exc
 

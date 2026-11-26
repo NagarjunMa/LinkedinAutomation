@@ -101,6 +101,7 @@ def _create_sqlite_tables(engine) -> None:
         sa.Column("top_actions_before_applying", JSON, nullable=False, server_default="[]"),
         sa.Column("parser_confidence", sa.String, nullable=False, server_default="medium"),
         sa.Column("summary_critique", sa.Text, nullable=True),
+        sa.Column("grounded_review_ciphertext", sa.Text, nullable=True),
         sa.Column("ats_parseability", sa.Integer, nullable=False),
         sa.Column("ats_raw_text", sa.Text, nullable=False),
         sa.Column("model_version", sa.String, nullable=False),

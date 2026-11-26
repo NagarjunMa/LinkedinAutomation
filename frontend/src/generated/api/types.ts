@@ -1612,10 +1612,21 @@ export interface components {
         };
         /** EvalRequest */
         EvalRequest: {
+            /**
+             * Grounded Review
+             * @default false
+             */
+            grounded_review?: boolean;
+            /** Target Id */
+            target_id?: string | null;
             /** Target Role */
-            target_role: string;
+            target_role?: string | null;
             /** Version Id */
             version_id?: string | null;
+        } | {
+            target_role: string;
+        } | {
+            target_id: string;
         };
         /** EvidenceDecisionInput */
         EvidenceDecisionInput: {
@@ -1815,6 +1826,33 @@ export interface components {
              * @description User ID if authenticated
              */
             userId?: string | null;
+        };
+        /** GroundedResumeReview */
+        GroundedResumeReview: {
+            /** Findings */
+            findings: components["schemas"]["ResumeRequirementFinding"][];
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "evidence_grounded" | "document_only";
+            /**
+             * Needs Refresh
+             * @default false
+             */
+            needs_refresh?: boolean;
+            policy: components["schemas"]["ResumePolicyProfile"];
+            /** Resume Version Id */
+            resume_version_id: string | null;
+            /**
+             * Schema Version
+             * @constant
+             */
+            schema_version: 1;
+            /** Target Id */
+            target_id: string | null;
+            /** Target Role */
+            target_role?: string | null;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -2486,6 +2524,9 @@ export interface components {
         /** ResumeDetailResponse */
         ResumeDetailResponse: {
             evaluation: components["schemas"]["ResumeSavedEvaluation"] | null;
+            /** Grounded Evaluation Id */
+            grounded_evaluation_id?: string | null;
+            grounded_review?: components["schemas"]["GroundedResumeReview"] | null;
             resume: components["schemas"]["ResumeListItem"];
         };
         /** ResumeEvaluationResponse */
@@ -2500,6 +2541,7 @@ export interface components {
             evaluation_id: string;
             /** Format Issues */
             format_issues: components["schemas"]["FormatIssue"][];
+            grounded_review?: components["schemas"]["GroundedResumeReview"] | null;
             /** Overall Score */
             overall_score: number;
             /**
@@ -2563,6 +2605,75 @@ export interface components {
             /** Totalcount */
             totalCount: number;
         };
+        /** ResumePolicyProfile */
+        ResumePolicyProfile: {
+            /**
+             * Market Overlay
+             * @enum {string}
+             */
+            market_overlay: "us_canada_engineering" | "india" | "universal";
+            /** Page Limit */
+            page_limit: number;
+            /** Policy Version */
+            policy_version: string;
+            /** Profile Id */
+            profile_id: string;
+            /**
+             * Schema Version
+             * @constant
+             */
+            schema_version: 1;
+            /** Universal Rules Version */
+            universal_rules_version: string;
+        };
+        /** ResumeRequirementFinding */
+        ResumeRequirementFinding: {
+            /** Blocking */
+            blocking: boolean;
+            /**
+             * Category
+             * @enum {string}
+             */
+            category: "evidence" | "communication" | "role_clarity" | "formatting" | "parseability" | "defensibility" | "document_limit";
+            /** Evidence Revisions */
+            evidence_revisions?: components["schemas"]["EvidenceRevisionRef"][];
+            /** Explanation */
+            explanation: string;
+            /** Finding Id */
+            finding_id: string;
+            /** Focus Label */
+            focus_label?: string | null;
+            /** Next Action */
+            next_action: string;
+            /** Policy Profile Id */
+            policy_profile_id: string;
+            /** Reason Code */
+            reason_code: ("must_have_relevance" | "ownership_clearer" | "outcome_more_defensible" | "technical_depth_stronger" | "level_better_aligned" | "more_recent" | "redundant_evidence" | "page_budget_excluded" | "stable_id_tiebreak") | ("model_unavailable" | "model_timeout") | ("number_not_approved" | "skill_not_approved" | "employer_not_approved" | "outcome_not_approved" | "ownership_upgrade" | "qualifier_removed" | "entity_not_approved") | ("evidence_not_confirmed" | "evidence_private" | "evidence_rejected" | "evidence_unavailable" | "evidence_contradicted" | "evidence_revision_stale") | ("schema_invalid" | "proposal_rejected") | "safe_render_used" | ("reading_order_failed" | "parser_field_missing" | "layout_overflow" | "minimum_font_violated" | "link_invalid" | "document_limit" | "confirmed_application" | "confirmed_application_not_found_in_resume" | "ownership_needs_clarification" | "layout_check" | "responsibility_only_bullet");
+            /** Rule Version */
+            rule_version: string;
+            /**
+             * Schema Version
+             * @constant
+             */
+            schema_version: 1;
+            /**
+             * Severity
+             * @enum {string}
+             */
+            severity: "info" | "warning" | "error";
+            source?: components["schemas"]["SourceRef"] | null;
+            /** Source Locator */
+            source_locator?: string | null;
+        } & ({
+            source: {
+                [key: string]: unknown;
+            };
+            source_locator: string;
+        } | {
+            evidence_revisions: unknown;
+            source?: null;
+            source_locator?: null;
+        });
         /** ResumeSavedEvaluation */
         ResumeSavedEvaluation: {
             /**
@@ -5599,7 +5710,9 @@ export interface operations {
     };
     get_resume_api_v1_resumes__resume_document_id__get: {
         parameters: {
-            query?: never;
+            query?: {
+                grounded_evaluation_id?: string | null;
+            };
             header?: never;
             path: {
                 resume_document_id: string;

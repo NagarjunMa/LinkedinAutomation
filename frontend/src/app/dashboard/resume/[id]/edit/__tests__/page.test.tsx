@@ -3,7 +3,10 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { EvaluationResponse, VersionResponse } from '@/app/lib/api';
 import { resumeDocKey } from '@/lib/resume-cache';
 
-const mocks = vi.hoisted(() => ({ evaluate: vi.fn(), save: vi.fn(), push: vi.fn(), toast: vi.fn(), userId: 'owner-a' }));
+const mocks = vi.hoisted(() => ({
+  evaluate: vi.fn(), get: vi.fn(), save: vi.fn(), push: vi.fn(), toast: vi.fn(), userId: 'owner-a',
+}));
+vi.mock('@/app/lib/api/resume-v2', () => ({ resumeV2Api: { get: mocks.get } }));
 vi.mock('next/navigation', () => ({ useParams: () => ({ id: 'doc-1' }), useRouter: () => ({ push: mocks.push }) }));
 vi.mock('@/contexts/auth-context', () => ({ useAuth: () => ({ user: { id: mocks.userId } }) }));
 vi.mock('@/hooks/use-resume', () => ({
@@ -83,7 +86,7 @@ it('saves pending changes before evaluating the current version', async () => {
   await acceptBullet('First');
   fireEvent.click(screen.getByRole('button', { name: 'Evaluate (1 credit)' }));
   await waitFor(() => expect(mocks.evaluate).toHaveBeenCalledWith({
-    resumeId: 'doc-1', targetRole: 'Software Engineer', versionId: 'v1',
+    resumeId: 'doc-1', targetRole: 'Software Engineer', versionId: 'v1', review: { userId: 'owner-a' },
   }));
   expect(mocks.save).toHaveBeenCalledTimes(1);
 });
@@ -125,9 +128,63 @@ it('evaluates into separate findings without an overall score or source-text dis
   expect(screen.getByText('Review ownership claims.')).toBeInTheDocument();
   expect(screen.queryByText(/Overall:|Potential Score|92/)).not.toBeInTheDocument();
   expect(screen.queryByText('Private synthetic source')).not.toBeInTheDocument();
-  expect(mocks.evaluate).toHaveBeenCalledWith({ resumeId: 'doc-1', targetRole: 'Software Engineer' });
+  expect(mocks.evaluate).toHaveBeenCalledWith({
+    resumeId: 'doc-1', targetRole: 'Software Engineer', review: { userId: 'owner-a' },
+  });
   expect(screen.getByRole('button', { name: 'Re-evaluate' })).toBeEnabled();
   expect(screen.getByRole('tab', { name: 'Document checks' })).toBeEnabled();
+});
+
+it('shows a limited-confidence document-only review and keeps parseability out of candidate findings', async () => {
+  mocks.evaluate.mockResolvedValue({
+    ...evaluation,
+    grounded_review: {
+      schema_version: 1, mode: 'document_only', target_id: null, target_role: 'Software Engineer', resume_version_id: null,
+      policy: { schema_version: 1, profile_id: 'universal', policy_version: 'resume-review-v1',
+        universal_rules_version: 'resume-review-v1', market_overlay: 'universal', page_limit: 2 },
+      findings: [{
+        schema_version: 1, finding_id: 'parseability-1', category: 'parseability', severity: 'warning',
+        blocking: false, reason_code: 'parser_field_missing', policy_profile_id: 'universal',
+        rule_version: 'resume-review-v1', source: { source_id: 'doc-1', source_version: 1 },
+        source_locator: 'Original upload', evidence_revisions: [],
+        explanation: 'The uploaded file has no extractable text.', next_action: 'Upload a text-based PDF.',
+      }],
+    },
+  });
+  render(<ResumeEditPage />);
+  fireEvent.click(screen.getByRole('button', { name: 'Evaluate (1 credit)' }));
+  expect(await screen.findByText(/Limited confidence/)).toBeInTheDocument();
+  expect(screen.queryByText('Clarify personal contribution.')).not.toBeInTheDocument();
+  expect(screen.queryByText('The uploaded file has no extractable text.')).not.toBeInTheDocument();
+  fireEvent.mouseDown(screen.getByRole('tab', { name: 'Document checks' }), { button: 0, ctrlKey: false });
+  expect(await screen.findByText('The uploaded file has no extractable text.')).toBeInTheDocument();
+});
+
+it('keeps the manual role across reload and only opens matching saved findings', async () => {
+  const report = {
+    schema_version: 1, mode: 'document_only', target_id: null, target_role: 'Platform Engineer', resume_version_id: null,
+    policy: { schema_version: 1, profile_id: 'universal', policy_version: 'resume-review-v1',
+      universal_rules_version: 'resume-review-v1', market_overlay: 'universal', page_limit: 2 },
+    findings: [],
+  };
+  mocks.evaluate.mockResolvedValue({ ...evaluation, grounded_review: report });
+  mocks.get.mockResolvedValue({
+    resume: { id: 'doc-1' }, grounded_review: report, grounded_evaluation_id: 'eval-1',
+  });
+  const view = render(<ResumeEditPage />);
+  fireEvent.change(screen.getByRole('textbox', { name: 'Target role' }), { target: { value: 'Platform Engineer' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Evaluate (1 credit)' }));
+  expect(await screen.findByText('Evaluated role Platform Engineer')).toBeInTheDocument();
+  view.unmount();
+  render(<ResumeEditPage />);
+  expect(await screen.findByDisplayValue('Platform Engineer')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Load saved findings' }));
+  expect(await screen.findByText('Evaluated role Platform Engineer')).toBeInTheDocument();
+  expect(mocks.get).toHaveBeenLastCalledWith('doc-1', 'owner-a', 'eval-1');
+  fireEvent.change(screen.getByRole('textbox', { name: 'Target role' }), { target: { value: 'Backend Engineer' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Load saved findings' }));
+  await waitFor(() => expect(mocks.toast).toHaveBeenCalledWith({ title: 'No saved findings for this résumé version and role' }));
+  expect(screen.queryByText('Evaluated role Platform Engineer')).not.toBeInTheDocument();
 });
 
 it('does not fabricate findings for an empty evaluation and keeps the upload recovery route', async () => {
