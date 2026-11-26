@@ -29,6 +29,8 @@ SELECTION_EXCLUSIONS = (*get_args(IneligibleEvidence), "redundant_evidence", "pa
 ResumeReasonCode = RankingCriterion | RenderReason | Literal[
     "reading_order_failed", "parser_field_missing",
     "layout_overflow", "minimum_font_violated", "link_invalid", "document_limit",
+    "confirmed_application", "confirmed_application_not_found_in_resume",
+    "ownership_needs_clarification", "layout_check", "responsibility_only_bullet",
 ]
 
 
@@ -44,7 +46,8 @@ class ResumeRequirementFinding(CareerContract):
     model_config = ConfigDict(json_schema_extra={"oneOf": [
         {
             "required": ["source", "source_locator"],
-            "properties": {"source": {"type": "object"}, "source_locator": {"type": "string"}},
+            "properties": {"source": {"type": "object", "additionalProperties": True},
+                           "source_locator": {"type": "string"}},
         },
         {
             "required": ["evidence_revisions"],
@@ -64,6 +67,7 @@ class ResumeRequirementFinding(CareerContract):
     rule_version: Identifier
     source: SourceRef | None = None
     source_locator: Label | None = None
+    focus_label: Label | None = None
     evidence_revisions: list[EvidenceRevisionRef] = Field(default_factory=list)
     explanation: Text
     next_action: Text
@@ -75,6 +79,16 @@ class ResumeRequirementFinding(CareerContract):
         if self.source is None and not self.evidence_revisions:
             raise ValueError("finding requires a source locator or evidence revisions")
         return self
+
+
+class GroundedResumeReview(CareerContract):
+    policy: ResumePolicyProfile
+    mode: Literal["evidence_grounded", "document_only"]
+    target_id: Identifier | None
+    target_role: Label | None = None
+    resume_version_id: Identifier | None
+    findings: list[ResumeRequirementFinding]
+    needs_refresh: bool = False
 
 
 class EvidenceSelectionDecision(CareerContract):

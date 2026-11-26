@@ -1,6 +1,6 @@
 """Persistence operations for resume documents, versions, and evaluations."""
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, load_only
 
 from app.models.resume_document import ResumeDocument, ResumeVersion
 from app.models.resume_evaluation_v2 import ResumeEvaluationV2
@@ -55,16 +55,21 @@ class ResumeRepository:
         self,
         resume_document_id: str,
         user_id: str,
+        *,
+        grounded_only: bool = False,
+        evaluation_id: str | None = None,
     ) -> ResumeEvaluationV2 | None:
-        return (
-            self.session.query(ResumeEvaluationV2)
-            .filter(
-                ResumeEvaluationV2.user_id == user_id,
-                ResumeEvaluationV2.resume_document_id == resume_document_id,
-            )
-            .order_by(ResumeEvaluationV2.created_at.desc())
-            .first()
+        query = self.session.query(ResumeEvaluationV2).filter(
+            ResumeEvaluationV2.user_id == user_id,
+            ResumeEvaluationV2.resume_document_id == resume_document_id,
         )
+        if evaluation_id is not None:
+            query = query.filter(ResumeEvaluationV2.id == evaluation_id)
+        if grounded_only:
+            query = query.filter(ResumeEvaluationV2.grounded_review_ciphertext.is_not(None)).options(
+                load_only(ResumeEvaluationV2.id, ResumeEvaluationV2.grounded_review_ciphertext),
+            )
+        return query.order_by(ResumeEvaluationV2.created_at.desc(), ResumeEvaluationV2.id.desc()).first()
 
     def get_version(self, version_id: str) -> ResumeVersion | None:
         return self.session.get(ResumeVersion, version_id)

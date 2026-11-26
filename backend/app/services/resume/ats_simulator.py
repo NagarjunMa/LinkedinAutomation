@@ -1,8 +1,9 @@
 from io import BytesIO
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List
 import pdfplumber
 from docx import Document as DocxDocument
+from docx.oxml.ns import qn
 from app.schemas.resume_v2 import FormatIssue
 
 
@@ -10,6 +11,8 @@ class ATSResult(BaseModel):
     parseability_score: int
     raw_text: str
     format_issues: List[FormatIssue]
+    observed_format_issues: list[FormatIssue] = Field(default_factory=list)
+    page_count: int | None = None
 
 
 def simulate_ats(content: bytes, filename: str) -> ATSResult:
@@ -23,10 +26,13 @@ def simulate_ats(content: bytes, filename: str) -> ATSResult:
 
 def _simulate_pdf(content: bytes) -> ATSResult:
     issues: List[FormatIssue] = []
+    observed: list[FormatIssue] = []
     score = 100
     with pdfplumber.open(BytesIO(content)) as pdf:
+        page_count = len(pdf.pages)
         text_parts: list[str] = []
         for i, page in enumerate(pdf.pages):
+            first_page_issue = len(issues)
             tables = [table for table in page.find_tables() if _is_true_table(table)]
             if tables:
                 issues.append(FormatIssue(
@@ -44,17 +50,25 @@ def _simulate_pdf(content: bytes) -> ATSResult:
                 score -= 5
             text = page.extract_text() or ""
             text_parts.append(text)
-            cols = _detect_columns(page)
-            if cols > 1:
-                issues.append(FormatIssue(
+            has_columns, interleaved = _detect_columns(page, text)
+            if has_columns:
+                column_issue = FormatIssue(
                     type="multi_column",
                     location=f"page {i + 1}",
                     fix_hint="Switch to single-column layout.",
-                ))
+                )
+                issues.append(column_issue)
+                if interleaved:
+                    observed.append(column_issue)
                 score -= 20
+            if not text.strip():
+                observed.extend(issue for issue in issues[first_page_issue:] if issue.type != "multi_column")
     raw = "\n".join(text_parts)
     score = max(0, min(100, score))
-    return ATSResult(parseability_score=score, raw_text=raw, format_issues=issues)
+    return ATSResult(
+        parseability_score=score, raw_text=raw, format_issues=issues,
+        observed_format_issues=observed, page_count=page_count,
+    )
 
 
 def _is_true_table(table) -> bool:
@@ -72,15 +86,11 @@ def _is_true_table(table) -> bool:
     return column_count >= 2
 
 
-def _detect_columns(page) -> int:
-    """Detect repeated side-by-side text bands separated by a stable gutter."""
-    return 2 if _column_confidence(page) >= 0.65 else 1
-
-
-def _column_confidence(page) -> float:
+def _detect_columns(page, extracted_text: str) -> tuple[bool, bool]:
+    """Detect stable columns and whether local extraction joins them across rows."""
     words = page.extract_words()
     if not words:
-        return 0.0
+        return False, False
     width = page.width
     min_gutter = width * 0.18
     min_side_words = 2
@@ -92,8 +102,10 @@ def _column_confidence(page) -> float:
         lines.setdefault(key, []).append(word)
 
     split_lines = 0
+    interleaved_lines = 0
     candidate_lines = 0
     gutters: list[tuple[float, float]] = []
+    extracted_lines = {" ".join(line.split()) for line in extracted_text.splitlines()}
     for line_words in lines.values():
         if len(line_words) < min_side_words * 2:
             continue
@@ -113,18 +125,19 @@ def _column_confidence(page) -> float:
         if left_count >= min_side_words and right_count >= min_side_words:
             split_lines += 1
             gutters.append((left_edge, right_edge))
+            if " ".join(word["text"] for word in ordered) in extracted_lines:
+                interleaved_lines += 1
 
     if candidate_lines < 6 or split_lines < 4:
-        return 0.0
-    if not gutters:
-        return 0.0
+        return False, False
 
     gutter_centers = [(left + right) / 2 for left, right in gutters]
     center_avg = sum(gutter_centers) / len(gutter_centers)
     spread = max(abs(center - center_avg) for center in gutter_centers)
     stability = max(0.0, 1.0 - spread / (width * 0.15))
     prevalence = split_lines / candidate_lines
-    return min(1.0, prevalence * 0.75 + stability * 0.25)
+    has_columns = prevalence * 0.75 + stability * 0.25 >= 0.65
+    return has_columns, has_columns and interleaved_lines >= 2
 
 
 def _simulate_docx(content: bytes) -> ATSResult:
@@ -139,4 +152,15 @@ def _simulate_docx(content: bytes) -> ATSResult:
         ))
         score -= 15
     raw = "\n".join(p.text for p in doc.paragraphs if p.text.strip())
-    return ATSResult(parseability_score=max(0, min(100, score)), raw_text=raw, format_issues=issues)
+    cell_tag, paragraph_tag, text_tag = map(qn, ("w:tc", "w:p", "w:t"))
+    # Visit physical cells once. Expanding the table grid follows vertical merges recursively.
+    table_text = (
+        "".join(run.text or "" for run in paragraph.iter(text_tag)).strip()
+        for cell in doc.element.body.iter(cell_tag)
+        for paragraph in cell.iterchildren(paragraph_tag)
+    )
+    missing_cell_text = any(paragraph and paragraph not in raw for paragraph in table_text)
+    return ATSResult(
+        parseability_score=max(0, min(100, score)), raw_text=raw, format_issues=issues,
+        observed_format_issues=issues if missing_cell_text else [],
+    )

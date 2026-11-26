@@ -12,6 +12,7 @@ const strings = z.array(text);
 const optionalText = text.nullable().default(null);
 const integer = z.number().int();
 const score = integer.min(0).max(100);
+const revision = integer.min(1);
 const bullet = z.object({ id, text, raw_text: text });
 const scoreBreakdown = z.object({
   content_quality: score, role_fit: score, evidence_strength: score, recruiter_readability: score,
@@ -33,6 +34,41 @@ const evaluationFields = {
   format_issues: z.array(z.object({ type: text, location: text, fix_hint: text })),
 };
 
+const evidenceRevision = z.object({ evidence_id: id, revision });
+const finding = z.object({
+  schema_version: z.literal(1), finding_id: id, policy_profile_id: id, rule_version: id,
+  category: z.enum(['evidence', 'communication', 'role_clarity', 'formatting', 'parseability', 'defensibility', 'document_limit']),
+  severity: z.enum(['info', 'warning', 'error']), blocking: z.boolean(),
+  reason_code: z.enum(['confirmed_application', 'confirmed_application_not_found_in_resume',
+    'ownership_needs_clarification', 'layout_check', 'parser_field_missing', 'document_limit',
+    'responsibility_only_bullet', 'reading_order_failed']),
+  explanation: id, next_action: id,
+  focus_label: id.nullish(),
+});
+
+const groundedReview = z.object({
+  schema_version: z.literal(1),
+  mode: z.enum(['document_only', 'evidence_grounded']),
+  target_id: id.nullable(),
+  target_role: id.nullish(),
+  resume_version_id: id.nullable(),
+  needs_refresh: z.boolean().optional(),
+  policy: z.object({
+    schema_version: z.literal(1), profile_id: id, policy_version: id, universal_rules_version: id,
+    market_overlay: z.enum(['universal', 'us_canada_engineering', 'india']), page_limit: revision,
+  }),
+  findings: z.array(z.union([
+    finding.extend({
+      source: z.object({ source_id: id, source_version: revision }),
+      source_locator: id, evidence_revisions: z.array(evidenceRevision).optional(),
+    }),
+    finding.extend({
+      source: z.null().optional(), source_locator: z.null().optional(),
+      evidence_revisions: z.array(evidenceRevision).min(1),
+    }),
+  ])),
+}).nullish() satisfies z.ZodType<components['schemas']['GroundedResumeReview'] | null | undefined>;
+
 // Checked against generated output types. Runtime validation is intentionally
 // separate from transport declarations; TypeScript alone cannot inspect JSON.
 const upload = z.object({
@@ -53,6 +89,7 @@ const upload = z.object({
 const evaluation = z.object({
   ...evaluationFields, evaluation_id: id, summary_critique: text.nullable(),
   ats_parseability: integer, ats_raw_text: text,
+  grounded_review: groundedReview,
 }) satisfies z.ZodType<EvaluationResponse>;
 
 const savedEvaluation = z.object({
@@ -73,7 +110,8 @@ const row = z.object({
 });
 const list = z.object({ resumes: z.array(row), total_count: integer, totalCount: integer }) satisfies
   z.ZodType<ResumeListResponse>;
-const detail = z.object({ resume: row, evaluation: savedEvaluation.nullable() }) satisfies
+const detail = z.object({ resume: row, evaluation: savedEvaluation.nullable(), grounded_review: groundedReview,
+  grounded_evaluation_id: id.nullish() }) satisfies
   z.ZodType<ResumeDetailResponse>;
 const rewrite = z.object({
   rewritten: text, placeholders: z.array(z.object({ token: text, what: text })), applied_changes: strings,

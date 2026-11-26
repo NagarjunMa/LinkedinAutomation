@@ -8,6 +8,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from app.schemas.career.resume import GroundedResumeReview
 from app.schemas.resume_v2 import (
     BulletFlag,
     FormatIssue,
@@ -39,6 +40,7 @@ class ResumeEvaluationResponse(ResumeEvaluationFields):
     summary_critique: str | None
     ats_parseability: int
     ats_raw_text: str
+    grounded_review: GroundedResumeReview | None = Field(default=None, exclude_if=lambda value: value is None)
 
 
 class ResumeKeywordAnalysis(BaseModel):
@@ -88,6 +90,8 @@ class ResumeListResponse(BaseModel):
 class ResumeDetailResponse(BaseModel):
     resume: ResumeListItem
     evaluation: ResumeSavedEvaluation | None
+    grounded_review: GroundedResumeReview | None = Field(default=None, exclude_if=lambda value: value is None)
+    grounded_evaluation_id: str | None = Field(default=None, exclude_if=lambda value: value is None)
 
 
 class ResumeVersionResponse(BaseModel):

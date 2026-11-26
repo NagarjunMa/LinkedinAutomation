@@ -1,5 +1,6 @@
 from sqlalchemy import Column, String, DateTime, Text, Integer, ForeignKey, Numeric
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import deferred
 from sqlalchemy.sql import func
 from app.db.base_class import Base
 
@@ -18,6 +19,7 @@ class ResumeEvaluationV2(Base):
     top_actions_before_applying = Column(JSONB, nullable=False, server_default="[]")
     parser_confidence = Column(String, nullable=False, server_default="medium")
     summary_critique = Column(Text, nullable=True)
+    grounded_review_ciphertext = deferred(Column(Text, nullable=True))
     ats_parseability = Column(Integer, nullable=False)
     ats_raw_text = Column(Text, nullable=False)
     model_version = Column(String, nullable=False)

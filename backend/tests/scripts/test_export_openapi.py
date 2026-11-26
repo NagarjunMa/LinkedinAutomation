@@ -18,7 +18,9 @@ def document():
 def test_exports_client_routes_and_declared_transport_semantics(document):
     assert "/api/v1/resumes/upload" in document.get("paths", {})
     schemas = document["components"]["schemas"]
-    assert schemas["EvalRequest"]["properties"]["target_role"]["minLength"] == 2
+    evaluate = schemas["EvalRequest"]
+    assert {"type": "string", "minLength": 2, "maxLength": 200} in evaluate["properties"]["target_role"]["anyOf"]
+    assert {tuple(branch["required"]) for branch in evaluate["anyOf"]} == {("target_id",), ("target_role",)}
     assert "email" in schemas["WaitlistCreate"]["required"]
     assert schemas["WaitlistCreate"]["properties"]["consent"]["const"] is True
     assert {"type": "null"} in schemas["WaitlistCreate"]["properties"]["career_stage"]["anyOf"]

@@ -21,8 +21,10 @@ export function useUploadResume() {
 
 export function useEvaluateResume() {
   const qc = useQueryClient();
-  return useMutation<EvaluationResponse, Error, { resumeId: string; targetRole: string; versionId?: string }>({
-    mutationFn: ({ resumeId, targetRole, versionId }) => resumeV2Api.evaluate(resumeId, targetRole, versionId),
+  return useMutation<EvaluationResponse, Error, {
+    resumeId: string; targetRole?: string; versionId?: string; review?: { userId: string; targetId?: string };
+  }>({
+    mutationFn: ({ resumeId, targetRole, versionId, review }) => resumeV2Api.evaluate(resumeId, targetRole, versionId, review),
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ['evaluation', vars.resumeId] });
       qc.invalidateQueries({ queryKey: ['credits-balance'] });

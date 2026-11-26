@@ -382,6 +382,195 @@ def test_evaluate_resume_returns_report_and_debits(
     assert "ats_raw_text" in data
 
 
+@respx.mock
+def test_grounded_review_keeps_parser_failure_out_of_candidate_findings(
+    client, auth_headers, db_session, test_user_id, monkeypatch,
+):
+    from cryptography.fernet import Fernet
+    from pydantic import SecretStr
+
+    from app.application.evidence_service import EvidenceService
+    from app.core.config import settings
+    from app.models.career import CareerTargetRow
+    from app.repositories.career_repository import CareerRepository
+    from app.schemas.career.evidence import CareerEvidenceItem
+    from app.services.credits.ledger import grant_monthly
+    from app.services.resume.ats_simulator import ATSResult
+
+    monkeypatch.setattr(settings, "CAREER_TRANSCRIPT_KEY", SecretStr(Fernet.generate_key().decode()))
+    grant_monthly(db_session, test_user_id, 20)
+    target = CareerTargetRow(
+        user_id=test_user_id, id="scheduler-target", role_family="Software Engineer",
+        seniority="mid", desired_work=["Python"], exclusions=[], status="active",
+    )
+    monkeypatch.setattr(CareerRepository, "get_target", lambda repo, key, **_options: (
+        target if (repo.user_id, key) == (test_user_id, target.id) else None
+    ))
+    db_session.commit()
+    claim = CareerEvidenceItem(
+        schema_version=1, owner_id=test_user_id, evidence_id="proof", revision=2,
+        claim="I used Python to build a scheduler with my team.", category="action", ownership="team",
+        lifecycle="confirmed", support="candidate_statement",
+        sources=[{
+            "source_id": "note", "source_version": 1, "relationship": "supports",
+            "locator": "Synthetic project", "excerpt": "Synthetic source text", "extraction": "candidate",
+        }],
+    )
+    monkeypatch.setattr(EvidenceService, "list_eligible", lambda *_args, **_kwargs: [claim])
+    with FIXTURE.open("rb") as file:
+        upload = client.post("/api/v1/resumes/upload", files={"file": ("simple.pdf", file)}, headers=auth_headers)
+    assert upload.status_code == 201
+    path = f"/api/v1/resumes/{upload.json()['resume_document_id']}/evaluate"
+    mock_openai_eval()
+    body = {"target_id": "scheduler-target"}
+    responses = []
+    for raw_text in ("Machine-readable résumé", ""):
+        monkeypatch.setattr(
+            "app.application.resume_service.simulate_ats",
+            lambda *_args, **_kwargs: ATSResult(parseability_score=100, raw_text=raw_text, format_issues=[]),
+        )
+        response = client.post(path, json=body, headers=auth_headers)
+        assert response.status_code == 200, response.text
+        responses.append(response.json())
+
+    readable, unreadable = (item["grounded_review"] for item in responses)
+    assert readable["mode"] == unreadable["mode"] == "evidence_grounded"
+    candidate_categories = {"evidence", "communication", "defensibility", "role_clarity"}
+    candidates = [row for row in readable["findings"] if row["category"] in candidate_categories]
+    assert candidates
+    assert candidates == [row for row in unreadable["findings"] if row["category"] in candidate_categories]
+    assert {"evidence_id": "proof", "revision": 2} in candidates[0]["evidence_revisions"]
+    assert all(finding["focus_label"] == "Python" for finding in candidates)
+    assert any(row["category"] == "parseability" for row in unreadable["findings"])
+    assert "Synthetic source text" not in response.text
+
+
+@respx.mock
+def test_document_only_review_cites_communication_in_the_exact_saved_version(
+    client, auth_headers, db_session, test_user_id, monkeypatch,
+):
+    from cryptography.fernet import Fernet
+    from pydantic import SecretStr
+
+    from app.core.config import settings
+    from app.services.credits.ledger import grant_monthly
+
+    monkeypatch.setattr(settings, "CAREER_TRANSCRIPT_KEY", SecretStr(Fernet.generate_key().decode()))
+    grant_monthly(db_session, test_user_id, 20)
+    db_session.commit()
+    with FIXTURE.open("rb") as file:
+        upload = client.post("/api/v1/resumes/upload", files={"file": ("simple.pdf", file)}, headers=auth_headers)
+    assert upload.status_code == 201
+    document = upload.json()
+    doc_id = document["resume_document_id"]
+    bullet_id = document["experience"][0]["bullets"][0]["id"]
+    version = client.post(f"/api/v1/resumes/{doc_id}/versions", json={
+        "change_set": [{"type": "bullet_update", "bullet_id": bullet_id,
+                        "new_text": "Responsible for synthetic deployment checks."}],
+    }, headers=auth_headers)
+    assert version.status_code == 201
+    version_id = version.json()["version_id"]
+
+    mock_openai_eval()
+    response = client.post(f"/api/v1/resumes/{doc_id}/evaluate", json={
+        "target_role": "Software Engineer", "grounded_review": True, "version_id": version_id,
+    }, headers=auth_headers)
+    assert response.status_code == 200
+    review = response.json()["grounded_review"]
+    assert review["mode"] == "document_only"
+    assert review["target_role"] == "Software Engineer"
+    assert review["resume_version_id"] == version_id
+    [finding] = [row for row in review["findings"] if row["category"] == "communication"]
+    assert finding["source"]["source_id"] == doc_id
+    assert version_id in finding["source_locator"]
+    assert finding["source_locator"].endswith("Experience entry 1 / bullet 1")
+    assert "overall_score" not in review
+    assert "synthetic deployment checks" not in json.dumps(review)
+    saved = client.get(f"/api/v1/resumes/{doc_id}", headers=auth_headers)
+    assert saved.json()["grounded_review"] == review
+
+
+def test_grounded_formatting_requires_an_observed_extraction_problem():
+    import fitz
+
+    from app.application.resume_review import project_resume_review
+    from app.schemas.resume_v2 import ResumeDocumentJSON
+    from app.services.resume.ats_simulator import simulate_ats
+
+    resume = ResumeDocumentJSON(contact={"name": "Synthetic"}, raw_text="")
+    image = fitz.Pixmap(fitz.csRGB, 8, 8, bytes([255, 255, 255] * 64), False)
+    for readable in (True, False):
+        with fitz.open() as pdf:
+            page = pdf.new_page()
+            page.insert_image(fitz.Rect(30, 30, 45, 45), pixmap=image)
+            if readable:
+                page.insert_text((30, 70), "Built a synthetic checker.")
+            ats = simulate_ats(pdf.tobytes(), "test.pdf")
+        assert any(issue.type == "image" for issue in ats.format_issues)
+        report = project_resume_review("test-doc", resume, None, ats, None, [])
+        assert any(finding.category == "formatting" for finding in report.findings) is not readable
+
+
+def test_docx_observation_reads_merged_cells_without_expanding_the_grid():
+    from copy import deepcopy
+    from io import BytesIO
+    from sys import getrecursionlimit
+
+    from docx import Document
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+
+    from app.services.resume.ats_simulator import simulate_ats
+
+    document = Document()
+    document.add_paragraph("Already extracted")
+    table = document.add_table(rows=1, cols=1)
+    table.cell(0, 0).text = "Already extracted"
+    merge = OxmlElement("w:vMerge")
+    merge.set(qn("w:val"), "restart")
+    table.cell(0, 0)._tc.get_or_add_tcPr().append(merge)
+
+    empty_row = OxmlElement("w:tr")
+    empty_cell = OxmlElement("w:tc")
+    properties = OxmlElement("w:tcPr")
+    properties.append(OxmlElement("w:vMerge"))
+    empty_cell.extend([properties, OxmlElement("w:p")])
+    empty_row.append(empty_cell)
+    for _ in range(getrecursionlimit() + 5):
+        table._tbl.append(deepcopy(empty_row))
+    table.add_row().cells[0].text = "Only in the table"
+
+    buffer = BytesIO()
+    document.save(buffer)
+    result = simulate_ats(buffer.getvalue(), "test.docx")
+    assert result.raw_text == "Already extracted"
+    assert [issue.type for issue in result.observed_format_issues] == ["table"]
+
+
+def test_grounded_formatting_cites_observed_two_column_reading_order():
+    import fitz
+
+    from app.application.resume_review import project_resume_review
+    from app.schemas.resume_v2 import ResumeDocumentJSON
+    from app.services.resume.ats_simulator import simulate_ats
+
+    with fitz.open() as pdf:
+        page = pdf.new_page()
+        for i in range(8):
+            y = 72 + i * 21
+            page.insert_text((40, y), f"Left column sentence {i}")
+            page.insert_text((355, y), f"Right column text {i}")
+        ats = simulate_ats(pdf.tobytes(), "test.pdf")
+    assert "Left column sentence 0 Right column text 0" in ats.raw_text
+    assert [issue.type for issue in ats.format_issues] == ["multi_column"]
+
+    resume = ResumeDocumentJSON(contact={"name": "Synthetic"}, raw_text="")
+    review = project_resume_review("test-doc", resume, None, ats, None, [])
+    [finding] = [row for row in review.findings if row.category == "formatting"]
+    assert finding.reason_code == "reading_order_failed"
+    assert finding.source_locator == "Original upload / page 1"
+
+
 # ---------------------------------------------------------------------------
 # Task 16: POST /api/v1/resumes/{id}/rewrite/{bullet_id}
 # ---------------------------------------------------------------------------

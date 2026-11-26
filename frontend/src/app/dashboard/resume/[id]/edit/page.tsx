@@ -10,6 +10,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ResumeRenderer } from '@/components/resume/resume-renderer';
 import { RewriteModal } from '@/components/resume/rewrite-modal';
 import { AtsTab } from '@/components/resume/ats-tab';
+import { GroundedFindings, ResumeReviewTargetPicker } from '@/components/resume/grounded-findings';
+import { resumeV2Api } from '@/app/lib/api/resume-v2';
 import { useEvaluateResume, useCreateVersion } from '@/hooks/use-resume';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/auth-context';
@@ -29,7 +31,11 @@ function ResumeEditor({ id, userId }: { id: string; userId: string }) {
   const { toast } = useToast();
   const [doc, setDoc] = useState<ResumeDocumentJSON | null>(null);
   const [evaluation, setEvaluation] = useState<EvaluationResponse | null>(null);
+  const [review, setReview] = useState<EvaluationResponse['grounded_review']>();
+  const [groundedEvaluationId, setGroundedEvaluationId] = useState<string>();
   const [targetRole, setTargetRole] = useState('Software Engineer');
+  const [target, setTarget] = useState<{ target_id: string; role_family: string } | null>();
+  const targetId = target?.target_id;
   const [country, setCountry] = useState('US');
   const [activeBullet, setActiveBullet] = useState<Bullet | null>(null);
   const [pendingChanges, setPendingChanges] = useState<ChangeItem[]>([]);
@@ -60,6 +66,11 @@ function ResumeEditor({ id, userId }: { id: string; userId: string }) {
         const editor = JSON.parse(cached);
         setVersionId(editor.versionId);
         setPendingChanges(editor.pendingChanges);
+        if (typeof editor.groundedEvaluationId === 'string') setGroundedEvaluationId(editor.groundedEvaluationId);
+        if (typeof editor.targetRole === 'string') setTargetRole(editor.targetRole);
+        if (editor.target === null || (typeof editor.target?.target_id === 'string' && typeof editor.target?.role_family === 'string')) {
+          setTarget(editor.target);
+        }
       } catch {
         sessionStorage.removeItem(editorKey);
       }
@@ -71,9 +82,9 @@ function ResumeEditor({ id, userId }: { id: string; userId: string }) {
   useEffect(() => {
     if (doc) {
       sessionStorage.setItem(docKey, JSON.stringify(doc));
-      sessionStorage.setItem(editorKey, JSON.stringify({ versionId, pendingChanges }));
+      sessionStorage.setItem(editorKey, JSON.stringify({ versionId, pendingChanges, target, targetRole, groundedEvaluationId }));
     }
-  }, [docKey, editorKey, doc, versionId, pendingChanges]);
+  }, [docKey, editorKey, doc, versionId, pendingChanges, target, targetRole, groundedEvaluationId]);
 
   const savePendingChanges = async () => {
     if (pendingChanges.length === 0) return versionId;
@@ -83,12 +94,13 @@ function ResumeEditor({ id, userId }: { id: string; userId: string }) {
     });
     setVersionId(result.version_id);
     setPendingChanges([]);
+    setGroundedEvaluationId(undefined);
     return result.version_id;
   };
 
   const runEvaluate = async () => {
     if (operationInFlight.current || activeBullet) return;
-    if (!targetRole || targetRole.length < 2) {
+    if (!targetId && targetRole.trim().length < 2) {
       toast({ title: 'Set a target role first', variant: 'destructive' });
       return;
     }
@@ -97,9 +109,21 @@ function ResumeEditor({ id, userId }: { id: string; userId: string }) {
     try {
       const currentVersion = await savePendingChanges();
       if (!mounted.current) return;
-      const res = await evaluate.mutateAsync({ resumeId: id, targetRole,
+      const res = await evaluate.mutateAsync({ resumeId: id, ...(targetId ? {} : { targetRole: targetRole.trim() }),
+        review: { userId, ...(targetId ? { targetId } : {}) },
         ...(currentVersion ? { versionId: currentVersion } : {}) });
+      if (!mounted.current) return;
+      const report = res.grounded_review;
+      if (report && (report.target_id !== (targetId ?? null) || report.resume_version_id !== (currentVersion ?? null)
+        || (!targetId && report.target_role !== targetRole.trim()))) {
+        setEvaluation(null);
+        setReview(null);
+        toast({ title: 'Saved findings did not match this selection', variant: 'destructive' });
+        return;
+      }
       setEvaluation(res);
+      setReview(report);
+      setGroundedEvaluationId(report ? res.evaluation_id : undefined);
     } catch (e: any) {
       if (e?.status === 402) {
         toast({
@@ -113,6 +137,38 @@ function ResumeEditor({ id, userId }: { id: string; userId: string }) {
     } finally {
       operationInFlight.current = false;
       setWorking(false);
+    }
+  };
+
+  const loadSavedFindings = async () => {
+    if (operationInFlight.current) return;
+    operationInFlight.current = true;
+    setWorking(true);
+    try {
+      const detail = await resumeV2Api.get(id, userId, groundedEvaluationId);
+      if (!mounted.current) return;
+      const saved = detail.grounded_review;
+      if (detail.resume.id !== id || !saved || saved.resume_version_id !== (versionId ?? null)
+        || (groundedEvaluationId && detail.grounded_evaluation_id !== groundedEvaluationId)
+        || (target !== undefined && saved.target_id !== (targetId ?? null))
+        || (target === null && saved.target_role !== targetRole.trim())) {
+        setReview(null);
+        setEvaluation(null);
+        toast({ title: 'No saved findings for this résumé version and role' });
+        return;
+      }
+      setReview(saved);
+      setGroundedEvaluationId(detail.grounded_evaluation_id ?? undefined);
+      setEvaluation(null);
+    } catch {
+      if (mounted.current) {
+        setReview(null);
+        setEvaluation(null);
+        toast({ title: 'Saved findings could not be loaded', variant: 'destructive' });
+      }
+    } finally {
+      operationInFlight.current = false;
+      if (mounted.current) setWorking(false);
     }
   };
 
@@ -185,8 +241,25 @@ function ResumeEditor({ id, userId }: { id: string; userId: string }) {
       <Card>
         <CardContent className="pt-6 flex flex-wrap items-end gap-4">
           <div className="flex-1 min-w-40">
-            <Label htmlFor="role">Target role</Label>
-            <Input id="role" value={targetRole} disabled={working || !!activeBullet} onChange={(e) => setTargetRole(e.target.value)} />
+            {!targetId && <>
+              <Label htmlFor="role">Target role</Label>
+              <Input id="role" value={targetRole} disabled={working || !!activeBullet}
+                onChange={(e) => {
+                  setTargetRole(e.target.value);
+                  setTarget(null);
+                  setReview(null);
+                  setEvaluation(null);
+                  setGroundedEvaluationId(undefined);
+                }} />
+            </>}
+            {target && <p className="text-sm font-medium">{target.role_family}</p>}
+            <ResumeReviewTargetPicker userId={userId} selected={targetId ?? ''} disabled={working || !!activeBullet}
+              onSelect={selection => {
+                setTarget(selection ?? null);
+                setReview(null);
+                setEvaluation(null);
+                setGroundedEvaluationId(undefined);
+              }} />
           </div>
           <div>
             <Label htmlFor="country">Country</Label>
@@ -202,7 +275,10 @@ function ResumeEditor({ id, userId }: { id: string; userId: string }) {
             </select>
           </div>
           <Button onClick={runEvaluate} disabled={working || !!activeBullet}>
-            {evaluate.isPending ? 'Evaluating…' : evaluation ? 'Re-evaluate' : 'Evaluate (1 credit)'}
+            {evaluate.isPending ? 'Evaluating…' : evaluation || review ? 'Re-evaluate' : 'Evaluate (1 credit)'}
+          </Button>
+          <Button variant="outline" onClick={loadSavedFindings} disabled={working || !!activeBullet || pendingChanges.length > 0}>
+            {review ? 'Refresh saved findings' : 'Load saved findings'}
           </Button>
           <Button
             variant="outline"
@@ -217,10 +293,17 @@ function ResumeEditor({ id, userId }: { id: string; userId: string }) {
       <Tabs defaultValue="resume">
         <TabsList>
           <TabsTrigger value="resume">Resume</TabsTrigger>
-          <TabsTrigger value="ats" disabled={!evaluation}>Document checks</TabsTrigger>
+          <TabsTrigger value="ats" disabled={!evaluation && !review}>Document checks</TabsTrigger>
         </TabsList>
         <TabsContent value="resume">
-          {evaluation && (
+          {review ? (
+            <section aria-label="Grounded findings" className="text-sm mb-6 space-y-3">
+              <h2 className="font-semibold">Grounded findings</h2>
+              {review.target_role && <p className="break-words">Evaluated role {review.target_role}</p>}
+              <p>These findings describe the evaluated version. Re-evaluate after editing.</p>
+              <GroundedFindings review={review} />
+            </section>
+          ) : evaluation && (
             <section aria-label="Content findings" className="text-sm mb-6 space-y-3">
               <h2 className="font-semibold">Content findings</h2>
               <p>Model-assisted feedback, not a hiring assessment. Verify suggestions against your actual experience; document checks are separate.</p>
@@ -259,7 +342,17 @@ function ResumeEditor({ id, userId }: { id: string; userId: string }) {
           />
         </TabsContent>
         <TabsContent value="ats">
-          {evaluation && <AtsTab evaluation={evaluation} />}
+          {review ? (
+            <section aria-label="Document findings" className="space-y-3">
+              <h2 className="font-semibold">Document findings</h2>
+              <p>These checks describe the uploaded file and its extracted text.</p>
+              <GroundedFindings review={review} document />
+              {evaluation?.ats_raw_text && <details>
+                <summary>Extracted text</summary>
+                <pre className="max-h-96 overflow-auto whitespace-pre-wrap text-xs">{evaluation.ats_raw_text}</pre>
+              </details>}
+            </section>
+          ) : evaluation && <AtsTab evaluation={evaluation} />}
         </TabsContent>
       </Tabs>
 
@@ -268,7 +361,7 @@ function ResumeEditor({ id, userId }: { id: string; userId: string }) {
         onOpenChange={(o) => { if (!o) setActiveBullet(null); }}
         resumeId={id}
         bullet={activeBullet}
-        targetRole={targetRole}
+        targetRole={target?.role_family ?? targetRole}
         country={country}
         versionId={versionId}
         findings={activeFindings}
