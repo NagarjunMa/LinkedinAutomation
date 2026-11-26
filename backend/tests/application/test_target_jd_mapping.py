@@ -25,7 +25,7 @@ def project():
         }],
     )
 
-    def map_jd(job_description, quote, skill="Python", *, additional_requirements=()):
+    def map_jd(job_description, quote, skill="Python", *, additional_requirements=(), evidence_skill="Python"):
         extraction = JDExtraction(
             must_have=[Requirement(skill=skill, evidence_from_jd=quote, type="technical")],
             good_to_have=[
@@ -34,8 +34,11 @@ def project():
             ],
             seniority="senior", primary_role_category="SWE", country_hint="US",
         )
+        matching_evidence = evidence if evidence_skill == "Python" else evidence.model_copy(
+            update={"claim": f"Used {evidence_skill} to build a deployment checker."},
+        )
         return project_target_jd_mapping(
-            target, [evidence], evaluation_id="evaluation", jd_text=job_description,
+            target, [matching_evidence], evaluation_id="evaluation", jd_text=job_description,
             jd_text_sha256=sha256(job_description.encode()).hexdigest(), extraction=extraction,
             resume_document_id="resume", resume=None,
         )
@@ -127,6 +130,164 @@ def test_only_grounded_affirmative_job_requirements_map_to_used_skills(project, 
         assert item.evidence is None
     else:
         assert item.evidence.model_dump() == {"evidence_id": "python", "revision": 2}
+
+
+@pytest.mark.parametrize(("jd", "expected"), [
+    ("# Qualifications\n## We do not require these skills\n### Technical skills\n- Python", "unresolved"),
+    ("# Qualifications\n## Choose one of these tracks\n### Technical skills\n- Python", "unresolved"),
+    ("# Qualifications\n## Choose **one** of these tracks\n### Technical skills\n- Python", "unresolved"),
+    ("# Qualifications\n## Choose one of these tracks\n1. Technical skills\n   ## Required skills\n   - Python",
+     "unresolved"),
+    ("# We do not require these skills\n- Technical skills\n  # Required skills\n  - Python", "unresolved"),
+    ("## Required skills\n+ Choose one of these tracks\n  ### Technical skills\n  - Python", "unresolved"),
+    ("## Required skills\n+ We do not require these skills\n  ### Technical skills\n  - Python", "unresolved"),
+    ("# Qualifications\n## We do not require these skills\nTechnical skills:\n- Python", "unresolved"),
+    ("  ## We do not require these skills\n### Technical skills\n- Python", "unresolved"),
+    ("Requirements:\n- Choose one of these tracks:\n  ### Technical skills\n    - Python", "unresolved"),
+    ("# Qualifications\n## Technical skills\n### Required skills\n- Python", "supported"),
+    ("# Senior Platform Engineer\n## Technical skills\n- Python", "supported"),
+    ("# Engineering role\n## Skills by domain\n### Technical skills\n- Python", "supported"),
+    ("# We do not require the following\n## Technical skills\n- Python", "unresolved"),
+    ("# Qualifications\n## Experience with Python/Java\n### Technical skills\n- Python", "unresolved"),
+    ("# Qualifications\n## Choose one of these tracks\n### Technical skills\n- Java\n"
+     "## Required skills\n### Technical skills\n- Python", "supported"),
+    ("# Qualifications\n## Requirements\n### Python is not required elsewhere\n- Java\n"
+     "### Technical skills\n- Python", "supported"),
+    ("# Qualifications\n- Other track\n  ### We do not require these skills\n  - Java\n- Python", "supported"),
+    ("# Qualifications\n1. Other track\n   ### We do not require these skills\n   - Java\n\n- Python", "supported"),
+    ("# Qualifications\n## We do not require these skills\n1. Technical skills\n   - Java\n\n"
+     "  ## Required skills\n  - Python", "supported"),
+    ("# Qualifications\n- Technical skills\n  (choose one of these)\n\n  ### Technical skills\n  - Python",
+     "unresolved"),
+    ("# Qualifications\n- Technical skills\n  We do not require these skills\n\n  ### Technical skills\n  - Python",
+     "unresolved"),
+    ("# Qualifications\n- Technical skills\n  ### Other skills\n  We do not require Java\n\n"
+     "  ### Technical skills\n  - Python", "supported"),
+    ("# Qualifications ###\n## We do not require these skills ##\n### Technical skills ###\n- Python", "unresolved"),
+    ("# Qualifications\n## We do not require these skills\n### Technical skills\n- Java\n"
+     "##\n### Technical skills\n- Python", "supported"),
+])
+def test_markdown_heading_ancestry_preserves_governing_scope(project, jd, expected):
+    quote = "- Python"
+    [item] = project(jd, quote).requirements
+    assert item.state == expected
+    assert (item.evidence is not None) == (expected == "supported")
+    assert jd[item.requirement.source_start:item.requirement.source_end] == quote
+
+
+@pytest.mark.parametrize("jd", [
+    "Experience with Python/Java",
+    "Experience with Java/Python",
+    "Experience with Python／Java",
+    "Experience with Java／Python",
+    "Experience with Python 3/Java 17",
+    "Experience with Python 3／Java 17",
+    "Experience with Python v3.11/Java 17",
+    "Experience with Python 3.x/Java 17",
+    "Experience with Python 3.*/Java 17",
+    "Experience with Python >=3.11/Java 17",
+    "Experience with Python **v3.11**/Java 17",
+    "Experience with Python\n  3.11/Java 17",
+    "Experience with Python\n3.11/Java 17",
+    "Experience with Python version 3/Java 17",
+    "Experience with Python v3.11-beta/Java 17",
+    "Experience with Python 3.11–3.12/Java 17",
+    "Experience with Python 3.11 (latest)/Java 17",
+    "Experience with Python v3.11.0+cpu/Java 17",
+    "Experience with Java/experience with Python",
+    "Experience with Java／(**experience with** Python)",
+    "Experience with Python\n with v3.11/Java 17",
+    "Experience with Python\n3.11\n/ Java 17",
+    "Experience with **Python**/**Java**",
+    "Experience with (Python)/(Java)",
+    "Requirements:\nPython\n／ Java",
+    "Requirements:\n- Python\n  ／ Java",
+    "Requirements:\n- Python\n  **/ Java**",
+    "Requirements:\nPython／\nJava",
+    "Experience with Java／\nPython",
+    "Experience with Java/\nExperience with Python",
+    "Proficiency in Java 17／\nProficiency in Python 3.11",
+    "Experience with Java／\n- Python",
+    "Requirements:\n- Java/\n  - Python",
+    "Experience with Python / Java",
+])
+def test_slash_alternatives_do_not_attach_evidence(project, jd):
+    [item] = project(jd, "Python").requirements
+    assert item.state == "unresolved"
+    assert item.reason_code == "requirement_not_affirmative"
+    assert item.evidence is None
+    assert jd[item.requirement.source_start:item.requirement.source_end] == "Python"
+
+
+@pytest.mark.parametrize("separator", [" ", "\n"])
+def test_version_release_label_can_precede_a_slash_alternative(project, separator):
+    jd = f"Experience with Java{separator}17 LTS/Kotlin 2"
+    [item] = project(jd, "Java", "Java", evidence_skill="Java").requirements
+    assert item.state == "unresolved"
+    assert item.reason_code == "requirement_not_affirmative"
+    assert item.evidence is None
+
+
+def test_literal_compound_skill_can_be_supported(project):
+    [item] = project("Experience with CI/CD", "CI/CD", "CI/CD", evidence_skill="CI/CD").requirements
+    assert item.state == "supported"
+    assert item.evidence is not None
+
+
+def test_unknown_slash_label_is_ambiguous_even_with_an_exact_evidence_label(project):
+    [item] = project("Experience with Python/Java", "Python/Java", "Python/Java", evidence_skill="Python/Java").requirements
+    assert item.state == "unresolved"
+    assert item.reason_code == "requirement_not_affirmative" and item.evidence is None
+
+
+def test_slash_at_end_of_separate_list_item_does_not_block_next_requirement(project):
+    jd = "Requirements:\n- Read the documentation at https://example.test/\n- Python"
+    [item] = project(jd, "Python").requirements
+    assert item.state == "supported"
+
+
+def test_trailing_url_slash_does_not_continue_into_next_requirement(project):
+    jd = "Read the documentation at https://example.test/\nExperience with Python"
+    [item] = project(jd, "Python").requirements
+    assert item.state == "supported"
+
+
+def test_blank_line_ends_wrapped_slash_context(project):
+    jd = "Experience with Java/\n\nExperience with Python"
+    [item] = project(jd, "Python").requirements
+    assert item.state == "supported"
+    assert item.evidence is not None
+
+
+@pytest.mark.parametrize("slash", ["/", "／"])
+def test_slash_on_a_list_item_does_not_merge_its_peer(project, slash):
+    [item] = project(f"Requirements:\n- Experience with Java{slash}\n- Python", "Python").requirements
+    assert item.state == "supported"
+    assert item.evidence is not None
+
+
+@pytest.mark.parametrize("marker", ["1.", "+"])
+def test_requirement_list_markers_use_the_same_affirmative_context(project, marker):
+    jd = f"# Qualifications\n## Required skills\n{marker} Python"
+    [item] = project(jd, "Python").requirements
+    assert item.state == "supported"
+    assert item.evidence is not None
+
+
+@pytest.mark.parametrize("heading", ["Hands-on production experience required", "Production experience only"])
+def test_ancestor_scope_qualification_preserves_partial_state(project, heading):
+    jd = f"# Qualifications\n## {heading}\n### Technical skills\n- Python"
+    [item] = project(jd, "Python").requirements
+    assert item.state == "partial"
+    assert item.reason_code == "additional_qualification_unverified"
+
+
+def test_wrapped_alternative_is_unresolved_when_the_quote_spans_both_lines(project):
+    jd = "Experience with Java／\n- Python"
+    [item] = project(jd, jd).requirements
+    assert item.state == "unresolved"
+    assert item.reason_code == "requirement_not_affirmative" and item.evidence is None
+    assert item.requirement.source_start == 0 and item.requirement.source_end == len(jd)
 
 
 @pytest.mark.parametrize(("job_description", "label"), [
