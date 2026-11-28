@@ -8,12 +8,14 @@ from sqlalchemy.orm import Session
 
 from app.application.errors import InvalidOperationError, ResourceConflictError, ResourceNotFoundError
 from app.application.evidence_service import EvidenceService
+from app.application.grounded_tailor import render_contribution
 from app.application.target_coverage import project_target_coverage, project_target_resume_coverage
 from app.application.target_defensibility import project_target_defensibility
 from app.application.target_jd_mapping import project_target_jd_mapping
 from app.models.career import CareerSourceRow, CareerTargetRow
 from app.repositories.career_repository import CareerRepository
 from app.repositories.jd_repository import JDEvaluationRepository
+from app.repositories.resume_repository import ResumeRepository
 from app.schemas.career.common import SourceRef
 from app.schemas.career.defensibility import TargetDefensibility
 from app.schemas.career.evidence import CareerEvidenceItem
@@ -120,15 +122,15 @@ class CareerApplicationService:
         )
 
     def target_jd_mapping(self, target_id: str, evaluation_id: str) -> TargetJDMapping:
-        mapping, _ = self._target_jd_mapping(target_id, evaluation_id)
+        mapping, _ = self.target_jd_context(target_id, evaluation_id)
         return mapping
 
     def target_defensibility(self, target_id: str, evaluation_id: str) -> TargetDefensibility:
-        mapping, eligible = self._target_jd_mapping(target_id, evaluation_id)
+        mapping, eligible = self.target_jd_context(target_id, evaluation_id)
         return project_target_defensibility(self.repo.user_id, mapping, eligible)
 
-    def _target_jd_mapping(
-        self, target_id: str, evaluation_id: str,
+    def target_jd_context(
+        self, target_id: str, evaluation_id: str, *, resume_version_id: str | None = None, grounded: bool = False,
     ) -> tuple[TargetJDMapping, list[CareerEvidenceItem]]:
         target = self._coverage_target(target_id)
         evaluation = JDEvaluationRepository(self.session).get_owned(evaluation_id, self.repo.user_id)
@@ -137,6 +139,16 @@ class CareerApplicationService:
         document = self.repo.ready_resume(evaluation.resume_document_id)
         if document is None:
             raise ResourceNotFoundError("Résumé not found")
+        parsed_json = document.parsed_json
+        if grounded and target.job_description is None:
+            raise ResourceConflictError("The target requires a saved job description")
+        if resume_version_id is not None:
+            version = ResumeRepository(self.session).get_version(resume_version_id)
+            if version is None or version.resume_document_id != document.id:
+                raise ResourceNotFoundError("Résumé version not found")
+            if isinstance(version.change_set, dict) and "grounded" in version.change_set:
+                raise ResourceConflictError("Choose the source résumé version for a new Tailor draft.")
+            parsed_json = version.parsed_json
         jd_digest = sha256(evaluation.jd_text.encode()).hexdigest()
         if target.job_description and self.get_source(target.job_description).content_sha256 != jd_digest:
             raise ResourceConflictError("Job analysis does not match the target's saved description")
@@ -144,8 +156,15 @@ class CareerApplicationService:
             extraction = JDExtraction.model_validate(evaluation.extracted_requirements)
         except ValidationError:
             raise InvalidOperationError("Saved job analysis requirements are invalid") from None
-        resume = _parsed_resume(document.parsed_json)
-        eligible = EvidenceService(self.session, self.repo.user_id).list_eligible()
+        resume = _parsed_resume(parsed_json)
+        if grounded and resume is None:
+            raise InvalidOperationError("Saved résumé version is invalid")
+        evidence = EvidenceService(self.session, self.repo.user_id)
+        eligible = evidence.list_eligible(limit=501) if grounded else evidence.list_eligible()
+        if grounded:
+            if len(eligible) > 500:
+                raise InvalidOperationError("Grounded Tailor supports up to 500 current evidence items.")
+            eligible = [item for item in eligible if render_contribution(item) is not None]
         mapping = project_target_jd_mapping(
             target, eligible,
             evaluation_id=evaluation.id, jd_text=evaluation.jd_text, jd_text_sha256=jd_digest,
