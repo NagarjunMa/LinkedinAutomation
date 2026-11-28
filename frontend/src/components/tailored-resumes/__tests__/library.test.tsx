@@ -16,6 +16,10 @@ vi.mock("@/app/lib/api/tailored-resumes", () => ({
   },
 }));
 
+vi.mock("@/contexts/auth-context", () => ({
+  useAuth: () => ({ user: { id: "owner" }, isCurrentUser: () => true }),
+}));
+
 vi.mock("@/components/ui/use-toast", () => ({
   useToast: () => ({ toast: toastMock }),
 }));
@@ -120,7 +124,7 @@ describe("TailoredResumeLibrary", () => {
       expect(tailoredResumesApi.downloadPdf).toHaveBeenCalledWith("ver-1", {
         template_id: "us-swe",
         filename: "coinbase-senior-software-engineer.pdf",
-      });
+      }, "owner");
     });
     expect(URL.createObjectURL).toHaveBeenCalled();
     expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:resume");

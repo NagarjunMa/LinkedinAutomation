@@ -1,5 +1,7 @@
 // frontend/src/app/dashboard/resume/tailor/page.tsx
 "use client";
+import { Suspense } from 'react';
+import { GroundedTailorEntry } from '@/components/tailor/grounded-tailor';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { JdInputForm } from '@/components/jd/jd-input-form';
@@ -18,6 +20,8 @@ export default function TailorPage() {
         <h1 className="text-2xl font-bold">Tailor</h1>
         <p className="text-sm opacity-70">Paste a JD; we&apos;ll suggest targeted edits.</p>
       </header>
+
+      <Suspense fallback={null}><GroundedTailorEntry /></Suspense>
 
       <Card>
         <CardHeader><CardTitle>Inputs</CardTitle></CardHeader>

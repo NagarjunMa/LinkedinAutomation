@@ -1,6 +1,7 @@
 // frontend/src/app/dashboard/resume/[id]/edit/page.tsx
 "use client";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -302,6 +303,13 @@ function ResumeEditor({ id, userId }: { id: string; userId: string }) {
               {review.target_role && <p className="break-words">Evaluated role {review.target_role}</p>}
               <p>These findings describe the evaluated version. Re-evaluate after editing.</p>
               <GroundedFindings review={review} />
+              {groundedEvaluationId && review.target_id && review.resume_version_id === (versionId ?? null)
+                && pendingChanges.length === 0 && <Link className="underline" prefetch={false}
+                  href={`/dashboard/resume/tailor?${new URLSearchParams({
+                    resumeDocument: id, careerTarget: review.target_id,
+                    ...(versionId ? { resumeVersion: versionId } : {}),
+                    groundedReview: groundedEvaluationId,
+                  })}`}>Tailor with this review</Link>}
             </section>
           ) : evaluation && (
             <section aria-label="Content findings" className="text-sm mb-6 space-y-3">

@@ -11,12 +11,14 @@ export const tailoredResumesApi = {
   downloadPdf: async (
     versionId: string,
     body: { template_id?: string; filename?: string } = {},
+    expectedUserId?: string,
   ): Promise<Blob> => {
     return makeAPIRequest<Blob>(
       `/api/v1/tailored-resumes/${versionId}/download`,
       {
         method: 'POST',
         body: JSON.stringify(body),
+        expectedUserId,
       },
       (response) => response.blob(),
     );

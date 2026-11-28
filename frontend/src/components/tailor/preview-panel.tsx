@@ -30,6 +30,7 @@ interface PreviewPanelProps {
   suggestedTemplate: string;
   filenameHint: string;
   warning?: string;
+  downloadOwner?: Parameters<typeof useExportPdf>[0];
 }
 
 function buildPreviewSrcDoc(html: string, template: string): string {
@@ -50,10 +51,11 @@ export function PreviewPanel({
   suggestedTemplate,
   filenameHint,
   warning,
+  downloadOwner,
 }: PreviewPanelProps) {
   const [template, setTemplate] = useState(suggestedTemplate);
   const [filename, setFilename] = useState(filenameHint);
-  const exportMut = useExportPdf();
+  const exportMut = useExportPdf(downloadOwner);
   const { toast } = useToast();
   const pageLabel = template.startsWith('in-') ? 'A4' : 'Letter';
   const pageAspect = template.startsWith('in-') ? 'aspect-[210/297]' : 'aspect-[8.5/11]';
@@ -75,8 +77,10 @@ export function PreviewPanel({
         template_id: template,
         filename,
       });
+      if (downloadOwner && !downloadOwner.isCurrentUser(downloadOwner.userId)) return;
       toast({ title: 'Downloaded', description: filename });
     } catch (err: unknown) {
+      if (downloadOwner && !downloadOwner.isCurrentUser(downloadOwner.userId)) return;
       const isApiError = err instanceof APIError;
       const status = isApiError ? err.status : undefined;
       const message = err instanceof Error ? err.message : 'Export failed';

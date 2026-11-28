@@ -8,14 +8,14 @@ type DownloadResult = {
   filename: string;
 };
 
-export function useExportPdf() {
+export function useExportPdf(owner?: { userId: string; isCurrentUser: (userId: string) => boolean }) {
   const qc = useQueryClient();
   return useMutation<DownloadResult, Error, ExportPdfRequest>({
     mutationFn: async (body) => {
-      const blob = await tailoredResumesApi.downloadPdf(body.resume_version_id, {
-        template_id: body.template_id,
-        filename: body.filename,
-      });
+      const request = { template_id: body.template_id, filename: body.filename };
+      const blob = owner
+        ? await tailoredResumesApi.downloadPdf(body.resume_version_id, request, owner.userId)
+        : await tailoredResumesApi.downloadPdf(body.resume_version_id, request);
       return {
         blob,
         filename: body.filename || 'resume.pdf',
@@ -25,6 +25,7 @@ export function useExportPdf() {
       qc.invalidateQueries({ queryKey: ['credits-balance'] });
       qc.invalidateQueries({ queryKey: ['jd-progress'] });
       qc.invalidateQueries({ queryKey: ['tailored-resumes'] });
+      if (owner && !owner.isCurrentUser(owner.userId)) return;
       const objectUrl = URL.createObjectURL(data.blob);
       // Trigger browser download
       const a = document.createElement('a');

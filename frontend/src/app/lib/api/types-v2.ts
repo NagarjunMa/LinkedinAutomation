@@ -1,6 +1,7 @@
 // Generated transport contracts and explicit UI adapters.
 export * from './resume-contracts';
 export * from './workflow-contracts';
+import type { components } from '@/generated/api/types';
 import type { ChangeItem, ResumeDocumentJSON } from './resume-contracts';
 
 // Tailored library and analytics remain outside this migration.
@@ -26,6 +27,8 @@ export interface TailoredResumeDetail extends TailoredResumeListItem {
   extracted_requirements: Record<string, unknown>;
   diff_plan: Record<string, unknown>;
   accepted_changes: ChangeItem[];
+  grounded_claims?: components['schemas']['TailoredResumeDetail']['grounded_claims'];
+  grounded_requirements?: components['schemas']['TailoredResumeDetail']['grounded_requirements'];
 }
 
 export interface AnalyticsJdProgress {
