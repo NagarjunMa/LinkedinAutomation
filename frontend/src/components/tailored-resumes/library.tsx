@@ -27,6 +27,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/components/ui/use-toast";
 
 interface TailoredResumeLibraryProps {
@@ -98,6 +99,7 @@ export function TailoredResumeLibrary({
   mode = "embedded",
 }: TailoredResumeLibraryProps) {
   const { toast } = useToast();
+  const { user, isCurrentUser } = useAuth();
   const [items, setItems] = React.useState<TailoredResumeListItem[]>([]);
   const [search, setSearch] = React.useState("");
   const [loading, setLoading] = React.useState(true);
@@ -148,13 +150,16 @@ export function TailoredResumeLibrary({
   };
 
   const handleDownload = async (item: TailoredResumeListItem) => {
+    const owner = user?.id;
+    if (!owner || !isCurrentUser(owner)) return;
     try {
       setLoadingId(item.version_id);
       const filename = buildFilename(item);
       const blob = await tailoredResumesApi.downloadPdf(item.version_id, {
         template_id: item.template_id || undefined,
         filename,
-      });
+      }, owner);
+      if (!isCurrentUser(owner)) return;
       const objectUrl = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = objectUrl;
@@ -165,6 +170,7 @@ export function TailoredResumeLibrary({
       URL.revokeObjectURL(objectUrl);
       toast({ title: "Downloaded", description: "1 credit used for PDF generation." });
     } catch (error) {
+      if (!isCurrentUser(owner)) return;
       const message = error instanceof Error ? error.message : "Download failed";
       toast({ title: "Download failed", description: message, variant: "destructive" });
     } finally {
@@ -363,10 +369,21 @@ export function TailoredResumeLibrary({
 
               <div className="space-y-5">
                 <div>
-                  <h3 className="mb-3 text-[10px] font-bold uppercase tracking-widest text-foreground/50">Accepted Changes</h3>
-                  <pre className="max-h-56 overflow-auto rounded-sm border border-foreground/10 bg-foreground/[0.02] p-4 text-xs">
+                  <h3 className="mb-3 text-[10px] font-bold uppercase tracking-widest text-foreground/50">
+                    {selected.grounded_claims ? "Evidence for selected contributions" : "Accepted Changes"}
+                  </h3>
+                  {selected.grounded_claims ? <ul className="space-y-2 text-xs">
+                    {selected.grounded_claims.map(claim => <li key={claim.claim_id} className="flex flex-wrap gap-2">
+                      {selected.grounded_requirements?.[claim.claim_id]?.map(ref =>
+                        <span key={ref.revision}>JD {ref.requirement_id}</span>)}
+                      {claim.evidence_revisions.map(ref => <Link key={ref.evidence_id} prefetch={false} className="underline"
+                        href={`/dashboard/evidence?evidence=${encodeURIComponent(ref.evidence_id)}&revision=${ref.revision}`}>
+                        Evidence revision {ref.revision}
+                      </Link>)}
+                    </li>)}
+                  </ul> : <pre className="max-h-56 overflow-auto rounded-sm border border-foreground/10 bg-foreground/[0.02] p-4 text-xs">
                     {JSON.stringify(selected.accepted_changes, null, 2)}
-                  </pre>
+                  </pre>}
                 </div>
                 <div>
                   <h3 className="mb-3 text-[10px] font-bold uppercase tracking-widest text-foreground/50">Source JD</h3>

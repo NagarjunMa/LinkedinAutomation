@@ -87,3 +87,42 @@ test('JD tailor flow', async ({ page, context }) => {
   await page.getByTestId('tailor-apply').click();
   await expect(page.getByRole('button', { name: 'Download PDF' })).toBeVisible();
 });
+
+test('grounded Tailor saves a selected wording and downloads its PDF', async ({ page, context }) => {
+  await seedResumeSession(context);
+  const planId = 'a'.repeat(64);
+  const text = 'Used Python to verify a synthetic release.';
+  const source = { document_id: 'doc-2', target_id: 'target-1', resume_version_id: 'ver-1', review_id: 'review-1' };
+  await page.route('**/api/v1/jd/grounded/preview', async route => {
+    expect(route.request().postDataJSON()).toEqual({ ...source, suggest_wording: false });
+    await route.fulfill({ json: {
+      evaluation_id: 'jd-1', resume_version_id: 'ver-1', jd_source: { source_id: 'source-1', source_version: 1 },
+      choices: [{
+        plan_id: planId, evidence: [{ evidence_id: 'evidence-1', revision: 2 }],
+        requirements: [{ requirement_id: 'must_have-1', revision: 'b'.repeat(64), source_start: 0, source_end: 6 }],
+        options: { safe: text },
+      }],
+    } });
+  });
+  await page.route('**/api/v1/jd/grounded/apply', async route => {
+    expect(route.request().postDataJSON()).toEqual({ ...source, evaluation_id: 'jd-1', selections: { [planId]: 'safe' } });
+    await route.fulfill({ json: {
+      ...APPLY_RESPONSE, preview_html: `<html><body><p>${text}</p></body></html>`, filename_hint: 'grounded.pdf',
+    } });
+  });
+  await page.route('**/api/v1/tailored-resumes/ver-2/download', route =>
+    route.fulfill({ contentType: 'application/pdf', path: 'tests/fixtures/sample-resume.pdf' }));
+  await page.goto('/dashboard/resume/tailor?resumeDocument=doc-2&careerTarget=target-1&resumeVersion=ver-1&groundedReview=review-1');
+  await page.getByRole('button', { name: 'Build grounded draft' }).click();
+  await expect(page.getByRole('link', { name: 'Evidence revision 2' })).toHaveAttribute(
+    'href', '/dashboard/evidence?evidence=evidence-1&revision=2',
+  );
+  await page.getByLabel('Choose wording').selectOption('safe');
+  await page.getByRole('button', { name: 'Apply grounded choices' }).click();
+  await expect(page.frameLocator('iframe[title="Resume preview"]').getByText(text)).toBeVisible();
+  const [download] = await Promise.all([
+    page.waitForEvent('download'), page.getByRole('button', { name: 'Download PDF' }).click(),
+  ]);
+  expect(download.suggestedFilename()).toBe('grounded.pdf');
+  expect(await download.failure()).toBeNull();
+});
