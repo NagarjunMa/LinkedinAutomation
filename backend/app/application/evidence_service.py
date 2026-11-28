@@ -102,16 +102,27 @@ class EvidenceService:
         ))
         return self._view(row, career_cipher(scope="Career evidence")) if row else None
 
-    def list_eligible(self, *, references: Sequence[EvidenceRevisionRef] | None = None) -> list[CareerEvidenceItem]:
+    def list_eligible(
+        self, *, references: Sequence[EvidenceRevisionRef] | None = None, limit: int | None = None,
+    ) -> list[CareerEvidenceItem]:
         query = self._eligible_rows()
         if references is not None:
             keys = [(ref.evidence_id, ref.revision) for ref in references]
             query = query.where(tuple_(Item.evidence_id, Item.revision).in_(keys))
-        rows = self.db.scalars(query.order_by(Item.evidence_id)).all()
+        rows = self.db.scalars(query.order_by(Item.evidence_id).limit(limit)).all()
         if not rows:
             return []
         cipher = career_cipher(scope="Career evidence")
         return [self._view(row, cipher) for row in rows]
+
+    def decision_times(self, items: Sequence[CareerEvidenceItem]) -> dict[tuple[str, int], float]:
+        keys = [(item.evidence_id, item.revision) for item in items]
+        if not keys:
+            return {}
+        rows = self.db.execute(select(Decision.evidence_id, Decision.resulting_revision, Decision.decided_at).where(
+            Decision.user_id == self.owner, tuple_(Decision.evidence_id, Decision.resulting_revision).in_(keys),
+        ))
+        return {(evidence_id, revision): decided_at.timestamp() for evidence_id, revision, decided_at in rows}
 
     def eligible_keys(self, evidence_ids):
         return self._eligible_rows().where(Item.evidence_id.in_(evidence_ids)).with_only_columns(
