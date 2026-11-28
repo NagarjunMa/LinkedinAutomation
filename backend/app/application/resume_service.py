@@ -99,6 +99,16 @@ class ResumeApplicationService:
             payload["grounded_evaluation_id"] = grounded.id
         return payload
 
+    def get_grounded_review(self, document_id: str, evaluation_id: str, user_id: str) -> GroundedResumeReview:
+        self._owned_ready(document_id, user_id)
+        evaluation = self.resumes.latest_evaluation(
+            document_id, user_id, grounded_only=True, evaluation_id=evaluation_id,
+        )
+        review = self._saved_review(evaluation, user_id)
+        if review is None:
+            raise ResourceNotFoundError("Saved résumé review not found")
+        return review
+
     def _saved_review(self, evaluation: ResumeEvaluationV2 | None, user_id: str) -> GroundedResumeReview | None:
         if not evaluation or not evaluation.grounded_review_ciphertext:
             return None
@@ -269,6 +279,9 @@ class ResumeApplicationService:
         version = self.resumes.get_version(version_id)
         if not version or version.resume_document_id != document.id:
             raise ResourceNotFoundError("Version not found")
+        receipt = getattr(version, "change_set", None)
+        if isinstance(receipt, dict) and "grounded" in receipt:
+            raise ResourceNotFoundError("Choose the original résumé or an editor version.")
         resume = ResumeDocumentJSON.model_validate(version.parsed_json)
         # Original PDF text must not override edits in a saved version's model input.
         resume.raw_text = ""

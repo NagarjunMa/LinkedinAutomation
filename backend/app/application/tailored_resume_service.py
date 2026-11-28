@@ -8,13 +8,16 @@ from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from app.application.errors import (
+    ApplicationError,
     InvalidOperationError,
     RenderError,
     ResourceBusyError,
+    ResourceConflictError,
     ResourceNotFoundError,
 )
 from app.application.credits import paid_operation
 from app.application.export_service import PdfDownload
+from app.application.lineage_service import LineageService
 from app.models.resume_export import ResumeExport
 from app.repositories.export_repository import ResumeExportRepository
 from app.repositories.jd_repository import JDEvaluationRepository
@@ -52,10 +55,13 @@ class TailoredResumeApplicationService:
 
     def get(self, version_id: str, user_id: str) -> TailoredResumeDetail:
         version, document = self._owned_version(version_id, user_id)
+        artifact = LineageService(self.session, user_id).require_grounded_resume(version)
         evaluation = self.evaluations.get(version.jd_evaluation_id)
         return TailoredResumeDetail(
             **_list_item(version, document).model_dump(),
             resume_json=version.parsed_json,
+            grounded_claims=artifact.claims if artifact else None,
+            grounded_requirements=version.change_set["grounded"]["requirements"] if artifact else None,
             source_jd_text=version.source_jd_text or (
                 evaluation.jd_text if evaluation else None
             ),
@@ -73,6 +79,9 @@ class TailoredResumeApplicationService:
         user_id: str,
     ) -> PdfDownload:
         version, document = self._owned_version(version_id, user_id)
+        lineage = LineageService(self.session, user_id)
+        artifact = lineage.require_grounded_resume(version)
+        page_limit = version.change_set["grounded"]["page_limit"] if artifact else None
         try:
             country, role = parse_template_id(
                 request.template_id or version.template_id or "us-swe"
@@ -89,25 +98,40 @@ class TailoredResumeApplicationService:
             try:
                 pdf_bytes = await _render_pdf(resume, country, role)
             except (BlankPdfError, PdfRenderTimeout) as exc:
-                self.exports.add(
-                    ResumeExport(
-                        id=str(uuid.uuid4()),
-                        user_id=user_id,
-                        resume_document_id=version.resume_document_id,
-                        resume_version_id=version.id,
-                        country=country,
-                        role_template=role,
-                        storage_path=None,
-                        status="timed_out" if isinstance(exc, PdfRenderTimeout) else "errored",
-                        error_message=str(exc),
+                if not artifact:
+                    self.exports.add(
+                        ResumeExport(
+                            id=str(uuid.uuid4()),
+                            user_id=user_id,
+                            resume_document_id=version.resume_document_id,
+                            resume_version_id=version.id,
+                            country=country,
+                            role_template=role,
+                            storage_path=None,
+                            status="timed_out" if isinstance(exc, PdfRenderTimeout) else "errored",
+                            error_message=str(exc),
+                        )
                     )
-                )
                 detail = (
                     "PDF render timed out; please retry"
                     if isinstance(exc, PdfRenderTimeout)
                     else "PDF render produced a blank file; please retry"
                 )
                 raise RenderError(detail) from exc
+            if artifact:
+                try:
+                    if get_pdf_page_count(pdf_bytes) > page_limit:
+                        raise InvalidOperationError(
+                            "This version exceeds the page limit. Select fewer contributions or choose a shorter source résumé."
+                        )
+                    owned = self.resumes.get_owned_version(version_id, user_id)
+                    if owned is None:
+                        raise ResourceConflictError("The saved Tailor résumé is unavailable.")
+                    version, document = owned
+                    lineage.require_grounded_resume(version, lock=True)
+                except ApplicationError:
+                    self.session.rollback()
+                    raise
             self.exports.add(
                 ResumeExport(
                     id=str(uuid.uuid4()),
@@ -137,7 +161,8 @@ class TailoredResumeApplicationService:
 
 
 def _list_item(version, document) -> TailoredResumeListItem:
-    changes = version.change_set if isinstance(version.change_set, list) else []
+    receipt = version.change_set
+    changes = receipt.get("grounded", {}).get("requirements", {}) if isinstance(receipt, dict) else receipt or []
     return TailoredResumeListItem(
         version_id=version.id,
         resume_document_id=version.resume_document_id,

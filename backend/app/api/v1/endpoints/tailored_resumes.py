@@ -31,12 +31,14 @@ def list_tailored_resumes(
 @router.get("/{version_id}", response_model=TailoredResumeDetail)
 def get_tailored_resume(
     version_id: str,
+    response: Response,
     service: TailoredResumeApplicationService = Depends(
         get_tailored_resume_application_service
     ),
     current_user_id: str = Depends(get_current_user_id),
 ):
     try:
+        response.headers["Cache-Control"] = "no-store"
         return service.get(version_id, current_user_id)
     except ApplicationError as exc:
         raise to_http_exception(exc) from exc
