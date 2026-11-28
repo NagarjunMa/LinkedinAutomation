@@ -2371,6 +2371,52 @@
         "title": "FrontendLogSchema",
         "type": "object"
       },
+      "GeneratedClaimLineage": {
+        "additionalProperties": false,
+        "properties": {
+          "artifact_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+            "title": "Artifact Id",
+            "type": "string"
+          },
+          "artifact_version": {
+            "minimum": 1,
+            "title": "Artifact Version",
+            "type": "integer"
+          },
+          "claim_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+            "title": "Claim Id",
+            "type": "string"
+          },
+          "evidence_revisions": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceRevisionRef"
+            },
+            "minItems": 1,
+            "title": "Evidence Revisions",
+            "type": "array"
+          },
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "schema_version",
+          "claim_id",
+          "artifact_id",
+          "artifact_version",
+          "evidence_revisions"
+        ],
+        "title": "GeneratedClaimLineage",
+        "type": "object"
+      },
       "GroundedResumeReview": {
         "additionalProperties": false,
         "properties": {
@@ -2454,6 +2500,294 @@
           "findings"
         ],
         "title": "GroundedResumeReview",
+        "type": "object"
+      },
+      "GroundedTailorApplyRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "document_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+            "title": "Document Id",
+            "type": "string"
+          },
+          "evaluation_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+            "title": "Evaluation Id",
+            "type": "string"
+          },
+          "resume_version_id": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resume Version Id"
+          },
+          "review_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+            "title": "Review Id",
+            "type": "string"
+          },
+          "selections": {
+            "maxProperties": 80,
+            "minProperties": 1,
+            "patternProperties": {
+              "^[0-9a-f]+$": {
+                "enum": [
+                  "safe",
+                  "action_first"
+                ],
+                "type": "string"
+              }
+            },
+            "propertyNames": {
+              "maxLength": 64,
+              "minLength": 64
+            },
+            "title": "Selections",
+            "type": "object"
+          },
+          "target_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+            "title": "Target Id",
+            "type": "string"
+          },
+          "wording_receipt": {
+            "anyOf": [
+              {
+                "maxLength": 4096,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wording Receipt"
+          }
+        },
+        "required": [
+          "document_id",
+          "target_id",
+          "resume_version_id",
+          "review_id",
+          "evaluation_id",
+          "selections"
+        ],
+        "title": "GroundedTailorApplyRequest",
+        "type": "object"
+      },
+      "GroundedTailorChoice": {
+        "properties": {
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceRevisionRef"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "options": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "enum": [
+                "safe",
+                "action_first"
+              ]
+            },
+            "title": "Options",
+            "type": "object"
+          },
+          "plan_id": {
+            "maxLength": 64,
+            "minLength": 64,
+            "pattern": "^[0-9a-f]+$",
+            "title": "Plan Id",
+            "type": "string"
+          },
+          "requirements": {
+            "items": {
+              "$ref": "#/components/schemas/JDRequirementRef"
+            },
+            "title": "Requirements",
+            "type": "array"
+          }
+        },
+        "required": [
+          "plan_id",
+          "requirements",
+          "evidence",
+          "options"
+        ],
+        "title": "GroundedTailorChoice",
+        "type": "object"
+      },
+      "GroundedTailorPreviewRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "document_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+            "title": "Document Id",
+            "type": "string"
+          },
+          "evaluation_id": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evaluation Id"
+          },
+          "resume_version_id": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resume Version Id"
+          },
+          "review_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+            "title": "Review Id",
+            "type": "string"
+          },
+          "suggest_wording": {
+            "default": false,
+            "title": "Suggest Wording",
+            "type": "boolean"
+          },
+          "target_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+            "title": "Target Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "document_id",
+          "target_id",
+          "resume_version_id",
+          "review_id"
+        ],
+        "title": "GroundedTailorPreviewRequest",
+        "type": "object"
+      },
+      "GroundedTailorResponse": {
+        "properties": {
+          "choices": {
+            "items": {
+              "$ref": "#/components/schemas/GroundedTailorChoice"
+            },
+            "title": "Choices",
+            "type": "array"
+          },
+          "evaluation_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+            "title": "Evaluation Id",
+            "type": "string"
+          },
+          "jd_source": {
+            "$ref": "#/components/schemas/SourceRef"
+          },
+          "resume_version_id": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resume Version Id"
+          },
+          "wording": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GroundedWording"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "evaluation_id",
+          "resume_version_id",
+          "jd_source",
+          "choices"
+        ],
+        "title": "GroundedTailorResponse",
+        "type": "object"
+      },
+      "GroundedWording": {
+        "properties": {
+          "plan_id": {
+            "maxLength": 64,
+            "minLength": 64,
+            "pattern": "^[0-9a-f]+$",
+            "title": "Plan Id",
+            "type": "string"
+          },
+          "receipt": {
+            "title": "Receipt",
+            "type": "string"
+          },
+          "selected_option": {
+            "enum": [
+              "safe",
+              "action_first"
+            ],
+            "title": "Selected Option",
+            "type": "string"
+          },
+          "validation": {
+            "$ref": "#/components/schemas/ResumeRenderValidationResult"
+          }
+        },
+        "required": [
+          "plan_id",
+          "selected_option",
+          "validation",
+          "receipt"
+        ],
+        "title": "GroundedWording",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -5245,6 +5579,236 @@
         "title": "ResumePolicyProfile",
         "type": "object"
       },
+      "ResumeRenderValidationResult": {
+        "additionalProperties": false,
+        "oneOf": [
+          {
+            "properties": {
+              "accepted": {
+                "const": true
+              },
+              "disallowed_additions": {
+                "maxItems": 0
+              },
+              "proposal_hash": {
+                "type": "string"
+              },
+              "reason_codes": {
+                "maxItems": 0
+              },
+              "used_fallback": {
+                "const": false
+              }
+            },
+            "required": [
+              "proposal_hash"
+            ]
+          },
+          {
+            "properties": {
+              "accepted": {
+                "const": false
+              },
+              "disallowed_additions": {
+                "maxItems": 0
+              },
+              "proposal_hash": {
+                "type": "null"
+              },
+              "reason_codes": {
+                "contains": {
+                  "const": "model_unavailable"
+                },
+                "items": {
+                  "enum": [
+                    "model_unavailable",
+                    "safe_render_used"
+                  ]
+                }
+              },
+              "used_fallback": {
+                "const": true
+              }
+            },
+            "required": [
+              "reason_codes"
+            ]
+          },
+          {
+            "properties": {
+              "accepted": {
+                "const": false
+              },
+              "disallowed_additions": {
+                "maxItems": 0
+              },
+              "proposal_hash": {
+                "type": "null"
+              },
+              "reason_codes": {
+                "contains": {
+                  "const": "model_timeout"
+                },
+                "items": {
+                  "enum": [
+                    "model_timeout",
+                    "safe_render_used"
+                  ]
+                }
+              },
+              "used_fallback": {
+                "const": true
+              }
+            },
+            "required": [
+              "reason_codes"
+            ]
+          },
+          {
+            "properties": {
+              "accepted": {
+                "const": false
+              },
+              "proposal_hash": {
+                "type": "string"
+              },
+              "reason_codes": {
+                "contains": {
+                  "not": {
+                    "const": "safe_render_used"
+                  }
+                },
+                "items": {
+                  "not": {
+                    "enum": [
+                      "model_unavailable",
+                      "model_timeout"
+                    ]
+                  }
+                }
+              },
+              "used_fallback": {
+                "const": true
+              }
+            },
+            "required": [
+              "proposal_hash",
+              "reason_codes"
+            ]
+          }
+        ],
+        "properties": {
+          "accepted": {
+            "title": "Accepted",
+            "type": "boolean"
+          },
+          "disallowed_additions": {
+            "items": {
+              "maxLength": 200,
+              "minLength": 1,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            "title": "Disallowed Additions",
+            "type": "array"
+          },
+          "plan_hash": {
+            "maxLength": 64,
+            "minLength": 64,
+            "pattern": "^[0-9a-f]+$",
+            "title": "Plan Hash",
+            "type": "string"
+          },
+          "proposal_hash": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 64,
+                "pattern": "^[0-9a-f]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Proposal Hash"
+          },
+          "reason_codes": {
+            "items": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "model_unavailable",
+                    "model_timeout"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "enum": [
+                    "number_not_approved",
+                    "skill_not_approved",
+                    "employer_not_approved",
+                    "outcome_not_approved",
+                    "ownership_upgrade",
+                    "qualifier_removed",
+                    "entity_not_approved"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "enum": [
+                    "evidence_not_confirmed",
+                    "evidence_private",
+                    "evidence_rejected",
+                    "evidence_unavailable",
+                    "evidence_contradicted",
+                    "evidence_revision_stale"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "enum": [
+                    "schema_invalid",
+                    "proposal_rejected"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "const": "safe_render_used",
+                  "type": "string"
+                }
+              ]
+            },
+            "title": "Reason Codes",
+            "type": "array"
+          },
+          "rule_version": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+            "title": "Rule Version",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "used_fallback": {
+            "title": "Used Fallback",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "schema_version",
+          "accepted",
+          "rule_version",
+          "plan_hash",
+          "used_fallback"
+        ],
+        "title": "ResumeRenderValidationResult",
+        "type": "object"
+      },
       "ResumeRequirementFinding": {
         "additionalProperties": false,
         "oneOf": [
@@ -6311,6 +6875,37 @@
             "additionalProperties": true,
             "title": "Extracted Requirements",
             "type": "object"
+          },
+          "grounded_claims": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/GeneratedClaimLineage"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grounded Claims"
+          },
+          "grounded_requirements": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "items": {
+                    "$ref": "#/components/schemas/JDRequirementRef"
+                  },
+                  "type": "array"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grounded Requirements"
           },
           "match_score": {
             "anyOf": [
@@ -11289,6 +11884,186 @@
           }
         ],
         "summary": "Analyze",
+        "tags": [
+          "jd"
+        ]
+      }
+    },
+    "/api/v1/jd/grounded/apply": {
+      "post": {
+        "operationId": "apply_grounded_api_v1_jd_grounded_apply_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroundedTailorApplyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplyTailorResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Client Error",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Server Error",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Apply Grounded",
+        "tags": [
+          "jd"
+        ]
+      }
+    },
+    "/api/v1/jd/grounded/preview": {
+      "post": {
+        "operationId": "preview_grounded_api_v1_jd_grounded_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroundedTailorPreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroundedTailorResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Client Error",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorEnvelope"
+                }
+              }
+            },
+            "description": "Server Error",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Preview Grounded",
         "tags": [
           "jd"
         ]

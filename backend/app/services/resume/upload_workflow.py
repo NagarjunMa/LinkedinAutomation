@@ -7,6 +7,7 @@ import uuid
 
 from sqlalchemy.orm import Session
 
+from app.models.career_lineage import GeneratedArtifactRow
 from app.models.jd_evaluation import JDEvaluation
 from app.models.resume_document import ResumeDocument, ResumeVersion
 from app.models.resume_evaluation_v2 import ResumeEvaluationV2
@@ -141,9 +142,14 @@ def delete_resume_document(
             ResumeEvaluationV2.user_id == user_id,
             ResumeEvaluationV2.resume_document_id == row.id,
         ).delete(synchronize_session=False)
-        db.query(ResumeVersion).filter(
-            ResumeVersion.resume_document_id == row.id,
-        ).delete(synchronize_session=False)
+        versions = db.query(ResumeVersion).filter(ResumeVersion.resume_document_id == row.id)
+        grounded_ids = [version_id for version_id, receipt in versions.with_entities(ResumeVersion.id, ResumeVersion.change_set)
+                        if isinstance(receipt, dict) and "grounded" in receipt]
+        if grounded_ids:
+            db.query(GeneratedArtifactRow).filter(
+                GeneratedArtifactRow.user_id == user_id, GeneratedArtifactRow.id.in_(grounded_ids),
+            ).delete(synchronize_session=False)
+        versions.delete(synchronize_session=False)
         db.query(JDEvaluation).filter(
             JDEvaluation.user_id == user_id,
             JDEvaluation.resume_document_id == row.id,

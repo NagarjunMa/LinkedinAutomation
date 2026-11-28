@@ -4,6 +4,9 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
+from app.schemas.career.jd_mapping import JDRequirementRef
+from app.schemas.career.resume import GeneratedClaimLineage
+
 
 class TailoredResumeListItem(BaseModel):
     version_id: str
@@ -27,6 +30,8 @@ class TailoredResumeDetail(TailoredResumeListItem):
     extracted_requirements: dict
     diff_plan: dict
     accepted_changes: list[dict]
+    grounded_claims: list[GeneratedClaimLineage] | None = None
+    grounded_requirements: dict[str, list[JDRequirementRef]] | None = None
 
 
 class TailoredDownloadRequest(BaseModel):

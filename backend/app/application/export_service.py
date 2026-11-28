@@ -140,6 +140,8 @@ class ExportApplicationService:
                 detail = "Version not found" if not version else "Resume document not found"
                 raise ResourceNotFoundError(detail)
             version, _ = owned
+            if isinstance(version.change_set, dict) and "grounded" in version.change_set:
+                raise InvalidOperationError("Download this Tailor version from the tailored résumé library.")
             try:
                 country_value, role_value = parse_template_id(
                     request.template_id or version.template_id or "us-swe"

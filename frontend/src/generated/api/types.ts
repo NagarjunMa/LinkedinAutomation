@@ -527,6 +527,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/jd/grounded/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Apply Grounded */
+        post: operations["apply_grounded_api_v1_jd_grounded_apply_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/jd/grounded/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview Grounded */
+        post: operations["preview_grounded_api_v1_jd_grounded_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/jobs/": {
         parameters: {
             query?: never;
@@ -1827,6 +1861,22 @@ export interface components {
              */
             userId?: string | null;
         };
+        /** GeneratedClaimLineage */
+        GeneratedClaimLineage: {
+            /** Artifact Id */
+            artifact_id: string;
+            /** Artifact Version */
+            artifact_version: number;
+            /** Claim Id */
+            claim_id: string;
+            /** Evidence Revisions */
+            evidence_revisions: components["schemas"]["EvidenceRevisionRef"][];
+            /**
+             * Schema Version
+             * @constant
+             */
+            schema_version: 1;
+        };
         /** GroundedResumeReview */
         GroundedResumeReview: {
             /** Findings */
@@ -1853,6 +1903,80 @@ export interface components {
             target_id: string | null;
             /** Target Role */
             target_role?: string | null;
+        };
+        /** GroundedTailorApplyRequest */
+        GroundedTailorApplyRequest: {
+            /** Document Id */
+            document_id: string;
+            /** Evaluation Id */
+            evaluation_id: string;
+            /** Resume Version Id */
+            resume_version_id: string | null;
+            /** Review Id */
+            review_id: string;
+            /** Selections */
+            selections: {
+                [key: string]: "safe" | "action_first";
+            };
+            /** Target Id */
+            target_id: string;
+            /** Wording Receipt */
+            wording_receipt?: string | null;
+        };
+        /** GroundedTailorChoice */
+        GroundedTailorChoice: {
+            /** Evidence */
+            evidence: components["schemas"]["EvidenceRevisionRef"][];
+            /** Options */
+            options: {
+                [key: string]: string;
+            };
+            /** Plan Id */
+            plan_id: string;
+            /** Requirements */
+            requirements: components["schemas"]["JDRequirementRef"][];
+        };
+        /** GroundedTailorPreviewRequest */
+        GroundedTailorPreviewRequest: {
+            /** Document Id */
+            document_id: string;
+            /** Evaluation Id */
+            evaluation_id?: string | null;
+            /** Resume Version Id */
+            resume_version_id: string | null;
+            /** Review Id */
+            review_id: string;
+            /**
+             * Suggest Wording
+             * @default false
+             */
+            suggest_wording?: boolean;
+            /** Target Id */
+            target_id: string;
+        };
+        /** GroundedTailorResponse */
+        GroundedTailorResponse: {
+            /** Choices */
+            choices: components["schemas"]["GroundedTailorChoice"][];
+            /** Evaluation Id */
+            evaluation_id: string;
+            jd_source: components["schemas"]["SourceRef"];
+            /** Resume Version Id */
+            resume_version_id: string | null;
+            wording?: components["schemas"]["GroundedWording"] | null;
+        };
+        /** GroundedWording */
+        GroundedWording: {
+            /** Plan Id */
+            plan_id: string;
+            /** Receipt */
+            receipt: string;
+            /**
+             * Selected Option
+             * @enum {string}
+             */
+            selected_option: "safe" | "action_first";
+            validation: components["schemas"]["ResumeRenderValidationResult"];
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -2626,6 +2750,59 @@ export interface components {
             /** Universal Rules Version */
             universal_rules_version: string;
         };
+        /** ResumeRenderValidationResult */
+        ResumeRenderValidationResult: {
+            /** Accepted */
+            accepted: boolean;
+            /** Disallowed Additions */
+            disallowed_additions?: string[];
+            /** Plan Hash */
+            plan_hash: string;
+            /** Proposal Hash */
+            proposal_hash?: string | null;
+            /** Reason Codes */
+            reason_codes?: (("model_unavailable" | "model_timeout") | ("number_not_approved" | "skill_not_approved" | "employer_not_approved" | "outcome_not_approved" | "ownership_upgrade" | "qualifier_removed" | "entity_not_approved") | ("evidence_not_confirmed" | "evidence_private" | "evidence_rejected" | "evidence_unavailable" | "evidence_contradicted" | "evidence_revision_stale") | ("schema_invalid" | "proposal_rejected") | "safe_render_used")[];
+            /** Rule Version */
+            rule_version: string;
+            /**
+             * Schema Version
+             * @constant
+             */
+            schema_version: 1;
+            /** Used Fallback */
+            used_fallback: boolean;
+        } & ({
+            /** @constant */
+            accepted?: true;
+            disallowed_additions?: unknown;
+            proposal_hash: string;
+            reason_codes?: unknown;
+            /** @constant */
+            used_fallback?: false;
+        } | {
+            /** @constant */
+            accepted?: false;
+            disallowed_additions?: unknown;
+            proposal_hash?: null;
+            reason_codes: unknown;
+            /** @constant */
+            used_fallback?: true;
+        } | {
+            /** @constant */
+            accepted?: false;
+            disallowed_additions?: unknown;
+            proposal_hash?: null;
+            reason_codes: unknown;
+            /** @constant */
+            used_fallback?: true;
+        } | {
+            /** @constant */
+            accepted?: false;
+            proposal_hash: string;
+            reason_codes: unknown;
+            /** @constant */
+            used_fallback?: true;
+        });
         /** ResumeRequirementFinding */
         ResumeRequirementFinding: {
             /** Blocking */
@@ -2941,6 +3118,12 @@ export interface components {
             extracted_requirements: {
                 [key: string]: unknown;
             };
+            /** Grounded Claims */
+            grounded_claims?: components["schemas"]["GeneratedClaimLineage"][] | null;
+            /** Grounded Requirements */
+            grounded_requirements?: {
+                [key: string]: components["schemas"]["JDRequirementRef"][];
+            } | null;
             /** Match Score */
             match_score?: number | null;
             /** Resume Document Id */
@@ -5135,6 +5318,114 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JDAnalysisResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+        };
+    };
+    apply_grounded_api_v1_jd_grounded_apply_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GroundedTailorApplyRequest"];
+            };
+        };
+        responses: {
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplyTailorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+        };
+    };
+    preview_grounded_api_v1_jd_grounded_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GroundedTailorPreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIErrorEnvelope"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroundedTailorResponse"];
                 };
             };
             /** @description Unprocessable Entity */

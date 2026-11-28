@@ -14,6 +14,7 @@ from app.models.career_lineage import CareerRunRow as Run
 from app.models.career_lineage import GeneratedArtifactRow as Artifact
 from app.models.career_lineage import ArtifactRunRow, ProofArtifactRow
 from app.models.interview import InterviewSessionRow
+from app.models.resume_document import ResumeVersion
 from app.repositories.career_repository import CareerRepository
 from app.repositories.interview_repository import InterviewRepository
 from app.schemas.career.common import SourceRef
@@ -54,6 +55,13 @@ class LineageService:
         return StoredRun.model_validate_json(open_private_text(career_cipher(scope="Career run"), row.ciphertext))
 
     def record_artifact(self, data: ArtifactInput, previous: ArtifactRef | None = None) -> ArtifactView:
+        result = self.stage_artifact(data, previous=previous)
+        self.db.commit()
+        return result
+
+    def stage_artifact(
+        self, data: ArtifactInput, *, artifact_id: str | None = None, previous: ArtifactRef | None = None,
+    ) -> ArtifactView:
         self._lock_owner()
         if data.target_id:
             target = select(CareerTargetRow.id).where(
@@ -68,7 +76,7 @@ class LineageService:
         keys = {(ref.evidence_id, ref.revision) for claim in data.claims for ref in claim.evidence_revisions}
         self.evidence.lock_eligible_revisions(keys)
 
-        artifact_id, version = str(uuid4()), 1
+        artifact_id, version = artifact_id or str(uuid4()), 1
         if previous is not None:
             artifact_id, version = previous.artifact_id, previous.version + 1
             artifacts = self._artifacts(artifact_id)
@@ -100,7 +108,6 @@ class LineageService:
             result = self.get_artifact(ArtifactRef(schema_version=1, artifact_id=artifact_id, version=version))
             if result.status != "eligible":
                 raise InvalidOperationError("Career artifact is no longer eligible")
-        self.db.commit()
         return result
 
     def get_artifact(self, reference: ArtifactRef) -> ArtifactView:
@@ -145,6 +152,32 @@ class LineageService:
                 claim_id=claim_id, evidence_revisions=refs,
             ) for claim_id, refs in claim_refs.items()],
         )
+
+    def require_grounded_resume(self, version: ResumeVersion, *, lock: bool = False) -> ArtifactView | None:
+        receipt = version.change_set
+        if not isinstance(receipt, dict) or "grounded" not in receipt:
+            return None
+        jd = SourceRef.model_validate(receipt["grounded"]["jd_source"])
+        if lock:
+            self._lock_owner()
+            if self.career.ready_resume(version.resume_document_id) is None or self.career.get_source(jd, lock=True) is None:
+                raise ResourceConflictError("The saved Tailor résumé or job description is unavailable.")
+        artifact = self.get_artifact(ArtifactRef(schema_version=1, artifact_id=version.id, version=1))
+        if artifact.status != "eligible":
+            raise ResourceConflictError("Tailor evidence changed. Generate a new draft.")
+        target = self.career.get_target(artifact.target_id, lock=lock)
+        if (target is None or target.status != "active" or
+            (target.jd_source_id, target.jd_source_version) != (jd.source_id, jd.source_version) or
+            self.career.get_source(jd) is None):
+            raise ResourceConflictError("The saved Tailor target changed. Generate a new draft.")
+        if lock:
+            try:
+                self.evidence.lock_eligible_revisions({
+                    (ref.evidence_id, ref.revision) for claim in artifact.claims for ref in claim.evidence_revisions
+                })
+            except InvalidOperationError:
+                raise ResourceConflictError("Tailor evidence changed. Generate a new draft.") from None
+        return artifact
 
     def record_proof(self, metadata: ProofMetadata) -> str:
         self._lock_owner()
